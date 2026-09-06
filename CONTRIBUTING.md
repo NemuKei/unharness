@@ -1,6 +1,6 @@
 # Contributing to Unharness
 
-Unharness is being prepared for an open-source release. This repository currently contains product and design documentation. There is no application package to install or build yet.
+Unharness is being prepared for an open-source release. This repository contains product/design documentation and a read-only Codex inventory CLI. The full application and mode switching are still under development. Use Node.js 24+ and `node --test`; the diagnostic has no external package dependencies. See [the probe guide](docs/codex-probe.md) for real-environment checks.
 
 ## Work that is useful now
 

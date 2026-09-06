@@ -4,14 +4,14 @@
 
 | OS | Application | Delivery phase | Current evidence |
 | --- | --- | --- | --- |
-| macOS | Codex desktop | 1 | Documentation reviewed; integration not implemented or tested |
-| Windows | Codex desktop | 1 | Test machine available per maintainer; no test result yet |
+| macOS | Codex desktop | 1 | Standalone read inventory observed; desktop mode switching not verified |
+| Windows | Codex desktop | 1 | Read-only probe prepared; run will be performed in Windows Codex |
 | macOS | Claude Code desktop, Code tab | 2 | Documentation reviewed; integration not implemented or tested |
 | Windows | Claude Code desktop, Code tab | 2 | Test environment available per maintainer; no test result yet |
 
 Both OSes are design targets from the beginning. Phase 1 is complete only when the agreed Codex behavior has desktop evidence on both. Phase 2 adds Claude Code on both. This table is a delivery target, not a support guarantee.
 
-Record the desktop app version, embedded or external runtime version, CPU architecture, and execution environment. Native Windows and WSL results must not be merged into one undifferentiated “Windows passed” result. The current Codex task has not established a connection to the Windows machine.
+Record the desktop app version, embedded or external runtime version, CPU architecture, and execution environment. Native Windows and WSL results must not be merged into one undifferentiated “Windows passed” result. The maintainer will run the same repository in Windows Codex; the current Mac task has not directly connected to that machine. See [the probe guide](codex-probe.md).
 
 ## What to record for a real test
 

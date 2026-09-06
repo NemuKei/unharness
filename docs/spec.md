@@ -1,6 +1,6 @@
 # Product contract
 
-The requirements below are agreed product targets. Implementation is not yet present; see [status](status.md).
+The requirements below are agreed product targets. A separate [read-only probe slice](spec-probe.md) is being delivered first; the full product implementation is not yet present. See [status](status.md).
 
 ## Target and delivery order
 
@@ -75,6 +75,8 @@ The initial comparison is between loadouts within the same application and model
 Create separate work locations from the same starting state when the task changes files. Prevent shared memory or other local state from silently carrying information between runs. Record external conditions that cannot be frozen. Starting another worktree alone is not proof of complete isolation.
 
 Compare outputs, diffs, elapsed time, available usage data, and the user's evaluation notes. Do not invent missing costs or infer a universal ranking from one run. Automated cross-application model benchmarking is not required for initial support of both apps.
+
+Include numerical comparison alongside personal preference. Measure usage and effort to reach task-defined acceptance, retain failed attempts and retries, and keep objective checks separate from human or AI scorecards. The collection and scoring rules are in [comparison-metrics.md](comparison-metrics.md). Protocol field availability alone does not establish that complete desktop usage has been collected.
 
 ## Entry points and visuals
 

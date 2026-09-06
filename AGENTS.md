@@ -30,6 +30,7 @@ Unharness makes it easy to take off, compare, and save AI harness configurations
 - `docs/spec.md`: modes, shared behavior, and acceptance criteria; read before feature work.
 - `docs/architecture.md`: responsibility boundaries; read when changing integration or storage behavior.
 - `docs/compatibility.md`: evidence and the OS × app matrix; read before making support claims or running integration verification.
+- `docs/comparison-metrics.md`: resource usage, quality criteria, and aggregation rules; read when implementing comparisons or scoring.
 - `docs/delivery.md`: Codex → Claude Code → Codex handoff and completion criteria; read when starting or handing off a phase.
 - `docs/design.md`: selected visual direction and effect behavior; read for UI/asset work.
 - `docs/status.md`: current implementation state and next unresolved step; update at meaningful handoffs.
@@ -37,6 +38,6 @@ Unharness makes it easy to take off, compare, and save AI harness configurations
 
 ## Validation
 
-At bootstrap this repository contains documentation and concept images, not runnable application code. Do not invent installation, build, or test commands. For documentation changes, check relative links and `git diff --check`. For implementation changes, add and run meaningful checks for the affected behavior. Configuration writes require recovery and conflict tests; desktop support requires real desktop evidence for the stated OS and version. CLI-only evidence cannot establish desktop support.
+The current runtime is a read-only Node.js 24+ diagnostic CLI. Run `node --test` for runtime changes; no dependency installation is needed. Its standalone inventory must not be presented as desktop or mode-switch verification. For documentation changes, check relative links and `git diff --check`. For implementation changes, add and run meaningful checks for the affected behavior. Configuration writes require recovery and conflict tests; desktop support requires real desktop evidence for the stated OS and version. CLI-only evidence cannot establish desktop support.
 
 Common reusable skills and templates belong to their own upstream repositories. Do not create project-specific skill copies as a substitute for ordinary code or documentation.

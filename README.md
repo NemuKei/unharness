@@ -8,7 +8,18 @@ Try different combinations of skills and instructions on your own work. Find wha
 
 [日本語](README.ja.md)
 
-> **Draft for the intended public release.** This project is currently in concept and visual exploration. The experience described below is the product target. Configuration switching, comparison runs, and recovery have not been implemented or verified. The target is macOS and Windows: Codex desktop first, followed by Claude Code desktop.
+> **Draft for the intended public release.** A read-only Codex inventory CLI is available for feasibility testing. The product experience described below remains the target; configuration switching, comparison runs, and recovery have not been implemented or verified. The target is macOS and Windows: Codex desktop first, followed by Claude Code desktop.
+
+## Development probe
+
+With Node.js 24+ and a native Codex executable available, run the dependency-free diagnostic from this checkout:
+
+```text
+node --test
+node bin/unharness.mjs inspect --cwd . --output local-evidence/codex-probe.json
+```
+
+It reports sanitized configuration inventory from a separate Codex process. It does not change settings or verify a desktop mode switch. See [the probe guide and Windows handoff](docs/codex-probe.md).
 
 ## Make “what if I removed this?” easy to try
 
@@ -29,6 +40,8 @@ Here, a **harness** means the surrounding skills, persistent instructions, and a
 5. **Keep what fits.** Adjust the combination, save it as a favorite, and use it again. Reload your earlier setup when you want it back.
 
 The useful result is a choice you can explain for your work. Fewer instructions may help, make no difference, or remove something valuable.
+
+Numerical comparisons should show the tokens and attempts needed to reach task-defined quality, alongside your preference. Functional checks and explicit scorecards provide different kinds of evidence. See [the measurement contract](docs/comparison-metrics.md); live usage collection and grading are planned work.
 
 ## Three starting modes
 
