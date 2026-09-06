@@ -219,12 +219,13 @@ export async function createDesktopFixture({ parent = tmpdir(), afterManifest } 
 
 export async function snapshotDesktopFixture(path, { afterInventory } = {}) {
   const fixture = await readDesktopFixture(path);
-  checkExpected(await inventory(fixture), expectedVariants(fixture.state));
+  const files = await inventory(fixture);
+  checkExpected(files, expectedVariants(fixture.state));
   if (afterInventory) await afterInventory();
   const current = await readDesktopFixture(path);
   if (current.stateText !== fixture.stateText) fail('fixture-changed');
   const operationLocked = (await readdir(fixture.root)).some(name => [LOCK, RECOVERY_LOCK].includes(name));
-  return { ...fixture, operationLocked };
+  return { ...fixture, files, operationLocked };
 }
 
 export async function inspectDesktopFixture(path) {
@@ -235,12 +236,17 @@ export async function inspectDesktopFixture(path) {
   return result;
 }
 
-export async function changeDesktopFixture(path, condition, { afterWrite, recoveryToken } = {}) {
+export async function changeDesktopFixture(path, condition, {
+  afterWrite, recoveryToken, expectedStateDigest, expectedDesiredFiles,
+} = {}) {
   if (!DESKTOP_CASES.includes(condition)) fail('invalid-fixture-case');
   return locked(path, async fixture => {
     if (fixture.state.cleanup) fail('fixture-cleanup-required');
     const original = await inventory(fixture);
     checkExpected(original, expectedVariants(fixture.state));
+    if (expectedStateDigest !== undefined && digest(fixture.stateText) !== expectedStateDigest) fail('fixture-changed');
+    const desired = contents(fixture.state, condition);
+    if (expectedDesiredFiles !== undefined && !isDeepStrictEqual(desired, expectedDesiredFiles)) fail('fixture-incompatible-snapshot');
     if (fixture.state.initializing) {
       if (condition !== 'baseline') fail('fixture-recovery-required');
       for (const directory of [fixture.project, ...DIRS.map(name => join(fixture.project, name))]) {
@@ -256,7 +262,6 @@ export async function changeDesktopFixture(path, condition, { afterWrite, recove
       : { from: fixture.state.condition, to: condition };
     await writeState(fixture, { ...fixture.state, pending });
     const variants = expectedVariants(fixture.state);
-    const desired = contents(fixture.state, condition);
     for (const name of FILES) {
       checkExpected(await inventory(fixture), variants);
       const path = join(fixture.project, name);

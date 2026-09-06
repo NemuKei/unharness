@@ -18,6 +18,8 @@ The subsequent [fixture investigation](evidence/2026-09-06-source-controls-macos
 
 A subsequent [desktop-record observation](evidence/2026-09-06-desktop-observation-macos.md) confirmed that this actual Mac task's initial recording contains host-provided Skill and memory guidance, and that usage records contain recognized fields. A bounded local reader and synthetic fixture/recovery commands are implemented. A later [fresh-task sequence](evidence/2026-09-06-desktop-fixture-macos.md) observed the synthetic source changes, explicit literal Skill invocation and refresh-assisted restoration. New tasks sometimes retained a stale catalog, so the implementation keeps a pending/unverified state until actual input is observed. A user-created task and one owned-file mtime notification trial restored visibility without an app restart. These results do not establish complete source control, a general refresh guarantee or usage totals.
 
+The [registered fixture loadout core](loadouts.md) now supplies immutable settings, checkpoints, guarded restoration and an observation association API. Its native smoke is a local service/filesystem loop with generated data. Real source classification, desktop association of a saved favorite and Windows evidence remain separate gates.
+
 The full product cannot yet be promised merely because local settings files can be edited. The next scoped investigation must determine:
 
 1. Which optional sources the real desktop task loads, including app/plugin-provided sources outside standalone discovery.

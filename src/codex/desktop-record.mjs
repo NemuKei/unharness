@@ -141,9 +141,10 @@ export function summarizeDesktopRecords(records, { expectedCwd, expectedSessionI
   };
 }
 
-export async function collectDesktopRecord({ session, fixture, expectedSessionId } = {}) {
+export async function collectDesktopRecord({ session, fixture, expectedSessionId, notBefore } = {}) {
   let handle;
   try {
+    if (notBefore !== undefined && !validDate(notBefore)) fail('invalid-desktop-record');
     // Open once and read a bounded prefix of this inode. A concurrently appended
     // partial trailing record is ignored and explicitly reported.
     const selected = await lstat(session);
@@ -174,11 +175,13 @@ export async function collectDesktopRecord({ session, fixture, expectedSessionId
       try { const value = JSON.parse(line); if (!object(value)) fail('invalid-desktop-record'); return value; }
       catch { fail('invalid-desktop-record'); }
     });
-    let options = { expectedSessionId };
+    let options = { expectedSessionId, preparedAt: notBefore };
     if (fixture !== undefined) {
       const owned = await snapshotDesktopFixture(fixture);
       if (owned.operationLocked || owned.state.pending !== null || owned.state.initializing || owned.state.cleanup) fail('fixture-recovery-required');
-      options = { ...options, expectedCwd: owned.project, preparedAt: owned.state.preparedAt, markers: fixtureMarkers(owned.state.seed) };
+      const preparedAt = notBefore !== undefined && Date.parse(notBefore) > Date.parse(owned.state.preparedAt)
+        ? notBefore : owned.state.preparedAt;
+      options = { ...options, expectedCwd: owned.project, preparedAt, markers: fixtureMarkers(owned.state.seed) };
     }
     const report = summarizeDesktopRecords(records, options);
     report.recordRead = { incompleteTrailingLine, snapshotBytes: info.size };

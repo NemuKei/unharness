@@ -8,7 +8,7 @@ Try different combinations of skills and instructions on your own work. Find wha
 
 [日本語](README.ja.md)
 
-> **Draft for the intended public release.** Codex inventory, isolated source-control fixtures, and local desktop-record diagnostics are available for feasibility testing. The product experience described below remains the target; live configuration switching, comparison runs, and recovery have not been implemented or verified. The target is macOS and Windows: Codex desktop first, followed by Claude Code desktop.
+> **Draft for the intended public release.** Codex inventory, isolated source-control fixtures, and local desktop-record diagnostics are available for feasibility testing. The product experience described below remains the target; live personal-configuration switching, comparison runs, and production recovery have not been implemented or verified. The target is macOS and Windows: Codex desktop first, followed by Claude Code desktop.
 
 **Free, with no required paid API or hosted backend.** Unharness is designed to run locally with no recurring operator service expense. Your existing AI subscription and usage are separate. Artwork, including three-candidate original forms, and card export have a local route without model calls. See [feasibility and limitations](docs/feasibility.md).
 
@@ -27,6 +27,8 @@ node bin/unharness.mjs probe-controls --output local-evidence/source-controls.js
 `probe-controls` creates and removes its own temporary AGENTS/Skill fixture and inspects Codex's rendered input under six conditions. It does not edit personal configuration or start a model turn. Its results verify the fixture's source behavior, not desktop mode application. See [source-control checks and Windows instructions](docs/source-controls.md).
 
 `inspect-desktop --current` reads the selected desktop task's local recording and reports source/usage availability without source text or token totals. `desktop-fixture create` prepares a synthetic project for manually started fresh-task checks, with fixture-only restore/recovery. These commands do not apply a mode or establish desktop support. See [desktop observation and recovery steps](docs/desktop-observation.md). Fresh Mac fixture trials observed source changes and restoration, with a stale-catalog limitation. `desktop-fixture refresh` offers an owned-file notification for diagnosis; it still requires a following task observation.
+
+`loadouts` adds registered fixture settings, immutable favorite versions, pre-change checkpoints, guarded restore and version-bound recording associations. The shared local service is implemented; real personal-source control and GUI/MCP endpoints remain future work. See [the loadout commands](docs/loadouts.md).
 
 ## Make “what if I removed this?” easy to try
 

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-fixture-loadout-smoke",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "nodeVersion": "24.20.0",
+  "registeredSources": 4,
+  "baselineVersionRetained": true,
+  "refreshReusedVersion": true,
+  "changedSettingsCreateNewVersion": true,
+  "sameNameKeepsFamily": true,
+  "baselineRestoreReadback": "matched",
+  "preChangeCheckpointRestored": true,
+  "independentEditPreserved": true,
+  "conflictKind": "fixture-conflict",
+  "finalCase": "baseline",
+  "finalFixtureIntact": true,
+  "desktopTaskAssociated": false,
+  "runtimeStateVerified": false,
+  "modeSwitchingVerified": false,
+  "verification": {
+    "syntheticTestsPassed": 121,
+    "syntheticTestsFailed": 0,
+    "scope": "generated-fixture-only",
+    "nativeWindows": "unverified"
+  }
+}

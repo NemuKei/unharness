@@ -1,6 +1,6 @@
 # Architecture boundaries
 
-This page separates the code present on 2026-09-06 from the intended product architecture. The working runtime contains Node.js 24+ inventory, source-control fixtures, and desktop-record observation using ES modules and the standard library. The full GUI/MCP/control/storage implementation and their framework/storage choices remain future work.
+This page separates the code present on 2026-09-06 from the intended product architecture. The working runtime contains Node.js 24+ inventory, source-control fixtures, and desktop-record observation using ES modules and the standard library. A separate local record store and fixture-loadout service are now present. GUI/MCP endpoints and real-source control/storage migration remain future work.
 
 ## Current runnable architecture
 
@@ -33,7 +33,7 @@ The four data queries are `config/read`, `skills/list`, `hooks/list`, and `confi
 
 The `probe-controls` path runs through [source-controls.mjs](../src/codex/source-controls.mjs), which owns a temporary fixture and the six-case sequence, and [prompt-input.mjs](../src/codex/prompt-input.mjs), which runs the bounded CLI debug command and projects recognized text into five marker booleans. It reuses the existing version-command and owned-process cleanup behavior. It does not extend the inventory RPC allowlist or retain raw prompt text. Its interpretation and failure boundaries are in [the control-probe contract](spec-source-controls.md).
 
-Both diagnostics are separate from the desktop app's active session. They retain `desktopSessionAttached: false`, `runtimeStateVerified: false`, and `modeSwitchingVerified: false`; inventory coverage is `"unknown"`, and the control probe covers only its owned fixture. Current persistence is an optional JSON report, not a favorites database or a comparison store. macOS has real standalone observations; Windows evidence is pending.
+Both diagnostics are separate from the desktop app's active session. They retain `desktopSessionAttached: false`, `runtimeStateVerified: false`, and `modeSwitchingVerified: false`; inventory coverage is `"unknown"`, and the control probe covers only its owned fixture. Those two diagnostics persist optional JSON reports; they do not use the separate loadout store described below. macOS has real standalone observations; Windows evidence is pending.
 
 ## Desktop observation slice
 
@@ -46,6 +46,16 @@ Both diagnostics are separate from the desktop app's active session. They retain
 The [runbook](desktop-observation.md) defines manual startup, evidence interpretation and the deliberately limited recovery scope. Corrupt/partial journals, missing lock ownership, power loss and adversarial filesystem races are not covered as automatic recovery. This fixture mechanism is not yet the shared favorite/configuration transaction engine. Mac has actual fixture loading and refresh observations; Windows still requires fresh-task evidence.
 
 The fixture-only `refresh` operation journals a same-case notification before touching the owned Skill timestamp. It preserves content identity and advances the preparation boundary; it is not a Codex reload API. The observer records known creation routes and rejects known forks as fresh candidates, and recognizes only known text fields in ordinary/custom tool outputs. The [Mac sequence](evidence/2026-09-06-desktop-fixture-macos.md) shows why a new task alone must not be treated as proof of a refreshed Skill catalog.
+
+## Registered loadout core
+
+[local-store.mjs](../src/core/local-store.mjs) owns canonical JSON, content IDs, private fresh stores, exclusive staged publication and corruption checks. It has no Codex dependency. Scope, favorite, checkpoint, application and observation are distinct immutable record types. A favorite's stable configuration omits live preparation; checkpoints and application receipts retain it. Family identity groups versions without a mutable latest pointer.
+
+[fixture-loadout.mjs](../src/codex/fixture-loadout.mjs) captures the four known generated sources, validates their fixed/optional roles and generation, and passes captured current-state and exact desired-file guards into the existing fixture writer's lock. Other application adapters cannot be inferred from this fixture adapter.
+
+[service.mjs](../src/loadouts/service.mjs) registers scope, saves/lists versions, plans/restores configurations, publishes pre-change checkpoints/application receipts and associates a sanitized recording with an explicit version. An application receipt records a new task-time boundary even when restoring the current case without a source rewrite. The observer checks that boundary as well as fixture preparation and rejects stale application state. Matching fixture markers never promote full runtime/mode verification.
+
+[The CLI](../src/loadouts/cli.mjs) calls that service directly. Future web/AI endpoints can use the same operations; neither endpoint is implemented yet. The [contract](spec-loadout-store.md) and [runbook](loadouts.md) define the current scope, raw-data boundary, explicit versions and recovery sequence. The store does not implement cross-machine migration, an exactly-once protocol or general personal-configuration recovery.
 
 ## Intended product architecture
 
@@ -84,7 +94,7 @@ flowchart TB
 
 The Unharness-owned control, storage, artwork, and export layers run on the user's computer. Free use with no recurring operator service expense is a product constraint: no paid API, hosted runtime, or free-tier cloud quota is required for the base design. Existing Codex/Claude Code model execution and optional AI authoring/judging use the user's separately chosen AI environment and its allowance. Optional AI judging has a contract but no selected execution implementation. The default three-candidate artwork route is local composition/drawing.
 
-GUI framework, persistent storage technology, and the exact desktop application/reflection mechanism are still undecided. A database symbol above means the storage responsibility; it does not imply SQLite or another database has been selected.
+The fixture core uses local content-addressed JSON records. GUI framework, production storage migration and the full desktop application/reflection mechanism remain undecided. The database symbol above represents the broader storage responsibility, not a selected database service.
 
 ## Shared local core
 
