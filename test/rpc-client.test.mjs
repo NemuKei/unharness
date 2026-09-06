@@ -46,6 +46,32 @@ test('handles fragmented responses and rejects server requests without servicing
   await client.close();
 });
 
+test('ignores sensitive unsolicited notifications before and between valid responses', async (t) => {
+  const client = clientFor('unsolicited-notifications');
+  t.after(() => client.close());
+
+  const initialization = await client.request('initialize', {});
+  client.initialized();
+  const config = await client.request('config/read', {});
+  const skills = await client.request('skills/list', {});
+
+  const observed = {
+    initialization,
+    config,
+    skills,
+    rejectedServerRequestCount: client.rejectedServerRequestCount,
+  };
+  assert.deepEqual(observed, {
+    initialization: { ready: true },
+    config: { config: {}, origins: {}, layers: [] },
+    skills: { data: [{ skills: [], errors: [] }] },
+    rejectedServerRequestCount: 0,
+  });
+  const serialized = JSON.stringify(observed);
+  assert.equal(serialized.includes('NOTIFICATION_SECRET_MARKER'), false);
+  assert.equal(serialized.includes('server/secret-event'), false);
+});
+
 test('allows the initialized notification only once and only after initialize succeeds', async (t) => {
   const client = clientFor('all-ok');
   t.after(() => client.close());

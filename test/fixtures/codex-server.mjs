@@ -49,6 +49,19 @@ function send(value, fragmented = false) {
   setTimeout(() => process.stdout.write(line.slice(middle)), 5);
 }
 
+function sendSensitiveNotification(stage) {
+  send({
+    jsonrpc: '2.0',
+    method: 'server/secret-event',
+    params: {
+      stage,
+      message: 'NOTIFICATION_SECRET_MARKER',
+      nested: { path: '/private/NOTIFICATION_SECRET_MARKER' },
+      unknownField: 'NOTIFICATION_SECRET_MARKER',
+    },
+  });
+}
+
 function resultFor(method) {
   if (method === 'initialize') return { serverInfo: { name: 'SECRET_MARKER' } };
   if (method === 'config/read') {
@@ -136,6 +149,24 @@ function handleRequest(message) {
   if (scenario === 'rpc-error') {
     send({ jsonrpc: '2.0', id: message.id, error: { code: -32001, message: 'SECRET_MARKER', data: '/private/SECRET_MARKER' } });
     return;
+  }
+  if (scenario === 'unsolicited-notifications') {
+    if (message.method === 'initialize') {
+      initialized = true;
+      sendSensitiveNotification('before-initialize-response');
+      send({ jsonrpc: '2.0', id: message.id, result: { ready: true } });
+      return;
+    }
+    if (!initialized || !clientInitialized) process.exit(66);
+    if (message.method === 'config/read') {
+      send({ jsonrpc: '2.0', id: message.id, result: { config: {}, origins: {}, layers: [] } });
+      sendSensitiveNotification('between-valid-responses');
+      return;
+    }
+    if (message.method === 'skills/list') {
+      send({ jsonrpc: '2.0', id: message.id, result: { data: [{ skills: [], errors: [] }] } });
+      return;
+    }
   }
   if (scenario.endsWith('partial') && message.method === 'skills/list') {
     send({ jsonrpc: '2.0', id: message.id, error: { code: -32002, message: 'SECRET_MARKER', data: 'SECRET_MARKER' } });
