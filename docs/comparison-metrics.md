@@ -70,6 +70,8 @@ Use a Comparison tab in the same hangar GUI. Show the three loadout states toget
 
 The maintainer also wants helpful harnesses to be expressible as supportive or resonating equipment. Derive such an optional visual assessment from the stated comparison and user priorities, retaining a neutral appearance for unmeasured or inconclusive setups. It is presentation metadata, not evidence on its own and not a configuration change.
 
+A qualifying result can unlock an optional original-appearance creation action. Its [eligibility rule](personalization.md#original-creation-unlocked-by-comparison-evidence) must be fixed before inspecting candidate results and reference the exact comparison/loadout versions. Required quality, sufficient observations for the chosen rule, and coverage of the claimed benefit determine eligibility; token reduction alone does not. Thresholds and repeat counts remain task-specific design work. The same gate applies to GUI and AI requests, and generation usage remains separate from benchmark usage.
+
 ## Delivery order
 
 1. Preserve per-run comparison conditions and human notes in the comparison record.

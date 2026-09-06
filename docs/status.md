@@ -14,6 +14,8 @@ Updated: 2026-09-06.
 - The visual metaphor can also express useful harnesses as supportive/resonating equipment, with neutral treatment before sufficient evaluation. This remains presentation design, not another configuration mode.
 - Selected visuals: pixel-art machine hangar, progressive exposure of the inner AI, and a divine luminous reveal.
 - The maintainer supports personal quests → equipment comparisons → build cards. For original appearances, they prefer random discovery: prepared patterns with probabilistic local selection by default, with user-side creation optional. The [appearance and memory proposal](personalization.md) covers sprite assembly, code-drawn pixels, optional image generation, and work-memory uses; these remain unimplemented with detailed release scope open.
+- Optional original creation should unlock only when declared performance conditions have enough comparison evidence. The GUI and AI entry points share the same rule; creation remains voluntary, and saved artwork retains its historical evidence. Exact task-specific thresholds and the implementation remain open.
+- The remake policy is undecided: one-shot, bounded retries, or multiple candidates were raised; three candidates followed by one final choice is the current recommendation. [Build-card export and X sharing](build-cards.md) are proposed, initially with a saved PNG and editable post-composer handoff rather than automatic image attachment or publishing.
 - Initial README drafts, specification, architecture boundaries, compatibility criteria, and handoff plan are present.
 
 ## Current implementation

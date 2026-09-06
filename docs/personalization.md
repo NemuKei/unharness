@@ -8,6 +8,8 @@ An entity appears, the user discovers what is inside its equipment, and they can
 
 The initial art direction remains pixel art, a machine hangar, a non-human luminous entity, and a dramatic divine reveal. Variation within this world comes from prepared forms, palettes, equipment, and effects. A build card can combine the discovered appearance with the exact configuration and recorded comparison evidence.
 
+The maintainer additionally proposed unlocking original creation only when performance-based appearance-change conditions are met. Ordinary use retains the prepared/randomized appearance. A qualifying comparison makes a voluntary “Create this loadout's original form” action available; it never starts generation automatically.
+
 ## Default: prepared art and probabilistic assembly
 
 Start with a small set of complete, reviewed entities and compatible variations. Each entity has a common anchor, pixel grid, palette roles, equipment attachment points, and the required release states. A local selector can choose a full set or assemble compatible body, shell, halo, and palette parts using weighted probabilities. Build a coherent library first; independent random pixels are not a substitute for art direction.
@@ -28,15 +30,51 @@ This default runs locally without a model call or image-generation service. OS, 
 
 Claude Code can author pixel data, a component recipe, or drawing code in its coding environment. A conventional renderer produces the pixels; no image model is needed for that path. A code-produced result still needs visual review, particularly for recognizable silhouettes and consistent animation. The optional skill should therefore describe a creation contract with multiple routes, not require a raster-generation provider for every user.
 
+## Original creation unlocked by comparison evidence
+
+The proposed flow is: compare loadouts → meet a declared performance condition → reveal the creation action → create and preview a candidate → keep the appearance with its evidence references. The visual can evolve the existing entity and its equipment, preserving its recognizable identity and random creative variation without taste profiling. Working labels such as “この装備の姿を作る” or “オリジナル形態を生成” are provisional.
+
+Eligibility belongs to the exact loadout version and comparison conditions. Normal, UNSEAL, TRUEFORM, and custom favorites can all qualify. Define the condition before evaluating results, using the [measurement contract](comparison-metrics.md):
+
+- The candidate meets the task's required quality conditions.
+- Comparable runs meet the predeclared observation/repetition requirements, and the fields needed for the claimed benefit are available. Missing or inconclusive evidence remains ineligible rather than becoming a win.
+- The candidate meets a task-specific improvement rule, for example maintaining the required quality while reducing tokens per accepted task, or improving quality within the stated resource budget. Lower token use on failed work cannot qualify as an efficiency improvement.
+
+Exact thresholds and repeat counts remain to be designed for the task types; do not invent a universal strength score or imply that unlocking art proves general model superiority. An eligibility record references the loadout, baseline, task/scorecard/rule versions, app/model conditions, and supporting run IDs. The UI explains the achieved condition beside the action. Before eligibility it can show a quiet progress/reason line; it does not offer the active original-creation button.
+
+The shared local core checks the same eligibility when called by the GUI, CLI, or AI connection. An AI request to create an original form receives the same status and reason as the GUI. Recheck eligibility at invocation; creating from a changed configuration requires an applicable new result. This gate concerns bespoke creation, not selecting or rerolling prepared appearances.
+
+Keep capability separate from achievement. After eligibility, offer the creation routes actually available in the user's environment, including a recipe/pixel-code route where supported. If no route is available, retain the achievement and explain how creation can become available. A click or explicit AI request starts creation; completing another comparison or enabling effects never does. A pending/failed job retains the previous appearance, and a repeat click must not start duplicate work.
+
+Save generated artwork as a visual record associated with the exact tested configuration and its historical evidence. Later model/configuration changes do not erase that artwork or its history. They do require fresh evidence for a new performance claim or a new original creation under those changed conditions. Users may retain the appearance as a cosmetic while the interface distinguishes past achievement from current unverified performance. A benchmark correction can invalidate the evidence without deleting the art.
+
+## Choosing a form and limiting remakes
+
+The maintainer raised three alternatives: one irreversible draw, a limited number of remakes, or several candidates followed by one choice. The remake policy and candidate count are not finalized. The recommended initial design is a single set of three candidates for one qualifying achievement, with one adopted form:
+
+| Policy | Experience | Tradeoff |
+| --- | --- | --- |
+| One candidate, no remake | Strong surprise and commitment | A disliked result has no creative alternative |
+| A bounded number of remakes | The user can seek a more satisfying result | More generation cost and emphasis on rerolling |
+| Three candidates, choose one | A finite discovery with a meaningful choice | Producing several valid candidates has a larger initial budget |
+
+In the recommended design, preserve a candidate set across app restarts and resume partial completion rather than drawing a fresh set. Preview the candidates' required states, let the user defer the decision, then clearly indicate that adoption finalizes this achievement's selection. Candidate variety comes from random creative choices around the same recognizable entity, not inferred personal taste. No deadline or automatic selection is needed.
+
+Technical failures and broken output may be retried or repaired without consuming a creative choice, using bounded retries and recording actual generation usage. Keep already valid candidates; technical repair should preserve their intended design. A technically valid but disliked result is a creative choice, not a transport failure. The candidate set has a declared output budget, and no call is made merely because a new result or eligibility notification arrived.
+
+Once adopted, this achievement does not offer another creative draw or candidate switch under the recommended policy. A later, distinct qualifying achievement may create another form while retaining the earlier form and its evidence. Replaying the same result, renaming a favorite, or refreshing the UI does not create a new entitlement; the core owns achievement identity, creation state, and final selection across GUI and AI requests. This is a local product interaction rule, not a claim of unforgeable scarcity in an OSS application.
+
+The adopted form leads into [build-card export and optional X sharing](build-cards.md). Neither posting nor connecting an X account is required to keep or use the form.
+
 ## Optional creation skill
 
 Ship a focused, user-facing creation skill alongside Unharness's AI connection when that workflow is implemented. This is a product capability, not a copy of the maintainer's development skills. It does not grant tools, credentials, or memory access.
 
-1. The user asks their AI to create or revise an entity, or opens the corresponding GUI action.
+1. The user selects the unlocked original-creation action or explicitly requests it through their AI. The shared core verifies eligibility and the active candidate/remake policy before dispatch. Existing jobs and candidate slots are resumed; finalized achievements do not silently start a new draw.
 2. The AI uses an explicit brief or random creative choices and checks available tools. It does not automatically consult personal memories to guess taste. An explicit request to use specified preferences can opt into that separately.
 3. It produces a validated recipe/pixel-data asset using the supported local renderer, or calls an available image tool and returns image assets. Standalone drawing code can be an authoring aid; imported appearances do not execute arbitrary generated scripts in the product.
-4. Unharness checks the recipe schema or image format, dimensions, size, and expected states, and shows a preview before replacement. A failed or canceled creation retains the previous appearance.
-5. Save the chosen asset set, recipe/brief, and versions. Reuse them for animation and build-card export.
+4. Unharness checks the recipe schema or image format, dimensions, size, and expected states, and shows the allowed candidate previews before replacement. A failed or canceled creation retains the previous appearance and any completed candidate slots.
+5. Save the chosen asset set, recipe/brief, versions, and final selection. Reuse them for animation and build-card export, applying the chosen remake policy to any later request.
 
 Keep the same reference identity across states. Start with consistent state portraits and application-rendered effects; add separately layered sprites or frame sequences as their import becomes reliable. Status text, measured numbers, and proportional charts are always application-rendered. Raw conversations, work documents, and full memory stores are not creative inputs by default.
 
@@ -68,7 +106,7 @@ For each comparison, record whether memory is fixed across candidates, omitted, 
 
 Freeze task criteria and relevant memory inputs during the comparison. Avoid allowing the first trial's answers or ratings to enter a later trial through background memory updates. A fresh task alone does not prove memory isolation. Generation and optional judging usage belong to separate overhead records, not the candidate's task-token total.
 
-The appearance skill is invoked only for setup/redesign, outside benchmark execution. In Codex, explicit-only invocation is available, but it does not by itself prove a skill is absent from discovery or already loaded context. Benchmark isolation must cover the selected source and fresh-task boundary. TRUEFORM must not regain disabled memories through a personalization helper. The minimal recovery/control connection remains separate from the optional appearance workflow.
+The appearance skill is invoked only for a requested, eligible creation/revision, outside benchmark execution. In Codex, explicit-only invocation is available, but it does not by itself prove a skill is absent from discovery or already loaded context. Benchmark isolation must cover the selected source and fresh-task boundary. TRUEFORM must not regain disabled memories through a personalization helper. The minimal recovery/control connection remains separate from the optional appearance workflow.
 
 ## App capabilities and evidence
 
@@ -82,4 +120,4 @@ These are documented capabilities and design boundaries, not completed integrati
 
 ## Delivery boundary
 
-Build the default around prepared artwork, weighted local selection, persisted identity, and mode-aware animation. Add procedural variety and optional AI creation as supported asset paths mature. Keep work-memory features focused on quest/scorecard suggestions and evidence-backed favorite recommendations. The detailed release scope remains open; no appearance runtime, global skill installation, memory import, provider setup, or image generation was added for this design proposal.
+Build the default around prepared artwork, weighted local selection, persisted identity, and mode-aware animation. Add procedural variety as supported asset paths mature, and unlock optional original creation once the comparison evidence and eligibility mechanism exist. Keep work-memory features focused on quest/scorecard suggestions and evidence-backed favorite recommendations. The detailed release scope remains open; no appearance runtime, global skill installation, memory import, provider setup, or image generation was added for this design proposal.

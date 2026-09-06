@@ -82,6 +82,10 @@ The core publishes operation events. An open UI reflects them and can animate th
 
 The proposed [appearance workflow](personalization.md) uses prepared art packs and weighted local selection by default. A renderer receives the saved recipe and observed mode/operation state. The user's AI can optionally author pixel data or a component recipe, or use an available image tool, then return assets for validated import. The core owns appearance identities, resolved recipes, art-pack versions, and assets; work-memory profiles and experiment evidence are separate. Default appearance selection does not read personal memory, and optional creation does not run inside candidate benchmark tasks. These paths are not present in the current diagnostic.
 
+Original creation becomes available only when the [comparison eligibility rule](personalization.md#original-creation-unlocked-by-comparison-evidence) is satisfied for the referenced loadout version. The core checks eligibility for every entry point before dispatch and tracks creation jobs; the GUI displays that decision rather than implementing a separate unlock rule. An eligible result never starts generation without a user request.
+
+The same core owns the eventual remake policy, candidate slots, and adopted selection so retries, reloads, and AI requests cannot accidentally duplicate a draw. A separate [build-card export](build-cards.md) projects selected public fields from an appearance and its evidence. Opening an external X composer is a user action after export, not part of saving a favorite or proof that a post was published.
+
 ## Application integration boundary
 
 Codex and Claude Code each have an adapter responsible for:
