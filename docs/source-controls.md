@@ -1,6 +1,6 @@
 # Fixture source-control diagnostic
 
-Unharness provides two independent read-only diagnostics:
+Unharness provides two diagnostics that leave personal configuration unchanged:
 
 ```text
 node bin/unharness.mjs inspect --cwd <directory>
@@ -45,7 +45,9 @@ The report is fixture-only evidence from `codex debug prompt-input`. It does not
 Windows requires the same synthetic command with a native executable, for example:
 
 ```text
-node bin/unharness.mjs probe-controls --codex "C:\\Program Files\\Codex\\codex.exe" --output local-evidence/source-controls-windows.json
+node bin/unharness.mjs probe-controls --codex "C:\Program Files\Codex\codex.exe" --output local-evidence/source-controls-windows.json
 ```
+
+This executable path is illustrative; replace it with the installed native Codex executable path on the Windows machine.
 
 `.cmd` and `.bat` wrappers are rejected because subprocess arguments must remain structured with no shell. Windows support remains unverified until this command is run on Windows and the sanitized report and configuration before/after checks are reviewed there.
