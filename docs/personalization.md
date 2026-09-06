@@ -1,6 +1,6 @@
 # Random appearances and useful memory
 
-Design proposal updated on 2026-09-06. The maintainer prefers a sense of discovering a random original entity, and suggested prepared patterns selected probabilistically by default, with generation in the user's environment as an option. The default must actually use random selection, rather than disguise preference profiling as randomness. The appearance system, optional creation skill, and memory bridge are not implemented. This does not change the Codex-first, macOS-and-Windows delivery order.
+Agreed direction updated on 2026-09-06. The maintainer approved random discovery, performance-gated original creation, three candidates followed by one final choice, and optional build-card/X sharing. Unharness must be free with no recurring operator service expense; the user's own AI costs are separate. Prepared patterns and procedural drawing support the whole appearance flow locally, with AI-assisted authoring optional. The default must actually use random selection, rather than disguise preference profiling as randomness. The appearance system, optional creation skill, and memory bridge are not implemented. This does not change the Codex-first, macOS-and-Windows delivery order.
 
 ## Experience
 
@@ -8,7 +8,7 @@ An entity appears, the user discovers what is inside its equipment, and they can
 
 The initial art direction remains pixel art, a machine hangar, a non-human luminous entity, and a dramatic divine reveal. Variation within this world comes from prepared forms, palettes, equipment, and effects. A build card can combine the discovered appearance with the exact configuration and recorded comparison evidence.
 
-The maintainer additionally proposed unlocking original creation only when performance-based appearance-change conditions are met. Ordinary use retains the prepared/randomized appearance. A qualifying comparison makes a voluntary “Create this loadout's original form” action available; it never starts generation automatically.
+Original creation unlocks only when performance-based appearance-change conditions are met. Ordinary use retains the prepared/randomized appearance. A qualifying comparison makes a voluntary “Create this loadout's original form” action available; it never starts generation automatically.
 
 ## Default: prepared art and probabilistic assembly
 
@@ -34,6 +34,8 @@ Claude Code can author pixel data, a component recipe, or drawing code in its co
 
 The proposed flow is: compare loadouts → meet a declared performance condition → reveal the creation action → create and preview a candidate → keep the appearance with its evidence references. The visual can evolve the existing entity and its equipment, preserving its recognizable identity and random creative variation without taste profiling. Working labels such as “この装備の姿を作る” or “オリジナル形態を生成” are provisional.
 
+The standard three-candidate route uses local composition/drawing rules and a saved seed. It must not require an AI call, new provider account, or image-generation charge. More elaborate authoring through the user's existing AI is optional and uses that user's own allowance. An original form means a locally created variant in this art system; it is not a promise of unlimited art variety or global uniqueness.
+
 Eligibility belongs to the exact loadout version and comparison conditions. Normal, UNSEAL, TRUEFORM, and custom favorites can all qualify. Define the condition before evaluating results, using the [measurement contract](comparison-metrics.md):
 
 - The candidate meets the task's required quality conditions.
@@ -50,19 +52,11 @@ Save generated artwork as a visual record associated with the exact tested confi
 
 ## Choosing a form and limiting remakes
 
-The maintainer raised three alternatives: one irreversible draw, a limited number of remakes, or several candidates followed by one choice. The remake policy and candidate count are not finalized. The recommended initial design is a single set of three candidates for one qualifying achievement, with one adopted form:
-
-| Policy | Experience | Tradeoff |
-| --- | --- | --- |
-| One candidate, no remake | Strong surprise and commitment | A disliked result has no creative alternative |
-| A bounded number of remakes | The user can seek a more satisfying result | More generation cost and emphasis on rerolling |
-| Three candidates, choose one | A finite discovery with a meaningful choice | Producing several valid candidates has a larger initial budget |
-
-In the recommended design, preserve a candidate set across app restarts and resume partial completion rather than drawing a fresh set. Preview the candidates' required states, let the user defer the decision, then clearly indicate that adoption finalizes this achievement's selection. Candidate variety comes from random creative choices around the same recognizable entity, not inferred personal taste. No deadline or automatic selection is needed.
+The adopted rule is a single set of three candidates for one qualifying achievement, with one final adopted form. Preserve a candidate set across app restarts and resume partial completion rather than drawing a fresh set. Preview the candidates' required states, let the user defer the decision, then clearly indicate that adoption finalizes this achievement's selection. Candidate variety comes from random creative choices around the same recognizable entity, not inferred personal taste. No deadline or automatic selection is needed.
 
 Technical failures and broken output may be retried or repaired without consuming a creative choice, using bounded retries and recording actual generation usage. Keep already valid candidates; technical repair should preserve their intended design. A technically valid but disliked result is a creative choice, not a transport failure. The candidate set has a declared output budget, and no call is made merely because a new result or eligibility notification arrived.
 
-Once adopted, this achievement does not offer another creative draw or candidate switch under the recommended policy. A later, distinct qualifying achievement may create another form while retaining the earlier form and its evidence. Replaying the same result, renaming a favorite, or refreshing the UI does not create a new entitlement; the core owns achievement identity, creation state, and final selection across GUI and AI requests. This is a local product interaction rule, not a claim of unforgeable scarcity in an OSS application.
+Once adopted, this achievement does not offer another creative draw or candidate switch. A later, distinct qualifying achievement may create another form while retaining the earlier form and its evidence. Replaying the same result, renaming a favorite, or refreshing the UI does not create a new entitlement; the core owns achievement identity, creation state, and final selection across GUI and AI requests. This is a local product interaction rule, not a claim of unforgeable scarcity in an OSS application.
 
 The adopted form leads into [build-card export and optional X sharing](build-cards.md). Neither posting nor connecting an X account is required to keep or use the form.
 

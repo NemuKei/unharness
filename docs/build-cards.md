@@ -1,12 +1,12 @@
 # Build cards and X sharing
 
-Design proposal recorded on 2026-09-06. The maintainer suggested making it easy to post an adopted original form to X. Card rendering, candidate selection, and sharing are not implemented. This does not change the Codex-first delivery order or require an Unharness cloud service.
+Agreed direction recorded on 2026-09-06. The maintainer approved making it easy to post an adopted original form to X, with Unharness free to use and no recurring operator service expense. Card rendering, candidate selection, and sharing are not implemented. This does not change the Codex-first delivery order or require an Unharness cloud service.
 
 ## The flow to share
 
 Complete a comparable trial → meet an appearance-change condition → optionally create candidates → select and save one → preview a build card → save the image and open X's composer with editable text.
 
-The [appearance proposal](personalization.md#choosing-a-form-and-limiting-remakes) recommends three candidates followed by one adopted form; the remake rule remains a design decision. Creating or sharing art is optional. The user can save a card with prepared artwork too, but only a qualifying, evidence-backed result receives an achievement claim.
+The adopted [appearance rule](personalization.md#choosing-a-form-and-limiting-remakes) is three candidates followed by one final choice. Creating or sharing art is optional. The user can save a card with prepared artwork too, but only a qualifying, evidence-backed result receives an achievement claim.
 
 ## The card
 
@@ -33,6 +33,6 @@ Offer an export preview with actions to save the card image and open X's posting
 
 [X's Web Intent documentation](https://docs.x.com/x-for-websites/post-button/guides/web-intent) lists text, URL, hashtag, and related-account parameters; it provides no local-image attachment parameter. Therefore the basic intent handoff cannot preattach the exported PNG. [The Web Intents overview](https://docs.x.com/x-for-websites/web-intents/overview) describes this route without a separate developer app authorization, although the author still uses their X account to publish.
 
-The initial UX must say that the image is saved for attachment, not claim that an image-bearing post is already prepared inside X. Opening the composer is not evidence of a successful post; don't show “Posted” or invent a post URL from that action. A later integration can investigate media-aware sharing or an explicitly connected X API path, with separate capability, authentication, and real macOS/Windows validation. Do not promise automatic attachment on both operating systems before that work.
+The initial UX must say that the image is saved for attachment, not claim that an image-bearing post is already prepared inside X. Opening the composer is not evidence of a successful post; don't show “Posted” or invent a post URL from that action. A later integration may investigate media-aware OS/browser sharing only where it preserves the cost boundary and passes real macOS/Windows validation. A paid X API or hosted media service is not a dependency of the agreed flow. Do not promise automatic attachment on both operating systems before that work.
 
 Only an explicit share action opens X. Adopting an appearance, completing a benchmark, or asking an AI to save a favorite does not publish or silently open a posting flow. No real post, account connection, or public upload was performed while recording this proposal.

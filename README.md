@@ -10,6 +10,8 @@ Try different combinations of skills and instructions on your own work. Find wha
 
 > **Draft for the intended public release.** A read-only Codex inventory CLI is available for feasibility testing. The product experience described below remains the target; configuration switching, comparison runs, and recovery have not been implemented or verified. The target is macOS and Windows: Codex desktop first, followed by Claude Code desktop.
 
+**Free, with no required paid API or hosted backend.** Unharness is designed to run locally with no recurring operator service expense. Your existing AI subscription and usage are separate. Artwork, including three-candidate original forms, and card export have a local route without model calls. See [feasibility and limitations](docs/feasibility.md).
+
 ## Development probe
 
 With Node.js 24+ and a native Codex executable available, run the dependency-free diagnostic from this checkout:

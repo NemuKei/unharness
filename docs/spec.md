@@ -17,6 +17,14 @@ Save the current configuration → try a different mode in a fresh task → comp
 
 The useful outcome can be adopting the new combination, retaining the previous one, or learning that the comparison was inconclusive.
 
+## Cost boundary
+
+Unharness is free to use and requires no paid API, hosted backend, or recurring operator service expense. The maintainer explicitly excluded the user's existing AI subscription and usage from this requirement. Comparisons and optional AI-assisted authoring can use that separately chosen environment; do not describe those model calls as consuming no quota.
+
+The local web UI, deterministic configuration operations, local records, prepared/procedural artwork, three-candidate original forms, card rendering, and sharing preparation must work without an Unharness-funded model or server. Do not make a free-tier cloud quota, new paid provider account, or paid X integration a dependency of this base flow. User-owned optional AI authoring adds a creation route; the same feature must have a local route.
+
+The [feasibility boundaries](feasibility.md) identify what is established, what needs desktop verification, and which guarantees the product cannot make.
+
 ## Modes
 
 | Stable meaning | Display label | Managed behavior |
@@ -85,6 +93,8 @@ The local web interface and the AI connection use the same core. An AI request c
 Retain the chosen pixel-art hangar, progressively opening outer equipment, and the AI entity emerging in Zero. Use the divine reveal as a brief switching effect, then return to a readable idle view. Support effects off and reduced motion. Display preferences are separate from favorite content.
 
 Equipment is neutral before evaluation and can be represented as supportive/resonating when the recorded comparison shows that it fits the user's task and priorities. Keep this visual assessment distinct from the three mode policies and the underlying measured results.
+
+The adopted appearance flow is: qualifying comparison → voluntary original-creation action → three candidates → one final choice → local save → optional build-card/X handoff. Preserve the selected entity across modes and restarts. Technical retries do not consume a creative choice or replace valid candidates; after adoption, the same achievement does not allow another creative draw. A distinct later achievement can yield a new form while preserving the old one. See [appearance rules](personalization.md) and [sharing](build-cards.md). These are agreed product targets that depend on the comparison feature, not claims of implemented runtime behavior.
 
 ## Acceptance for each supported OS × app combination
 

@@ -6,12 +6,14 @@ Unharness makes it easy to take off, compare, and save AI harness configurations
 
 ## Product commitments
 
+- Unharness is free to use and must not require a paid API, hosted backend, or recurring operator service expense. The user's separately chosen AI subscription and usage are outside this cost boundary. Default artwork, three-candidate creation, storage, export, and sharing preparation run locally without model calls.
 - Target macOS and Windows from the start. Complete Codex desktop support on both first, then implement Claude Code desktop support on both. Claude Code handles its integration implementation and validation; Codex handles the final integration review and finish.
 - Keep the core experience together: save, Normal / Limited release / Zero, truthful state display, comparable fresh tasks, favorites, and recovery.
 - Product name: **Unharness**. Display labels: **限定解除 — UNSEAL** and **零式 — TRUEFORM**. Normal is the saved loadout.
 - Support both the local web interface and natural-language requests through an AI tool connection. Both entry points use the same deterministic operations.
 - Effects are optional display preferences. They never change a loadout or determine whether a switch succeeded.
 - A lighter harness is a comparison condition, not a promised performance improvement.
+- Original-form creation unlocks from qualifying comparison evidence and remains voluntary. Produce three candidates, let the user choose one, and finalize that achievement's choice. Technical retries preserve candidate identity; they do not grant creative rerolls.
 
 ## Boundaries that matter in every task
 

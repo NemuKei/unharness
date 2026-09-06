@@ -68,7 +68,7 @@ flowchart TB
   class CodexApp,ClaudeApp external
 ```
 
-The Unharness-owned control and storage layer is intended to run on the user's computer. Existing Codex/Claude Code model execution remains with those applications. No Unharness cloud service is currently part of the base design. Optional AI judging has a contract but no selected execution implementation.
+The Unharness-owned control, storage, artwork, and export layers run on the user's computer. Free use with no recurring operator service expense is a product constraint: no paid API, hosted runtime, or free-tier cloud quota is required for the base design. Existing Codex/Claude Code model execution and optional AI authoring/judging use the user's separately chosen AI environment and its allowance. Optional AI judging has a contract but no selected execution implementation. The default three-candidate artwork route is local composition/drawing.
 
 GUI framework, persistent storage technology, and the exact desktop application/reflection mechanism are still undecided. A database symbol above means the storage responsibility; it does not imply SQLite or another database has been selected.
 
