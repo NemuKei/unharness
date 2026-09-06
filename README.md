@@ -27,7 +27,7 @@ It reports sanitized configuration inventory from a separate Codex process. It d
 
 You have added skills, instructions, and workflows to help your AI work the way you want. Now you want to know which parts fit the model and the work in front of you.
 
-Save your current setup, take some of it off, and try the same task again. Add back what helps. When a combination feels right, keep it as a favorite. You can also keep your original setup when the comparison gives you no reason to change it.
+Save your current setup, choose one mode, and use it on your work. Review the recorded outcome and add back what helps. When a combination feels right, keep it as a favorite. If you want a closer comparison, later replay a selected task under another mode from the same starting conditions. You can keep your original setup when the evidence gives you no reason to change it.
 
 A model update, a new skill, a different project, or a task that feels over-constrained can all be reasons to try another setup.
 
@@ -37,11 +37,13 @@ Here, a **harness** means the surrounding skills, persistent instructions, and a
 
 1. **Save what you have.** Ask “Add my current setup to favorites,” or use the star button.
 2. **Try another mode.** Keep the full loadout, make selected skills manual-only, or strip back the managed extras with Zero mode.
-3. **Start fresh.** Run the same request in a new task from the same starting files, with the comparison conditions recorded.
-4. **Compare your actual work.** Review the outputs, changes, time, available usage data, and your own notes.
+3. **Start fresh.** Use your selected mode in a new task and record its request and starting conditions.
+4. **Review your actual work.** Inspect the output, changes, time, available usage data, and your notes alongside saved results.
 5. **Keep what fits.** Adjust the combination, save it as a favorite, and use it again. Reload your earlier setup when you want it back.
 
 The useful result is a choice you can explain for your work. Fewer instructions may help, make no difference, or remove something valuable.
+
+The initial experience runs one selected mode at a time; it does not automatically send your instruction to all three modes. A later matched replay is optional. Different everyday tasks provide observations, not by themselves proof that a mode improved or worsened performance.
 
 Numerical comparisons should show the tokens and attempts needed to reach task-defined quality, alongside your preference. Functional checks and explicit scorecards provide different kinds of evidence. See [the measurement contract](docs/comparison-metrics.md); live usage collection and grading are planned work.
 
@@ -79,6 +81,8 @@ The visual direction uses a pixel-art machine hangar: the outer equipment opens,
 *Static design concept. Animation and working controls are not implemented yet.*
 
 Equipment can also be shown as supportive armor or a resonating frame when a comparison shows it fits the work. Unmeasured setups remain neutral, and the illustration stays separate from the measured result.
+
+Original forms selected from the three-candidate creation flow stay in a reusable appearance collection. Current evidence constrains their active treatment: confirmed adverse performance allows BAD variants, while unknown evidence stays neutral. Previously acquired forms remain owned; choosing a look does not change the actual harness configuration. These collection and assessment features are planned, not implemented.
 
 Effects can be turned off without changing the loadout. The state remains readable, and animation settings stay separate from saved harness configurations.
 

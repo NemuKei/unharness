@@ -16,6 +16,8 @@ Start with a read-only probe of desktop configuration sources, supported control
 
 Then implement the smallest complete save → switch → fresh comparison → favorite → restore loop, including UNSEAL and TRUEFORM. Build macOS and Windows handling into the filesystem and process boundary from the start. Verify the web and AI entry points and effects off against the same core outcomes.
 
+The initial loop selects one mode and runs one task, then reviews saved observations. An explicitly requested later replay can compare the same starting conditions sequentially. Concurrent multi-mode dispatch is not a prerequisite for the Codex baseline.
+
 Codex is ready to hand off only after the Phase 1 acceptance criteria in [the specification](spec.md) pass on both OSes and the tested revision, evidence, known limitations, and relevant data contracts are recorded. If a required desktop control is unavailable, revisit the integration approach instead of renaming a partial result as completed Zero support.
 
 ## What Claude Code receives

@@ -14,7 +14,7 @@ Original creation unlocks only when performance-based appearance-change conditio
 
 Start with a small set of complete, reviewed entities and compatible variations. Each entity has a common anchor, pixel grid, palette roles, equipment attachment points, and the required release states. A local selector can choose a full set or assemble compatible body, shell, halo, and palette parts using weighted probabilities. Build a coherent library first; independent random pixels are not a substitute for art direction.
 
-Sample an appearance on first creation or an explicit request for another one, then retain it. Reloading the app, switching modes, or changing models does not reroll the entity. The user can keep an appearance and optionally associate it with favorites/cards independently of configuration identity. A visual collection or additional reroll UX can be explored without making repeated generation a condition of using the product.
+Sample an appearance on first creation or an explicit request for another one, then retain it. Reloading the app, switching modes, or changing models does not reroll the entity. The user can keep an appearance and optionally associate it with favorites/cards independently of configuration identity. Adopted original forms enter the reusable collection described below; reuse does not require generating them again.
 
 Draw the seed locally, independently of personal memory, usernames, work content, and hidden preference inferences. Keep the seed, selection/renderer version, art-pack version, and resolved part IDs/parameters; a seed alone is insufficient after the library or algorithm changes. Preserve the selected assets when exact later reproduction requires them. Probability weights and compatibility rules belong to versioned content. Neither uncommon appearances nor random effects imply better measured performance.
 
@@ -48,7 +48,7 @@ The shared local core checks the same eligibility when called by the GUI, CLI, o
 
 Keep capability separate from achievement. After eligibility, offer the creation routes actually available in the user's environment, including a recipe/pixel-code route where supported. If no route is available, retain the achievement and explain how creation can become available. A click or explicit AI request starts creation; completing another comparison or enabling effects never does. A pending/failed job retains the previous appearance, and a repeat click must not start duplicate work.
 
-Save generated artwork as a visual record associated with the exact tested configuration and its historical evidence. Later model/configuration changes do not erase that artwork or its history. They do require fresh evidence for a new performance claim or a new original creation under those changed conditions. Users may retain the appearance as a cosmetic while the interface distinguishes past achievement from current unverified performance. A benchmark correction can invalidate the evidence without deleting the art.
+Save generated artwork as a visual record associated with the exact tested configuration and its historical evidence. Later model/configuration changes do not erase that artwork or its history. They do require fresh evidence for a new performance claim or a new original creation under those changed conditions. Reuse obeys the current presentation-state filter below; ownership alone does not authorize a GOOD image during a confirmed BAD state. A benchmark correction can invalidate the evidence without deleting the art.
 
 ## Choosing a form and limiting remakes
 
@@ -56,9 +56,29 @@ The adopted rule is a single set of three candidates for one qualifying achievem
 
 Technical failures and broken output may be retried or repaired without consuming a creative choice, using bounded retries and recording actual generation usage. Keep already valid candidates; technical repair should preserve their intended design. A technically valid but disliked result is a creative choice, not a transport failure. The candidate set has a declared output budget, and no call is made merely because a new result or eligibility notification arrived.
 
-Once adopted, this achievement does not offer another creative draw or candidate switch. A later, distinct qualifying achievement may create another form while retaining the earlier form and its evidence. Replaying the same result, renaming a favorite, or refreshing the UI does not create a new entitlement; the core owns achievement identity, creation state, and final selection across GUI and AI requests. This is a local product interaction rule, not a claim of unforgeable scarcity in an OSS application.
+Once adopted, this achievement does not offer another creative draw or switch to an unselected candidate from that set. A later, distinct qualifying achievement may create another form while retaining the earlier form and its evidence. Selecting a different form already in the collection is allowed and does not reopen an earlier candidate set. Replaying the same result, renaming a favorite, or refreshing the UI does not create a new entitlement; the core owns achievement identity, creation state, and final selection across GUI and AI requests. This is a local product interaction rule, not a claim of unforgeable scarcity in an OSS application.
 
 The adopted form leads into [build-card export and optional X sharing](build-cards.md). Neither posting nor connecting an X account is required to keep or use the form.
+
+## Collection ownership and current presentation
+
+The maintainer wants acquired original equipment to remain in a collection and be reusable, with the currently selectable images constrained by performance. The example was UNSEAL: when applicable evidence shows worse performance, only BAD images can be equipped for that state.
+
+Keep three responsibilities distinct: the selected harness mode/configuration, the owned visual item, and the assessment that determines its allowed presentation. Selecting an appearance does not load the harness favorite that originally earned it. A collected item can be reused with compatible modes and presentation states while retaining its acquisition history.
+
+| Applicable assessment | Active appearance policy |
+| --- | --- |
+| Favorable evidence | Allow compatible supportive/GOOD variants and ordinary neutral presentation |
+| Confirmed adverse evidence | Allow BAD variants only; GOOD versions remain owned but unavailable for active display |
+| Missing, inconclusive, stale, or incomparable evidence | Use neutral/unverified presentation; do not infer BAD or GOOD |
+
+The preferred asset design gives each item neutral, GOOD, and BAD visual treatments, derived locally from the same identity wherever practical. The user can then select a collected body/equipment design and use its BAD treatment during adverse performance. If an imported/older item lacks the required treatment, show it as unavailable for that active state and use prepared artwork matching the assessment, including a BAD fallback for an adverse state. New model generation is not required just to express an adverse state.
+
+Bind the assessment to the relevant app/model, selected loadout version, task/criteria scope, comparison basis, and evidence version. A bad UNSEAL result for one work context does not condemn every UNSEAL task or future model. Higher token use on a different or harder task is not enough to establish a regression. [Everyday observations and controlled replay](comparison-metrics.md#one-selected-mode-and-later-comparison) have different evidentiary strength.
+
+The collection remains browsable, including historical GOOD artwork, while the active equipment selector applies the state restriction and explains why a variant cannot be used. The core evaluates that restriction for both GUI and AI requests. A changed assessment updates allowed presentation without deleting the item, changing the harness, reopening the three-candidate choice, or granting a new creation. Returning to a compatible state allows an existing item to be selected again.
+
+BAD treatment must still show the actual release mode: visual degradation cannot make an applied UNSEAL configuration appear to be Normal. Keep the assessment text visible when effects are off. Collection previews and historical card exports identify their evidence context so displaying a past GOOD image does not claim current favorable performance.
 
 ## Optional creation skill
 

@@ -14,6 +14,8 @@ Unharness makes it easy to take off, compare, and save AI harness configurations
 - Effects are optional display preferences. They never change a loadout or determine whether a switch succeeded.
 - A lighter harness is a comparison condition, not a promised performance improvement.
 - Original-form creation unlocks from qualifying comparison evidence and remains voluntary. Produce three candidates, let the user choose one, and finalize that achievement's choice. Technical retries preserve candidate identity; they do not grant creative rerolls.
+- Adopted original forms remain reusable in a local appearance collection. Current assessment constrains the active variant: confirmed adverse performance allows BAD variants only; unknown evidence is neutral. Selecting a collected appearance does not change the harness configuration.
+- The initial experience is one selected mode at a time. Record ordinary use and allow an explicitly requested later replay for closer comparison; do not automatically send the same request to multiple modes. Concurrent multi-mode execution is outside the initial scope and requires separate isolation evidence.
 
 ## Boundaries that matter in every task
 

@@ -47,6 +47,8 @@ Any appearance tied to measured performance must refer to the particular compari
 
 Keep the evidence label visible and let users turn the effect off. Judge outputs without mode art when using blind comparison so the artwork does not predetermine the rating.
 
+Acquired original forms remain reusable in a collection. Separate ownership from the active visual treatment: a confirmed adverse result permits only BAD-compatible images for the applicable context, while unknown evidence uses neutral art. The preferred approach gives a collected item neutral/GOOD/BAD treatments of the same identity, with prepared BAD art available when a treatment is missing. Keep all acquired items and their history. See [the collection rules](personalization.md#collection-ownership-and-current-presentation). Collection choice changes the appearance, not the underlying harness configuration.
+
 ## Comparison inside the same GUI
 
 The maintainer requested that measured performance be visible in this pixel-art interface. The comparison view uses the same hangar identity, with compact portraits of the three loadouts above a readable table and chart. It leads from inspection to saving the chosen configuration as a favorite.
@@ -56,6 +58,8 @@ The maintainer requested that measured performance be visible in this pixel-art 
 **Every number and the personal note in this image are sample data. No harness performance was measured to produce it.** The display compares accepted tasks, total tokens including failed/revision work, and tokens per accepted task, following [the measurement contract](comparison-metrics.md). The lower total-token example is not automatically the more efficient successful setup.
 
 The UI should show run count, shared comparison conditions, collection coverage, and whether a value is measured, estimated, or a human/AI assessment. Keep performance inspection separate from the dramatic release effect. Saving a favorite retains the exact tested configuration and its comparison references.
+
+The primary interaction is a single selected mode used for ordinary work. This comparison view reviews saved observations or explicitly requested later replays. The three-column illustration does not imply simultaneous dispatch, and untried modes remain unmeasured. Distinguish matched comparisons from different everyday tasks before displaying a GOOD/BAD interpretation.
 
 In implementation, render tables and proportional charts from actual data rather than reusing the chart bitmap. Align the loadout headers and table columns, keep failed/unknown data distinguishable, and allow users to open the underlying outputs. The image is a visual concept; interactive comparison and measurement are not implemented yet. Generation input is preserved in [design-comparison-prompt.md](design-comparison-prompt.md).
 

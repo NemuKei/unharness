@@ -8,6 +8,16 @@ The maintainer requested numerical comparison of token efficiency and output qua
 
 Keep three kinds of evidence visible: measured resource use, checks against the task's requirements, and the user's preference. A short unsuccessful answer is not an efficiency improvement.
 
+## One selected mode and later comparison
+
+The maintainer clarified the default: choose one mode and use it. Record the observed result of that task without automatically sending the instruction to the other modes. Review accumulated results later. A task's mode and actual loaded-state evidence remain separate, and missing usage or acceptance evidence stays unknown.
+
+Offer a closer comparison as an optional sequential replay: preserve the selected request, original starting files, and declared criteria; later run it in a fresh task under another mode. Do not use the first trial's modified files or answer as the next trial's starting point. Sequential execution still needs memory/tool-state handling; time, caches, and service changes may remain confounders.
+
+Everyday work with different task difficulty, requests, or model settings is observational history. It can show task-scoped outcomes and personal notes, but its aggregate token differences do not by themselves justify a favorable/adverse mode classification or an original-form unlock. Require applicable comparable evidence under the predeclared rule for those claims. Keep human ratings identifiable as human assessments.
+
+A future concurrent comparison would submit the instruction into separately isolated tasks. Creating multiple task IDs is not proof that configurations, files, memories, or hooks are isolated. Concurrent dispatch is neither implemented nor an initial requirement. The three-column comparison concept can show saved runs collected at different times; it does not imply three tasks were launched together.
+
 ## Initial measures
 
 | Dimension | Measure | How to interpret it |
@@ -66,9 +76,11 @@ The product should let a user inspect tradeoffs such as similar quality with few
 
 ## Display in the pixel-art interface
 
-Use a Comparison tab in the same hangar GUI. Show the three loadout states together with accepted-task counts, token totals, tokens per accepted task, and the personal scorecard. Let the user inspect outputs and save the selected configuration from that screen. Display collection coverage, sample size, and the kind of each metric. The [sample-data visual concept](design.md#comparison-inside-the-same-gui) establishes this flow; the final charts must be rendered from the recorded values.
+Use a Comparison tab in the same hangar GUI. Show selected saved results with accepted-task counts, token totals, tokens per accepted task, and the personal scorecard. Up to three mode columns can appear when relevant results exist; an untried mode stays unmeasured, not failed. Let the user inspect outputs and save a configuration. Display collection coverage, sample size, measurement kind, and whether the records are matched trials or different everyday work. The [sample-data visual concept](design.md#comparison-inside-the-same-gui) establishes the presentation; its columns do not imply simultaneous execution and the final charts must use recorded values.
 
 The maintainer also wants helpful harnesses to be expressible as supportive or resonating equipment. Derive such an optional visual assessment from the stated comparison and user priorities, retaining a neutral appearance for unmeasured or inconclusive setups. It is presentation metadata, not evidence on its own and not a configuration change.
+
+When applicable evidence establishes adverse performance, restrict active visuals to BAD-compatible variants from the [appearance collection](personalization.md#collection-ownership-and-current-presentation), with prepared BAD artwork as fallback. Do not delete previously acquired items. The assessment is scoped to the app/model, loadout version, task criteria, baseline, and evidence; it is not a permanent judgment attached to the mode name. Missing or incomparable observations do not meet the adverse-state rule. Selecting a skin cannot override the classification.
 
 A qualifying result can unlock an optional original-appearance creation action. Its [eligibility rule](personalization.md#original-creation-unlocked-by-comparison-evidence) must be fixed before inspecting candidate results and reference the exact comparison/loadout versions. Required quality, sufficient observations for the chosen rule, and coverage of the claimed benefit determine eligibility; token reduction alone does not. Thresholds and repeat counts remain task-specific design work. The same gate applies to GUI and AI requests, and generation usage remains separate from benchmark usage.
 

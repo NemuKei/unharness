@@ -80,6 +80,8 @@ The AI translates a user's request into a registered operation. Filesystem disco
 
 The core publishes operation events. An open UI reflects them and can animate them; closing the UI or turning effects off cannot change the transaction.
 
+The initial execution flow handles one selected mode at a time and records the user's chosen task. It does not fan out an instruction into several modes. An explicitly requested later replay can use the saved starting conditions; simultaneous trials require separately verified per-session isolation and are outside the initial implementation scope.
+
 The proposed [appearance workflow](personalization.md) uses prepared art packs and weighted local selection by default. A renderer receives the saved recipe and observed mode/operation state. The user's AI can optionally author pixel data or a component recipe, or use an available image tool, then return assets for validated import. The core owns appearance identities, resolved recipes, art-pack versions, and assets; work-memory profiles and experiment evidence are separate. Default appearance selection does not read personal memory, and optional creation does not run inside candidate benchmark tasks. These paths are not present in the current diagnostic.
 
 Original creation becomes available only when the [comparison eligibility rule](personalization.md#original-creation-unlocked-by-comparison-evidence) is satisfied for the referenced loadout version. The core checks eligibility for every entry point before dispatch and tracks creation jobs; the GUI displays that decision rather than implementing a separate unlock rule. An eligible result never starts generation without a user request.
@@ -121,6 +123,7 @@ Keep these responsibilities distinct:
 - **Experiment record:** a reference to the exact loadout version, starting conditions, outputs, and observations.
 - **Display preferences:** effects and appearance; these do not participate in loadout meaning.
 - **Appearance identity and assets:** a seed, resolved recipe, renderer/art-pack versions, and retained artwork. Keep the same entity across modes and restarts; changing its appearance does not change the configuration.
+- **Appearance collection and presentation eligibility:** adopted items stay owned and reusable. The core applies the assessment for the current context to allow compatible variants, restricting adverse states to BAD art and unknown states to neutral art. This filter is independent of ownership and three-candidate acquisition, and shared across GUI/AI selection.
 - **Work-memory profile:** task/evaluation preferences with provenance and evidence references. These can inform experiment preparation, but are not used for default appearance selection or automatically injected into trials.
 
 A stale plan cannot silently overwrite newer settings. Changes need an operation identity and concurrency control. A process crash must leave enough information to diagnose and recover a partially applied operation.

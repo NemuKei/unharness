@@ -13,7 +13,7 @@ Complete Phase 1 on both OSes before handing Claude Code its integration work. C
 
 ## One useful loop
 
-Save the current configuration → try a different mode in a fresh task → compare work from recorded starting conditions → adjust the combination → save a favorite → restore or reuse a saved configuration.
+Save the current configuration → choose one mode for a fresh task → use it and record the result → review the result/history → adjust the combination or save a favorite → restore or reuse a saved configuration. If the user wants a closer comparison, they can later replay a selected request under another mode from the same starting conditions.
 
 The useful outcome can be adopting the new combination, retaining the previous one, or learning that the comparison was inconclusive.
 
@@ -78,6 +78,8 @@ Readback of a settings file does not prove that a running task loaded it. Effect
 
 ## Comparison
 
+The primary experience is one selected mode at a time, as the maintainer clarified. Choosing a mode does not duplicate a request into Normal, UNSEAL, and TRUEFORM. Ordinary work can accumulate per-run observations for later review. A closer comparison is an optional, explicitly requested replay, normally performed sequentially. Different everyday tasks are not matched experimental cases merely because their mode labels differ.
+
 The initial comparison is between loadouts within the same application and model. Record the app and OS version, model and reasoning settings, request, starting files including relevant uncommitted work, available tools, permissions, and memory conditions.
 
 Create separate work locations from the same starting state when the task changes files. Prevent shared memory or other local state from silently carrying information between runs. Record external conditions that cannot be frozen. Starting another worktree alone is not proof of complete isolation.
@@ -85,6 +87,8 @@ Create separate work locations from the same starting state when the task change
 Compare outputs, diffs, elapsed time, available usage data, and the user's evaluation notes. Do not invent missing costs or infer a universal ranking from one run. Automated cross-application model benchmarking is not required for initial support of both apps.
 
 Include numerical comparison alongside personal preference. Measure usage and effort to reach task-defined acceptance, retain failed attempts and retries, and keep objective checks separate from human or AI scorecards. The collection and scoring rules are in [comparison-metrics.md](comparison-metrics.md). Protocol field availability alone does not establish that complete desktop usage has been collected.
+
+Simultaneous dispatch to different modes is a possible later feature, not an initial dependency or verified capability. It needs separate conversations, identical starting copies where applicable, controlled per-session settings and memory, and known tool/usage coverage. Shared global settings cannot be switched underneath concurrent trials and described as isolated modes. Worktree separation alone is insufficient, and model execution in each trial consumes the user's AI allowance.
 
 ## Entry points and visuals
 
@@ -95,6 +99,8 @@ Retain the chosen pixel-art hangar, progressively opening outer equipment, and t
 Equipment is neutral before evaluation and can be represented as supportive/resonating when the recorded comparison shows that it fits the user's task and priorities. Keep this visual assessment distinct from the three mode policies and the underlying measured results.
 
 The adopted appearance flow is: qualifying comparison → voluntary original-creation action → three candidates → one final choice → local save → optional build-card/X handoff. Preserve the selected entity across modes and restarts. Technical retries do not consume a creative choice or replace valid candidates; after adoption, the same achievement does not allow another creative draw. A distinct later achievement can yield a new form while preserving the old one. See [appearance rules](personalization.md) and [sharing](build-cards.md). These are agreed product targets that depend on the comparison feature, not claims of implemented runtime behavior.
+
+Each adopted form joins an always-browsable, reusable appearance collection. Finalizing one of three candidates fixes acquisition for that achievement; it does not prohibit switching between forms already acquired. Actual harness favorites and visual collection items are separate. In a current scope with confirmed adverse performance, the active selection is restricted to BAD-compatible variants; old GOOD variants stay owned and viewable in the collection. Unknown/stale/incomparable evidence uses neutral presentation. A missing BAD variant falls back to prepared BAD artwork. The same restriction applies through GUI and AI selection.
 
 The primary sharing action copies the card PNG to the clipboard and opens X's composer with editable template text and the public OSS repository link. The author pastes the image and posts. Keep the image in the clipboard while passing text through the composer URL; provide image-save and separate open-X fallbacks. Verify the combined gesture in the supported browsers on macOS and Windows before claiming one-click preparation support. The actual public repository URL must be established before adding it to a working template.
 
@@ -110,4 +116,4 @@ The primary sharing action copies the card PNG to the clipboard and opens X's co
 
 ## Not part of the initial core
 
-Public favorite marketplaces, cloud synchronization, worldwide rankings, automatic “best harness” selection, Linux support, and unverified equivalence between native Windows and WSL are not initial commitments.
+Public favorite marketplaces, cloud synchronization, worldwide rankings, automatic “best harness” selection, automatic simultaneous multi-mode dispatch, Linux support, and unverified equivalence between native Windows and WSL are not initial commitments.

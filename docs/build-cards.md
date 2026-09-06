@@ -23,6 +23,8 @@ Render values and captions from the comparison record. Generated artwork must no
 
 The export preview lets the user select public fields and edit display names. Do not automatically include private project names, local paths, raw instructions, memory, conversations, or secret configuration values. The exported card is an immutable view of its selected appearance and evidence; later runs do not rewrite a card already exported.
 
+An appearance can come from the reusable collection. For a current-result card, its GOOD/BAD/neutral treatment follows that result's applicable assessment and cannot be changed to imply a better outcome. A historical collection card can show the form as previously earned, with the historical context visible; it does not certify the current loadout. Unmatched everyday runs must not be presented as a controlled performance improvement.
+
 A card image is not a restorable favorite. A separately selected, sanitized configuration recipe may help others reproduce a comparison, but portable compatibility and permitted content must be checked. The base sharing flow does not upload that recipe or private evidence to a public host.
 
 Start with a readable PNG and editable post text. A short release animation or before/after clip can be explored later. Keep useful conditions legible at a typical social-feed size; provide a text description of the image for the user to use as alt text.

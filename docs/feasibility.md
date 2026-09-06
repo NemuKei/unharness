@@ -23,6 +23,8 @@ The full product cannot yet be promised merely because local settings files can 
 
 Continue toward full desktop support only with concrete results for these boundaries. A manual restart/new-task step may be an acceptable integration outcome, but must be reflected in the workflow. If required sources cannot be controlled or observed, expose the limit and revisit the supported scope with the maintainer; do not label partial control as verified TRUEFORM or silently substitute CLI-only work for the agreed desktop product.
 
+The maintainer clarified that initial use selects one mode at a time. Simultaneous multi-mode dispatch is not required. The [App Server thread APIs](https://learn.chatgpt.com/docs/app-server) provide a way to address separate conversations, but do not establish independent desktop harnesses or memory for concurrent trials. Sequential use avoids requiring that concurrent boundary, while source discovery, fresh-task application, restoration, and honest measurement still need verification.
+
 ## Limits to accept upfront
 
 | Area | Feasible target | Limit |
@@ -40,3 +42,5 @@ The [Codex skill guide](https://learn.chatgpt.com/docs/build-skills) explicitly 
 ## What has been adopted
 
 Random default appearance → sufficiently evidenced performance condition → voluntary original creation → three candidates → one final choice → local save and optional X sharing. Technical retries preserve already valid candidates, and a distinct later achievement may yield a new form. These decisions and the cost boundary are accepted targets; they do not mean the desktop integration or appearance runtime has passed implementation acceptance.
+
+Adopted forms become reusable collection items. Confirmed adverse performance restricts their active presentation to BAD variants, with neutral treatment when evidence is unknown. Different ordinary tasks do not by themselves establish a mode regression; that filter still needs applicable evidence. Acquisition is retained even when a current treatment cannot be equipped.

@@ -10,6 +10,7 @@ Updated: 2026-09-06.
 - Mode labels: **限定解除 — UNSEAL**, **零式 — TRUEFORM**, and Normal loadout.
 - Target: macOS and Windows; Codex desktop first, Claude Code desktop second, final review and finish in Codex.
 - Required experience: save, three modes, truthful state, fresh comparison, favorites, recovery, web and AI entry points, and optional effects.
+- The maintainer clarified that the primary experience uses one selected mode for a task. Record ordinary use and offer an optional later sequential replay; automatic simultaneous multi-mode dispatch is outside initial scope and remains technically unverified.
 - Numerical comparison should measure token/effort use against task-defined quality, alongside user preference. The [measurement contract](comparison-metrics.md) is documented; collection and grading are not implemented.
 - Those comparisons should appear in the same pixel-art GUI and lead to saving a favorite. A clearly labelled sample-data screen is included in [the visual direction](design.md#comparison-inside-the-same-gui); interactive charts remain unimplemented.
 - The visual metaphor can also express useful harnesses as supportive/resonating equipment, with neutral treatment before sufficient evaluation. This remains presentation design, not another configuration mode.
@@ -17,6 +18,7 @@ Updated: 2026-09-06.
 - The maintainer supports personal quests → equipment comparisons → build cards. For original appearances, they prefer random discovery: prepared patterns with probabilistic local selection by default, with user-side creation optional. The [appearance and memory proposal](personalization.md) covers sprite assembly, code-drawn pixels, optional image generation, and work-memory uses; these remain unimplemented with detailed release scope open.
 - Optional original creation should unlock only when declared performance conditions have enough comparison evidence. The GUI and AI entry points share the same rule; creation remains voluntary, and saved artwork retains its historical evidence. Exact task-specific thresholds and the implementation remain open.
 - The maintainer approved three candidates followed by one final choice, technical retries without creative rerolls, and [build-card export/X sharing](build-cards.md). The primary share action copies the PNG to the clipboard and opens X with editable template text and the public OSS link; the user pastes and posts. Image saving is the fallback. These policies are adopted, not implemented; the public repository URL is not yet configured.
+- Adopted original forms remain reusable in a collection. Current adverse evidence restricts active images to BAD-compatible variants; unknown evidence stays neutral, and all acquired forms remain owned. This display rule is scoped to the relevant model/configuration/work, not a permanent label on UNSEAL or another mode.
 - Initial README drafts, specification, architecture boundaries, compatibility criteria, and handoff plan are present.
 
 ## Current implementation
