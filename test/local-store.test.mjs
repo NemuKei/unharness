@@ -1,0 +1,223 @@
+import assert from 'node:assert/strict';
+import { link, lstat, mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, symlink, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { basename, join } from 'node:path';
+import test from 'node:test';
+
+import { createStore, listRecords, putRecord, readRecord, recordId } from '../src/core/local-store.mjs';
+
+const HASH = '3b4800c34ea58c292e372116702846f39a7272cf940899fcecd247e3c219a633';
+
+async function fixture(t, label = 'store') {
+  const parent = await realpath(await mkdtemp(join(tmpdir(), `unharness-${label}-`)));
+  t.after(() => rm(parent, { recursive: true, force: true }));
+  return { parent, ...(await createStore({ parent })) };
+}
+
+function rejectsKind(value, kind) {
+  return assert.rejects(value, error => {
+    assert.equal(error?.kind, kind);
+    assert.equal(error?.message, kind);
+    return true;
+  });
+}
+
+function throwsKind(fn, kind) {
+  return assert.throws(fn, error => {
+    assert.equal(error?.kind, kind);
+    assert.equal(error?.message, kind);
+    return true;
+  });
+}
+
+test('recordId canonicalizes plain objects while preserving array order', () => {
+  assert.equal(recordId('favorite', { b: 2, a: 1 }), HASH);
+  assert.equal(recordId('favorite', { a: 1, b: 2 }), HASH);
+  assert.notEqual(recordId('favorite', { values: [1, 2] }), recordId('favorite', { values: [2, 1] }));
+});
+
+test('recordId rejects invalid values, excessive nesting, size, and record types', () => {
+  throwsKind(() => recordId('other', {}), 'invalid-record-type');
+  for (const payload of [{ value: undefined }, { value: Number.POSITIVE_INFINITY }, { value() {} }, { value: Symbol('x') }]) {
+    throwsKind(() => recordId('favorite', payload), 'invalid-record-payload');
+  }
+  const cyclic = {};
+  cyclic.self = cyclic;
+  throwsKind(() => recordId('favorite', cyclic), 'invalid-record-payload');
+
+  let getterCalled = false;
+  const accessorArray = [];
+  Object.defineProperty(accessorArray, '0', {
+    configurable: true,
+    enumerable: true,
+    get() {
+      getterCalled = true;
+      return 'synthetic secret';
+    },
+  });
+  accessorArray.length = 1;
+  throwsKind(() => recordId('favorite', accessorArray), 'invalid-record-payload');
+  assert.equal(getterCalled, false);
+
+  let proxyTrapCalled = false;
+  const proxy = new Proxy({}, {
+    getPrototypeOf() {
+      proxyTrapCalled = true;
+      return Object.prototype;
+    },
+  });
+  throwsKind(() => recordId('favorite', proxy), 'invalid-record-payload');
+  assert.equal(proxyTrapCalled, false);
+
+  let deep = 'leaf';
+  for (let index = 0; index < 33; index += 1) deep = { next: deep };
+  throwsKind(() => recordId('favorite', deep), 'record-too-deep');
+  throwsKind(() => recordId('favorite', { text: 'x'.repeat(1024 * 1024) }), 'record-too-large');
+});
+
+test('createStore initializes only a private canonical child of an existing parent', async t => {
+  const parent = await realpath(await mkdtemp(join(tmpdir(), 'unharness-store-init-')));
+  t.after(() => rm(parent, { recursive: true, force: true }));
+
+  const result = await createStore({ parent });
+  assert.equal(result.schemaVersion, 1);
+  assert.equal(result.store, await realpath(result.store));
+  assert.equal(basename(result.store).startsWith('unharness-loadouts-'), true);
+  assert.equal((await lstat(result.store)).mode & 0o777, 0o700);
+  assert.equal((await lstat(join(result.store, 'store.json'))).mode & 0o777, 0o600);
+
+  const metadata = JSON.parse(await readFile(join(result.store, 'store.json'), 'utf8'));
+  assert.deepEqual(metadata, {
+    kind: 'unharness-local-store',
+    root: result.store,
+    schemaVersion: 1,
+  });
+  assert.deepEqual((await readdir(parent)).sort(), [basename(result.store)]);
+});
+
+test('createStore rejects missing, non-directory, and symlink parents safely', async t => {
+  const parent = await realpath(await mkdtemp(join(tmpdir(), 'unharness-store-parent-')));
+  t.after(() => rm(parent, { recursive: true, force: true }));
+  await rejectsKind(createStore({ parent: join(parent, 'missing') }), 'store-init-error');
+
+  const file = join(parent, 'file');
+  await writeFile(file, 'synthetic');
+  await rejectsKind(createStore({ parent: file }), 'store-link-or-type');
+
+  const linked = join(parent, 'linked');
+  await symlink(parent, linked, 'dir');
+  await rejectsKind(createStore({ parent: linked }), 'store-link-or-type');
+});
+
+test('simultaneous putRecord calls deduplicate without changing immutable content', async t => {
+  const { store } = await fixture(t, 'deduplicate');
+  const payload = { settings: { mode: 'normal' }, sources: ['fixed', 'optional'] };
+  const results = await Promise.all([
+    putRecord({ store, type: 'favorite', payload }),
+    putRecord({ store, type: 'favorite', payload }),
+  ]);
+
+  assert.equal(results[0].id, results[1].id);
+  assert.deepEqual(results.map(result => result.created).sort(), [false, true]);
+  payload.settings.mode = 'mutated-after-save';
+  assert.deepEqual(await readRecord({ store, type: 'favorite', id: results[0].id }), {
+    settings: { mode: 'normal' },
+    sources: ['fixed', 'optional'],
+  });
+  assert.deepEqual(await listRecords({ store, type: 'favorite' }), [{
+    id: results[0].id,
+    payload: { settings: { mode: 'normal' }, sources: ['fixed', 'optional'] },
+  }]);
+  assert.deepEqual(await readdir(join(store, '.stages')), []);
+});
+
+test('readRecord and putRecord reject corrupt existing content without replacing it', async t => {
+  const { store } = await fixture(t, 'corrupt');
+  const payload = { name: 'synthetic favorite' };
+  const { id } = await putRecord({ store, type: 'favorite', payload });
+  const target = join(store, 'records', 'favorite', `${id}.json`);
+  await writeFile(target, '{}');
+
+  await rejectsKind(readRecord({ store, type: 'favorite', id }), 'record-corrupt');
+  await rejectsKind(putRecord({ store, type: 'favorite', payload }), 'record-corrupt');
+  assert.equal(await readFile(target, 'utf8'), '{}');
+});
+
+test('record operations validate type and ID before touching a store path', async () => {
+  await rejectsKind(readRecord({ store: '/PRIVATE/missing', type: 'other', id: '../secret' }), 'invalid-record-type');
+  await rejectsKind(readRecord({ store: '/PRIVATE/missing', type: 'favorite', id: '../secret' }), 'invalid-record-id');
+  await rejectsKind(listRecords({ store: '/PRIVATE/missing', type: 'other' }), 'invalid-record-type');
+  await rejectsKind(putRecord({ store: '/PRIVATE/missing', type: 'other', payload: {} }), 'invalid-record-type');
+});
+
+test('record files and bucket ancestors may not be symlinks', async t => {
+  const first = await fixture(t, 'record-link');
+  const saved = await putRecord({ store: first.store, type: 'scope', payload: { fixture: true } });
+  const target = join(first.store, 'records', 'scope', `${saved.id}.json`);
+  const outside = join(first.parent, 'outside.json');
+  await writeFile(outside, await readFile(target));
+  await rm(target);
+  await symlink(outside, target, 'file');
+  await rejectsKind(readRecord({ store: first.store, type: 'scope', id: saved.id }), 'store-link-or-type');
+
+  const second = await fixture(t, 'bucket-link');
+  const bucket = join(second.store, 'records', 'favorite');
+  const outsideBucket = join(second.parent, 'outside-bucket');
+  await mkdir(outsideBucket);
+  await rm(bucket, { recursive: true });
+  await symlink(outsideBucket, bucket, 'dir');
+  await rejectsKind(listRecords({ store: second.store, type: 'favorite' }), 'store-link-or-type');
+});
+
+test('metadata rejects a moved store instead of silently rebinding it', async t => {
+  const { parent, store } = await fixture(t, 'moved');
+  const { id } = await putRecord({ store, type: 'checkpoint', payload: { case: 'baseline' } });
+  const moved = join(parent, 'moved-store');
+  await rename(store, moved);
+
+  await rejectsKind(readRecord({ store: moved, type: 'checkpoint', id }), 'store-metadata-mismatch');
+});
+
+test('leftover private stages are retained and ignored by listing', async t => {
+  const { store } = await fixture(t, 'stage');
+  const saved = await putRecord({ store, type: 'application', payload: { result: 'prepared' } });
+  const target = join(store, 'records', 'application', `${saved.id}.json`);
+  const interruptedStage = join(store, '.stages', 'interrupted-private-stage');
+  await link(target, interruptedStage);
+
+  assert.deepEqual(await listRecords({ store, type: 'application' }), [{
+    id: saved.id,
+    payload: { result: 'prepared' },
+  }]);
+  assert.equal((await lstat(interruptedStage)).isFile(), true);
+  assert.deepEqual(await readRecord({ store, type: 'application', id: saved.id }), { result: 'prepared' });
+});
+
+test('listRecords sorts by ID and rejects more than 1000 bucket entries', async t => {
+  const sortedFixture = await fixture(t, 'sorted');
+  const one = await putRecord({ store: sortedFixture.store, type: 'observation', payload: { index: 1 } });
+  const two = await putRecord({ store: sortedFixture.store, type: 'observation', payload: { index: 2 } });
+  const listed = await listRecords({ store: sortedFixture.store, type: 'observation' });
+  assert.deepEqual(listed.map(record => record.id), [one.id, two.id].sort());
+
+  const boundedFixture = await fixture(t, 'bounded');
+  const bucket = join(boundedFixture.store, 'records', 'scope');
+  for (let start = 0; start < 1001; start += 100) {
+    await Promise.all(Array.from({ length: Math.min(100, 1001 - start) }, (_, offset) => {
+      const id = (start + offset).toString(16).padStart(64, '0');
+      return writeFile(join(bucket, `${id}.json`), '{}');
+    }));
+  }
+  await rejectsKind(listRecords({ store: boundedFixture.store, type: 'scope' }), 'record-limit-exceeded');
+});
+
+test('record creation enforces private file modes where supported', async t => {
+  const { store } = await fixture(t, 'modes');
+  const { id } = await putRecord({ store, type: 'scope', payload: { generated: true } });
+  const record = join(store, 'records', 'scope', `${id}.json`);
+  if (process.platform !== 'win32') {
+    assert.equal((await lstat(record)).mode & 0o777, 0o600);
+    assert.equal((await lstat(join(store, 'records'))).mode & 0o777, 0o700);
+    assert.equal((await lstat(join(store, '.stages'))).mode & 0o777, 0o700);
+  }
+});
