@@ -34,3 +34,7 @@ The store and integration each received scoped specification/quality review. Fin
 The only source adapter here is the generated Codex fixture. Real mixed-source classification, personal configuration writing, full UNSEAL/TRUEFORM, GUI/MCP endpoints, native Windows and cross-machine store migration remain unverified or unimplemented. Store and fixture recovery do not claim comprehensive power-loss durability or protection against adversarial filesystem races. The [runbook](../loadouts.md) specifies explicit versions, checkpoints and observation boundaries.
 
 [The reduced machine-readable result](2026-09-06-loadouts-macos.json) records booleans and technical environment data only. It deliberately does not export raw private store records.
+
+## Final tested revision
+
+The complete tested runtime is `29c13e225b8f381e201d50b46ef27470b6a31bd9`. Source/test bytes match the final **126/126 passing suite** and the approved final re-review. The final fix preserves access to histories above 1,000 records through bounded pages; it does not delete history or impose a new save cap. Existing native smoke favorites remained readable with the new paginated command. There are no unresolved review findings in this fixture-only slice.
