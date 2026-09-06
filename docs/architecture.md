@@ -80,6 +80,8 @@ The AI translates a user's request into a registered operation. Filesystem disco
 
 The core publishes operation events. An open UI reflects them and can animate them; closing the UI or turning effects off cannot change the transaction.
 
+The optional [personalization workflow](personalization.md) adds a separate path: the user's AI assembles a brief from accessible preferences, calls an available image tool, and returns assets for local import. The core owns the versioned brief, assets, profile, and evidence references. It does not depend on a universal memory API, and the appearance workflow does not run inside candidate benchmark tasks. This path is proposed, not present in the current diagnostic.
+
 ## Application integration boundary
 
 Codex and Claude Code each have an adapter responsible for:
@@ -112,6 +114,7 @@ Keep these responsibilities distinct:
 - **Recovery snapshot:** the state required to reverse a specific change without overwriting unrelated edits.
 - **Experiment record:** a reference to the exact loadout version, starting conditions, outputs, and observations.
 - **Display preferences:** effects and appearance; these do not participate in loadout meaning.
+- **Personalization profile and assets:** selected or inferred preferences with provenance, versioned briefs, and artwork. These can inform experiment preparation but are not automatically injected into trials or treated as measured results.
 
 A stale plan cannot silently overwrite newer settings. Changes need an operation identity and concurrency control. A process crash must leave enough information to diagnose and recover a partially applied operation.
 

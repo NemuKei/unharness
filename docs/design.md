@@ -58,3 +58,7 @@ The maintainer requested that measured performance be visible in this pixel-art 
 The UI should show run count, shared comparison conditions, collection coverage, and whether a value is measured, estimated, or a human/AI assessment. Keep performance inspection separate from the dramatic release effect. Saving a favorite retains the exact tested configuration and its comparison references.
 
 In implementation, render tables and proportional charts from actual data rather than reusing the chart bitmap. Align the loadout headers and table columns, keep failed/unknown data distinguishable, and allow users to open the underlying outputs. The image is a visual concept; interactive comparison and measurement are not implemented yet. Generation input is preserved in [design-comparison-prompt.md](design-comparison-prompt.md).
+
+## Each user's original appearance
+
+The maintainer proposed using each user's own AI and an optional bundled generation skill to create artwork informed by their environment and preferences. Preserve the same entity across release states, reuse saved assets for immediate animations, and render measured evidence separately. The [personalization proposal](personalization.md) defines generation, memory use, fallback artwork, and separation from benchmark tasks. This is an additional design direction; the pipeline and distribution skill are not implemented.
