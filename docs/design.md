@@ -59,6 +59,8 @@ The UI should show run count, shared comparison conditions, collection coverage,
 
 In implementation, render tables and proportional charts from actual data rather than reusing the chart bitmap. Align the loadout headers and table columns, keep failed/unknown data distinguishable, and allow users to open the underlying outputs. The image is a visual concept; interactive comparison and measurement are not implemented yet. Generation input is preserved in [design-comparison-prompt.md](design-comparison-prompt.md).
 
-## Each user's original appearance
+## Discovering an original appearance
 
-The maintainer proposed using each user's own AI and an optional bundled generation skill to create artwork informed by their environment and preferences. Preserve the same entity across release states, reuse saved assets for immediate animations, and render measured evidence separately. The [personalization proposal](personalization.md) defines generation, memory use, fallback artwork, and separation from benchmark tasks. This is an additional design direction; the pipeline and distribution skill are not implemented.
+The maintainer prefers a random discovery over a taste-optimized appearance. The proposed default selects from prepared entities and compatible variations with weighted probabilities, without using personal memories to infer taste. Keep the selected body recognizable across release states and app restarts; sample another appearance only when creating an entity or explicitly requested. The user can keep/name a discovery and associate it with a build card.
+
+Prepared sprites, code-drawn pixel grids, and optional image-model generation are distinct creation routes. Pixel art does not require an image model. The [appearance and memory proposal](personalization.md) defines these routes, reproducible local selection, optional creation skills, and benchmark separation. Random visual rarity is independent of measured performance. These are design directions; the appearance runtime and distribution skill are not implemented.

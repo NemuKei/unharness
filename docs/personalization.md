@@ -1,32 +1,48 @@
-# Personal appearance and useful memory
+# Random appearances and useful memory
 
-Design proposal recorded on 2026-09-06. The maintainer supported connecting personal quests, equipment comparisons, and build cards, and suggested that each user's own AI generate an original appearance using their environment and preferences. The generation skill, memory bridge, and asset pipeline described here are not implemented. This does not change the Codex-first, macOS-and-Windows delivery order.
+Design proposal updated on 2026-09-06. The maintainer prefers a sense of discovering a random original entity, and suggested prepared patterns selected probabilistically by default, with generation in the user's environment as an option. The default must actually use random selection, rather than disguise preference profiling as randomness. The appearance system, optional creation skill, and memory bridge are not implemented. This does not change the Codex-first, macOS-and-Windows delivery order.
 
 ## Experience
 
-“Create an Unharness appearance that fits me” should let the user's existing AI help design a recognizable entity and its equipment. Normal, UNSEAL, and TRUEFORM retain the same identity, with progressive release; useful equipment can also receive the supportive/resonating presentation described in [the visual direction](design.md).
+An entity appears, the user discovers what is inside its equipment, and they can keep or name it. Setup does not require a taste questionnaire or memory access. Normal, UNSEAL, and TRUEFORM retain the same identity, with progressive release; useful equipment can also receive the supportive/resonating presentation described in [the visual direction](design.md).
 
-For the current concept, the brief would include pixel art, a machine hangar, a non-human luminous entity, and a dramatic divine reveal. Another user can choose a different visual world without changing what a mode means. A build card can combine that personal artwork with the exact configuration and its recorded comparison evidence.
+The initial art direction remains pixel art, a machine hangar, a non-human luminous entity, and a dramatic divine reveal. Variation within this world comes from prepared forms, palettes, equipment, and effects. A build card can combine the discovered appearance with the exact configuration and recorded comparison evidence.
 
-## Optional generation skill
+## Default: prepared art and probabilistic assembly
 
-Ship a focused, user-facing generation skill alongside Unharness's AI connection. This is a product capability, not a copy of the maintainer's development skills. It provides a workflow and an output contract; it does not provide an image model, credentials, or access to otherwise unavailable memories.
+Start with a small set of complete, reviewed entities and compatible variations. Each entity has a common anchor, pixel grid, palette roles, equipment attachment points, and the required release states. A local selector can choose a full set or assemble compatible body, shell, halo, and palette parts using weighted probabilities. Build a coherent library first; independent random pixels are not a substitute for art direction.
 
-The intended flow is:
+Sample an appearance on first creation or an explicit request for another one, then retain it. Reloading the app, switching modes, or changing models does not reroll the entity. The user can keep an appearance and optionally associate it with favorites/cards independently of configuration identity. A visual collection or additional reroll UX can be explored without making repeated generation a condition of using the product.
 
-1. The user asks their AI to create or revise the appearance, or opens the corresponding GUI action.
-2. The AI assembles an editable brief from the current request, the local appearance profile, and relevant memories it can already access within the user's selected scope. Unknown preferences remain unspecified; inferred preferences are suggestions.
-3. The workflow checks available image-generation tools and uses the user's configured generator. If none is available, it can prepare the brief and use bundled/imported artwork until generation is available.
-4. The generator returns candidate assets. Unharness checks file type, dimensions, size, and expected states, and shows a preview before replacing the active asset set. A failed or canceled generation retains the previous appearance.
-5. The chosen asset set and its brief are saved with versions. The GUI uses them for local animation and build-card export.
+Draw the seed locally, independently of personal memory, usernames, work content, and hidden preference inferences. Keep the seed, selection/renderer version, art-pack version, and resolved part IDs/parameters; a seed alone is insufficient after the library or algorithm changes. Preserve the selected assets when exact later reproduction requires them. Probability weights and compatibility rules belong to versioned content. Neither uncommon appearances nor random effects imply better measured performance.
 
-The brief contains only useful design inputs: theme, palette, entity motif, equipment motif, effect preference, layout/rendering constraints, and explicit exclusions. OS, available tools, and display capabilities inform delivery; a platform or device does not imply a personality. Raw conversations, work documents, and full memory stores are not image prompts.
+This default runs locally without a model call or image-generation service. OS, display, and reduced-motion settings affect rendering and animation, not a hidden inference about which entity suits the user. Exact art counts, weights, and collection mechanics remain open design choices.
 
-Start with consistent state portraits plus application-rendered effects. Separately layered sprites or frame sequences can follow once their generation and import are reliable. Request the same reference identity across states; do not assume independent image generations will preserve it exactly. Status text, measured numbers, and proportional charts are rendered by the application, not painted into generated images.
+## Pixel art does not require an image model
+
+| Method | How it works | Role in Unharness |
+| --- | --- | --- |
+| Prepared sprites and parts | Select or combine authored pixel layers and animation frames | Recommended default: predictable art quality and immediate local playback |
+| Procedural drawing | A renderer fills a small pixel grid from shape rules, palette values, and a seed; for example, with Canvas | Local variation, particles, geometric cores, and new code-authored art without an image model |
+| Optional image generation | An available image tool creates assets to a documented layout/state contract | An additional way to make custom artwork, not a runtime requirement |
+
+Claude Code can author pixel data, a component recipe, or drawing code in its coding environment. A conventional renderer produces the pixels; no image model is needed for that path. A code-produced result still needs visual review, particularly for recognizable silhouettes and consistent animation. The optional skill should therefore describe a creation contract with multiple routes, not require a raster-generation provider for every user.
+
+## Optional creation skill
+
+Ship a focused, user-facing creation skill alongside Unharness's AI connection when that workflow is implemented. This is a product capability, not a copy of the maintainer's development skills. It does not grant tools, credentials, or memory access.
+
+1. The user asks their AI to create or revise an entity, or opens the corresponding GUI action.
+2. The AI uses an explicit brief or random creative choices and checks available tools. It does not automatically consult personal memories to guess taste. An explicit request to use specified preferences can opt into that separately.
+3. It produces a validated recipe/pixel-data asset using the supported local renderer, or calls an available image tool and returns image assets. Standalone drawing code can be an authoring aid; imported appearances do not execute arbitrary generated scripts in the product.
+4. Unharness checks the recipe schema or image format, dimensions, size, and expected states, and shows a preview before replacement. A failed or canceled creation retains the previous appearance.
+5. Save the chosen asset set, recipe/brief, and versions. Reuse them for animation and build-card export.
+
+Keep the same reference identity across states. Start with consistent state portraits and application-rendered effects; add separately layered sprites or frame sequences as their import becomes reliable. Status text, measured numbers, and proportional charts are always application-rendered. Raw conversations, work documents, and full memory stores are not creative inputs by default.
 
 ## Responsive generation and instant switching
 
-Generate on initial setup or an explicit redesign and keep the result. A generation job can update the GUI as it progresses, while the current artwork remains usable. Reuse saved assets for immediate mode transitions; a mode switch does not need to wait for a new image or spend image-generation quota each time.
+Default assembly is local and immediate. An optional AI creation job can update the GUI as it progresses, while the current artwork remains usable. Reuse saved assets for mode transitions; a mode switch does not need to wait for a new image or spend image-generation quota each time.
 
 Animation and comparison state remain independent. “Generation complete” means an asset is available, not that a mode was applied. Regenerating artwork does not change a loadout or its measured results. Effects off and reduced motion apply equally to generated and bundled artwork.
 
@@ -34,7 +50,7 @@ Animation and comparison state remain independent. “Generation complete” mea
 
 | Use | Useful inputs | Result |
 | --- | --- | --- |
-| Personal appearance | Explicit visual preferences, selected references, motion/accessibility preferences | A reusable design brief and original appearance |
+| Appearance continuity | The selected entity, its name, saved appearance recipe, and motion settings | The same recognizable companion returns; ordinary local state is sufficient |
 | Personal quests | Recurring task types, common corrections, previously accepted work requirements | Suggested tasks with explicit starting conditions and versioned acceptance criteria |
 | Personal evaluation | Stated priorities such as correctness, readability, brevity, or acceptable human effort | A reviewable scorecard fixed before the comparison begins |
 | Contextual favorites | Recorded outcomes, user ratings, app/model/configuration versions, task type | “This loadout worked for similar work” with evidence and a re-test suggestion when stale |
@@ -42,7 +58,7 @@ Animation and comparison state remain independent. “Generation complete” mea
 
 An AI recollection that a setup “worked well” is a lead, not a substitute for experiment evidence. Unharness owns the exact local configuration and comparison records. It can give the user's AI a short summary and record references for future recall when that client's memory capabilities and the user's settings permit it; do not promise automatic cross-app memory synchronization.
 
-Store extracted preferences separately from observed results, with source, scope, version/date, and whether the user stated or the AI inferred them. Let users inspect, correct, remove, or stop using this local profile. A changed preference can create a new scoring version; it must not silently rescore or relabel an old winner. Appearance versions may be associated with favorites/cards, but do not participate in configuration identity or performance scoring.
+Default artwork selection does not consume this work-memory profile. Store task/evaluation preferences separately from observed results, with source, scope, version/date, and whether the user stated or the AI inferred them. Let users inspect, correct, remove, or stop using the profile. A changed preference can create a new scoring version; it must not silently rescore or relabel an old winner. Appearance versions may be associated with favorites/cards, but do not participate in configuration identity or performance scoring.
 
 ## Keep personalization out of uncontrolled comparisons
 
@@ -59,10 +75,11 @@ The appearance skill is invoked only for setup/redesign, outside benchmark execu
 - The current Codex development session exposes an image-generation tool and produced the existing concept images. This is evidence for this session, not a guarantee for every Codex installation or account.
 - [Codex skill documentation](https://learn.chatgpt.com/docs/build-skills) provides explicit-only invocation via `allow_implicit_invocation: false` and describes distributing skills with optional MCP connections as plugins. Product packaging and GUI-to-AI dispatch still require implementation and verification.
 - [OpenAI memory documentation](https://learn.chatgpt.com/docs/customization/memories) distinguishes ChatGPT web memory from local Codex memory, and describes separate controls for using memories and contributing future inputs. Do not assume the appearance skill can read a user's ChatGPT web memory from Codex.
-- [Claude's image capability documentation](https://support.claude.com/en/articles/9002504-can-claude-produce-images) says it does not natively generate photos or illustrations like an image-generation tool. The Claude Code workflow therefore needs an available external generation tool for that asset path, or bundled/imported assets; the skill alone cannot add that capability.
+- [Claude's image capability documentation](https://support.claude.com/en/articles/9002504-can-claude-produce-images) distinguishes image-model generation from visuals built with code. An external image tool is required only for the optional image-model route; prepared art, recipes, and procedural pixel drawing remain available without it.
+- [OpenAI's pet documentation](https://learn.chatgpt.com/ja-JP/docs/pets) describes built-in and custom companions, a skill-assisted creation flow, activity states, and reduced motion. The installed desktop bundle also contains prebuilt sprite sheets. This is a useful interaction/rendering reference, not evidence that pets randomly assemble themselves or share Unharness's future asset format. Unharness's entity will visualize the selected harness and its observed state; pet-format interoperability is not currently planned or verified.
 
 These are documented capabilities and design boundaries, not completed integration tests. Access to memory and generation must be checked on the actual app, OS, account, and session.
 
 ## Delivery boundary
 
-Keep the base product useful with bundled artwork and no memory access. After the shared core and asset import exist, add the optional generation workflow and an editable local profile. Connect quest/scorecard suggestions to the comparison feature, then use accumulated evidence for contextual favorite suggestions. The detailed release scope remains open; no global skill installation, memory import, provider setup, or image generation was performed for this design proposal.
+Build the default around prepared artwork, weighted local selection, persisted identity, and mode-aware animation. Add procedural variety and optional AI creation as supported asset paths mature. Keep work-memory features focused on quest/scorecard suggestions and evidence-backed favorite recommendations. The detailed release scope remains open; no appearance runtime, global skill installation, memory import, provider setup, or image generation was added for this design proposal.

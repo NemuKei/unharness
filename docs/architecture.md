@@ -80,7 +80,7 @@ The AI translates a user's request into a registered operation. Filesystem disco
 
 The core publishes operation events. An open UI reflects them and can animate them; closing the UI or turning effects off cannot change the transaction.
 
-The optional [personalization workflow](personalization.md) adds a separate path: the user's AI assembles a brief from accessible preferences, calls an available image tool, and returns assets for local import. The core owns the versioned brief, assets, profile, and evidence references. It does not depend on a universal memory API, and the appearance workflow does not run inside candidate benchmark tasks. This path is proposed, not present in the current diagnostic.
+The proposed [appearance workflow](personalization.md) uses prepared art packs and weighted local selection by default. A renderer receives the saved recipe and observed mode/operation state. The user's AI can optionally author pixel data or a component recipe, or use an available image tool, then return assets for validated import. The core owns appearance identities, resolved recipes, art-pack versions, and assets; work-memory profiles and experiment evidence are separate. Default appearance selection does not read personal memory, and optional creation does not run inside candidate benchmark tasks. These paths are not present in the current diagnostic.
 
 ## Application integration boundary
 
@@ -114,7 +114,8 @@ Keep these responsibilities distinct:
 - **Recovery snapshot:** the state required to reverse a specific change without overwriting unrelated edits.
 - **Experiment record:** a reference to the exact loadout version, starting conditions, outputs, and observations.
 - **Display preferences:** effects and appearance; these do not participate in loadout meaning.
-- **Personalization profile and assets:** selected or inferred preferences with provenance, versioned briefs, and artwork. These can inform experiment preparation but are not automatically injected into trials or treated as measured results.
+- **Appearance identity and assets:** a seed, resolved recipe, renderer/art-pack versions, and retained artwork. Keep the same entity across modes and restarts; changing its appearance does not change the configuration.
+- **Work-memory profile:** task/evaluation preferences with provenance and evidence references. These can inform experiment preparation, but are not used for default appearance selection or automatically injected into trials.
 
 A stale plan cannot silently overwrite newer settings. Changes need an operation identity and concurrency control. A process crash must leave enough information to diagnose and recover a partially applied operation.
 
