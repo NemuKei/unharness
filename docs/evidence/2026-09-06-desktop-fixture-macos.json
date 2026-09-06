@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "kind": "macos-desktop-fixture-sequence",
   "fixtureBaselineRuntimeRevision": "7889864a560651f8f231087757fa07f2c123c62f",
-  "collectionStartedAtRevision": "0bfe886",
+  "collectionStartedAtRevision": "0bfe8864c60d6f27c50c7534dd978bf4b22b4743",
   "environment": {
     "platform": "darwin",
     "architecture": "arm64",
@@ -376,5 +376,14 @@
     "checkedAt": "2026-09-06T10:30:57.282Z"
   },
   "finalFixtureState": "baseline-retained-for-saved-desktop-project",
-  "nativeWindows": "not-run"
+  "nativeWindows": "not-run",
+  "diagnosticRevision": "ae487b990be7272d3df519882b01000e38c26dc9",
+  "verification": {
+    "syntheticTestsPassed": 88,
+    "syntheticTestsFailed": 0,
+    "reviewUnresolvedFindings": 0,
+    "nativeRefreshCommandCompleted": true,
+    "refreshCommandRuntimeVerificationRemainsFalse": true,
+    "runtimeSourcesMatchTestedTree": true
+  }
 }

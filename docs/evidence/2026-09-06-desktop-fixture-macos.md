@@ -51,3 +51,7 @@ Three selected personal configuration/instruction locations had identical before
 The shared `desktopSessionAttached`, `runtimeStateVerified` and `modeSwitchingVerified` flags remain false. The controlled scope is this fixture; complete host-source coverage, configuration-based Skill disablement/restart conditions, same-task removal, native Windows and full UNSEAL/TRUEFORM support remain unresolved. No token totals, costs or performance scores are published.
 
 [The reduced machine-readable matrix](2026-09-06-desktop-fixture-macos.json) includes all nine plain observations, explicit invocation and the two stale-catalog failures. Task IDs, raw chats, paths, marker nonces and personal comparison conditions remain in ignored local association data. See [the runbook](../desktop-observation.md) for the supported diagnostic sequence and manual/conflict boundaries.
+
+## Final verification revision
+
+The follow-up diagnostic is `ae487b990be7272d3df519882b01000e38c26dc9`. The tested and reviewed source bytes match this revision: **88/88 tests passed**, with no unresolved review findings, and the relative-link/diff checks passed. The implemented refresh CLI also completed on the retained native Mac fixture with exact baseline content and no pending operation; it correctly kept runtime reload/verification flags false. The marker-restoration evidence is the separately identified fresh-task trial above, not that command's exit status. Windows and complete product support remain unverified.
