@@ -9,26 +9,28 @@ export const LOADOUT_USAGE = `Registered fixture loadouts (local storage; no mod
   node bin/unharness.mjs loadouts init [--parent <existing directory>]
   node bin/unharness.mjs loadouts register-fixture --store <store> --fixture <fixture>
   node bin/unharness.mjs loadouts save --store <store> --scope <id> [--family <id>] [--name <name>]
-  node bin/unharness.mjs loadouts list --store <store> [--scope <id>]
+  node bin/unharness.mjs loadouts list --store <store> [--scope <id>] [--after <cursor>]
   node bin/unharness.mjs loadouts plan --store <store> --favorite <version id>
   node bin/unharness.mjs loadouts restore --store <store> --favorite <version id> [--plan <plan id>]
-  node bin/unharness.mjs loadouts checkpoints --store <store>
+  node bin/unharness.mjs loadouts checkpoints --store <store> [--after <cursor>]
   node bin/unharness.mjs loadouts restore-checkpoint --store <store> --checkpoint <id>
   node bin/unharness.mjs loadouts observe --store <store> --application <id> (--current | --session <JSONL>)
 
 All commands accept --output <new JSON file>. Init defaults to a fresh private
 store below .unharness in the current checkout. Only generated Codex fixtures
-can be registered/restored. See docs/loadouts.md for recovery and evidence limits.
+can be registered/restored. Listings return at most 1000 summaries and nextCursor;
+pass a non-null cursor to --after to continue (also after an empty scoped page).
+See docs/loadouts.md for recovery and evidence limits.
 `;
 
 const ARGUMENTS = {
   init: { allowed: ['parent'], required: [] },
   'register-fixture': { allowed: ['store', 'fixture'], required: ['store', 'fixture'] },
   save: { allowed: ['store', 'scope', 'family', 'name'], required: ['store', 'scope'] },
-  list: { allowed: ['store', 'scope'], required: ['store'] },
+  list: { allowed: ['store', 'scope', 'after'], required: ['store'] },
   plan: { allowed: ['store', 'favorite'], required: ['store', 'favorite'] },
   restore: { allowed: ['store', 'favorite', 'plan'], required: ['store', 'favorite'] },
-  checkpoints: { allowed: ['store'], required: ['store'] },
+  checkpoints: { allowed: ['store', 'after'], required: ['store'] },
   'restore-checkpoint': { allowed: ['store', 'checkpoint'], required: ['store', 'checkpoint'] },
   observe: { allowed: ['store', 'application', 'current', 'session'], required: ['store', 'application'] },
 };
@@ -78,10 +80,10 @@ export async function loadoutMain(argv, { stdout = process.stdout, stderr = proc
       }
       case 'register-fixture': result = await registerFixture({ store, fixture: options.fixture }); break;
       case 'save': result = await saveFavorite({ store, scopeId: options.scope, familyId: options.family, name: options.name }); break;
-      case 'list': result = await listFavorites({ store, scopeId: options.scope }); break;
+      case 'list': result = await listFavorites({ store, scopeId: options.scope, after: options.after }); break;
       case 'plan': result = await planRestore({ store, favoriteId: options.favorite }); break;
       case 'restore': result = await restoreFavorite({ store, favoriteId: options.favorite, expectedPlanId: options.plan }); break;
-      case 'checkpoints': result = await listCheckpoints({ store }); break;
+      case 'checkpoints': result = await listCheckpoints({ store, after: options.after }); break;
       case 'restore-checkpoint': result = await restoreCheckpoint({ store, checkpointId: options.checkpoint }); break;
       case 'observe': result = await observeApplication({ store, applicationId: options.application,
         session: options.current ? await findCurrentDesktopSession() : options.session,

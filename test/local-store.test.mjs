@@ -5,6 +5,7 @@ import { basename, join } from 'node:path';
 import test from 'node:test';
 
 import { createStore, listRecords, putRecord, readRecord, recordId } from '../src/core/local-store.mjs';
+import * as localStore from '../src/core/local-store.mjs';
 
 const HASH = '3b4800c34ea58c292e372116702846f39a7272cf940899fcecd247e3c219a633';
 
@@ -271,4 +272,57 @@ test('record creation enforces private file modes where supported', async t => {
     assert.equal((await lstat(join(store, 'records'))).mode & 0o777, 0o700);
     assert.equal((await lstat(join(store, '.stages'))).mode & 0o777, 0o700);
   }
+});
+
+test('record pages expose all successful concurrent publications beyond the legacy list limit', async t => {
+  const { store } = await fixture(t, 'pages');
+  const saved = [];
+  for (let start = 0; start < 1001; start += 40) {
+    saved.push(...await Promise.all(Array.from({ length: Math.min(40, 1001 - start) }, (_, offset) =>
+      putRecord({ store, type: 'checkpoint', payload: { index: start + offset } }))));
+  }
+  await rejectsKind(listRecords({ store, type: 'checkpoint' }), 'record-limit-exceeded');
+  assert.equal(typeof localStore.listRecordPage, 'function');
+  const first = await localStore.listRecordPage({ store, type: 'checkpoint' });
+  assert.equal(first.records.length, 1000);
+  assert.equal(first.nextCursor, first.records.at(-1).id);
+  const second = await localStore.listRecordPage({ store, type: 'checkpoint', after: first.nextCursor });
+  assert.equal(second.records.length, 1);
+  assert.equal(second.nextCursor, null);
+  const combined = [...first.records, ...second.records];
+  assert.deepEqual(combined.map(record => record.id), saved.map(record => record.id).sort());
+  assert.deepEqual(combined.map(record => record.payload.index).sort((a, b) => a - b),
+    Array.from({ length: 1001 }, (_, index) => index));
+  assert.deepEqual(await localStore.listRecordPage({ store, type: 'checkpoint', after: second.records[0].id }),
+    { records: [], nextCursor: null });
+});
+
+test('record pages validate cursors and retain corruption and link boundaries', async t => {
+  assert.equal(typeof localStore.listRecordPage, 'function');
+  await rejectsKind(localStore.listRecordPage({ store: '/PRIVATE/missing', type: 'other', after: '../PRIVATE' }), 'invalid-record-type');
+  for (const after of ['', '../PRIVATE', null, 3, 'F'.repeat(64)]) {
+    await rejectsKind(localStore.listRecordPage({ store: '/PRIVATE/missing', type: 'favorite', after }), 'invalid-record-id');
+  }
+  const { store, parent } = await fixture(t, 'page-validation');
+  assert.deepEqual(await localStore.listRecordPage({ store, type: 'favorite' }), { records: [], nextCursor: null });
+  const { id } = await putRecord({ store, type: 'favorite', payload: { private: 'synthetic secret' } });
+  const target = join(store, 'records', 'favorite', `${id}.json`);
+  const original = await readFile(target);
+  await writeFile(target, '{}');
+  await rejectsKind(localStore.listRecordPage({ store, type: 'favorite' }), 'record-corrupt');
+  await rm(target);
+  const outside = join(parent, 'outside.json');
+  await writeFile(outside, original);
+  await symlink(outside, target, 'file');
+  // Every filename is checked, including those before the cursor.
+  await rejectsKind(localStore.listRecordPage({ store, type: 'favorite', after: 'f'.repeat(64) }), 'store-link-or-type');
+  await rm(target);
+  await writeFile(join(store, 'records', 'favorite', 'PRIVATE-invalid.json'), '{}');
+  await rejectsKind(localStore.listRecordPage({ store, type: 'favorite', after: 'f'.repeat(64) }), 'record-corrupt');
+  const utf8 = await corruptReplacementCharacterRecord(t, 'page-utf8');
+  await rejectsKind(localStore.listRecordPage({ store: utf8.store, type: 'favorite' }), 'record-corrupt');
+  const bucket = join(store, 'records', 'favorite');
+  await rm(bucket, { recursive: true });
+  await symlink(parent, bucket, 'dir');
+  await rejectsKind(localStore.listRecordPage({ store, type: 'favorite' }), 'store-link-or-type');
 });

@@ -6,6 +6,9 @@ import { join } from 'node:path';
 import { loadoutMain } from '../src/loadouts/cli.mjs';
 import { main } from '../bin/unharness.mjs';
 import { createDesktopFixture, changeDesktopFixture, fixtureMarkers, readDesktopFixture } from '../src/codex/desktop-fixture.mjs';
+import { createStore, putRecord, recordId } from '../src/core/local-store.mjs';
+import { captureFixture, loadoutFromSnapshot } from '../src/codex/fixture-loadout.mjs';
+import { registerFixture } from '../src/loadouts/service.mjs';
 
 async function invoke(args, entry = loadoutMain) {
   let stdout = '', stderr = '';
@@ -55,4 +58,40 @@ test('CLI completes local save/restore with redacted summaries and exclusive out
   assert.equal(conflict.exitCode, 1);
   assert.equal(JSON.parse(conflict.stdout).error.kind, 'fixture-conflict');
   assert.ok(!conflict.stdout.includes('PRIVATE EDIT') && !conflict.stdout.includes(fixture.fixture));
+});
+
+test('CLI list and checkpoints accept continuation cursors without exposing private contents', async t => {
+  const parent = await realpath(await mkdtemp(join(tmpdir(), 'unharness-cli-pages-')));
+  t.after(() => rm(parent, { recursive: true, force: true }));
+  const { store } = await createStore({ parent });
+  const fixture = await createDesktopFixture({ parent });
+  const { scopeId } = await registerFixture({ store, fixture: fixture.fixture });
+  const snapshot = await captureFixture(fixture.fixture);
+  for (let start = 0; start < 1001; start += 40) {
+    await Promise.all(Array.from({ length: Math.min(40, 1001 - start) }, async (_, offset) => {
+      const index = start + offset;
+      await putRecord({ store, type: 'checkpoint', payload: { schemaVersion: 1, scopeId,
+        snapshot: { ...snapshot, preparation: { ...snapshot.preparation, revision: index } } } });
+      await putRecord({ store, type: 'favorite', payload: { schemaVersion: 1, scopeId,
+        familyId: recordId('favorite', { syntheticFamily: index }), name: `Version ${index}`, snapshot: loadoutFromSnapshot(snapshot) } });
+    }));
+  }
+  for (const [action, key, idKey] of [['list', 'favorites', 'favoriteId'], ['checkpoints', 'checkpoints', 'checkpointId']]) {
+    const firstResult = await invoke(['loadouts', action, '--store', store], main);
+    assert.equal(firstResult.exitCode, 0, firstResult.stdout);
+    const first = JSON.parse(firstResult.stdout);
+    assert.equal(first[key].length, 1000);
+    const continuation = await invoke(['loadouts', action, '--store', store, '--after', first.nextCursor], main);
+    assert.equal(continuation.exitCode, 0, continuation.stdout);
+    const second = JSON.parse(continuation.stdout);
+    assert.equal(second[key].length, 1);
+    assert.equal(second.nextCursor, null);
+    assert.ok(second[key][0][idKey] > first.nextCursor);
+    assert.ok(!continuation.stdout.includes(fixture.fixture));
+    assert.ok(!continuation.stdout.includes(snapshot.configuration.files[0].content));
+    const invalid = await invoke(['loadouts', action, '--store', store, '--after', '../PRIVATE']);
+    assert.equal(invalid.exitCode, 1);
+    assert.equal(JSON.parse(invalid.stdout).error.kind, 'invalid-record-id');
+    assert.ok(!invalid.stdout.includes('PRIVATE'));
+  }
 });

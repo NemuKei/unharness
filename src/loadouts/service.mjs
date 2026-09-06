@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from 'node:util';
 import { isAbsolute, relative, resolve, sep } from 'node:path';
-import { listRecords, putRecord, readRecord, recordId } from '../core/local-store.mjs';
+import { listRecordPage, putRecord, readRecord, recordId } from '../core/local-store.mjs';
 import { assertScopeMatches, captureFixture, expectedFixtureMarkers, restoreFixture,
   loadoutFromSnapshot, scopeFromSnapshot, validateLoadout, validateScope, validateSnapshot } from '../codex/fixture-loadout.mjs';
 import { collectDesktopRecord } from '../codex/desktop-record.mjs';
@@ -68,30 +68,40 @@ export async function saveFavorite({ store, scopeId, familyId, name = null }) {
   const defaultFamily = recordId('favorite', { familySeed: { scopeId, name } });
   const selectedFamily = familyId === undefined ? defaultFamily : id(familyId);
   if (familyId !== undefined) {
-    const family = (await listRecords({ store, type: 'favorite' })).filter(record => favoritePayload(record.payload).familyId === familyId);
-    if (family.length === 0 && selectedFamily !== defaultFamily) fail('loadout-family-not-found');
-    if (family.some(record => record.payload.scopeId !== scopeId)) fail('loadout-incompatible-scope');
+    let found = false, after;
+    do {
+      const page = await listRecordPage({ store, type: 'favorite', after });
+      for (const record of page.records) {
+        const payload = favoritePayload(record.payload);
+        if (payload.familyId !== selectedFamily) continue;
+        found = true;
+        if (payload.scopeId !== scopeId) fail('loadout-incompatible-scope');
+      }
+      after = page.nextCursor;
+    } while (after !== null);
+    if (!found && selectedFamily !== defaultFamily) fail('loadout-family-not-found');
   }
   const payload = { schemaVersion: 1, familyId: selectedFamily, scopeId, name, snapshot: loadoutFromSnapshot(snapshot) };
   const { id: favoriteId, created } = await putRecord({ store, type: 'favorite', payload });
   return { ...favoriteSummary(favoriteId, payload), created };
 }
 
-export async function listFavorites({ store, scopeId }) {
+export async function listFavorites({ store, scopeId, after }) {
   if (scopeId !== undefined) id(scopeId);
-  const records = await listRecords({ store, type: 'favorite' });
+  const { records, nextCursor } = await listRecordPage({ store, type: 'favorite', after });
   return { schemaVersion: 1, favorites: records.map(record => {
     const payload = favoritePayload(record.payload);
     return favoriteSummary(record.id, payload);
-  }).filter(favorite => scopeId === undefined || favorite.scopeId === scopeId) };
+  }).filter(favorite => scopeId === undefined || favorite.scopeId === scopeId), nextCursor };
 }
 
-export async function listCheckpoints({ store }) {
-  return { schemaVersion: 1, checkpoints: (await listRecords({ store, type: 'checkpoint' })).map(record => {
+export async function listCheckpoints({ store, after }) {
+  const { records, nextCursor } = await listRecordPage({ store, type: 'checkpoint', after });
+  return { schemaVersion: 1, checkpoints: records.map(record => {
     const value = checkpointPayload(record.payload);
     return { checkpointId: record.id, scopeId: value.scopeId, case: value.snapshot.configuration.case,
       configurationDigest: value.snapshot.configurationDigest, capturedPreparation: value.snapshot.preparation.revision };
-  }) };
+  }), nextCursor };
 }
 
 async function buildPlan({ store, type, targetId }) {

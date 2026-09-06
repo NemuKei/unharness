@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
-import { chmod, link, lstat, mkdir, mkdtemp, open, readdir, realpath, unlink } from 'node:fs/promises';
+import { chmod, link, lstat, mkdir, mkdtemp, open, opendir, readdir, realpath, unlink } from 'node:fs/promises';
 import { isAbsolute, join, resolve } from 'node:path';
 import { types as utilTypes } from 'node:util';
 
@@ -383,6 +383,42 @@ export async function listRecords({ store, type } = {}) {
       records.push({ id, payload: await readFromBucket(bucket, type, id) });
     }
     return records;
+  } catch (error) {
+    rethrow(error, 'record-list-error');
+  }
+}
+
+export async function listRecordPage({ store, type, after } = {}) {
+  validateType(type);
+  if (after !== undefined) validateId(after);
+  try {
+    const { bucket } = await validateStore(store, type);
+    const ids = [];
+    // Directory order is not stable. Keep only the smallest page plus one
+    // lookahead ID, without materializing the bucket's filenames or payloads.
+    for await (const entry of await opendir(bucket)) {
+      if (!entry.isFile() || entry.isSymbolicLink()) fail('store-link-or-type');
+      if (!entry.name.endsWith('.json')) fail('record-corrupt');
+      const id = entry.name.slice(0, -'.json'.length);
+      if (!RECORD_ID.test(id)) fail('record-corrupt');
+      if (after !== undefined && id <= after) continue;
+      if (ids.length === MAX_RECORDS + 1 && id >= ids.at(-1)) continue;
+      let low = 0, high = ids.length;
+      while (low < high) {
+        const middle = Math.floor((low + high) / 2);
+        if (ids[middle] < id) low = middle + 1;
+        else high = middle;
+      }
+      if (ids.length === MAX_RECORDS + 1) ids.pop();
+      ids.splice(low, 0, id);
+    }
+    const hasMore = ids.length > MAX_RECORDS;
+    if (hasMore) ids.pop();
+    const records = [];
+    for (const id of ids) {
+      records.push({ id, payload: await readFromBucket(bucket, type, id) });
+    }
+    return { records, nextCursor: hasMore ? ids.at(-1) : null };
   } catch (error) {
     rethrow(error, 'record-list-error');
   }

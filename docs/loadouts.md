@@ -28,6 +28,8 @@ A name is optional. `familyId` groups a logical favorite's versions, while `favo
 
 Versions contain the exact configuration bytes/absence states and a separate configuration digest. Live preparation revision/time belongs to checkpoints and application receipts, not favorite identity. Saving the same settings/name/family again, including after a timestamp refresh or an away-and-back switch, returns the same version. Earlier versions remain readable. There is no mutable “latest” pointer in this slice; restoration selects the exact `favoriteId`.
 
+Favorite and checkpoint lists return at most 1,000 entries per page plus `nextCursor`. Pass that value back with `--after "<nextCursor>"` to continue. A cursor is a lexical record position, not a frozen snapshot of concurrent saves. Restart listing to discover new records inserted before a previously returned cursor. With a scope filter, a page can be empty while still returning a continuation cursor. The service follows pages when validating an existing family, so an older version beyond page one remains usable.
+
 The store publishes canonical JSON records by content hash. It fully writes and syncs an owned stage, then uses exclusive hard-link publication. Existing records are verified, never replaced. Corrupt bytes, unsupported JSON values and malformed references fail with fixed error kinds. A retained unpublished stage does not become a favorite. Readers do not execute payloads or instruction text.
 
 ## Plan, restore and keep a checkpoint
@@ -47,6 +49,7 @@ The result distinguishes `configurationReadback: matched` from `runtimeStateVeri
 
 ```text
 node bin/unharness.mjs loadouts checkpoints --store "<store>"
+node bin/unharness.mjs loadouts checkpoints --store "<store>" --after "<nextCursor>"
 node bin/unharness.mjs loadouts restore-checkpoint --store "<store>" --checkpoint "<checkpointId>"
 ```
 

@@ -4,10 +4,11 @@ import { mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { createStore, listRecords, readRecord, recordId } from '../src/core/local-store.mjs';
+import { createStore, listRecords, putRecord, readRecord, recordId } from '../src/core/local-store.mjs';
+import { captureFixture } from '../src/codex/fixture-loadout.mjs';
 import { createDesktopFixture, changeDesktopFixture, fixtureMarkers, readDesktopFixture, recoverDesktopFixture, refreshDesktopFixture } from '../src/codex/desktop-fixture.mjs';
 import { registerFixture, saveFavorite, listFavorites, planRestore, restoreFavorite,
-  restoreCheckpoint, observeApplication } from '../src/loadouts/service.mjs';
+  restoreCheckpoint, observeApplication, listCheckpoints } from '../src/loadouts/service.mjs';
 
 async function setup(t) {
   const parent = await realpath(await mkdtemp(join(tmpdir(), 'unharness-loadouts-')));
@@ -95,6 +96,60 @@ test('a first explicit family retry accepts the scope-name seed and rejects anot
   const second = await registerFixture({ store, fixture: other.fixture });
   await assert.rejects(saveFavorite({ store, scopeId: second.scopeId, familyId, name }), { kind: 'loadout-incompatible-scope' });
   await assert.rejects(saveFavorite({ store, scopeId, familyId: '0'.repeat(64), name }), { kind: 'loadout-family-not-found' });
+});
+
+test('checkpoint summaries remain discoverable across two pages after 1001 successful saves', async t => {
+  const { store, fixture, scopeId } = await setup(t);
+  const snapshot = await captureFixture(fixture.fixture);
+  const ids = [];
+  for (let start = 0; start < 1001; start += 40) {
+    const records = await Promise.all(Array.from({ length: Math.min(40, 1001 - start) }, (_, offset) =>
+      putRecord({ store, type: 'checkpoint', payload: { schemaVersion: 1, scopeId,
+        snapshot: { ...snapshot, preparation: { ...snapshot.preparation, revision: start + offset } } } })));
+    ids.push(...records.map(record => record.id));
+  }
+  const first = await listCheckpoints({ store });
+  assert.equal(first.checkpoints.length, 1000);
+  assert.equal(first.nextCursor, first.checkpoints.at(-1).checkpointId);
+  const second = await listCheckpoints({ store, after: first.nextCursor });
+  assert.equal(second.checkpoints.length, 1);
+  assert.equal(second.nextCursor, null);
+  assert.deepEqual([...first.checkpoints, ...second.checkpoints].map(record => record.checkpointId), ids.sort());
+  assert.ok(!JSON.stringify([first, second]).includes(fixture.fixture));
+  assert.ok(!JSON.stringify([first, second]).includes(snapshot.configuration.files[0].content));
+});
+
+test('favorites and explicit family validation include records beyond page one', async t => {
+  const { parent, store, scopeId } = await setup(t);
+  const original = await saveFavorite({ store, scopeId });
+  const base = await readRecord({ store, type: 'favorite', id: original.favoriteId });
+  const versions = [{ id: original.favoriteId, familyId: original.familyId }];
+  for (let start = 0; start < 1001; start += 40) {
+    versions.push(...await Promise.all(Array.from({ length: Math.min(40, 1001 - start) }, async (_, offset) => {
+      const familyId = recordId('favorite', { syntheticFamily: start + offset });
+      const saved = await putRecord({ store, type: 'favorite', payload: { ...base, familyId, name: `Version ${start + offset}` } });
+      return { id: saved.id, familyId };
+    })));
+  }
+  versions.sort((a, b) => a.id < b.id ? -1 : 1);
+  const beyond = versions.at(-1);
+  const first = await listFavorites({ store, scopeId });
+  assert.equal(first.favorites.length, 1000);
+  assert.equal(first.nextCursor, first.favorites.at(-1).favoriteId);
+  const second = await listFavorites({ store, scopeId, after: first.nextCursor });
+  assert.equal(second.favorites.length, 2);
+  assert.equal(second.nextCursor, null);
+  assert.deepEqual([...first.favorites, ...second.favorites].map(item => item.favoriteId), versions.map(item => item.id));
+  const missingScope = '0'.repeat(64);
+  const filtered = await listFavorites({ store, scopeId: missingScope });
+  assert.deepEqual(filtered.favorites, []);
+  assert.equal(filtered.nextCursor, first.nextCursor);
+  const other = await createDesktopFixture({ parent });
+  const registration = await registerFixture({ store, fixture: other.fixture });
+  await assert.rejects(saveFavorite({ store, scopeId: registration.scopeId, familyId: beyond.familyId }), { kind: 'loadout-incompatible-scope' });
+  const updated = await saveFavorite({ store, scopeId, familyId: beyond.familyId, name: 'Later version' });
+  assert.equal(updated.familyId, beyond.familyId);
+  await assert.rejects(saveFavorite({ store, scopeId, familyId: '0'.repeat(64) }), { kind: 'loadout-family-not-found' });
 });
 
 test('restore refuses independent edits and never replaces them', async t => {

@@ -23,11 +23,11 @@ The deliberately introduced test edit was removed only after confirming its exac
 
 ## Verification and review
 
-`node --test` passed **121/121** tests. Coverage includes canonical immutable publication, concurrent deduplication, corrupted raw UTF-8 and unsupported array properties, exact saved payloads, stale plans, independent edits, interrupted restore/checkpoint recovery, family/version identity across refresh and away-and-back changes, output collisions and safe CLI errors.
+`node --test` passed **126/126** tests. Coverage includes canonical immutable publication, concurrent deduplication, corrupted raw UTF-8 and unsupported array properties, exact saved payloads, stale plans, independent edits, interrupted restore/checkpoint recovery, family/version identity across refresh and away-and-back changes, output collisions and safe CLI errors.
 
 Observation association was tested with synthetic session records: it names an exact favorite version/application receipt, checks current preparation and a new application time boundary, rejects old/forked/wrong preparations, and retains `runtimeStateVerified: false` and `modeSwitchingVerified: false`. No actual desktop task was associated with the new favorite store during this smoke run.
 
-The store and integration each received scoped specification/quality review. Findings about corrupt byte acceptance, noncanonical array keys and capture-dependent favorite identity were corrected and re-reviewed. The broader final review is recorded with the pinned revision below.
+The store and integration each received scoped specification/quality review. Findings about corrupt byte acceptance, noncanonical array keys and capture-dependent favorite identity were corrected and re-reviewed. The broader final review found that successful accumulation beyond 1,000 records disabled checkpoint discovery. Bounded pagination and CLI continuation corrected this, including existing-family validation beyond the first page. The scoped final re-review found no remaining issue. The pinned revision is recorded below.
 
 ## Remaining boundaries
 

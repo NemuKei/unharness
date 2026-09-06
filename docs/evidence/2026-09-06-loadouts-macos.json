@@ -19,9 +19,10 @@
   "runtimeStateVerified": false,
   "modeSwitchingVerified": false,
   "verification": {
-    "syntheticTestsPassed": 121,
+    "syntheticTestsPassed": 126,
     "syntheticTestsFailed": 0,
     "scope": "generated-fixture-only",
-    "nativeWindows": "unverified"
+    "nativeWindows": "unverified",
+    "historyPaginationTestedAbove1000": true
   }
 }

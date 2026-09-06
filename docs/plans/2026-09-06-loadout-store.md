@@ -68,4 +68,4 @@ Files: `src/loadouts/cli.mjs`, `bin/unharness.mjs`, CLI tests, both READMEs, arc
 
 ## Validation outcome
 
-The store and integrated adapter/service/CLI passed their scoped reviews after fixes to raw byte validation, array-key validation and stable favorite identity. Full suite: 121 tests passed. Native synthetic CLI smoke completed save/change/version restore/checkpoint restore and conflict preservation, ending at baseline. No personal sources or new model tasks were used. Final revision and evidence are in [the native loadout note](../evidence/2026-09-06-loadouts-macos.md).
+The store and integrated adapter/service/CLI passed their scoped reviews after fixes to raw byte validation, array-key validation and stable favorite identity. Full suite: 126 tests passed. Native synthetic CLI smoke completed save/change/version restore/checkpoint restore and conflict preservation, ending at baseline. No personal sources or new model tasks were used. Final revision and evidence are in [the native loadout note](../evidence/2026-09-06-loadouts-macos.md).
