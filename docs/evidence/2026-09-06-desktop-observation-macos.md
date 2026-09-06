@@ -40,3 +40,7 @@ The real-task observation above proves that these input/usage categories can be 
 ## Next reproducible check
 
 Use [the desktop sequence](../desktop-observation.md#fresh-task-sequence-on-macos-or-native-windows): open the returned synthetic project as a new local task, send the marker-free plain prompt, and collect the initial recording before changing a case. Keep the model and permissions fixed. If a new task does not reflect the fixture, report prepared/runtime-unverified; test a restart only when the user chooses to do so. Windows must repeat both filesystem recovery tests and desktop observations natively, with WSL identified separately.
+
+## Final verification revision
+
+The tested runtime is `7889864a560651f8f231087757fa07f2c123c62f`. The post-commit `inspect-desktop --current` run exited 0 against the actual Mac development task and retained the same evidence boundaries. The source/test bytes match the 82/82 suite and reviewed implementation. The prepared baseline fixture also passed current-state integrity inspection and is left ready for the manual new-task check. [The reduced machine-readable evidence](2026-09-06-desktop-observation-macos.json) records only approved technical fields; private local recordings and handoff paths remain ignored.

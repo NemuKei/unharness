@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "kind": "macos-desktop-observation-evidence",
+  "observedAt": "2026-09-06T10:01:22.995Z",
+  "runtimeRevision": "7889864a560651f8f231087757fa07f2c123c62f",
+  "environment": {
+    "platform": "darwin",
+    "architecture": "arm64",
+    "nodeVersion": "24.20.0",
+    "osVersion": "26.6.2",
+    "installedDesktopBundleVersion": "26.901.41600",
+    "installedDesktopBundleBuild": "7982",
+    "recordedCodexCliVersion": "0.153.4",
+    "execution": "native-local"
+  },
+  "surface": "local-session-record",
+  "desktopSessionAttached": false,
+  "runtimeStateVerified": false,
+  "modeSwitchingVerified": false,
+  "sourceCoverage": "unknown",
+  "observations": {
+    "desktopOriginator": true,
+    "recordedSourceFields": {
+      "agents_md": "field-recorded",
+      "host_skills": "field-recorded",
+      "skills": "field-recorded",
+      "orchestrator_skills": "field-recorded",
+      "managed_developer_instructions": "field-recorded",
+      "permissions": "field-recorded",
+      "apps_instructions": "field-recorded",
+      "plugins_instructions": "field-recorded"
+    },
+    "initialHostSkillCatalog": true,
+    "initialMemoryGuidance": true,
+    "usageFieldsPresent": {
+      "input_tokens": true,
+      "cached_input_tokens": true,
+      "cache_write_input_tokens": true,
+      "output_tokens": true,
+      "reasoning_output_tokens": true,
+      "total_tokens": true
+    },
+    "usageTotalsCollected": false,
+    "usageCompleteness": "unknown"
+  },
+  "nativeFixtureSmoke": {
+    "casePreparationAndRestoration": true,
+    "cleanup": {
+      "schemaVersion": 1,
+      "kind": "unharness-desktop-fixture-cleanup",
+      "cleanup": "ok",
+      "receiptRetained": true
+    },
+    "selectedPersonalLocationsChecked": 3,
+    "selectedPersonalLocationsUnchanged": true
+  },
+  "verification": {
+    "syntheticTestsPassed": 82,
+    "syntheticTestsFailed": 0,
+    "reviewUnresolvedFindings": 0,
+    "freshDesktopFixtureSequence": "pending",
+    "explicitDesktopSkillSelection": "pending",
+    "nativeWindows": "pending"
+  }
+}
