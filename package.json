@@ -1,0 +1,13 @@
+{
+  "name": "unharness",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node --test",
+    "inspect": "node bin/unharness.mjs inspect"
+  }
+}
