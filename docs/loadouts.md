@@ -76,6 +76,19 @@ Inside that new task's tool environment, `--current` can replace `--session`. Th
 
 The service saves a sanitized observation linked to the explicit application and favorite version. `fixtureMarkerCheck` is `matched-record`, `not-matched-record` or `unqualified-record`. Matching markers do not establish complete runtime control or a product mode; full runtime/mode flags remain false. This is not quality grading, usage aggregation or a performance comparison.
 
+## Observed desktop path
+
+The [native Mac verification](evidence/2026-09-07-saved-loadout-desktop-macos.md) connected a saved manual-only version to a real fresh task, rejected an older task from the same project, restored the baseline and associated a second fresh task with that exact baseline version. The baseline confirmation used the existing fixture-only refresh notification and then reapplied the same favorite to obtain a new receipt. Both associations were `matched-record`; full runtime/mode flags remained false.
+
+If a refresh is used, its order matters:
+
+1. Restore the desired favorite.
+2. Request the owned-fixture refresh if needed.
+3. Restore that same favorite again to capture the post-refresh preparation in a new application receipt.
+4. Start a fresh task, then observe using that new receipt.
+
+A refresh after receipt creation invalidates that receipt's preparation binding. Reusing the old receipt must not be displayed as successful application. This fixture-specific sequence is not a general restart/reload API for personal Skills.
+
 ## Errors and remaining boundaries
 
 All commands support `--output "<new file>"` with exclusive creation. Results also go to stdout. An output collision can occur after an operation completed; inspect the returned receipt/checkpoint instead of treating a nonzero exit as proof that nothing changed. Exit 2 is invalid usage; exit 1 is an operation or output error.

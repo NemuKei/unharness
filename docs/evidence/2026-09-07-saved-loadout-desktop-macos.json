@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "kind": "saved-fixture-version-desktop-association",
+  "observedAt": "2026-09-06T23:30:40.255Z",
+  "runtimeRevision": "ac9383610b8b27a6b73d0fec285bc116f9a33cbe",
+  "environment": {
+    "platform": "darwin",
+    "architecture": "arm64",
+    "nodeVersion": "24.20.0",
+    "osVersion": "26.6.2",
+    "installedDesktopVersion": "26.901.41600",
+    "installedDesktopBuild": "7982",
+    "recordedCliVersion": "0.153.4",
+    "execution": "native-local"
+  },
+  "controlledScope": "owned-fixture-only",
+  "sourceCoverage": "unknown",
+  "desktopSessionAttached": false,
+  "runtimeStateVerified": false,
+  "modeSwitchingVerified": false,
+  "observations": {
+    "manualOnly": {
+      "case": "manual-only",
+      "fixtureMarkerCheck": "matched-record",
+      "exactFavoriteLinked": true,
+      "exactApplicationLinked": true,
+      "taskMetadataCorrelated": true,
+      "firstTurnCompleted": true,
+      "toolCallsDuringPlainTurn": false,
+      "provenance": {
+        "contextRecorded": true,
+        "cwdMatches": true,
+        "desktopOriginator": true,
+        "freshFixtureTaskCandidate": true,
+        "hasForkParent": false,
+        "knownFork": false,
+        "preparedBeforeStart": true,
+        "recordedStartRoute": "agent-created"
+      },
+      "markers": {
+        "fixed": "present",
+        "procedure": "present",
+        "skillBody": "absent-in-record",
+        "skillCatalog": "absent-in-record"
+      },
+      "sourceCoverage": "unknown",
+      "runtimeStateVerified": false,
+      "modeSwitchingVerified": false
+    },
+    "restoredBaseline": {
+      "case": "baseline",
+      "fixtureMarkerCheck": "matched-record",
+      "exactFavoriteLinked": true,
+      "exactApplicationLinked": true,
+      "taskMetadataCorrelated": true,
+      "firstTurnCompleted": true,
+      "toolCallsDuringPlainTurn": false,
+      "provenance": {
+        "contextRecorded": true,
+        "cwdMatches": true,
+        "desktopOriginator": true,
+        "freshFixtureTaskCandidate": true,
+        "hasForkParent": false,
+        "knownFork": false,
+        "preparedBeforeStart": true,
+        "recordedStartRoute": "agent-created"
+      },
+      "markers": {
+        "fixed": "present",
+        "procedure": "present",
+        "skillBody": "absent-in-record",
+        "skillCatalog": "present"
+      },
+      "sourceCoverage": "unknown",
+      "runtimeStateVerified": false,
+      "modeSwitchingVerified": false
+    }
+  },
+  "oldTaskRejected": {
+    "fixtureMarkerCheck": "unqualified-record",
+    "cwdMatches": true,
+    "preparedBeforeStart": false,
+    "freshFixtureTaskCandidate": false
+  },
+  "recovery": {
+    "baselineBytesReadback": "matched",
+    "baselineFavoriteVersionReused": true,
+    "refreshRequested": "owned-skill-mtime",
+    "receiptReissuedAfterRefresh": true,
+    "finalFixtureCase": "baseline",
+    "finalFixtureIntact": true
+  },
+  "retainedConditionEquality": {
+    "cwd": true,
+    "model": true,
+    "effort": true,
+    "approval_policy": true,
+    "sandbox_policy": true,
+    "permission_profile": true,
+    "active_permission_profile": true
+  },
+  "selectedPersonalLocationsChecked": 3,
+  "selectedPersonalLocationsUnchanged": true,
+  "desktopRestartRequested": false,
+  "modelTaskCount": 2,
+  "performanceComparison": false,
+  "nativeWindows": "unverified"
+}

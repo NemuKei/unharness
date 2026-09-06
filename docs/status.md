@@ -1,6 +1,6 @@
 # Project status
 
-Updated: 2026-09-06.
+Updated: 2026-09-07.
 
 ## Established
 
@@ -38,11 +38,13 @@ The follow-up diagnostic at `ae487b9` handles custom-tool text-block outputs, re
 
 The registered-loadout core at `29c13e2` now completes a synthetic native Mac CLI loop: register → save baseline → save a changed version → restore an exact favorite → restore the pre-change checkpoint. The same family/name/settings keep the same favorite version across preparation-only refreshes. Independent edits and stale plans block restoration. The full suite passes 126 tests, including corrupt-record handling, interrupted saves/restores and version-bound observation checks. The new [loadout evidence](evidence/2026-09-06-loadouts-macos.md) is filesystem/service evidence; no new desktop task was associated with a favorite in that smoke run.
 
+The [saved-version desktop loop](evidence/2026-09-07-saved-loadout-desktop-macos.md) now connects the service to actual Mac tasks. A saved manual-only version and the restored baseline each produced a completed fresh task and a `matched-record` observation tied to the exact favorite/application. An older task from the same project was `unqualified-record`. A refresh was followed by a replacement application receipt before the baseline task; the original baseline favorite ID was reused. Recorded model/execution conditions matched, three selected personal locations were unchanged, and the retained fixture is at baseline. These are fixture-scoped recording observations, not full runtime/mode verification.
+
 ## Next useful work
 
-The maintainer accepted the [feasibility boundaries](feasibility.md). Continue with the desktop control/observation gate; local artwork and sharing do not resolve it. The desktop primitives and fixture-only save/restore core now have evidence. The remaining gate is real registered-source classification/control coverage and an observed prepare → fresh-task workflow for saved versions.
+The maintainer accepted the [feasibility boundaries](feasibility.md). Continue with the desktop control/observation gate; local artwork and sharing do not resolve it. The desktop primitives, fixture-only save/restore core and saved-version → fresh-task observation path now have Mac evidence. Next, connect a minimal local GUI to the same service for version selection/save, application, pending task state, observation and restoration. Clearly label the synthetic scope and keep configuration readback distinct from recorded input confirmation. Real registered-source classification/control coverage remains a separate gate.
 
-Run the inventory and source-control probes plus `inspect-desktop --current` in Windows Codex and reconcile their evidence with Mac. Run the persistent fixture/recovery suite on its native filesystem, then the manual fresh-task sequence. Establish the actual desktop task boundary next: whether a selected loadout can be applied and verified for a fresh desktop task while preserving the intended environment. Standalone source controls and actual desktop-record projection are available on the observed Mac runtime. Host-provided Skill and memory inputs are now observable as recorded content/categories; their complete control scope remains unresolved. Selected fixture loading and the literal explicit-invocation route are observed on Mac; configuration-based Skill disablement, picker selection and generic refresh guarantees remain unverified.
+Run the inventory and source-control probes plus `inspect-desktop --current` in Windows Codex and reconcile their evidence with Mac. Run the persistent fixture/recovery suite on its native filesystem, then the manual fresh-task sequence. Repeat the saved-version desktop workflow on Windows while retaining the observed Mac boundary. Standalone source controls and actual desktop-record projection are available on the observed Mac runtime. Host-provided Skill and memory inputs are now observable as recorded content/categories; their complete control scope remains unresolved. Selected fixture loading and the literal explicit-invocation route are observed on Mac; configuration-based Skill disablement, picker selection and generic refresh guarantees remain unverified.
 
 The maintainer selected verification by opening the same repository in Windows Codex. Its desktop/runtime versions and real probe result are not yet recorded. Claude Code implementation begins after the Codex baseline meets its two-OS acceptance criteria.
 

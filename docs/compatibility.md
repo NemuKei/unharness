@@ -4,7 +4,7 @@
 
 | OS | Application | Delivery phase | Current evidence |
 | --- | --- | --- | --- |
-| macOS | Codex desktop | 1 | Synthetic desktop controls/refresh and native fixture loadout save/restore observed; full product modes unverified |
+| macOS | Codex desktop | 1 | Saved fixture versions associated with fresh desktop tasks, including restoration; full product modes unverified |
 | Windows | Codex desktop | 1 | Inventory, source-control and desktop-record/fixture probes prepared; native real runs pending |
 | macOS | Claude Code desktop, Code tab | 2 | Documentation reviewed; integration not implemented or tested |
 | Windows | Claude Code desktop, Code tab | 2 | Test environment available per maintainer; no test result yet |
@@ -43,6 +43,8 @@ The [desktop-record investigation](evidence/2026-09-06-desktop-observation-macos
 The [persistent fixture runbook](desktop-observation.md) covers manual baseline → manual-only → fixed-only → restored baseline checks, explicit Skill selection, and fixture recovery. The implementation passed 82 synthetic tests on macOS, including process termination and concurrent recovery. Windows needs native filesystem tests (including hard-link publication), app/runtime versions, actual recording shape and new-task observations. The [fresh-task sequence](evidence/2026-09-06-desktop-fixture-macos.md) now confirms baseline, manual-only omission, fixed-only AGENTS and refresh-assisted restoration on Mac, plus literal Skill invocation through a scoped file read. Two stale-catalog restore observations remain recorded. The follow-up adds creation-route provenance, custom-tool output projection and a journaled fixture-only mtime notification; its suite passes 88 tests. Configuration-based restart tests, desktop picker selection, complete source control and Windows remain pending.
 
 The [registered-loadout native smoke](evidence/2026-09-06-loadouts-macos.md) adds local filesystem/service evidence for immutable versions, source checkpoints and restoration on Mac. Its suite passes 126 tests. It does not add desktop favorite-associated task evidence or validate real personal sources; Windows still needs the same local-store and fixture checks natively.
+
+The [2026-09-07 saved-version desktop check](evidence/2026-09-07-saved-loadout-desktop-macos.md) links two actual Mac tasks to exact favorite/application records: manual-only and refreshed baseline. The old-task control was rejected, baseline version identity was retained and recorded execution settings matched. This closes the fixture service-to-desktop association check on the observed Mac version; source coverage remains unknown and full mode flags remain false. Windows still requires its own result.
 
 ## Claude Code investigation baseline
 

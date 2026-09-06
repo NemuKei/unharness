@@ -38,3 +38,7 @@ The only source adapter here is the generated Codex fixture. Real mixed-source c
 ## Final tested revision
 
 The complete tested runtime is `29c13e225b8f381e201d50b46ef27470b6a31bd9`. Source/test bytes match the final **126/126 passing suite** and the approved final re-review. The final fix preserves access to histories above 1,000 records through bounded pages; it does not delete history or impose a new save cap. Existing native smoke favorites remained readable with the new paginated command. There are no unresolved review findings in this fixture-only slice.
+
+## Subsequent desktop association
+
+The later [2026-09-07 desktop check](2026-09-07-saved-loadout-desktop-macos.md) connected exact saved versions/application receipts with actual fresh Mac tasks. The filesystem-only scope of this earlier smoke result remains unchanged.

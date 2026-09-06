@@ -28,7 +28,7 @@ node bin/unharness.mjs probe-controls --output local-evidence/source-controls.js
 
 `inspect-desktop --current` reads the selected desktop task's local recording and reports source/usage availability without source text or token totals. `desktop-fixture create` prepares a synthetic project for manually started fresh-task checks, with fixture-only restore/recovery. These commands do not apply a mode or establish desktop support. See [desktop observation and recovery steps](docs/desktop-observation.md). Fresh Mac fixture trials observed source changes and restoration, with a stale-catalog limitation. `desktop-fixture refresh` offers an owned-file notification for diagnosis; it still requires a following task observation.
 
-`loadouts` adds registered fixture settings, immutable favorite versions, pre-change checkpoints, guarded restore and version-bound recording associations. The shared local service is implemented; real personal-source control and GUI/MCP endpoints remain future work. See [the loadout commands](docs/loadouts.md).
+`loadouts` adds registered fixture settings, immutable favorite versions, pre-change checkpoints, guarded restore and version-bound recording associations. The shared local service is implemented; real personal-source control and GUI/MCP endpoints remain future work. See [the loadout commands](docs/loadouts.md). [The Mac desktop check](docs/evidence/2026-09-07-saved-loadout-desktop-macos.md) now links saved fixture versions to real fresh tasks and verifies baseline restoration within that synthetic scope.
 
 ## Make “what if I removed this?” easy to try
 
