@@ -85,7 +85,12 @@ function canonicalJson(value, depth = 0, ancestors = new Set()) {
         values.push(canonicalJson(descriptor.value, depth + 1, ancestors));
       }
       const ownKeys = Reflect.ownKeys(value);
-      if (ownKeys.some(key => key !== 'length' && (!/^\d+$/.test(String(key)) || Number(key) >= value.length))) {
+      if (ownKeys.some(key => {
+        if (key === 'length') return false;
+        if (typeof key !== 'string') return true;
+        const index = Number(key);
+        return !Number.isInteger(index) || index < 0 || index >= value.length || String(index) !== key;
+      })) {
         fail('invalid-record-payload');
       }
       return `[${values.join(',')}]`;
@@ -208,9 +213,10 @@ async function validateStore(store, type) {
 }
 
 function validateStoredRecord(bytes, type, id) {
+  const decoded = bytes.toString('utf8');
   let envelope;
   try {
-    envelope = JSON.parse(bytes.toString('utf8'));
+    envelope = JSON.parse(decoded);
   } catch {
     fail('record-corrupt');
   }
@@ -226,7 +232,7 @@ function validateStoredRecord(bytes, type, id) {
   } catch {
     fail('record-corrupt');
   }
-  if (rebuilt.id !== id || rebuilt.json !== bytes.toString('utf8')) fail('record-corrupt');
+  if (rebuilt.id !== id || !bytes.equals(Buffer.from(rebuilt.json, 'utf8'))) fail('record-corrupt');
   return envelope.payload;
 }
 
@@ -270,7 +276,7 @@ async function cleanupOwnStage(stage, expected, json) {
       corruptKind: 'record-write-error',
       maxBytes: MAX_RECORD_BYTES,
     });
-    if (bytes.toString('utf8') !== json) return;
+    if (!bytes.equals(Buffer.from(json, 'utf8'))) return;
     await unlink(stage);
   } catch {
     // Retain a missing, replaced, changed, or otherwise uncertain stage.
@@ -336,7 +342,7 @@ export async function putRecord({ store, type, payload } = {}) {
         maxBytes: MAX_RECORD_BYTES,
       });
       validateStoredRecord(existing, type, record.id);
-      if (existing.toString('utf8') !== record.json) fail('record-corrupt');
+      if (!existing.equals(Buffer.from(record.json, 'utf8'))) fail('record-corrupt');
     }
     return { id: record.id, created };
   } catch (error) {

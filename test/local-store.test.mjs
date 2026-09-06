@@ -14,6 +14,24 @@ async function fixture(t, label = 'store') {
   return { parent, ...(await createStore({ parent })) };
 }
 
+async function corruptReplacementCharacterRecord(t, label) {
+  const { store } = await fixture(t, label);
+  const payload = { value: '\ufffd' };
+  const { id } = await putRecord({ store, type: 'favorite', payload });
+  const target = join(store, 'records', 'favorite', `${id}.json`);
+  const original = await readFile(target);
+  const replacement = Buffer.from('\ufffd', 'utf8');
+  const offset = original.indexOf(replacement);
+  assert.notEqual(offset, -1);
+  const corrupt = Buffer.concat([
+    original.subarray(0, offset),
+    Buffer.from([0xff]),
+    original.subarray(offset + replacement.length),
+  ]);
+  await writeFile(target, corrupt);
+  return { corrupt, id, payload, store, target };
+}
+
 function rejectsKind(value, kind) {
   return assert.rejects(value, error => {
     assert.equal(error?.kind, kind);
@@ -73,6 +91,28 @@ test('recordId rejects invalid values, excessive nesting, size, and record types
   for (let index = 0; index < 33; index += 1) deep = { next: deep };
   throwsKind(() => recordId('favorite', deep), 'record-too-deep');
   throwsKind(() => recordId('favorite', { text: 'x'.repeat(1024 * 1024) }), 'record-too-large');
+});
+
+test('recordId rejects numeric-looking array properties that are not canonical indices', () => {
+  const payload = [1];
+  payload['00'] = () => 'not JSON';
+  throwsKind(() => recordId('favorite', payload), 'invalid-record-payload');
+});
+
+test('recordId rejects numeric-looking array accessors without invoking them', () => {
+  let getterCalled = false;
+  const payload = [1];
+  Object.defineProperty(payload, '00', {
+    configurable: true,
+    enumerable: true,
+    get() {
+      getterCalled = true;
+      return undefined;
+    },
+  });
+
+  throwsKind(() => recordId('favorite', payload), 'invalid-record-payload');
+  assert.equal(getterCalled, false);
 });
 
 test('createStore initializes only a private canonical child of an existing parent', async t => {
@@ -141,6 +181,17 @@ test('readRecord and putRecord reject corrupt existing content without replacing
   await rejectsKind(readRecord({ store, type: 'favorite', id }), 'record-corrupt');
   await rejectsKind(putRecord({ store, type: 'favorite', payload }), 'record-corrupt');
   assert.equal(await readFile(target, 'utf8'), '{}');
+});
+
+test('readRecord rejects malformed UTF-8 that replacement decoding would normalize', async t => {
+  const { id, store } = await corruptReplacementCharacterRecord(t, 'invalid-utf8-read');
+  await rejectsKind(readRecord({ store, type: 'favorite', id }), 'record-corrupt');
+});
+
+test('putRecord rejects a malformed UTF-8 collision and preserves its raw bytes', async t => {
+  const { corrupt, payload, store, target } = await corruptReplacementCharacterRecord(t, 'invalid-utf8-put');
+  await rejectsKind(putRecord({ store, type: 'favorite', payload }), 'record-corrupt');
+  assert.deepEqual(await readFile(target), corrupt);
 });
 
 test('record operations validate type and ID before touching a store path', async () => {
