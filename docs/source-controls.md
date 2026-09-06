@@ -1,6 +1,6 @@
 # Fixture source-control diagnostic
 
-Unharness provides two diagnostics that leave personal configuration unchanged:
+The two standalone diagnostics leave personal configuration unchanged:
 
 ```text
 node bin/unharness.mjs inspect --cwd <directory>
@@ -51,3 +51,5 @@ node bin/unharness.mjs probe-controls --codex "C:\Program Files\Codex\codex.exe"
 This executable path is illustrative; replace it with the installed native Codex executable path on the Windows machine.
 
 `.cmd` and `.bat` wrappers are rejected because subprocess arguments must remain structured with no shell. Windows support remains unverified until this command is run on Windows and the sanitized report and configuration before/after checks are reviewed there.
+
+For actual desktop recording and a persistent project opened in a fresh task, use [the desktop observation diagnostic](desktop-observation.md). Its fixture recovery is separate from this temporary CLI-only probe.

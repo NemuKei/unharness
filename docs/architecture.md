@@ -1,6 +1,6 @@
 # Architecture boundaries
 
-This page separates the code present on 2026-09-06 from the intended product architecture. The working runtime contains Node.js 24+ inventory and owned-fixture source-control diagnostics using ES modules and the standard library. The full GUI/MCP/control/storage implementation and their framework/storage choices remain future work.
+This page separates the code present on 2026-09-06 from the intended product architecture. The working runtime contains Node.js 24+ inventory, source-control fixtures, and desktop-record observation using ES modules and the standard library. The full GUI/MCP/control/storage implementation and their framework/storage choices remain future work.
 
 ## Current runnable architecture
 
@@ -34,6 +34,16 @@ The four data queries are `config/read`, `skills/list`, `hooks/list`, and `confi
 The `probe-controls` path runs through [source-controls.mjs](../src/codex/source-controls.mjs), which owns a temporary fixture and the six-case sequence, and [prompt-input.mjs](../src/codex/prompt-input.mjs), which runs the bounded CLI debug command and projects recognized text into five marker booleans. It reuses the existing version-command and owned-process cleanup behavior. It does not extend the inventory RPC allowlist or retain raw prompt text. Its interpretation and failure boundaries are in [the control-probe contract](spec-source-controls.md).
 
 Both diagnostics are separate from the desktop app's active session. They retain `desktopSessionAttached: false`, `runtimeStateVerified: false`, and `modeSwitchingVerified: false`; inventory coverage is `"unknown"`, and the control probe covers only its owned fixture. Current persistence is an optional JSON report, not a favorites database or a comparison store. macOS has real standalone observations; Windows evidence is pending.
+
+## Desktop observation slice
+
+[desktop-record.mjs](../src/codex/desktop-record.mjs) reads a bounded snapshot of one selected local JSONL recording. `--current` discovers filenames for the calling task only and verifies the recorded identity. Projection keeps known source categories, preparation/cwd checks, marker observations, and usage availability; raw content and token totals are discarded. An initial full `world_state` and initial input messages are observations, not an exhaustive model-input contract or a live attachment.
+
+[desktop-fixture.mjs](../src/codex/desktop-fixture.mjs) owns one synthetic project and its control manifest. It prepares baseline, manual-only Skill and fixed-only AGENTS cases without touching personal configuration. Ownership validation, exact source checks, operation locks, pending journals and retained recovery identities support fixture-only restore, interrupted-operation recovery and cleanup. Cleanup retains a small completion receipt. New source publication uses a staged exclusive hard link; filesystem support still needs Windows validation.
+
+[desktop-cli.mjs](../src/codex/desktop-cli.mjs) supplies the local create/set/status/restore/recover/cleanup and observation entry points. It does not start desktop tasks. The operator opens the prepared project as a fresh local task, then the observer relates its recording to the intact preparation snapshot. A source edit during observation prevents association; results remain snapshots rather than perpetual claims about active state.
+
+The [runbook](desktop-observation.md) defines manual startup, evidence interpretation and the deliberately limited recovery scope. Corrupt/partial journals, missing lock ownership, power loss and adversarial filesystem races are not covered as automatic recovery. This fixture mechanism is not yet the shared favorite/configuration transaction engine. Mac has actual desktop-record observations; fixture loading and Windows still require fresh-task evidence.
 
 ## Intended product architecture
 

@@ -4,8 +4,8 @@
 
 | OS | Application | Delivery phase | Current evidence |
 | --- | --- | --- | --- |
-| macOS | Codex desktop | 1 | Standalone inventory and temporary-fixture source controls observed; desktop mode switching not verified |
-| Windows | Codex desktop | 1 | Inventory and fixture-control probes prepared; real runs will be performed in Windows Codex |
+| macOS | Codex desktop | 1 | Standalone source controls and actual desktop-record source/usage availability observed; selected-fixture loading and mode switching unverified |
+| Windows | Codex desktop | 1 | Inventory, source-control and desktop-record/fixture probes prepared; native real runs pending |
 | macOS | Claude Code desktop, Code tab | 2 | Documentation reviewed; integration not implemented or tested |
 | Windows | Claude Code desktop, Code tab | 2 | Test environment available per maintainer; no test result yet |
 
@@ -37,6 +37,10 @@ Reviewed on 2026-09-06:
 The local CLI observed during exploration was 0.153.4. This observation is not a chosen minimum version or a completed compatibility test.
 
 The [fixture source-control investigation](evidence/2026-09-06-source-controls-macos.md) observed `debug prompt-input` behavior for manual-only skills, SKILL.md versus directory disable selectors, a fixed-only AGENTS override, and fixture restoration. In this installed version the file selector excluded the skill and the directory selector did not. The [portable control probe](source-controls.md) records those differences without changing personal configuration or starting a model turn. It does not verify desktop-loaded state or actual explicit skill invocation.
+
+The [desktop-record investigation](evidence/2026-09-06-desktop-observation-macos.md) adds actual recording evidence on native macOS: initial host Skill catalog, memory guidance and source-state fields are present, and per-response usage records expose recognized numeric fields. The observer deliberately does not export totals or claim complete input/usage coverage. Its originator/cwd/preparation checks identify a candidate for human-correlated fresh-task evidence; they do not assert mode application.
+
+The [persistent fixture runbook](desktop-observation.md) covers manual baseline → manual-only → fixed-only → restored baseline checks, explicit Skill selection, and fixture recovery. The implementation passed 82 synthetic tests on macOS, including process termination and concurrent recovery. Windows needs native filesystem tests (including hard-link publication), app/runtime versions, actual recording shape and new-task observations. macOS fixture-loaded evidence and all configuration-based restart tests remain pending.
 
 ## Claude Code investigation baseline
 
