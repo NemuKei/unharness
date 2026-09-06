@@ -26,7 +26,7 @@ node bin/unharness.mjs probe-controls --output local-evidence/source-controls.js
 
 `probe-controls` は自分で作った一時的なAGENTS・Skillを6条件で切り替え、Codexが組み立てる入力を確認して後片付けします。個人設定は編集せず、モデルの実行も始めません。確認対象は検証用ソースの挙動であり、デスクトップのモード適用ではありません。[ソース制御の診断とWindows手順](docs/source-controls.md)に詳細があります。
 
-`inspect-desktop --current` は選択中のタスクのローカル記録から、追加ソースや使用量の項目が記録されているかを調べます。本文やトークン合計は出力しません。`desktop-fixture create` は手動で新規タスクを始める検証用フォルダを用意し、専用データだけを復帰できます。モード適用やデスクトップ対応を確認したものではありません。[デスクトップ観測と復帰の手順](docs/desktop-observation.md)を参照してください。
+`inspect-desktop --current` は選択中のタスクのローカル記録から、追加ソースや使用量の項目が記録されているかを調べます。本文やトークン合計は出力しません。`desktop-fixture create` は手動で新規タスクを始める検証用フォルダを用意し、専用データだけを復帰できます。モード適用やデスクトップ対応を確認したものではありません。[デスクトップ観測と復帰の手順](docs/desktop-observation.md)を参照してください。 Macの専用データでは反映・復帰を観測しましたが、Skill一覧が古い状態を保つ場合がありました。`desktop-fixture refresh` は検証専用ファイルの更新通知を行い、その後のタスクで反映を確かめるためのコマンドです。
 
 ## 「これを外したらどうなる？」を、気軽に試す
 

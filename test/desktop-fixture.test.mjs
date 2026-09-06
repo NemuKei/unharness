@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 import { changeDesktopFixture, cleanupDesktopFixture, createDesktopFixture, inspectDesktopFixture,
-  readDesktopFixture, recoverDesktopFixture, snapshotDesktopFixture } from '../src/codex/desktop-fixture.mjs';
+  readDesktopFixture, recoverDesktopFixture, refreshDesktopFixture, snapshotDesktopFixture } from '../src/codex/desktop-fixture.mjs';
 
 async function setup(t) {
   const parent = await realpath(await mkdtemp(join(tmpdir(), 'unharness-desktop-test-')));
@@ -48,6 +48,27 @@ test('duplicate fixture changes preserve revision and fresh-task boundary', asyn
   const next = await changeDesktopFixture(fixture.fixture, 'manual-only');
   assert.equal(next.revision, first.revision);
   assert.equal(next.preparedAt, first.preparedAt);
+});
+
+test('fixture refresh only signals owned skill mtime and retains pending runtime verification', async t => {
+  const { fixture } = await setup(t);
+  const before = await readDesktopFixture(fixture.fixture);
+  const skill = join(fixture.project, '.agents/skills/unharness-desktop-fixture/SKILL.md');
+  const source = await readFile(skill);
+  const agents = await readFile(join(fixture.project, 'AGENTS.md'));
+  const refreshed = await refreshDesktopFixture(fixture.fixture);
+  const after = await readDesktopFixture(fixture.fixture);
+  assert.equal(refreshed.condition, before.state.condition);
+  assert.equal(after.state.seed, before.state.seed);
+  assert.equal(refreshed.revision, before.state.revision + 1);
+  assert.equal(refreshed.refreshRequested, 'owned-skill-mtime');
+  assert.equal(refreshed.runtimeReloadVerified, false);
+  assert.equal(refreshed.runtimeStateVerified, false);
+  assert.deepEqual(await readFile(skill), source);
+  assert.deepEqual(await readFile(join(fixture.project, 'AGENTS.md')), agents);
+  await writeFile(skill, 'independent edit');
+  await assert.rejects(refreshDesktopFixture(fixture.fixture), { kind: 'fixture-conflict' });
+  assert.equal(await readFile(skill, 'utf8'), 'independent edit');
 });
 
 test('independent edits and added files block change, restore and cleanup without overwrites', async t => {
@@ -124,6 +145,7 @@ test('concurrent operations are serialized and an active owner cannot be unlocke
   });
   await inside;
   await assert.rejects(changeDesktopFixture(fixture.fixture, 'fixed-only'), { kind: 'fixture-locked' });
+  await assert.rejects(refreshDesktopFixture(fixture.fixture), { kind: 'fixture-locked' });
   await assert.rejects(recoverDesktopFixture(fixture.fixture), { kind: 'fixture-locked' });
   release();
   await first;
@@ -269,4 +291,50 @@ test('a killed exclusive file publication recovers its owned hard-link pair', as
   assert.equal(child.status, 19);
   assert.equal((await recoverDesktopFixture(fixture.fixture)).condition, 'baseline');
   await assert.rejects(readFile(join(fixture.project, 'AGENTS.override.md')), { code: 'ENOENT' });
+});
+
+test('an interrupted refresh journal is an admissible recovery stage', async t => {
+  const { fixture } = await setup(t);
+  const moduleUrl = new URL('../src/codex/desktop-fixture.mjs', import.meta.url).href;
+  const script = `import fs from 'node:fs/promises';
+    import { syncBuiltinESMExports } from 'node:module';
+    const original = fs.rename;
+    fs.rename = async function(from, to) {
+      if (String(from).endsWith('state.json')) process.exit(19); return original(from, to); };
+    syncBuiltinESMExports();
+    const { refreshDesktopFixture } = await import(${JSON.stringify(moduleUrl)});
+    await refreshDesktopFixture(process.argv[1]);`;
+  const child = spawnSync(process.execPath, ['--input-type=module', '-e', script, fixture.fixture], { timeout: 5000 });
+  assert.equal(child.status, 19);
+  assert.equal((await recoverDesktopFixture(fixture.fixture)).condition, 'baseline');
+  assert.equal((await inspectDesktopFixture(fixture.fixture)).operationLocked, false);
+});
+
+test('recovery after a killed refresh invalidates task observations from before the notification', async t => {
+  const { parent, fixture } = await setup(t);
+  const before = await readDesktopFixture(fixture.fixture);
+  const session = join(parent, 'before-refresh.jsonl');
+  await writeFile(session, [
+    { type: 'session_meta', payload: { id: 'old-task', timestamp: before.state.preparedAt,
+      cwd: fixture.project, originator: 'Codex Desktop', cli_version: '0.153.4' } },
+    { type: 'turn_context', payload: { cwd: fixture.project, turn_id: 'old-turn' } },
+  ].map(JSON.stringify).join('\n') + '\n');
+  const moduleUrl = new URL('../src/codex/desktop-fixture.mjs', import.meta.url).href;
+  const script = `import fs from 'node:fs/promises';
+    import { syncBuiltinESMExports } from 'node:module';
+    const original = fs.utimes;
+    fs.utimes = async function(...args) { await original(...args); process.exit(19); };
+    syncBuiltinESMExports();
+    const { refreshDesktopFixture } = await import(${JSON.stringify(moduleUrl)});
+    await refreshDesktopFixture(process.argv[1]);`;
+  const child = spawnSync(process.execPath, ['--input-type=module', '-e', script, fixture.fixture], { timeout: 5000 });
+  assert.equal(child.status, 19);
+  assert.notEqual((await inspectDesktopFixture(fixture.fixture)).pending, null);
+  const restored = await recoverDesktopFixture(fixture.fixture);
+  assert.equal(restored.condition, 'baseline');
+  assert.ok(restored.revision > before.state.revision);
+  assert.ok(Date.parse(restored.preparedAt) > Date.parse(before.state.preparedAt));
+  const { collectDesktopRecord } = await import('../src/codex/desktop-record.mjs');
+  const result = await collectDesktopRecord({ session, fixture: fixture.fixture });
+  assert.equal(result.provenance.freshFixtureTaskCandidate, false);
 });

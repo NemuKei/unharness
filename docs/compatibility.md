@@ -4,7 +4,7 @@
 
 | OS | Application | Delivery phase | Current evidence |
 | --- | --- | --- | --- |
-| macOS | Codex desktop | 1 | Standalone source controls and actual desktop-record source/usage availability observed; selected-fixture loading and mode switching unverified |
+| macOS | Codex desktop | 1 | Synthetic desktop source controls and refresh-assisted restoration observed; full product modes unverified |
 | Windows | Codex desktop | 1 | Inventory, source-control and desktop-record/fixture probes prepared; native real runs pending |
 | macOS | Claude Code desktop, Code tab | 2 | Documentation reviewed; integration not implemented or tested |
 | Windows | Claude Code desktop, Code tab | 2 | Test environment available per maintainer; no test result yet |
@@ -40,7 +40,7 @@ The [fixture source-control investigation](evidence/2026-09-06-source-controls-m
 
 The [desktop-record investigation](evidence/2026-09-06-desktop-observation-macos.md) adds actual recording evidence on native macOS: initial host Skill catalog, memory guidance and source-state fields are present, and per-response usage records expose recognized numeric fields. The observer deliberately does not export totals or claim complete input/usage coverage. Its originator/cwd/preparation checks identify a candidate for human-correlated fresh-task evidence; they do not assert mode application.
 
-The [persistent fixture runbook](desktop-observation.md) covers manual baseline → manual-only → fixed-only → restored baseline checks, explicit Skill selection, and fixture recovery. The implementation passed 82 synthetic tests on macOS, including process termination and concurrent recovery. Windows needs native filesystem tests (including hard-link publication), app/runtime versions, actual recording shape and new-task observations. macOS fixture-loaded evidence and all configuration-based restart tests remain pending.
+The [persistent fixture runbook](desktop-observation.md) covers manual baseline → manual-only → fixed-only → restored baseline checks, explicit Skill selection, and fixture recovery. The implementation passed 82 synthetic tests on macOS, including process termination and concurrent recovery. Windows needs native filesystem tests (including hard-link publication), app/runtime versions, actual recording shape and new-task observations. The [fresh-task sequence](evidence/2026-09-06-desktop-fixture-macos.md) now confirms baseline, manual-only omission, fixed-only AGENTS and refresh-assisted restoration on Mac, plus literal Skill invocation through a scoped file read. Two stale-catalog restore observations remain recorded. The follow-up adds creation-route provenance, custom-tool output projection and a journaled fixture-only mtime notification; its suite passes 88 tests. Configuration-based restart tests, desktop picker selection, complete source control and Windows remain pending.
 
 ## Claude Code investigation baseline
 

@@ -31,9 +31,9 @@ Fixture creation, changes, restoration and cleanup are deterministic local code.
 
 A native local smoke run also completed fixture baseline → manual-only → fixed-only → restored baseline and cleanup, with `settingsPrepared: true` at each prepared state and all runtime/mode verification flags false. During that smoke run and desktop-record read, three selected personal configuration/instruction locations had identical before/after content or absence. This is a bounded unchanged-source check, not an inventory of every possible personal source.
 
-## Not yet observed
+## Follow-up and remaining observations
 
-A dedicated synthetic project is prepared outside tracked source files. No baseline/manual-only/fixed-only/restored sequence has yet been observed in actual fresh desktop tasks. Explicit Skill picker selection/body delivery, same-task reload behavior, restart-dependent skill enablement, full host-source control and Windows behavior remain unverified.
+After this development-task observation, the maintainer started the synthetic project in a new local task. The [fresh-task evidence](2026-09-06-desktop-fixture-macos.md) now records baseline/manual-only/fixed-only/restored observations, literal Skill body delivery, and the stale-catalog/refresh boundary. Explicit Skill picker selection, same-task reload behavior, restart-dependent skill enablement, full host-source control and Windows behavior remain unverified.
 
 The real-task observation above proves that these input/usage categories can be found in this recording format. It does not prove that the prepared fixture was loaded, that any category was disabled, that all runtime sources were recorded, or that UNSEAL/TRUEFORM was applied. `desktopSessionAttached`, `runtimeStateVerified` and `modeSwitchingVerified` remain false.
 
@@ -43,4 +43,4 @@ Use [the desktop sequence](../desktop-observation.md#fresh-task-sequence-on-maco
 
 ## Final verification revision
 
-The tested runtime is `7889864a560651f8f231087757fa07f2c123c62f`. The post-commit `inspect-desktop --current` run exited 0 against the actual Mac development task and retained the same evidence boundaries. The source/test bytes match the 82/82 suite and reviewed implementation. The prepared baseline fixture also passed current-state integrity inspection and is left ready for the manual new-task check. [The reduced machine-readable evidence](2026-09-06-desktop-observation-macos.json) records only approved technical fields; private local recordings and handoff paths remain ignored.
+The tested runtime is `7889864a560651f8f231087757fa07f2c123c62f`. The post-commit `inspect-desktop --current` run exited 0 against the actual Mac development task and retained the same evidence boundaries. The source/test bytes match the 82/82 suite and reviewed implementation. At that point, the prepared baseline fixture passed current-state integrity inspection and was left ready for the subsequent fresh-task sequence. [The reduced machine-readable evidence](2026-09-06-desktop-observation-macos.json) records only approved technical fields; private local recordings and handoff paths remain ignored.

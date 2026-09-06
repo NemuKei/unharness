@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { link, lstat, mkdir, mkdtemp, readFile, readdir, realpath, rename, rmdir, unlink, writeFile } from 'node:fs/promises';
+import { link, lstat, mkdir, mkdtemp, readFile, readdir, realpath, rename, rmdir, unlink, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
@@ -282,6 +282,25 @@ export async function changeDesktopFixture(path, condition, { afterWrite, recove
       revision: fixture.state.initializing ? 0 : fixture.state.revision + 1, preparedAt: new Date().toISOString() });
     return desktopFixtureSummary(fixture);
   }, recoveryToken);
+}
+
+export async function refreshDesktopFixture(path) {
+  return locked(path, async fixture => {
+    if (fixture.state.pending || fixture.state.initializing || fixture.state.cleanup) fail('fixture-recovery-required');
+    const expected = [contents(fixture.state, fixture.state.condition)];
+    checkExpected(await inventory(fixture), expected);
+    await writeState(fixture, { ...fixture.state,
+      pending: { from: fixture.state.condition, to: fixture.state.condition } });
+    const skill = join(fixture.project, FILES[2]);
+    const info = await lstat(skill);
+    // A fixture-only watcher hint, not a runtime reload API. Preserve exact
+    // contents and identity; an earlier task cannot verify this new request.
+    await utimes(skill, info.atime, new Date(Math.max(Date.now(), info.mtimeMs + 1)));
+    checkExpected(await inventory(fixture), expected);
+    await writeState(fixture, { ...fixture.state, pending: null, initializing: false, revision: fixture.state.revision + 1,
+      preparedAt: new Date().toISOString() });
+    return { ...desktopFixtureSummary(fixture), refreshRequested: 'owned-skill-mtime', runtimeReloadVerified: false };
+  });
 }
 
 export async function recoverDesktopFixture(path) {

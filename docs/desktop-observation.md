@@ -26,13 +26,14 @@ Only regular files are read. Input is limited to 64 MiB and each JSONL record to
 | --- | --- |
 | `surface: local-session-record` | Reads a persisted record. Does not attach to the running desktop app. |
 | `desktopOriginator` | Metadata names Codex Desktop. This is recorded provenance, not a cryptographic attestation. |
+| `recordedStartRoute` / `knownFork` | Distinguish known user-created, agent-created and agent-forked routes. A known fork never qualifies as a fresh fixture task; unknown source text is not exported. |
 | `freshFixtureTaskCandidate` | The originator, known fork fields, initial cwd and preparation time meet the fixture checks. The operator still confirms a newly created local task in the app. |
 | `recordedSources.*: field-recorded` | A recognized key exists in the initial full `world_state`. Its value can be empty, disabled, or a hash; key presence does not establish enablement or complete content. |
 | `initialInput.*` | Detections in recorded initial input, before assistant/tool activity. Missing detections do not establish removal. |
 | marker `present` | The unique fixture marker occurs in recognized initial input or the initial full world's AGENTS/host-skills text. |
 | marker `absent-in-record` | The marker was not found in the inspected initial text. Other runtime sources may be omitted from this recording. |
 | marker `unknown` | No recognized initial text is available for this check. |
-| `fixtureBodyInToolOutput` | The body marker occurred later in a tool output. This alone does not establish which tool read it or that manual skill selection worked. |
+| `fixtureBodyInToolOutput` | The body marker occurred in recognized string or `input_text`-array output from a function/custom tool. This alone does not establish which tool read it or that manual skill selection worked. |
 | `usage.fieldsPresent` | Recognized numeric usage fields exist in records belonging to this task. No totals, complete retries/child usage, or performance comparison is claimed. |
 
 `desktopSessionAttached`, `runtimeStateVerified`, and `modeSwitchingVerified` remain false. Source coverage and usage completeness remain unknown. An assistant's “READY” or “applied” response is never accepted as configuration evidence. Later user messages, assistant text, tool outputs, and later world snapshots cannot contaminate the initial marker result.
@@ -65,7 +66,7 @@ The fixture contains only generated AGENTS/Skill calibration data. A small manif
 3. After its first reply, ask that same task to run the observation command below, or observe its exact session file from the control task. Save the report **outside** the fixture root, before changing the next case. A second turn used only for collection does not replace the recorded initial input.
 4. In the control task, set `manual-only`, start another fresh local task at the same project, and repeat the plain check. Then explicitly select the synthetic skill through the desktop skill picker if available and send `manualPrompt`. Record whether the UI selected a Skill input, whether its body appeared initially or through a file-read tool, and any unresolved selection behavior. A literal `$name` fallback and a picker selection are different routes.
 5. Set `fixed-only`, start another fresh task, and repeat. Restore baseline and repeat once more. Inspect both source markers and retained model/permission choices. Do not extrapolate fixture changes into removal of global/host-provided sources.
-6. Finish with cleanup after all observations are saved. Keep the sanitized conclusions and test revision, not raw conversations or personal settings, in Git.
+6. Restore baseline after observations. Keep the fixture intact while its saved desktop project is still used; run cleanup when it is no longer needed. Keep the sanitized conclusions and test revision, not raw conversations or personal settings, in Git.
 
 Commands from the control checkout:
 
@@ -95,7 +96,23 @@ Always try a fresh task without restarting first and record that condition. If t
 
 The public [App Server guide](https://learn.chatgpt.com/docs/app-server) documents per-process extra skill roots, cached skill lists, invalidation notifications and usage events. Calling these on a new app-server process does not observe or reconfigure the desktop's existing process. This implementation does not use an undocumented desktop IPC endpoint.
 
-The current Mac observation and remaining source categories are recorded in [the evidence note](evidence/2026-09-06-desktop-observation-macos.md). Sources that cannot be controlled and observed keep TRUEFORM unresolved.
+The [fresh Mac fixture sequence](evidence/2026-09-06-desktop-fixture-macos.md) observed source changes and restoration, including two stale-catalog failures before later successful refreshes. The [earlier recording note](evidence/2026-09-06-desktop-observation-macos.md) covers broader source categories. Sources that cannot be controlled and observed keep TRUEFORM unresolved.
+
+## Diagnostic notification for a stale fixture catalog
+
+On the observed Mac version, removing manual-only YAML restored disk contents but two tool-created fresh tasks still omitted the Skill. A user-created desktop task was followed by a visible catalog, including in the next tool-created task. Another same-route trial restored visibility after an mtime-only notification of the owned Skill file. This is evidence of a freshness boundary; the precise cache cause and a guaranteed propagation delay are unknown.
+
+For this generated fixture only, the notification is available as:
+
+```text
+node bin/unharness.mjs desktop-fixture refresh --fixture "<fixture>"
+```
+
+The command locks and validates the entire fixture, journals a same-condition pending operation, updates only its `SKILL.md` timestamp, checks that source contents remain intact, and advances preparation revision/time. It changes neither case nor marker identity. It always returns `runtimeReloadVerified: false`. Start another fresh task and observe its recording; do not turn a successful timestamp write into an “applied” label. A killed notification is recovered through the ordinary fixture recovery path and invalidates earlier task associations.
+
+The successful notification-assisted desktop result is one trial. This command is not a supported Codex reload API, a restart substitute for configuration-based disablement, or permission to touch personal Skill timestamps. If the next task remains stale, keep the outcome unknown and use the documented user-operated fresh-task check or an explicitly chosen later restart.
+
+Record the creation route in every case. Use the same route for a matched source-control check, or establish both routes' baselines; equal cwd/model settings alone did not initially guarantee equal catalogs. App tool-created prompts can be delivered as app tool-output entries rather than ordinary user messages. Do not use these route differences as performance comparisons.
 
 ## Recovery and conflicts
 

@@ -50,12 +50,24 @@ test('missing inputs and missing source fields remain unknown, never disabled', 
 test('CLI origin, forks, wrong cwd and stale preparation cannot qualify as a fresh fixture task', () => {
   for (const mutate of [s => { s[0].payload.originator = 'codex_cli_rs'; },
     s => { s[0].payload.forked_from_id = 'other'; },
+    s => { s[0].payload.thread_source = 'agent_forked_thread'; },
     s => { s[0].payload.cwd = '/wrong'; },
     s => { s[4].payload.cwd = '/changed'; },
     s => { s[0].payload.timestamp = '2026-09-06T08:00:00Z'; }]) {
     const records = sample(); mutate(records);
     const result = summarizeDesktopRecords(records, { expectedCwd: '/synthetic', preparedAt: '2026-09-06T09:00:00Z', markers });
     assert.equal(result.provenance.freshFixtureTaskCandidate, false);
+  }
+});
+
+test('records known task creation routes without echoing arbitrary source metadata', () => {
+  for (const [source, expected] of [['user', 'user-created'], ['agent_created_thread', 'agent-created'],
+    ['agent_forked_thread', 'agent-forked'],
+    ['PRIVATE-ROUTE', 'unknown'], [{ private: 'PRIVATE-ROUTE' }, 'unknown'], [undefined, 'unknown']]) {
+    const records = sample(); records[0].payload.thread_source = source;
+    const result = summarizeDesktopRecords(records);
+    assert.equal(result.provenance.recordedStartRoute, expected);
+    assert.ok(!JSON.stringify(result).includes('PRIVATE-ROUTE'));
   }
 });
 
@@ -69,6 +81,30 @@ test('assistant claims, tool output, later input and later world state cannot co
   assert.equal(result.fixtureBodyInToolOutput, true);
   assert.equal(result.fullWorldStateRecords, 2);
   assert.equal(result.runtimeStateVerified, false);
+});
+
+test('recognizes desktop custom-tool output text blocks without mixing them into initial input', () => {
+  const records = sample();
+  records.push(record('response_item', { type: 'custom_tool_call_output', output: [
+    { type: 'input_text', text: 'Tool completed.' },
+    { type: 'input_text', text: 'BODY_NONCE' },
+  ] }));
+  const result = summarizeDesktopRecords(records, { markers });
+  assert.equal(result.fixtureBodyInToolOutput, true);
+  assert.equal(result.initialInput.markers.skillBody, 'absent-in-record');
+  assert.ok(!JSON.stringify(result).includes('BODY_NONCE'));
+});
+
+test('ignores body markers in custom-tool arguments, metadata and non-text output blocks', () => {
+  const records = sample();
+  records.push(record('response_item', { type: 'custom_tool_call', input: 'BODY_NONCE' }),
+    record('response_item', { type: 'custom_tool_call_output', output: [
+      { type: 'input_text', text: 'no body token', metadata: 'BODY_NONCE' },
+      { type: 'input_image', image_url: 'BODY_NONCE' },
+      { type: 'unknown', text: 'BODY_NONCE' },
+    ] }),
+    record('response_item', { type: 'custom_tool_call_output', output: { text: 'BODY_NONCE' } }));
+  assert.equal(summarizeDesktopRecords(records, { markers }).fixtureBodyInToolOutput, false);
 });
 
 test('usage must belong to the selected task and contain nonnegative safe numeric fields', () => {

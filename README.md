@@ -26,7 +26,7 @@ node bin/unharness.mjs probe-controls --output local-evidence/source-controls.js
 
 `probe-controls` creates and removes its own temporary AGENTS/Skill fixture and inspects Codex's rendered input under six conditions. It does not edit personal configuration or start a model turn. Its results verify the fixture's source behavior, not desktop mode application. See [source-control checks and Windows instructions](docs/source-controls.md).
 
-`inspect-desktop --current` reads the selected desktop task's local recording and reports source/usage availability without source text or token totals. `desktop-fixture create` prepares a synthetic project for manually started fresh-task checks, with fixture-only restore/recovery. These commands do not apply a mode or establish desktop support. See [desktop observation and recovery steps](docs/desktop-observation.md).
+`inspect-desktop --current` reads the selected desktop task's local recording and reports source/usage availability without source text or token totals. `desktop-fixture create` prepares a synthetic project for manually started fresh-task checks, with fixture-only restore/recovery. These commands do not apply a mode or establish desktop support. See [desktop observation and recovery steps](docs/desktop-observation.md). Fresh Mac fixture trials observed source changes and restoration, with a stale-catalog limitation. `desktop-fixture refresh` offers an owned-file notification for diagnosis; it still requires a following task observation.
 
 ## Make “what if I removed this?” easy to try
 

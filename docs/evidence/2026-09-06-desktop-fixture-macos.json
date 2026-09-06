@@ -1,0 +1,380 @@
+{
+  "schemaVersion": 1,
+  "kind": "macos-desktop-fixture-sequence",
+  "fixtureBaselineRuntimeRevision": "7889864a560651f8f231087757fa07f2c123c62f",
+  "collectionStartedAtRevision": "0bfe886",
+  "environment": {
+    "platform": "darwin",
+    "architecture": "arm64",
+    "execution": "native-local",
+    "osVersion": "26.6.2",
+    "installedDesktopBundleVersion": "26.901.41600",
+    "installedDesktopBundleBuild": "7982",
+    "recordedCodexCliVersion": "0.153.4"
+  },
+  "configurationWriteScope": "owned-synthetic-fixture",
+  "desktopRestartRequested": false,
+  "desktopSessionAttached": false,
+  "runtimeStateVerified": false,
+  "modeSwitchingVerified": false,
+  "sourceCoverage": "unknown",
+  "controlledSourceScope": "fixture-only",
+  "cases": {
+    "baseline": {
+      "condition": "baseline",
+      "recordedStartRoute": "user-created",
+      "refresh": "none",
+      "status": "observed",
+      "appTaskCompleted": true,
+      "toolCallsDuringPlainTurn": false,
+      "provenance": {
+        "desktopOriginator": true,
+        "hasForkParent": false,
+        "contextRecorded": true,
+        "cwdMatches": true,
+        "preparedBeforeStart": true,
+        "freshFixtureTaskCandidate": true,
+        "recordedStartRoute": "user-created"
+      },
+      "markers": {
+        "fixed": "present",
+        "procedure": "present",
+        "skillCatalog": "present",
+        "skillBody": "absent-in-record"
+      },
+      "expectedMarkersObserved": true,
+      "retainedConditionEquality": {
+        "cwd": true,
+        "model": true,
+        "effort": true,
+        "approval_policy": true,
+        "sandbox_policy": true,
+        "permission_profile": true,
+        "active_permission_profile": true
+      },
+      "initialPromptDelivery": "user-message",
+      "hostSkillCatalog": true,
+      "memoryGuidance": true
+    },
+    "manualOnly": {
+      "condition": "manual-only",
+      "recordedStartRoute": "agent-created",
+      "refresh": "none",
+      "status": "observed",
+      "appTaskCompleted": true,
+      "toolCallsDuringPlainTurn": false,
+      "provenance": {
+        "desktopOriginator": true,
+        "hasForkParent": false,
+        "contextRecorded": true,
+        "cwdMatches": true,
+        "preparedBeforeStart": true,
+        "freshFixtureTaskCandidate": true,
+        "recordedStartRoute": "agent-created"
+      },
+      "markers": {
+        "fixed": "present",
+        "procedure": "present",
+        "skillCatalog": "absent-in-record",
+        "skillBody": "absent-in-record"
+      },
+      "expectedMarkersObserved": true,
+      "retainedConditionEquality": {
+        "cwd": true,
+        "model": true,
+        "effort": true,
+        "approval_policy": true,
+        "sandbox_policy": true,
+        "permission_profile": true,
+        "active_permission_profile": true
+      },
+      "initialPromptDelivery": "app-tool-output",
+      "hostSkillCatalog": true,
+      "memoryGuidance": true
+    },
+    "fixedOnly": {
+      "condition": "fixed-only",
+      "recordedStartRoute": "agent-created",
+      "refresh": "none",
+      "status": "observed",
+      "appTaskCompleted": true,
+      "toolCallsDuringPlainTurn": false,
+      "provenance": {
+        "desktopOriginator": true,
+        "hasForkParent": false,
+        "contextRecorded": true,
+        "cwdMatches": true,
+        "preparedBeforeStart": true,
+        "freshFixtureTaskCandidate": true,
+        "recordedStartRoute": "agent-created"
+      },
+      "markers": {
+        "fixed": "present",
+        "procedure": "absent-in-record",
+        "skillCatalog": "absent-in-record",
+        "skillBody": "absent-in-record"
+      },
+      "expectedMarkersObserved": true,
+      "retainedConditionEquality": {
+        "cwd": true,
+        "model": true,
+        "effort": true,
+        "approval_policy": true,
+        "sandbox_policy": true,
+        "permission_profile": true,
+        "active_permission_profile": true
+      },
+      "initialPromptDelivery": "app-tool-output",
+      "hostSkillCatalog": true,
+      "memoryGuidance": true
+    },
+    "restoredInitial": {
+      "condition": "baseline",
+      "recordedStartRoute": "agent-created",
+      "refresh": "none",
+      "status": "observed",
+      "appTaskCompleted": true,
+      "toolCallsDuringPlainTurn": false,
+      "provenance": {
+        "desktopOriginator": true,
+        "hasForkParent": false,
+        "contextRecorded": true,
+        "cwdMatches": true,
+        "preparedBeforeStart": true,
+        "freshFixtureTaskCandidate": true,
+        "recordedStartRoute": "agent-created"
+      },
+      "markers": {
+        "fixed": "present",
+        "procedure": "present",
+        "skillCatalog": "absent-in-record",
+        "skillBody": "absent-in-record"
+      },
+      "expectedMarkersObserved": false,
+      "retainedConditionEquality": {
+        "cwd": true,
+        "model": true,
+        "effort": true,
+        "approval_policy": true,
+        "sandbox_policy": true,
+        "permission_profile": true,
+        "active_permission_profile": true
+      },
+      "initialPromptDelivery": "app-tool-output",
+      "hostSkillCatalog": true,
+      "memoryGuidance": true
+    },
+    "restoredDelayed": {
+      "condition": "baseline",
+      "recordedStartRoute": "agent-created",
+      "refresh": "none",
+      "status": "observed",
+      "appTaskCompleted": true,
+      "toolCallsDuringPlainTurn": false,
+      "provenance": {
+        "desktopOriginator": true,
+        "hasForkParent": false,
+        "contextRecorded": true,
+        "cwdMatches": true,
+        "preparedBeforeStart": true,
+        "freshFixtureTaskCandidate": true,
+        "recordedStartRoute": "agent-created"
+      },
+      "markers": {
+        "fixed": "present",
+        "procedure": "present",
+        "skillCatalog": "absent-in-record",
+        "skillBody": "absent-in-record"
+      },
+      "expectedMarkersObserved": false,
+      "retainedConditionEquality": {
+        "cwd": true,
+        "model": true,
+        "effort": true,
+        "approval_policy": true,
+        "sandbox_policy": true,
+        "permission_profile": true,
+        "active_permission_profile": true
+      },
+      "initialPromptDelivery": "app-tool-output",
+      "hostSkillCatalog": true,
+      "memoryGuidance": true
+    },
+    "restoredUserCreated": {
+      "condition": "baseline",
+      "recordedStartRoute": "user-created",
+      "refresh": "desktop-ui-new-task",
+      "status": "observed",
+      "appTaskCompleted": true,
+      "toolCallsDuringPlainTurn": false,
+      "provenance": {
+        "desktopOriginator": true,
+        "recordedStartRoute": "user-created",
+        "hasForkParent": false,
+        "knownFork": false,
+        "contextRecorded": true,
+        "cwdMatches": true,
+        "preparedBeforeStart": true,
+        "freshFixtureTaskCandidate": true
+      },
+      "markers": {
+        "fixed": "present",
+        "procedure": "present",
+        "skillCatalog": "present",
+        "skillBody": "absent-in-record"
+      },
+      "expectedMarkersObserved": true,
+      "retainedConditionEquality": {
+        "cwd": true,
+        "model": true,
+        "effort": true,
+        "approval_policy": true,
+        "sandbox_policy": true,
+        "permission_profile": true,
+        "active_permission_profile": true
+      },
+      "initialPromptDelivery": "user-message",
+      "hostSkillCatalog": true,
+      "memoryGuidance": true
+    },
+    "restoredAgentAfterUser": {
+      "condition": "baseline",
+      "recordedStartRoute": "agent-created",
+      "refresh": "after-desktop-ui-new-task",
+      "status": "observed",
+      "appTaskCompleted": true,
+      "toolCallsDuringPlainTurn": false,
+      "provenance": {
+        "desktopOriginator": true,
+        "recordedStartRoute": "agent-created",
+        "hasForkParent": false,
+        "knownFork": false,
+        "contextRecorded": true,
+        "cwdMatches": true,
+        "preparedBeforeStart": true,
+        "freshFixtureTaskCandidate": true
+      },
+      "markers": {
+        "fixed": "present",
+        "procedure": "present",
+        "skillCatalog": "present",
+        "skillBody": "absent-in-record"
+      },
+      "expectedMarkersObserved": true,
+      "retainedConditionEquality": {
+        "cwd": true,
+        "model": true,
+        "effort": true,
+        "approval_policy": true,
+        "sandbox_policy": true,
+        "permission_profile": true,
+        "active_permission_profile": true
+      },
+      "initialPromptDelivery": "app-tool-output",
+      "hostSkillCatalog": true,
+      "memoryGuidance": true
+    },
+    "manualOnlyRepeat": {
+      "condition": "manual-only",
+      "recordedStartRoute": "agent-created",
+      "refresh": "none",
+      "status": "observed",
+      "appTaskCompleted": true,
+      "toolCallsDuringPlainTurn": false,
+      "provenance": {
+        "desktopOriginator": true,
+        "recordedStartRoute": "agent-created",
+        "hasForkParent": false,
+        "knownFork": false,
+        "contextRecorded": true,
+        "cwdMatches": true,
+        "preparedBeforeStart": true,
+        "freshFixtureTaskCandidate": true
+      },
+      "markers": {
+        "fixed": "present",
+        "procedure": "present",
+        "skillCatalog": "absent-in-record",
+        "skillBody": "absent-in-record"
+      },
+      "expectedMarkersObserved": true,
+      "retainedConditionEquality": {
+        "cwd": true,
+        "model": true,
+        "effort": true,
+        "approval_policy": true,
+        "sandbox_policy": true,
+        "permission_profile": true,
+        "active_permission_profile": true
+      },
+      "initialPromptDelivery": "app-tool-output",
+      "hostSkillCatalog": true,
+      "memoryGuidance": true
+    },
+    "restoredWithMtime": {
+      "condition": "baseline",
+      "recordedStartRoute": "agent-created",
+      "refresh": "owned-skill-mtime",
+      "status": "observed",
+      "appTaskCompleted": true,
+      "toolCallsDuringPlainTurn": false,
+      "provenance": {
+        "desktopOriginator": true,
+        "recordedStartRoute": "agent-created",
+        "hasForkParent": false,
+        "knownFork": false,
+        "contextRecorded": true,
+        "cwdMatches": true,
+        "preparedBeforeStart": true,
+        "freshFixtureTaskCandidate": true
+      },
+      "markers": {
+        "fixed": "present",
+        "procedure": "present",
+        "skillCatalog": "present",
+        "skillBody": "absent-in-record"
+      },
+      "expectedMarkersObserved": true,
+      "retainedConditionEquality": {
+        "cwd": true,
+        "model": true,
+        "effort": true,
+        "approval_policy": true,
+        "sandbox_policy": true,
+        "permission_profile": true,
+        "active_permission_profile": true
+      },
+      "initialPromptDelivery": "app-tool-output",
+      "hostSkillCatalog": true,
+      "memoryGuidance": true
+    }
+  },
+  "explicitSkillInvocation": {
+    "status": "observed",
+    "route": "literal-dollar-skill-name",
+    "readMethod": "scoped-file-discovery-and-read",
+    "fixtureBodyInToolOutput": true,
+    "finalMatchesFixtureBody": true,
+    "desktopPickerSelection": "not-tested",
+    "initialAssociationRetained": true
+  },
+  "conclusions": {
+    "baselineLoaded": true,
+    "manualOnlyOmissionObservedWithSameCreationRoute": true,
+    "fixedOnlyAgentsObserved": true,
+    "restoreWithoutRefreshGuaranteed": false,
+    "restoreAfterUserCreatedTaskObserved": true,
+    "restoreAfterOwnedMtimeObserved": true,
+    "mtimeRefreshSuccessfulTrials": 1,
+    "mtimeRefreshGuaranteed": false,
+    "completeHostSourceControl": false,
+    "numericComparisonPerformed": false
+  },
+  "selectedPersonalLocations": {
+    "selectedPersonalLocationsChecked": 3,
+    "selectedPersonalLocationsUnchanged": true,
+    "checkedAt": "2026-09-06T10:30:57.282Z"
+  },
+  "finalFixtureState": "baseline-retained-for-saved-desktop-project",
+  "nativeWindows": "not-run"
+}

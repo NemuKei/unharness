@@ -19,6 +19,12 @@ function textOf(item) {
   if (item?.type !== 'message' || !Array.isArray(item.content)) return '';
   return item.content.filter(c => c?.type === 'input_text' && typeof c.text === 'string').map(c => c.text).join('\n');
 }
+function toolOutputHasMarker(item, marker) {
+  if (!['function_call_output', 'custom_tool_call_output'].includes(item.type)) return false;
+  if (typeof item.output === 'string') return item.output.includes(marker);
+  return Array.isArray(item.output) && item.output.some(part => part?.type === 'input_text'
+    && typeof part.text === 'string' && part.text.includes(marker));
+}
 function validDate(value) { return typeof value === 'string' && Number.isFinite(Date.parse(value)); }
 function version(value) { return typeof value === 'string' ? value.match(/^\d{1,8}\.\d{1,8}\.\d{1,8}(?=$|[-+])/)?.[0] ?? null : null; }
 
@@ -53,7 +59,11 @@ export function summarizeDesktopRecords(records, { expectedCwd, expectedSessionI
   if (typeof meta.id !== 'string' || !validDate(meta.timestamp) || typeof meta.cwd !== 'string') fail('invalid-desktop-record');
   if (expectedSessionId !== undefined && meta.id !== expectedSessionId) fail('desktop-record-identity-mismatch');
   const desktopOriginator = meta.originator === 'Codex Desktop';
+  const recordedStartRoute = meta.thread_source === 'user' ? 'user-created'
+    : meta.thread_source === 'agent_created_thread' ? 'agent-created'
+      : meta.thread_source === 'agent_forked_thread' ? 'agent-forked' : 'unknown';
   const hasForkParent = meta.forked_from_id != null || meta.forked_from_thread_id != null;
+  const knownFork = hasForkParent || recordedStartRoute === 'agent-forked';
   const contexts = records.filter(r => r?.type === 'turn_context' && object(r.payload)).map(r => r.payload);
   const firstContext = contexts[0];
   let startupOpen = true;
@@ -80,7 +90,7 @@ export function summarizeDesktopRecords(records, { expectedCwd, expectedSessionI
         if (p.role === 'developer') developerTexts.push(text);
       } else {
         startupOpen = false;
-        if (markers && p.type === 'function_call_output' && typeof p.output === 'string' && p.output.includes(markers.skillBody)) bodyInToolOutput = true;
+        if (markers && toolOutputHasMarker(p, markers.skillBody)) bodyInToolOutput = true;
       }
     }
     if (record.type === 'token_usage_record') {
@@ -114,9 +124,9 @@ export function summarizeDesktopRecords(records, { expectedCwd, expectedSessionI
     codexCliVersion: version(meta.cli_version), surface: 'local-session-record',
     desktopSessionAttached: false, runtimeStateVerified: false, modeSwitchingVerified: false,
     sourceCoverage: 'unknown',
-    provenance: { desktopOriginator, hasForkParent, contextRecorded: firstContext !== undefined,
+    provenance: { desktopOriginator, recordedStartRoute, hasForkParent, knownFork, contextRecorded: firstContext !== undefined,
       cwdMatches, preparedBeforeStart,
-      freshFixtureTaskCandidate: desktopOriginator && !hasForkParent && cwdMatches === true && preparedBeforeStart === true },
+      freshFixtureTaskCandidate: desktopOriginator && !knownFork && cwdMatches === true && preparedBeforeStart === true },
     recordedSources: sources,
     initialInput: { recorded: startupHasInput,
       hostSkillCatalog: developerTexts.some(t => t.includes('<skills_instructions>') && t.includes('### Available skills')),
