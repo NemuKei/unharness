@@ -10,6 +10,8 @@ Updated: 2026-09-06.
 - Target: macOS and Windows; Codex desktop first, Claude Code desktop second, final review and finish in Codex.
 - Required experience: save, three modes, truthful state, fresh comparison, favorites, recovery, web and AI entry points, and optional effects.
 - Numerical comparison should measure token/effort use against task-defined quality, alongside user preference. The [measurement contract](comparison-metrics.md) is documented; collection and grading are not implemented.
+- Those comparisons should appear in the same pixel-art GUI and lead to saving a favorite. A clearly labelled sample-data screen is included in [the visual direction](design.md#comparison-inside-the-same-gui); interactive charts remain unimplemented.
+- The visual metaphor can also express useful harnesses as supportive/resonating equipment, with neutral treatment before sufficient evaluation. This remains presentation design, not another configuration mode.
 - Selected visuals: pixel-art machine hangar, progressive exposure of the inner AI, and a divine luminous reveal.
 - Initial README drafts, specification, architecture boundaries, compatibility criteria, and handoff plan are present.
 

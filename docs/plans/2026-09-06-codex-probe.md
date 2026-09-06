@@ -37,7 +37,7 @@
 - The CLI accepts `inspect`, `--cwd`, `--codex`, `--output`, `--timeout-ms`, and `--help`. It prints one JSON report, optionally writes identical JSON to a new file, and uses the exit codes in the spec.
 - `package.json` is private, named `unharness`, version `0.0.1`, `type: "module"`, with `engines.node: ">=24"`, `scripts.test: "node --test"`, and `scripts.inspect: "node bin/unharness.mjs inspect"`.
 
-- [ ] **Step 1: Add failing behavior tests.** Start with a pure projection test that would fail if unknown source content were copied:
+- [x] **Step 1: Add failing behavior tests.** Start with a pure projection test that would fail if unknown source content were copied:
 
 ```js
 import test from 'node:test';
@@ -63,9 +63,9 @@ test('reports known skill counts without leaking skill or error text', () => {
 
 Add the remaining tests specified by `docs/spec-probe.md`, testing actual returned behavior rather than source text. The synthetic server must run as a real Node child process and can emit response fragments, notifications, errors, oversized lines, or a requested early exit. Keep these controls in test fixtures, not production APIs.
 
-- [ ] **Step 2: Run the focused tests before implementation.** Use `node --test test/summarize.test.mjs` and the relevant transport/CLI test files. Record the missing implementation or expected assertion failure as RED evidence.
+- [x] **Step 2: Run the focused tests before implementation.** Use `node --test test/summarize.test.mjs` and the relevant transport/CLI test files. Record the missing implementation or expected assertion failure as RED evidence.
 
-- [ ] **Step 3: Implement the three boundaries and CLI.** The outbound boundary starts from a fixed allowlist:
+- [x] **Step 3: Implement the three boundaries and CLI.** The outbound boundary starts from a fixed allowlist:
 
 ```js
 const READ_METHODS = new Set([
@@ -85,8 +85,8 @@ Use monotonically increasing request IDs, bounded line buffering, per-request ti
 
 Build summaries field by field from validated containers. For absent/failed inventories return unknown/error rather than successful zero counts. The complete report must include the literal evidence-limit fields from the spec. Execute only `--version` and the fixed app-server sequence. Validate CLI flags and integer bounds before launching any child. Use `writeFile(..., { flag: "wx" })` for explicit output files.
 
-- [ ] **Step 4: Run focused checks and the full suite once.** `node --test`. Include transport allowlist, malformed/oversized output, timeout/exit cleanup, secret-marker projection, partial results, CLI output collision, and spaces/Unicode path cases. Record GREEN evidence.
-- [ ] **Step 5: Self-review and commit only this task's code/tests.** `git diff --check`, then stage the exact files above and commit with `feat: add read-only Codex inventory probe`.
+- [x] **Step 4: Run focused checks and the full suite once.** `node --test`. Include transport allowlist, malformed/oversized output, timeout/exit cleanup, secret-marker projection, partial results, CLI output collision, and spaces/Unicode path cases. Record GREEN evidence.
+- [x] **Step 5: Self-review and commit only this task's code/tests.** `git diff --check`, then stage the exact files above and commit with `feat: add read-only Codex inventory probe`.
 
 ### Task 2: Run the Mac probe and prepare Windows evidence handoff
 
@@ -99,12 +99,16 @@ Build summaries field by field from validated containers. For absent/failed inve
 - Consumes the command and report from Task 1.
 - Produces a sanitized written finding and identical Windows command instructions. It does not add new runtime behavior.
 
-- [ ] **Step 1: Run the real read-only Mac command.** `node bin/unharness.mjs inspect --cwd <Unharness checkout> --output local-evidence/macos-codex-probe.json`. Review the safe JSON and confirm the evidence-limit fields remain false/unknown even when all queries pass.
-- [ ] **Step 2: Document the observation and its limits.** Record CLI/app versions observed, the standalone nature of the connection, layer categories and inventory counts, and the missing active desktop control socket. Do not commit the raw local doctor/schema/probe files.
-- [ ] **Step 3: Write the Windows handoff.** Document Node 24+, opening the same repo in Windows Codex, running `node --test` and `node bin/unharness.mjs inspect --cwd . --output local-evidence/windows-codex-probe.json`, and using `--codex` with the native executable when needed. Request the safe report, exact source revision, desktop version, and native/WSL identity.
-- [ ] **Step 4: Update current-state Docs in both languages.** State that a working read-only probe is present while mode switching/UI/favorites/recovery and all Windows integration evidence remain incomplete.
-- [ ] **Step 5: Validate links, `git diff --check`, and record the change.** Commit the listed documentation with `docs: record Codex probe findings and Windows handoff`.
+- [x] **Step 1: Run the real read-only Mac command.** `node bin/unharness.mjs inspect --cwd <Unharness checkout> --output local-evidence/macos-codex-probe.json`. Review the safe JSON and confirm the evidence-limit fields remain false/unknown even when all queries pass.
+- [x] **Step 2: Document the observation and its limits.** Record CLI/app versions observed, the standalone nature of the connection, layer categories and inventory counts, and the missing active desktop control socket. Do not commit the raw local doctor/schema/probe files.
+- [x] **Step 3: Write the Windows handoff.** Document Node 24+, opening the same repo in Windows Codex, running `node --test` and `node bin/unharness.mjs inspect --cwd . --output local-evidence/windows-codex-probe.json`, and using `--codex` with the native executable when needed. Request the safe report, exact source revision, desktop version, and native/WSL identity.
+- [x] **Step 4: Update current-state Docs in both languages.** State that a working read-only probe is present while mode switching/UI/favorites/recovery and all Windows integration evidence remain incomplete.
+- [x] **Step 5: Validate links, `git diff --check`, and record the change.** Commit the listed documentation with `docs: record Codex probe findings and Windows handoff`.
 
 ## Coverage review
 
 Task 1 implements the probe contract only. Task 2 validates it against the Mac environment and prepares Windows execution. The broader product features remain in `docs/spec.md` and are explicitly not reported as complete by this plan. No code or docs from the archived incubator are modified.
+
+## Completion notes
+
+The read-only command, synthetic tests, real Mac run, and Windows handoff were completed. A shared owned-process shutdown helper was added during review to resolve the same timeout defect in the version and app-server paths. Windows runtime evidence is still pending and is not implied by plan completion. User requests for quantitative quality/efficiency and the pixel-art comparison view were recorded as future comparison requirements, with an explicitly sample-data image; no live measurement or grading RPC was added.

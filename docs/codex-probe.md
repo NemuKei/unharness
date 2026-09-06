@@ -66,6 +66,16 @@ Use `--codex` if the PATH entry resolves to a launcher instead of the native bin
 
 Return the safe JSON and test summary through the working conversation. Keep the local raw diagnostic/schema files out of commits. Real Windows evidence is still required even when all synthetic tests pass on macOS.
 
+### Moving the repository without publishing it
+
+If the checkout is delivered as a Git bundle, copy `unharness-codex-probe.bundle` to Windows and create a local checkout:
+
+```text
+git clone --branch codex/bootstrap unharness-codex-probe.bundle unharness
+```
+
+Open that `unharness` directory in Windows Codex and run the steps above. A bundle transfers committed code and history; it does not need a public hosting service and does not include the ignored local evidence directory. Record `git rev-parse HEAD` after cloning so the test result can be matched to the Mac revision.
+
 ## Next validation after inventory
 
 Use the result to identify the actual desktop loading and control boundary. Then test whether a new desktop task can preserve the intended comparison environment while changing only the registered harness scope. Configuration writes and recovery are a later implementation slice governed by [the product contract](spec.md).

@@ -84,6 +84,8 @@ The local web interface and the AI connection use the same core. An AI request c
 
 Retain the chosen pixel-art hangar, progressively opening outer equipment, and the AI entity emerging in Zero. Use the divine reveal as a brief switching effect, then return to a readable idle view. Support effects off and reduced motion. Display preferences are separate from favorite content.
 
+Equipment is neutral before evaluation and can be represented as supportive/resonating when the recorded comparison shows that it fits the user's task and priorities. Keep this visual assessment distinct from the three mode policies and the underlying measured results.
+
 ## Acceptance for each supported OS × app combination
 
 - A user can save a setup, run Normal → UNSEAL → TRUEFORM → Normal, and observe the managed changes and retained conditions.

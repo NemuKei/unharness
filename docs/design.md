@@ -36,3 +36,25 @@ Suggested animation sequence: casing opens → a brief visual pause → rings an
 - A custom favorite can re-equip its selected configuration; it should not continue displaying Zero when extras have been restored.
 
 The generated concepts include detail that needs UI refinement, especially status contrast and the appearance of successful versus pending application. The animations illustrate configuration changes and do not represent measured intelligence or performance.
+
+## Equipment can support the AI
+
+The maintainer added that a harness which performs well should have a visual identity beyond restraint. Treat equipment as neutral before evaluation. A configuration that fits the current task can appear as supporting armor, an amplifying frame, or a luminous ring resonating with the AI entity.
+
+The release sequence still reveals the entity, while reloading a useful favorite can assemble supportive equipment around it. This gives both taking equipment off and putting it back on a satisfying visual role. UNSEAL and TRUEFORM remain the same configuration modes; visual assessment does not introduce a fourth mode or alter settings.
+
+Any appearance tied to measured performance must refer to the particular comparison conditions and the user's quality/efficiency priorities. Unknown or insufficient evidence gets a neutral appearance. Do not equate lower token use alone with a better loadout, or depict every equipped state as a worse AI. An optional “resonance” appearance is a design proposal, not a current measured outcome or a newly finalized product label.
+
+Keep the evidence label visible and let users turn the effect off. Judge outputs without mode art when using blind comparison so the artwork does not predetermine the rating.
+
+## Comparison inside the same GUI
+
+The maintainer requested that measured performance be visible in this pixel-art interface. The comparison view uses the same hangar identity, with compact portraits of the three loadouts above a readable table and chart. It leads from inspection to saving the chosen configuration as a favorite.
+
+![Comparison screen with explicitly labelled illustrative sample values](assets/06-comparison-screen-sample.png)
+
+**Every number and the personal note in this image are sample data. No harness performance was measured to produce it.** The display compares accepted tasks, total tokens including failed/revision work, and tokens per accepted task, following [the measurement contract](comparison-metrics.md). The lower total-token example is not automatically the more efficient successful setup.
+
+The UI should show run count, shared comparison conditions, collection coverage, and whether a value is measured, estimated, or a human/AI assessment. Keep performance inspection separate from the dramatic release effect. Saving a favorite retains the exact tested configuration and its comparison references.
+
+In implementation, render tables and proportional charts from actual data rather than reusing the chart bitmap. Align the loadout headers and table columns, keep failed/unknown data distinguishable, and allow users to open the underlying outputs. The image is a visual concept; interactive comparison and measurement are not implemented yet. Generation input is preserved in [design-comparison-prompt.md](design-comparison-prompt.md).

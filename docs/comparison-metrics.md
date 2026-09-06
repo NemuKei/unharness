@@ -62,6 +62,12 @@ This follows [OpenAI's evaluation guidance](https://developers.openai.com/api/do
 
 The product should let a user inspect tradeoffs such as similar quality with fewer tokens, better quality with more work, or no meaningful difference. It need not reduce every task to one “strength” number.
 
+## Display in the pixel-art interface
+
+Use a Comparison tab in the same hangar GUI. Show the three loadout states together with accepted-task counts, token totals, tokens per accepted task, and the personal scorecard. Let the user inspect outputs and save the selected configuration from that screen. Display collection coverage, sample size, and the kind of each metric. The [sample-data visual concept](design.md#comparison-inside-the-same-gui) establishes this flow; the final charts must be rendered from the recorded values.
+
+The maintainer also wants helpful harnesses to be expressible as supportive or resonating equipment. Derive such an optional visual assessment from the stated comparison and user priorities, retaining a neutral appearance for unmeasured or inconclusive setups. It is presentation metadata, not evidence on its own and not a configuration change.
+
 ## Delivery order
 
 1. Preserve per-run comparison conditions and human notes in the comparison record.

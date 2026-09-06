@@ -76,6 +76,8 @@ The visual direction uses a pixel-art machine hangar: the outer equipment opens,
 
 *Static design concept. Animation and working controls are not implemented yet.*
 
+Equipment can also be shown as supportive armor or a resonating frame when a comparison shows it fits the work. Unmeasured setups remain neutral, and the illustration stays separate from the measured result.
+
 Effects can be turned off without changing the loadout. The state remains readable, and animation settings stay separate from saved harness configurations.
 
 ## Know what changed

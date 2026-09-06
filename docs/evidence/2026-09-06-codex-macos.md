@@ -54,7 +54,11 @@ At code revision `6411b10cdad9f461faa07d5226667a256755143a`, after the task revi
 - Desktop attachment, runtime-state verification, and mode-switch verification remained false; source coverage remained unknown.
 - Six selected source-file locations were checked before and after (four files existed, two were absent); their content hashes/existence were unchanged.
 
-The implementer reported a fresh full synthetic suite of 32 passing tests at this revision. Independent task review approved the fixed notification/privacy boundary. The version-subprocess cleanup observation remains for whole-branch review. This run verifies the read-only inventory tool on Mac, not the full desktop product.
+The implementer reported a fresh full synthetic suite of 32 passing tests at this revision. Independent task review approved the fixed notification/privacy boundary. This run verifies the read-only inventory tool on Mac, not the full desktop product.
+
+Whole-branch review reproduced a shutdown issue with synthetic children that ignored normal termination. Revision `7b4ff1721bbd3fabbba0ec4a5aa0643f84d2af3a` fixes both version-command and app-server cleanup through an owned-process shutdown helper. The implementer reported 36 passing tests, including three cleanup regressions; scoped final review approved the fix without residual findings.
+
+The controller reran the real read-only command after that fix; all four queries succeeded. A configuration change was detected between the earlier and later observation windows: the user-config file changed and the inventory then reported 32 enabled / 27 disabled skills, still 59 total. The cause of that intervening change was not established and is not attributed to this probe. With a fresh source baseline immediately around the final run, all six recorded file states were unchanged. This is also why comparisons must bind their results to the configuration actually observed for that run.
 
 ## Controls that need the next scoped test
 
