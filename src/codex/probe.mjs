@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { arch, platform } from 'node:os';
 
 import { createReadOnlyClient } from './rpc-client.mjs';
+import { shutDownOwnedProcess, trackOwnedProcess } from './owned-process.mjs';
 import { summarizeQuery } from './summarize.mjs';
 
 const QUERY_SPECS = [
@@ -58,30 +59,37 @@ function readVersion({ executable, executableArgs, cwd, timeoutMs }) {
 
     const chunks = [];
     let bytes = 0;
-    let settled = false;
+    let active = true;
+    const closeTracker = trackOwnedProcess(child);
     const finish = (value) => {
-      if (settled) return;
-      settled = true;
+      if (!active) return;
+      active = false;
       clearTimeout(timer);
       resolve(value);
     };
+    const stopAndFinish = async (value) => {
+      if (!active) return;
+      active = false;
+      clearTimeout(timer);
+      await shutDownOwnedProcess(child, closeTracker, () => child.kill());
+      resolve(value);
+    };
     const timer = setTimeout(() => {
-      child.kill();
-      finish({ status: 'error', error: { kind: 'timeout' } });
+      void stopAndFinish({ status: 'error', error: { kind: 'timeout' } });
     }, timeoutMs);
 
     child.stdout.on('data', (chunk) => {
+      if (!active) return;
       bytes += chunk.length;
       if (bytes <= 64 * 1024) chunks.push(chunk);
       else {
-        child.kill();
-        finish({ status: 'error', error: { kind: 'response-too-large' } });
+        void stopAndFinish({ status: 'error', error: { kind: 'response-too-large' } });
       }
     });
     child.stderr.on('data', () => {});
     child.on('error', () => finish({ status: 'error', error: { kind: 'spawn-error' } }));
     child.on('close', (code) => {
-      if (settled) return;
+      if (!active) return;
       if (code !== 0) {
         finish({ status: 'error', error: { kind: 'process-exit' } });
         return;

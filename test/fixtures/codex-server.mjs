@@ -1,17 +1,27 @@
 #!/usr/bin/env node
 
 import { createInterface } from 'node:readline';
+import { writeFileSync } from 'node:fs';
 
 const scenarioIndex = process.argv.indexOf('--scenario');
 const scenario = scenarioIndex === -1 ? 'all-ok' : process.argv[scenarioIndex + 1];
 const expectedCwdIndex = process.argv.indexOf('--expected-cwd');
 const expectedCwd = expectedCwdIndex === -1 ? process.cwd() : process.argv[expectedCwdIndex + 1];
+const pidFileIndex = process.argv.indexOf('--pid-file');
+const pidFile = pidFileIndex === -1 ? null : process.argv[pidFileIndex + 1];
 
 // `node --test` may discover helpers below test/. Running without the explicit
 // fixture control is therefore a harmless no-op.
 if (scenarioIndex === -1) process.exit(0);
 
 if (process.argv.includes('--version')) {
+  if (scenario === 'ignore-version-timeout' || scenario === 'ignore-version-oversize') {
+    writeFileSync(pidFile, String(process.pid), 'utf8');
+    process.on('SIGTERM', () => {});
+    if (scenario === 'ignore-version-oversize') process.stdout.write('x'.repeat(70 * 1024));
+    setInterval(() => {}, 1000);
+    await new Promise(() => {});
+  }
   if (scenario.endsWith('invalid-semver')) {
     process.stdout.write('codex-cli 1.2.3-invalid. SECRET_MARKER\n');
     process.exit(0);
@@ -30,6 +40,12 @@ if (!process.argv.includes('app-server') || !process.argv.includes('--stdio')) {
 
 if (scenario === 'early-exit') {
   process.exit(23);
+}
+
+if (scenario === 'ignore-app-shutdown') {
+  writeFileSync(pidFile, String(process.pid), 'utf8');
+  process.on('SIGTERM', () => {});
+  setInterval(() => {}, 1000);
 }
 
 let initialized = false;
@@ -137,7 +153,7 @@ function handleRequest(message) {
     if (!validParams) process.exit(70);
   }
 
-  if (scenario === 'timeout') return;
+  if (scenario === 'timeout' || scenario === 'ignore-app-shutdown') return;
   if (scenario === 'malformed') {
     process.stdout.write('{SECRET_MARKER invalid json}\n');
     return;

@@ -1,5 +1,7 @@
 import { spawn } from 'node:child_process';
 
+import { shutDownOwnedProcess, trackOwnedProcess } from './owned-process.mjs';
+
 const READ_METHODS = new Set([
   'initialize',
   'config/read',
@@ -59,8 +61,7 @@ export function createReadOnlyClient({
   let buffer = Buffer.alloc(0);
   let closed = false;
   const pending = new Map();
-  let resolveClosed;
-  const childClosed = new Promise((resolve) => { resolveClosed = resolve; });
+  const closeTracker = trackOwnedProcess(child);
 
   function rejectPending(error) {
     for (const item of pending.values()) {
@@ -165,7 +166,6 @@ export function createReadOnlyClient({
   child.on('close', () => {
     if (!closed && pending.size > 0) fail('process-exit');
     else if (!closed && !terminalError) terminalError = localError('process-exit');
-    resolveClosed();
   });
 
   function request(method, params) {
@@ -201,19 +201,12 @@ export function createReadOnlyClient({
   }
 
   async function close() {
-    if (closed) return childClosed;
+    if (closed) return closeTracker.closePromise;
     closed = true;
     rejectPending(localError('process-exit'));
-    if (!child.stdin.destroyed) child.stdin.end();
-    const exited = await Promise.race([
-      childClosed.then(() => true),
-      new Promise((resolve) => setTimeout(() => resolve(false), 250)),
-    ]);
-    if (!exited && child.exitCode === null && child.signalCode === null) child.kill();
-    await Promise.race([
-      childClosed,
-      new Promise((resolve) => setTimeout(resolve, 250)),
-    ]);
+    await shutDownOwnedProcess(child, closeTracker, () => {
+      if (!child.stdin.destroyed) child.stdin.end();
+    });
   }
 
   return {
