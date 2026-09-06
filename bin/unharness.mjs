@@ -5,11 +5,17 @@ import { dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { collectProbe, probeSucceeded } from '../src/codex/probe.mjs';
+import {
+  collectSourceControlProbe,
+  sourceControlProbeSucceeded,
+} from '../src/codex/source-controls.mjs';
 
-const USAGE = `Usage: node bin/unharness.mjs inspect [options]
+const USAGE = `Usage:
+  node bin/unharness.mjs inspect [options]
+  node bin/unharness.mjs probe-controls [options]
 
 Options:
-  --cwd <directory>       Directory used for Codex source discovery
+  --cwd <directory>       Directory used for inspect source discovery
   --codex <executable>    Native Codex executable (default: codex)
   --output <file>         Create a JSON report without overwriting
   --timeout-ms <integer>  Request timeout from 100 to 60000 (default: 10000)
@@ -18,16 +24,18 @@ Options:
 
 function parseArgs(argv) {
   if (argv.length === 1 && argv[0] === '--help') return { help: true };
-  if (argv[0] !== 'inspect') return null;
+  const command = argv[0];
+  if (command !== 'inspect' && command !== 'probe-controls') return null;
   if (argv.length === 2 && argv[1] === '--help') return { help: true };
 
-  const values = { cwd: process.cwd(), executable: 'codex', timeoutMs: 10000 };
+  const values = { command, executable: 'codex', timeoutMs: 10000 };
+  if (command === 'inspect') values.cwd = process.cwd();
   const names = new Map([
-    ['--cwd', 'cwd'],
     ['--codex', 'executable'],
     ['--output', 'output'],
     ['--timeout-ms', 'timeoutMs'],
   ]);
+  if (command === 'inspect') names.set('--cwd', 'cwd');
   const seen = new Set();
 
   for (let index = 1; index < argv.length; index += 2) {
@@ -50,6 +58,7 @@ export async function main(argv = process.argv.slice(2), {
   stdout = process.stdout,
   stderr = process.stderr,
   collect = collectProbe,
+  collectControls = collectSourceControlProbe,
   executableArgs = [],
 } = {}) {
   const options = parseArgs(argv);
@@ -68,12 +77,14 @@ export async function main(argv = process.argv.slice(2), {
 
   let report;
   try {
-    report = await collect({
+    const common = {
       executable: options.executable,
       executableArgs,
-      cwd: options.cwd,
       timeoutMs: options.timeoutMs,
-    });
+    };
+    report = options.command === 'inspect'
+      ? await collect({ ...common, cwd: options.cwd })
+      : await collectControls(common);
   } catch {
     stderr.write('The Codex inventory could not be collected.\n');
     return 1;
@@ -91,7 +102,10 @@ export async function main(argv = process.argv.slice(2), {
     }
   }
   stdout.write(json);
-  return outputWritten && probeSucceeded(report) ? 0 : 1;
+  const succeeded = options.command === 'inspect'
+    ? probeSucceeded(report)
+    : sourceControlProbeSucceeded(report);
+  return outputWritten && succeeded ? 0 : 1;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

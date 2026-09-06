@@ -42,7 +42,7 @@ function semanticVersion(text) {
   return match?.[1] ?? null;
 }
 
-function readVersion({ executable, executableArgs, cwd, timeoutMs }) {
+export function readVersion({ executable, executableArgs, cwd, timeoutMs }) {
   return new Promise((resolve) => {
     let child;
     try {

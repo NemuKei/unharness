@@ -10,6 +10,7 @@ import { main } from '../bin/unharness.mjs';
 import { collectProbe, probeSucceeded } from '../src/codex/probe.mjs';
 
 const fixture = fileURLToPath(new URL('./fixtures/codex-server.mjs', import.meta.url));
+const sourceControlsFixture = fileURLToPath(new URL('./fixtures/source-controls-cli.mjs', import.meta.url));
 const SECRET = 'SECRET_MARKER';
 
 function capture() {
@@ -175,6 +176,127 @@ test('CLI rejects command wrappers without echoing their path', async () => {
     stderr: stderr.stream,
   });
   assert.equal(code, 2);
+  assert.equal(stdout.value(), '');
+  assert.match(stderr.value(), /native codex\.exe/);
+  assert.equal(stderr.value().includes(SECRET), false);
+});
+
+test('probe-controls help and invalid cwd usage do not start either collector', async () => {
+  let inspectCalls = 0;
+  let controlsCalls = 0;
+  const collect = async () => { inspectCalls += 1; throw new Error('must not run'); };
+  const collectControls = async () => { controlsCalls += 1; throw new Error('must not run'); };
+
+  const helpOut = capture();
+  const helpErr = capture();
+  assert.equal(await main(['probe-controls', '--help'], {
+    stdout: helpOut.stream,
+    stderr: helpErr.stream,
+    collect,
+    collectControls,
+  }), 0);
+  assert.match(helpOut.value(), /probe-controls/);
+  assert.equal(helpErr.value(), '');
+
+  const badOut = capture();
+  const badErr = capture();
+  assert.equal(await main(['probe-controls', '--cwd', `unsafe-${SECRET}`], {
+    stdout: badOut.stream,
+    stderr: badErr.stream,
+    collect,
+    collectControls,
+  }), 2);
+  assert.equal(badOut.value(), '');
+  assert.equal(badErr.value().includes(SECRET), false);
+  assert.equal(inspectCalls, 0);
+  assert.equal(controlsCalls, 0);
+});
+
+test('dispatches inspect and probe-controls through separate collection seams', async () => {
+  let inspectCalls = 0;
+  let controlsCalls = 0;
+  const collect = async () => {
+    inspectCalls += 1;
+    return { codexCli: { status: 'error' }, connection: { initialized: false }, queries: {} };
+  };
+  const collectControls = async () => {
+    controlsCalls += 1;
+    return { codexCli: { status: 'error' }, cases: {}, checks: {}, fixtureCleanup: 'not-created' };
+  };
+
+  const inspectOut = capture();
+  const inspectErr = capture();
+  assert.equal(await main(['inspect'], {
+    stdout: inspectOut.stream, stderr: inspectErr.stream, collect, collectControls,
+  }), 1);
+  assert.equal(inspectCalls, 1);
+  assert.equal(controlsCalls, 0);
+
+  const controlsOut = capture();
+  const controlsErr = capture();
+  assert.equal(await main(['probe-controls'], {
+    stdout: controlsOut.stream, stderr: controlsErr.stream, collect, collectControls,
+  }), 1);
+  assert.equal(inspectCalls, 1);
+  assert.equal(controlsCalls, 1);
+});
+
+test('probe-controls prints safe JSON and exclusively creates an identical Unicode-path report', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'controls CLI 日本語 '));
+  try {
+    const output = join(root, 'nested output', 'source controls 日本語.json');
+    const stdout = capture();
+    const stderr = capture();
+    const code = await main([
+      'probe-controls',
+      '--codex', process.execPath,
+      '--output', output,
+      '--timeout-ms', '1000',
+    ], {
+      stdout: stdout.stream,
+      stderr: stderr.stream,
+      executableArgs: [sourceControlsFixture],
+    });
+    assert.equal(code, 0);
+    assert.equal(stderr.value(), '');
+    assert.equal(await readFile(output, 'utf8'), stdout.value());
+    const report = JSON.parse(stdout.value());
+    assert.equal(report.kind, 'codex-fixture-source-controls');
+    assert.equal(JSON.stringify(report).includes('PRIVATE_'), false);
+    assert.equal(JSON.stringify(report).includes(root), false);
+
+    const collisionOut = capture();
+    const collisionErr = capture();
+    const collisionCode = await main([
+      'probe-controls',
+      '--codex', process.execPath,
+      '--output', output,
+      '--timeout-ms', '1000',
+    ], {
+      stdout: collisionOut.stream,
+      stderr: collisionErr.stream,
+      executableArgs: [sourceControlsFixture],
+    });
+    assert.equal(collisionCode, 1);
+    assert.equal(await readFile(output, 'utf8'), stdout.value());
+    assert.equal(JSON.parse(collisionOut.value()).kind, 'codex-fixture-source-controls');
+    assert.equal(collisionErr.value().includes(output), false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('probe-controls rejects command wrappers without invoking collection', async () => {
+  let calls = 0;
+  const stdout = capture();
+  const stderr = capture();
+  const code = await main(['probe-controls', '--codex', `C:\\Users\\${SECRET}\\codex.bat`], {
+    stdout: stdout.stream,
+    stderr: stderr.stream,
+    collectControls: async () => { calls += 1; },
+  });
+  assert.equal(code, 2);
+  assert.equal(calls, 0);
   assert.equal(stdout.value(), '');
   assert.match(stderr.value(), /native codex\.exe/);
   assert.equal(stderr.value().includes(SECRET), false);
