@@ -81,4 +81,4 @@ Place a pre-existing sentinel beside the fixture directory in the test-owned tem
 - [x] Perform task review and address findings before live verification.
 - [x] Run the implemented command against the installed native Mac Codex, collecting only the public summary and before/after booleans for selected user configuration files.
 - [x] Record the source-control result and the separate desktop transport observation, update compatibility/status and both READMEs without claiming desktop mode support, and provide the matching Windows command.
-- [ ] Perform whole-branch review, integrate the checked branch, and clean up only this task's owned worktree and scratch data.
+- [x] Perform whole-branch review, integrate the checked branch, and clean up only this task's owned worktree and scratch data.
