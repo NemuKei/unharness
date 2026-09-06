@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "probeVersion": "0.0.1",
+  "kind": "codex-fixture-source-controls",
+  "observedAt": "2026-09-06T08:47:34.684Z",
+  "codexCli": {
+    "status": "ok",
+    "version": "0.153.4"
+  },
+  "environment": {
+    "platform": "darwin",
+    "architecture": "arm64",
+    "nodeVersion": "24.19.0"
+  },
+  "surface": "cli-debug-prompt-input",
+  "desktopSessionAttached": false,
+  "runtimeStateVerified": false,
+  "modeSwitchingVerified": false,
+  "modelWorkRequested": false,
+  "sourceCoverage": "fixture-only",
+  "hooksAndMemoriesDisabledForAllCases": true,
+  "configurationWriteScope": "owned-temporary-fixture",
+  "cases": {
+    "baseline": {
+      "status": "ok",
+      "markers": {
+        "fixed": true,
+        "procedure": true,
+        "skillCatalog": true,
+        "skillBody": false,
+        "userPrompt": true
+      }
+    },
+    "manualOnly": {
+      "status": "ok",
+      "markers": {
+        "fixed": true,
+        "procedure": true,
+        "skillCatalog": false,
+        "skillBody": false,
+        "userPrompt": true
+      }
+    },
+    "disabledFile": {
+      "status": "ok",
+      "markers": {
+        "fixed": true,
+        "procedure": true,
+        "skillCatalog": false,
+        "skillBody": false,
+        "userPrompt": true
+      }
+    },
+    "disabledDirectory": {
+      "status": "ok",
+      "markers": {
+        "fixed": true,
+        "procedure": true,
+        "skillCatalog": true,
+        "skillBody": false,
+        "userPrompt": true
+      }
+    },
+    "fixedOnly": {
+      "status": "ok",
+      "markers": {
+        "fixed": true,
+        "procedure": false,
+        "skillCatalog": false,
+        "skillBody": false,
+        "userPrompt": true
+      }
+    },
+    "restored": {
+      "status": "ok",
+      "markers": {
+        "fixed": true,
+        "procedure": true,
+        "skillCatalog": true,
+        "skillBody": false,
+        "userPrompt": true
+      }
+    }
+  },
+  "fixtureCleanup": "ok",
+  "checks": {
+    "baselineVisible": true,
+    "manualCatalogOmitted": true,
+    "fileDisableEffective": true,
+    "directoryDisableEffective": false,
+    "fixedConstraintPreserved": true,
+    "restored": true
+  }
+}

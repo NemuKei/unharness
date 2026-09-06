@@ -1,6 +1,6 @@
 # Product contract
 
-The requirements below are agreed product targets. A separate [read-only probe slice](spec-probe.md) is being delivered first; the full product implementation is not yet present. See [status](status.md).
+The requirements below are agreed product targets. The [read-only inventory](spec-probe.md) and [owned-fixture source-control diagnostic](spec-source-controls.md) are the working feasibility slices delivered so far; the full product implementation is not yet present. See [status](status.md).
 
 ## Target and delivery order
 

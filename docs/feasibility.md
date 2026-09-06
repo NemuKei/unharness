@@ -1,6 +1,6 @@
 # Feasibility and limits
 
-Assessment recorded on 2026-09-06, before starting another runtime slice. The maintainer asked which parts are feasible and which compromises must be understood first. This page distinguishes implementation prospects from observed support. The runtime remains the read-only inventory probe.
+Assessment recorded on 2026-09-06. The maintainer asked which parts are feasible and which compromises must be understood first. This page distinguishes implementation prospects from observed support. The runtime contains the inventory probe and an owned-fixture source-control diagnostic; full desktop mode application remains unverified.
 
 The maintainer accepted these limits and selected clipboard-image copy plus an editable X composer with the public OSS link as the initial sharing workflow. This acceptance permits development within the stated boundaries; it does not replace desktop or browser verification.
 
@@ -13,6 +13,8 @@ Do not rely on a third-party free-tier quota to call this zero recurring cost. A
 ## The central unresolved gate: desktop control and evidence
 
 The [Mac probe](evidence/2026-09-06-codex-macos.md) successfully read configuration/skill/hook inventory from a separately started Codex App Server. It did not attach to the active desktop session, change a setting, start a model task, verify a mode, or collect desktop task usage. Windows has not yet supplied a real probe result. Claude Code integration remains unimplemented.
+
+The subsequent [fixture investigation](evidence/2026-09-06-source-controls-macos.md) verified selected source controls in a separately rendered CLI input: manual-only catalog exclusion, effective file-based skill disablement, fixed-only AGENTS override, and restoration of marker visibility. It changed only temporary test files. These results support implementation of source controls but do not answer the actual desktop-loading boundary below.
 
 The full product cannot yet be promised merely because local settings files can be edited. The next scoped investigation must determine:
 

@@ -37,7 +37,7 @@
 - `sourceControlProbeSucceeded(report)` checks the complete report contract including cleanup and required outcomes, with `directoryDisableEffective` observational only.
 - Existing `main` gains optional `collectControls`, leaving `collect` for `inspect` unchanged.
 
-- [ ] **Step 1: Add failing projection tests, then run the focused file.** Use independently chosen marker literals. Put a secret and a misleading marker in ignored metadata to prove it cannot satisfy a check. A representative expectation is:
+- [x] **Step 1: Add failing projection tests, then run the focused file.** Use independently chosen marker literals. Put a secret and a misleading marker in ignored metadata to prove it cannot satisfy a check. A representative expectation is:
 
 ```js
 const markers = { fixed: 'FIXED_X', procedure: 'PROC_X', skillCatalog: 'CAT_X', skillBody: 'BODY_X', userPrompt: 'USER_X' };
@@ -55,9 +55,9 @@ if (configOverride !== undefined) args.push('--config', configOverride);
 args.push(markers.userPrompt);
 ```
 
-- [ ] **Step 2: Add real subprocess failure cases before implementing their branches.** The fixture executable uses Node to read owned test files and print a message array. Scenario flags precede the fixed Codex arguments. Timeout/oversize cases keep the process alive and ignore SIGTERM; the real reader must terminate it through `shutDownOwnedProcess` and await closure. Include an exit/malformed case and assert fixed error kinds without raw stderr/metadata reaching the caller. Run the focused tests after each change.
+- [x] **Step 2: Add real subprocess failure cases before implementing their branches.** The fixture executable uses Node to read owned test files and print a message array. Scenario flags precede the fixed Codex arguments. Timeout/oversize cases keep the process alive and ignore SIGTERM; the real reader must terminate it through `shutDownOwnedProcess` and await closure. Include an exit/malformed case and assert fixed error kinds without raw stderr/metadata reaching the caller. Run the focused tests after each change.
 
-- [ ] **Step 3: Add failing orchestrator tests for the complete six-case matrix and temporary-data cleanup.** The fixture executable derives behavior from AGENTS, optional override, YAML policy, and the supplied exact path; it must not simply return a canned success per command count. Assert the required checks directly with literals:
+- [x] **Step 3: Add failing orchestrator tests for the complete six-case matrix and temporary-data cleanup.** The fixture executable derives behavior from AGENTS, optional override, YAML policy, and the supplied exact path; it must not simply return a canned success per command count. Assert the required checks directly with literals:
 
 ```js
 assert.deepEqual(report.checks, {
@@ -72,13 +72,13 @@ assert.equal(report.desktopSessionAttached, false);
 
 Place a pre-existing sentinel beside the fixture directory in the test-owned temp root. After success or a mid-matrix failure, assert the sentinel bytes remain and no newly owned fixture remains. Verify remaining cases are `not-run` after execution/shape failure and failed observations do not become successful checks. Implement the fixture content, sequential mutations, projection, checks, and `finally` cleanup exactly as the spec requires. Canonicalize the temporary directory before constructing the SKILL.md TOML path. Use a proper TOML basic-string encoding for Windows separators; pass the resulting string as one argv item.
 
-- [ ] **Step 4: Add failing CLI dispatch/output tests, then wire the new command.** `probe-controls --cwd ...` must return usage error without invoking either collector. `inspect` continues to call only `collect`; `probe-controls` calls only `collectControls`. Real fixture-backed runs must print safe JSON and create an identical exclusive output file. An existing file remains unchanged and produces exit 1. Document `node bin/unharness.mjs probe-controls --output local-evidence/source-controls.json`, the native Windows executable option, and all interpretation limits in `docs/source-controls.md`.
+- [x] **Step 4: Add failing CLI dispatch/output tests, then wire the new command.** `probe-controls --cwd ...` must return usage error without invoking either collector. `inspect` continues to call only `collect`; `probe-controls` calls only `collectControls`. Real fixture-backed runs must print safe JSON and create an identical exclusive output file. An existing file remains unchanged and produces exit 1. Document `node bin/unharness.mjs probe-controls --output local-evidence/source-controls.json`, the native Windows executable option, and all interpretation limits in `docs/source-controls.md`.
 
-- [ ] **Step 5: Run the complete synthetic suite once, inspect the diff, and commit.** Run `node --test` and `git diff --check`. Record red/green commands and output in the implementer report. Do not run the real Codex binary from the implementer task: the controller owns the real Mac evidence pass and configuration before/after check.
+- [x] **Step 5: Run the complete synthetic suite once, inspect the diff, and commit.** Run `node --test` and `git diff --check`. Record red/green commands and output in the implementer report. Do not run the real Codex binary from the implementer task: the controller owns the real Mac evidence pass and configuration before/after check.
 
 ## Controller validation and completion
 
-- [ ] Perform task review and address findings before live verification.
-- [ ] Run the implemented command against the installed native Mac Codex, collecting only the public summary and before/after booleans for selected user configuration files.
-- [ ] Record the source-control result and the separate desktop transport observation, update compatibility/status and both READMEs without claiming desktop mode support, and provide the matching Windows command.
+- [x] Perform task review and address findings before live verification.
+- [x] Run the implemented command against the installed native Mac Codex, collecting only the public summary and before/after booleans for selected user configuration files.
+- [x] Record the source-control result and the separate desktop transport observation, update compatibility/status and both READMEs without claiming desktop mode support, and provide the matching Windows command.
 - [ ] Perform whole-branch review, integrate the checked branch, and clean up only this task's owned worktree and scratch data.

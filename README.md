@@ -8,7 +8,7 @@ Try different combinations of skills and instructions on your own work. Find wha
 
 [日本語](README.ja.md)
 
-> **Draft for the intended public release.** A read-only Codex inventory CLI is available for feasibility testing. The product experience described below remains the target; configuration switching, comparison runs, and recovery have not been implemented or verified. The target is macOS and Windows: Codex desktop first, followed by Claude Code desktop.
+> **Draft for the intended public release.** Read-only Codex inventory and isolated fixture source-control diagnostics are available for feasibility testing. The product experience described below remains the target; live configuration switching, comparison runs, and recovery have not been implemented or verified. The target is macOS and Windows: Codex desktop first, followed by Claude Code desktop.
 
 **Free, with no required paid API or hosted backend.** Unharness is designed to run locally with no recurring operator service expense. Your existing AI subscription and usage are separate. Artwork, including three-candidate original forms, and card export have a local route without model calls. See [feasibility and limitations](docs/feasibility.md).
 
@@ -19,9 +19,12 @@ With Node.js 24+ and a native Codex executable available, run the dependency-fre
 ```text
 node --test
 node bin/unharness.mjs inspect --cwd . --output local-evidence/codex-probe.json
+node bin/unharness.mjs probe-controls --output local-evidence/source-controls.json
 ```
 
-It reports sanitized configuration inventory from a separate Codex process. It does not change settings or verify a desktop mode switch. See [the probe guide and Windows handoff](docs/codex-probe.md).
+`inspect` reports sanitized configuration inventory from a separate Codex process. It does not change settings or verify a desktop mode switch. See [the probe guide and Windows handoff](docs/codex-probe.md).
+
+`probe-controls` creates and removes its own temporary AGENTS/Skill fixture and inspects Codex's rendered input under six conditions. It does not edit personal configuration or start a model turn. Its results verify the fixture's source behavior, not desktop mode application. See [source-control checks and Windows instructions](docs/source-controls.md).
 
 ## Make “what if I removed this?” easy to try
 

@@ -4,8 +4,8 @@
 
 | OS | Application | Delivery phase | Current evidence |
 | --- | --- | --- | --- |
-| macOS | Codex desktop | 1 | Standalone read inventory observed; desktop mode switching not verified |
-| Windows | Codex desktop | 1 | Read-only probe prepared; run will be performed in Windows Codex |
+| macOS | Codex desktop | 1 | Standalone inventory and temporary-fixture source controls observed; desktop mode switching not verified |
+| Windows | Codex desktop | 1 | Inventory and fixture-control probes prepared; real runs will be performed in Windows Codex |
 | macOS | Claude Code desktop, Code tab | 2 | Documentation reviewed; integration not implemented or tested |
 | Windows | Claude Code desktop, Code tab | 2 | Test environment available per maintainer; no test result yet |
 
@@ -35,6 +35,8 @@ Reviewed on 2026-09-06:
 - [App Server](https://learn.chatgpt.com/docs/app-server) documents configuration and skill operations. Reading resolved disk configuration is not evidence for all content already loaded into a task.
 
 The local CLI observed during exploration was 0.153.4. This observation is not a chosen minimum version or a completed compatibility test.
+
+The [fixture source-control investigation](evidence/2026-09-06-source-controls-macos.md) observed `debug prompt-input` behavior for manual-only skills, SKILL.md versus directory disable selectors, a fixed-only AGENTS override, and fixture restoration. In this installed version the file selector excluded the skill and the directory selector did not. The [portable control probe](source-controls.md) records those differences without changing personal configuration or starting a model turn. It does not verify desktop-loaded state or actual explicit skill invocation.
 
 ## Claude Code investigation baseline
 

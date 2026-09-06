@@ -8,7 +8,7 @@ Skillや追加指示の組み合わせを、自分の仕事で試す。今のモ
 
 [English](README.md)
 
-> **公開時の体験を描くREADME草案です。** 実現性の検証に使う、読み取り専用のCodex診断CLIを用意しました。以下は目指す製品の体験であり、設定切替・比較実行・復帰はまだ実装・検証されていません。macOS・Windowsを最初から対象とし、Codexデスクトップ、続いてClaude Codeデスクトップへ対応する方針です。
+> **公開時の体験を描くREADME草案です。** 実現性の検証に使う、読み取り専用の一覧診断と、一時ファイルを使うソース制御の診断CLIを用意しました。以下は目指す製品の体験であり、実環境の設定切替・比較実行・復帰はまだ実装・検証されていません。macOS・Windowsを最初から対象とし、Codexデスクトップ、続いてClaude Codeデスクトップへ対応する方針です。
 
 **無料で使え、有料APIや運用サーバーを必要としない設計です。** Unharnessの継続的な運用サービス費はゼロを前提とし、ユーザーが使うAIの契約・使用量は別に扱います。オリジナルの3案制作を含む外観とカード出力は、モデルを呼ばずローカルでも行える方針です。[実現性と制約](docs/feasibility.md)を参照してください。
 
@@ -19,9 +19,12 @@ Node.js 24以上とネイティブのCodex実行ファイルが使える環境�
 ```text
 node --test
 node bin/unharness.mjs inspect --cwd . --output local-evidence/codex-probe.json
+node bin/unharness.mjs probe-controls --output local-evidence/source-controls.json
 ```
 
-別プロセスのCodexから、設定本文などを含まない一覧の要約を取得します。設定変更やデスクトップのモード切替は行いません。[使い方とWindows側への引き継ぎ](docs/codex-probe.md)を参照してください。
+`inspect` は別プロセスのCodexから、設定本文などを含まない一覧の要約を取得します。設定変更やデスクトップのモード切替は行いません。[使い方とWindows側への引き継ぎ](docs/codex-probe.md)を参照してください。
+
+`probe-controls` は自分で作った一時的なAGENTS・Skillを6条件で切り替え、Codexが組み立てる入力を確認して後片付けします。個人設定は編集せず、モデルの実行も始めません。確認対象は検証用ソースの挙動であり、デスクトップのモード適用ではありません。[ソース制御の診断とWindows手順](docs/source-controls.md)に詳細があります。
 
 ## 「これを外したらどうなる？」を、気軽に試す
 

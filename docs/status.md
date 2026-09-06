@@ -23,15 +23,17 @@ Updated: 2026-09-06.
 
 ## Current implementation
 
-A read-only Node.js 24+ Codex diagnostic CLI and synthetic transport/projection/CLI tests are present. It queries a separate app-server and emits only sanitized inventory. There is no installer, live configuration switching, comparison runner, animation, or recovery implementation. No OS × app combination has passed the full product integration criteria. See [the probe guide](codex-probe.md) and [Mac investigation](evidence/2026-09-06-codex-macos.md).
+Two Node.js 24+ Codex diagnostic commands and their synthetic tests are present. `inspect` queries a separate app-server and emits sanitized inventory. `probe-controls` changes only an owned temporary fixture and inspects six CLI-rendered prompt conditions; it does not edit personal configuration or start model work. There is no installer, live configuration switching, comparison runner, animation, or recovery implementation. No OS × app combination has passed the full product integration criteria. See [inventory](codex-probe.md) and [source controls](source-controls.md).
 
 The implemented probe completed its real Mac read-only run against Codex 0.153.4. The selected source-file content/existence checks were unchanged. Windows verification remains outstanding; complete desktop context and mode application are still unverified.
+
+The implemented source-control command also completed a real Mac run against 0.153.4: manual-only catalog exclusion, SKILL.md-based disablement, fixed-only AGENTS override, restoration, and fixture cleanup passed. Directory-based disablement did not exclude the fixture. Three selected personal configuration/instruction locations were unchanged. The synthetic suite passed 52/52 tests. See [the source-control evidence](evidence/2026-09-06-source-controls-macos.md); these results still do not verify a desktop mode switch or explicit manual invocation.
 
 ## Next useful work
 
 The maintainer accepted the [feasibility boundaries](feasibility.md). Continue with the desktop control/observation gate; local artwork and sharing do not resolve it. The adopted selection/cost/sharing rules are recorded, and no new runtime implementation was started while clarifying these boundaries.
 
-Run the same read-only probe in Windows Codex and reconcile its runtime evidence with the Mac result. Then establish the actual desktop task boundary: whether a selected loadout can be applied and verified for a fresh desktop task while preserving the intended environment. The standalone read surface is available on the observed Mac runtime; host-provided capability roots and active task-loaded state remain unknown.
+Run both diagnostics in Windows Codex and reconcile their evidence with Mac. Establish the actual desktop task boundary next: whether a selected loadout can be applied and verified for a fresh desktop task while preserving the intended environment. Standalone inventory and selected fixture source controls are available on the observed Mac runtime; host-provided capability roots, actual task-loaded state, and explicit manual invocation remain unknown.
 
 The maintainer selected verification by opening the same repository in Windows Codex. Its desktop/runtime versions and real probe result are not yet recorded. Claude Code implementation begins after the Codex baseline meets its two-OS acceptance criteria.
 

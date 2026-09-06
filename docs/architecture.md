@@ -1,10 +1,10 @@
 # Architecture boundaries
 
-This page separates the code present on 2026-09-06 from the intended product architecture. The working slice is a read-only Node.js 24+ diagnostic using ES modules and the standard library. The full GUI/MCP/control/storage implementation and their framework/storage choices remain future work.
+This page separates the code present on 2026-09-06 from the intended product architecture. The working runtime contains Node.js 24+ inventory and owned-fixture source-control diagnostics using ES modules and the standard library. The full GUI/MCP/control/storage implementation and their framework/storage choices remain future work.
 
 ## Current runnable architecture
 
-The diagram shows the main processing relationships, not every returned value. The probe controller invokes the projection and assembles the report; the CLI owns writing it. Dotted edges are shared-helper dependencies in this first diagram.
+The diagram shows the `inspect` processing relationships, not every returned value. The inventory controller invokes the projection and assembles the report; the CLI owns writing it. Dotted edges are shared-helper dependencies in this first diagram. The second diagnostic path is described below the table.
 
 ```mermaid
 flowchart LR
@@ -31,11 +31,13 @@ flowchart LR
 
 The four data queries are `config/read`, `skills/list`, `hooks/list`, and `configRequirements/read`, preceded by initialization. No configuration-write request or model task is started by this command.
 
-This process is separate from the desktop app's active session. The report deliberately retains `desktopSessionAttached: false`, `runtimeStateVerified: false`, `modeSwitchingVerified: false`, and `sourceCoverage: "unknown"`. Current persistence is an optional JSON report, not a favorites database or a comparison store. macOS has a real read-only run; Windows evidence is pending.
+The `probe-controls` path runs through [source-controls.mjs](../src/codex/source-controls.mjs), which owns a temporary fixture and the six-case sequence, and [prompt-input.mjs](../src/codex/prompt-input.mjs), which runs the bounded CLI debug command and projects recognized text into five marker booleans. It reuses the existing version-command and owned-process cleanup behavior. It does not extend the inventory RPC allowlist or retain raw prompt text. Its interpretation and failure boundaries are in [the control-probe contract](spec-source-controls.md).
+
+Both diagnostics are separate from the desktop app's active session. They retain `desktopSessionAttached: false`, `runtimeStateVerified: false`, and `modeSwitchingVerified: false`; inventory coverage is `"unknown"`, and the control probe covers only its owned fixture. Current persistence is an optional JSON report, not a favorites database or a comparison store. macOS has real standalone observations; Windows evidence is pending.
 
 ## Intended product architecture
 
-Every dotted connection below is a planned integration. The CLI and Codex integration boxes have an existing read-only slice; that does not mean they are already connected to the future shared core or can control the desktop. The OS box represents shared responsibilities, not a library already implemented.
+Every dotted connection below is a planned integration. The CLI and Codex integration boxes have existing diagnostic slices; that does not mean they are already connected to the future shared core or can control the desktop. The OS box represents shared responsibilities, not a library already implemented.
 
 ```mermaid
 flowchart TB
@@ -44,7 +46,7 @@ flowchart TB
   CLI["CLI<br/>診断・復帰"]
   Core["共通ローカルコア<br/>装備の保存・切替・復帰<br/>比較の実行・計測・評価"]
   Store[("ローカル保存<br/>お気に入り・比較記録<br/>復旧点・表示設定")]
-  CodexAdapter["Codex連携<br/>現在は読取診断のみ"]
+  CodexAdapter["Codex連携<br/>一覧・検証用ソースの診断"]
   ClaudeAdapter["Claude Code連携<br/>未実装"]
   Platform["OS差分の扱い<br/>macOS / Windows<br/>パス・ファイル・プロセス"]
   CodexApp["Codex Desktop"]
