@@ -4,7 +4,7 @@ Agreed direction recorded on 2026-09-06. The maintainer approved making it easy 
 
 ## The flow to share
 
-Complete a comparable trial → meet an appearance-change condition → optionally create candidates → select and save one → preview a build card → save the image and open X's composer with editable text.
+Complete a comparable trial → meet an appearance-change condition → optionally create candidates → select and save one → preview a build card → copy its PNG to the clipboard and open X's composer with editable template text and the public OSS link → paste and post in X.
 
 The adopted [appearance rule](personalization.md#choosing-a-form-and-limiting-remakes) is three candidates followed by one final choice. Creating or sharing art is optional. The user can save a card with prepared artwork too, but only a qualifying, evidence-backed result receives an achievement claim.
 
@@ -29,10 +29,37 @@ Start with a readable PNG and editable post text. A short release animation or b
 
 ## Initial X handoff
 
-Offer an export preview with actions to save the card image and open X's posting screen. Pre-fill only the text, optional `#Unharness` hashtag, and an explicitly selected public URL. The author edits the draft, attaches the saved image, and posts in X. Provide copy-text/save-image fallbacks if opening the composer is blocked. Never put a local file path or the local app's URL into the public URL field.
+The maintainer accepted the earlier feasibility limits and chose a primary action such as “画像をコピーしてXへ”. The intended supported-browser flow is:
+
+1. Prepare the card PNG locally while showing the export preview, before the share click.
+2. On the user's click, copy the PNG image bytes to the clipboard and open X's posting screen with the editable template text and Unharness's public OSS URL.
+3. Let the author paste the image with Command+V on macOS or Ctrl+V on Windows, edit the text/alt text as desired, and publish in X.
+
+The clipboard contains the image, not the filename or image URL. Pass the post text and repository URL as encoded Web Intent parameters; do not follow the image write with a text-clipboard write that would replace it. Keep image-copy and composer-opening outcomes separate. Show “画像をコピーしました。Xで貼り付けてください” only after the clipboard write succeeds, and never describe the image as already attached inside X.
+
+Keep “画像を保存” as a local fallback for unsupported clipboard access, permission denial, or a failed paste. If composer opening is blocked, preserve the prepared card and provide an explicit open-X link. A separate copy-text fallback is available when requested, with clear behavior that it replaces clipboard content. Do not automatically overwrite the copied image to provide that fallback.
+
+Browser clipboard writing requires a supported secure context and applicable interaction/permission conditions. [Clipboard.write](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/write) supports PNG data on supporting browsers, and [window.open](https://developer.mozilla.org/en-US/docs/Web/API/Window/open) is subject to user-gesture and popup rules. Pre-rendering alone does not guarantee both operations succeed in one click: implementation must verify activation/focus behavior, asynchronous completion, and fallback behavior in the supported browsers on both OSes. An AI request can prepare the share preview; it must not claim that a background request performed a browser clipboard write without observing the actual result.
+
+## Template text and the OSS link
+
+Use a short editable template, for example:
+
+```text
+Unharnessでハーネスを試着。
+今回の装備：{公開用の装備名}
+{共有する比較結果・任意}
+
+無料OSS：{公開リポジトリURL}
+#Unharness
+```
+
+These braces describe template fields, not text to ship unchanged. Include only selected public names and a benefit statement justified by the exported comparison. Omit optional empty lines and keep the actual composed post within X's current text limit, accounting for URLs and hashtags. Keep the OSS link in the default public-release template while allowing the author to edit the final draft.
+
+The canonical public repository URL belongs to project release metadata. There is currently no Git remote/public repository URL configured, so do not invent a GitHub owner, expose a private remote, or populate the template with a local path. Until the real public URL is available, omit that line from any usable draft and identify the missing release metadata in development. Never use the local app's location as a default sharing URL.
 
 [X's Web Intent documentation](https://docs.x.com/x-for-websites/post-button/guides/web-intent) lists text, URL, hashtag, and related-account parameters; it provides no local-image attachment parameter. Therefore the basic intent handoff cannot preattach the exported PNG. [The Web Intents overview](https://docs.x.com/x-for-websites/web-intents/overview) describes this route without a separate developer app authorization, although the author still uses their X account to publish.
 
-The initial UX must say that the image is saved for attachment, not claim that an image-bearing post is already prepared inside X. Opening the composer is not evidence of a successful post; don't show “Posted” or invent a post URL from that action. A later integration may investigate media-aware OS/browser sharing only where it preserves the cost boundary and passes real macOS/Windows validation. A paid X API or hosted media service is not a dependency of the agreed flow. Do not promise automatic attachment on both operating systems before that work.
+The clipboard route still requires the author to paste the image inside X; the Web Intent does not attach it. Opening the composer is not evidence of a successful post; don't show “Posted” or invent a post URL from that action. A paid X API, media-upload service, or Unharness-operated server is not needed for the agreed flow. Clipboard writing and paste into X remain real macOS/Windows/browser acceptance checks, not completed support claims.
 
 Only an explicit share action opens X. Adopting an appearance, completing a benchmark, or asking an AI to save a favorite does not publish or silently open a posting flow. No real post, account connection, or public upload was performed while recording this proposal.

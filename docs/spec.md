@@ -96,6 +96,8 @@ Equipment is neutral before evaluation and can be represented as supportive/reso
 
 The adopted appearance flow is: qualifying comparison → voluntary original-creation action → three candidates → one final choice → local save → optional build-card/X handoff. Preserve the selected entity across modes and restarts. Technical retries do not consume a creative choice or replace valid candidates; after adoption, the same achievement does not allow another creative draw. A distinct later achievement can yield a new form while preserving the old one. See [appearance rules](personalization.md) and [sharing](build-cards.md). These are agreed product targets that depend on the comparison feature, not claims of implemented runtime behavior.
 
+The primary sharing action copies the card PNG to the clipboard and opens X's composer with editable template text and the public OSS repository link. The author pastes the image and posts. Keep the image in the clipboard while passing text through the composer URL; provide image-save and separate open-X fallbacks. Verify the combined gesture in the supported browsers on macOS and Windows before claiming one-click preparation support. The actual public repository URL must be established before adding it to a working template.
+
 ## Acceptance for each supported OS × app combination
 
 - A user can save a setup, run Normal → UNSEAL → TRUEFORM → Normal, and observe the managed changes and retained conditions.

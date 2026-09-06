@@ -2,6 +2,8 @@
 
 Assessment recorded on 2026-09-06, before starting another runtime slice. The maintainer asked which parts are feasible and which compromises must be understood first. This page distinguishes implementation prospects from observed support. The runtime remains the read-only inventory probe.
 
+The maintainer accepted these limits and selected clipboard-image copy plus an editable X composer with the public OSS link as the initial sharing workflow. This acceptance permits development within the stated boundaries; it does not replace desktop or browser verification.
+
 ## Cost boundary is feasible
 
 The user explicitly confirmed that their existing AI costs are separate. Unharness itself can be free with no required paid API, hosted backend, or recurring operator service expense by running the control/storage/UI/rendering/export components on the user's computer. Prepared/procedural pixel art can produce three candidates locally; optional authoring or judging through the user's own AI consumes that environment's allowance. No Unharness-funded model service is needed.
@@ -30,7 +32,7 @@ Continue toward full desktop support only with concrete results for these bounda
 | Quality | Fixed task criteria and distinguishable human/AI judgments | No universal objective quality score or guarantee that one loadout is generally superior |
 | Artwork | Local prepared/procedural variety, three candidates and one saved identity, optional user-AI authoring | A finite art system has finite expressive range; random combinations are not proof of worldwide uniqueness |
 | Remake rule | Three candidates and a final choice enforced by normal GUI/AI operations | Local OSS files/code can be changed; the rule is not tamper-proof scarcity |
-| X sharing | Save a PNG and open editable prefilled post text, with the user attaching the image and publishing | The basic Web Intent has no image-attachment parameter; opening it is not proof of a completed post |
+| X sharing | Copy a PNG to the clipboard and open template text plus the public OSS URL; the user pastes and publishes, with image saving as fallback | Clipboard/gesture/popup support needs browser verification; the Web Intent does not attach an image and opening it does not prove publication |
 | Portability | Separate adapters and OS boundaries tested on macOS and Windows | Native Windows, WSL, Codex, and Claude Code are distinct verification cases |
 
 The [Codex skill guide](https://learn.chatgpt.com/docs/build-skills) explicitly calls for a restart after changing skill enablement in configuration. The [App Server guide](https://learn.chatgpt.com/docs/app-server) documents token-usage events, but that documentation does not establish access to the active desktop's events. [X's Web Intent parameters](https://docs.x.com/x-for-websites/post-button/guides/web-intent) establish the text/URL handoff boundary.

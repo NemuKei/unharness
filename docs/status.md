@@ -16,7 +16,7 @@ Updated: 2026-09-06.
 - Selected visuals: pixel-art machine hangar, progressive exposure of the inner AI, and a divine luminous reveal.
 - The maintainer supports personal quests → equipment comparisons → build cards. For original appearances, they prefer random discovery: prepared patterns with probabilistic local selection by default, with user-side creation optional. The [appearance and memory proposal](personalization.md) covers sprite assembly, code-drawn pixels, optional image generation, and work-memory uses; these remain unimplemented with detailed release scope open.
 - Optional original creation should unlock only when declared performance conditions have enough comparison evidence. The GUI and AI entry points share the same rule; creation remains voluntary, and saved artwork retains its historical evidence. Exact task-specific thresholds and the implementation remain open.
-- The maintainer approved three candidates followed by one final choice, technical retries without creative rerolls, and [build-card export/X sharing](build-cards.md). Initial sharing uses a saved PNG and editable composer handoff with manual image attachment. These policies are adopted, not implemented.
+- The maintainer approved three candidates followed by one final choice, technical retries without creative rerolls, and [build-card export/X sharing](build-cards.md). The primary share action copies the PNG to the clipboard and opens X with editable template text and the public OSS link; the user pastes and posts. Image saving is the fallback. These policies are adopted, not implemented; the public repository URL is not yet configured.
 - Initial README drafts, specification, architecture boundaries, compatibility criteria, and handoff plan are present.
 
 ## Current implementation
@@ -27,7 +27,7 @@ The implemented probe completed its real Mac read-only run against Codex 0.153.4
 
 ## Next useful work
 
-The maintainer requested an upfront feasibility assessment before further implementation. The [feasibility boundaries](feasibility.md) identify the desktop control/observation gate; local artwork and sharing do not resolve that gate. No new runtime implementation was started while recording the adopted selection/cost rules and this assessment.
+The maintainer accepted the [feasibility boundaries](feasibility.md). Continue with the desktop control/observation gate; local artwork and sharing do not resolve it. The adopted selection/cost/sharing rules are recorded, and no new runtime implementation was started while clarifying these boundaries.
 
 Run the same read-only probe in Windows Codex and reconcile its runtime evidence with the Mac result. Then establish the actual desktop task boundary: whether a selected loadout can be applied and verified for a fresh desktop task while preserving the intended environment. The standalone read surface is available on the observed Mac runtime; host-provided capability roots and active task-loaded state remain unknown.
 

@@ -86,6 +86,8 @@ Original creation becomes available only when the [comparison eligibility rule](
 
 The same core owns the eventual remake policy, candidate slots, and adopted selection so retries, reloads, and AI requests cannot accidentally duplicate a draw. A separate [build-card export](build-cards.md) projects selected public fields from an appearance and its evidence. Opening an external X composer is a user action after export, not part of saving a favorite or proof that a post was published.
 
+The presentation layer handles the user's clipboard gesture and navigation. It receives a prepared PNG and post text from the export flow, copies the PNG, and passes the text/public OSS URL through the X composer link without overwriting the image clipboard. Track confirmed clipboard writes and observable navigation results separately; requesting a new window does not establish that X loaded, received a paste, or published a post. Keep the local save/open-link fallbacks when the browser rejects either operation.
+
 ## Application integration boundary
 
 Codex and Claude Code each have an adapter responsible for:
