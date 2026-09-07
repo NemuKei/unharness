@@ -55,6 +55,8 @@ After building, use `node bin/unharness.mjs gui --manage-sources --codex-home "<
 
 The [workbench runbook](docs/user-source-gui.md) covers launch/resume, saved versions, readback and Node-only recovery. Native macOS source preparation is distinct from desktop-loaded verification; Windows real-source writes remain gated. No model or desktop task is started.
 
+Skill configuration preparation preserves unrelated settings and comment placement. If the native editor would lose a comment, preparation stops before changing personal files.
+
 ## Make “what if I removed this?” easy to try
 
 You have added skills, instructions, and workflows to help your AI work the way you want. Now you want to know which parts fit the model and the work in front of you.

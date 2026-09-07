@@ -25,17 +25,32 @@ assert.equal(empty.changed, true);
 checks.push('empty TOML accepted');
 await assert.rejects(run('SECRET_MARKER = [', ['/synthetic/new/SKILL.md']), { kind: 'config-transform-failed' });
 checks.push('malformed TOML privately rejected');
-for (const [label, input] of [
-  ['leading array-only comment', '# leading\n[[skills.config]]\npath = "/synthetic/selected/SKILL.md"\nenabled = true\n'],
-  ['Skill array/entry comments', '[[skills.config]] # array comment\npath = "/synthetic/selected/SKILL.md" # path comment\nenabled = true # enabled comment\n'],
+for (const [label, input, paths] of [
+  ['leading array-only comment', '# leading\n[[skills.config]]\npath = "/synthetic/selected/SKILL.md"\nenabled = true\n', ['/synthetic/selected/SKILL.md']],
+  ['selected extra metadata', '[[skills.config]]\npath = "/synthetic/selected/SKILL.md"\nenabled = true\nextra = "retained"\n', ['/synthetic/selected/SKILL.md']],
+  ['already-disabled entry comments during another change', '[[skills.config]] # array comment\npath = "/synthetic/untouched/SKILL.md" # path comment\nenabled = false # enabled comment\n[[skills.config]]\npath = "/synthetic/selected/SKILL.md"\nenabled = true\n', ['/synthetic/selected/SKILL.md', '/synthetic/untouched/SKILL.md']],
+  ['already-disabled duplicate comments during another change', '[[skills.config]]\npath = "/synthetic/untouched/SKILL.md" # first\nenabled = false\n[[skills.config]]\npath = "/synthetic/untouched/SKILL.md" # second\nenabled = false\n[[skills.config]]\npath = "/synthetic/selected/SKILL.md"\nenabled = true\n', ['/synthetic/selected/SKILL.md', '/synthetic/untouched/SKILL.md']],
 ]) {
-  await assert.rejects(run(input, ['/synthetic/selected/SKILL.md']), { kind: 'config-transform-failed' });
   const disabled = input.replace('enabled = true', 'enabled = false');
-  const noOp = await run(disabled, ['/synthetic/selected/SKILL.md']);
+  const changed = await run(input, paths);
+  assert.equal(changed.changed, true);
+  assert.equal(changed.text, disabled);
+  const noOp = await run(disabled, paths);
   assert.equal(noOp.changed, false);
   assert.equal(noOp.text, disabled);
-  checks.push(`${label}: lossy native rewrite rejected and no-op bytes retained`);
+  checks.push(`${label}: only enabled value changes and no-op bytes retained`);
 }
+const entryComments = '[[skills.config]] # array comment\npath = "/synthetic/selected/SKILL.md" # path comment\nenabled = true # enabled comment\n';
+await assert.rejects(run(entryComments, ['/synthetic/selected/SKILL.md']), { kind: 'config-transform-failed' });
+const disabledComments = entryComments.replace('enabled = true', 'enabled = false');
+assert.equal((await run(disabledComments, ['/synthetic/selected/SKILL.md'])).text, disabledComments);
+checks.push('lossy selected-entry inline comment edit rejected; exact no-op retained');
+const duplicates = '[[skills.config]]\npath = "/synthetic/selected/SKILL.md"\nenabled = true\nextra = "first"\n[[skills.config]]\npath = "/synthetic/selected/SKILL.md"\nenabled = true\nextra = "second"\n';
+const duplicateResult = await run(duplicates, ['/synthetic/selected/SKILL.md']);
+assert.equal(duplicateResult.changed, true);
+assert.equal((duplicateResult.text.match(/enabled = false/g) ?? []).length, 2);
+assert.doesNotMatch(duplicateResult.text, /enabled = true/);
+checks.push('every duplicate selected entry disabled with all metadata preserved');
 const hashPath = await run('[[skills.config]]\npath = "/synthetic/#data/SKILL.md"\nenabled = true\n', ['/synthetic/#data/SKILL.md']);
 assert.equal(hashPath.changed, true);
 checks.push('quoted hash in Skill path treated as data');

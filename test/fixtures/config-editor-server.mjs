@@ -41,11 +41,19 @@ else for await (const line of createInterface({ input: process.stdin })) {
     send({ id: 'inbound', method: 'item/commandExecution/requestApproval', params: { command: 'SECRET_MARKER' } });
   } else if (msg.method === 'config/read') {
     respond(msg.id, { config, layers: scenario === 'missing-user' ? [] : [{ name: { type: 'user', file }, version, config }] });
-  } else if (msg.method === 'config/batchWrite') {
-    if (scenario === 'stale') { send({ id: msg.id, error: { code: -32000, message: 'SECRET_MARKER stale version' } }); continue; }
-    if (msg.params.filePath !== file || msg.params.expectedVersion !== 'v1' || msg.params.reloadUserConfig !== false || msg.params.edits.length !== 1 || msg.params.edits[0].keyPath !== 'skills.config' || msg.params.edits[0].mergeStrategy !== 'replace') process.exit(71);
+  } else if (['skills/config/write', 'config/batchWrite'].includes(msg.method)) {
+    if (scenario === 'write-error') { send({ id: msg.id, error: { code: -32000, message: 'SECRET_MARKER write failed' } }); continue; }
     config.skills ??= {};
-    config.skills.config = msg.params.edits[0].value;
+    config.skills.config ??= [];
+    if (msg.method === 'config/batchWrite') {
+      if (msg.params.filePath !== file || msg.params.expectedVersion !== version || msg.params.reloadUserConfig !== false || msg.params.edits.length !== 1 || msg.params.edits[0].keyPath !== 'skills.config' || msg.params.edits[0].mergeStrategy !== 'replace') process.exit(71);
+      config.skills.config = msg.params.edits[0].value;
+    } else {
+      if (Object.keys(msg.params).sort().join(',') !== 'enabled,path' || !['/skills/selected/SKILL.md', '/skills/new/SKILL.md'].includes(msg.params.path) || msg.params.enabled !== false) process.exit(71);
+      const entry = config.skills.config.find(item => item.path === msg.params.path);
+      if (entry) entry.enabled = false;
+      else config.skills.config.push({ path: msg.params.path, enabled: false });
+    }
     if (scenario === 'tamper-retained') config.memories.use_memories = true;
     if (scenario === 'tamper-selected') config.skills.config[0].enabled = true;
     version = 'v2';
@@ -53,6 +61,6 @@ else for await (const line of createInterface({ input: process.stdin })) {
     if (scenario === 'drop-comments') prefix = prefix.replace(/^#.*\n/gm, '');
     if (scenario === 'relocate-comment') prefix = prefix.replace(/^(#.*\n)([^\n]*\n)/, '$2$1');
     await writeFile(file, prefix + config.skills.config.map(item => '[[skills.config]]\n' + Object.entries(item).map(([k, v]) => `${k} = ${JSON.stringify(v)}\n`).join('')).join(''));
-    respond(msg.id, { status: 'ok', version, filePath: file });
+    respond(msg.id, msg.method === 'config/batchWrite' ? { status: 'ok', version, filePath: file } : { effectiveEnabled: false });
   } else process.exit(72); // No model/task/other write APIs are available.
 }

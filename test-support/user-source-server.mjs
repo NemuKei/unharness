@@ -80,17 +80,18 @@ for await (const line of createInterface({ input: process.stdin })) {
       );
     } catch {}
     result = { data: [{ cwd: msg.params.cwds[0], skills, errors: [] }] };
-  } else if (msg.method === 'config/batchWrite') {
+  } else if (msg.method === 'skills/config/write') {
     if (
-      msg.params.filePath !== file ||
-      msg.params.reloadUserConfig !== false ||
-      msg.params.expectedVersion !== version ||
-      msg.params.edits.length !== 1 ||
-      msg.params.edits[0].keyPath !== 'skills.config'
+      Object.keys(msg.params).sort().join(',') !== 'enabled,path' ||
+      typeof msg.params.path !== 'string' ||
+      msg.params.enabled !== false
     )
       process.exit(72);
     config.skills ??= {};
-    config.skills.config = msg.params.edits[0].value;
+    config.skills.config ??= [];
+    const entry = config.skills.config.find(item => item.path === msg.params.path);
+    if (entry) entry.enabled = false;
+    else config.skills.config.push({ path: msg.params.path, enabled: false });
     version = 'two';
     text =
       text.split('[[skills.config]]')[0] +
@@ -104,7 +105,7 @@ for await (const line of createInterface({ input: process.stdin })) {
         )
         .join('');
     await writeFile(file, text);
-    result = { status: 'ok', version, filePath: file };
+    result = { effectiveEnabled: false };
   } else process.exit(71);
   process.stdout.write(
     JSON.stringify({ jsonrpc: '2.0', id: msg.id, result }) + '\n'

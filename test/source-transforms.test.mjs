@@ -89,9 +89,13 @@ test('owned native editor disables only selected exact paths with guarded fixed 
   assert.equal(launch.initial, configText);
   assert.notEqual(launch.profile, process.env.CODEX_HOME);
   await assert.rejects(stat(launch.profile), { code: 'ENOENT' });
-  assert.deepEqual(messages.filter(m => m.method).map(m => m.method), ['initialize', 'initialized', 'config/read', 'config/batchWrite', 'config/read']);
-  const write = messages.find(m => m.method === 'config/batchWrite');
-  assert.deepEqual(write.params, { filePath: join(launch.profile, 'config.toml'), expectedVersion: 'v1', reloadUserConfig: false, edits: [{ keyPath: 'skills.config', mergeStrategy: 'replace', value: [{ path: '/skills/selected/SKILL.md', enabled: false, extra: 'retained' }, { path: '/skills/untouched/SKILL.md', enabled: true }, { path: '/skills/new/SKILL.md', enabled: false }] }] });
+  assert.deepEqual(messages.filter(m => m.method).map(m => m.method), ['initialize', 'initialized', 'config/read', 'skills/config/write', 'skills/config/write', 'config/read']);
+  assert.deepEqual(messages.filter(m => m.method === 'skills/config/write').map(m => m.params), [
+    { path: '/skills/selected/SKILL.md', enabled: false },
+    { path: '/skills/new/SKILL.md', enabled: false },
+  ]);
+  assert.match(result.text, /path = "\/skills\/selected\/SKILL.md"\nenabled = false\nextra = "retained"/);
+  assert.match(result.text, /path = "\/skills\/untouched\/SKILL.md"\nenabled = true/);
   assert.deepEqual(messages.find(m => m.id === 'inbound').error, { code: -32601, message: 'Method not found' });
 });
 
@@ -101,12 +105,30 @@ test('already disabled selections retain original bytes and send no write; empty
   const result = await ctx.run({ configText: original, skillPaths: ['/skills/selected/SKILL.md'] });
   assert.equal(result.text, original);
   assert.equal(result.changed, false);
-  assert.equal((await ctx.events()).some(m => m.method === 'config/batchWrite'), false);
+  assert.equal((await ctx.events()).some(m => ['skills/config/write', 'config/batchWrite'].includes(m.method)), false);
   assert.deepEqual(await ctx.run({ skillPaths: [], executable: 'missing' }), { text: configText, changed: false, codexVersion: null });
 });
 
+test('duplicate selected paths disable every entry through the guarded owned-array edit', async t => {
+  const ctx = await editorSetup(t);
+  const input = '[[skills.config]]\npath = "/skills/selected/SKILL.md"\nenabled = true\nextra = "first"\n[[skills.config]]\npath = "/skills/selected/SKILL.md"\nenabled = true\nextra = "second"\n';
+  const result = await ctx.run({ configText: input, skillPaths: ['/skills/selected/SKILL.md'] });
+  assert.equal(result.text, input.replaceAll('enabled = true', 'enabled = false'));
+  const [launch, ...messages] = await ctx.events();
+  const writes = messages.filter(m => ['skills/config/write', 'config/batchWrite'].includes(m.method));
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].method, 'config/batchWrite');
+  assert.deepEqual(writes[0].params, {
+    filePath: join(launch.profile, 'config.toml'), expectedVersion: 'v1', reloadUserConfig: false,
+    edits: [{ keyPath: 'skills.config', mergeStrategy: 'replace', value: [
+      { path: '/skills/selected/SKILL.md', enabled: false, extra: 'first' },
+      { path: '/skills/selected/SKILL.md', enabled: false, extra: 'second' },
+    ] }],
+  });
+});
+
 test('native editor rejects invalid controls, hides remote errors, and rejects changed protected values', async t => {
-  for (const scenario of ['rpc-error', 'stale', 'missing-user', 'tamper-retained', 'tamper-selected', 'drop-comments', 'relocate-comment']) await t.test(scenario, async t => {
+  for (const scenario of ['rpc-error', 'write-error', 'missing-user', 'tamper-retained', 'tamper-selected', 'drop-comments', 'relocate-comment']) await t.test(scenario, async t => {
     const ctx = await editorSetup(t, scenario);
     await assert.rejects(ctx.run(), error => {
       assert.equal(error.kind, 'config-transform-failed');
@@ -173,7 +195,7 @@ test('native editor rejects numeric extra Skill metadata before any rewrite but 
  const ctx=await editorSetup(t);
  const original='[[skills.config]]\npath = "/skills/selected/SKILL.md"\nenabled = true\n\n[[skills.config]]\npath = "/skills/untouched/SKILL.md"\nenabled = true\ncustom_integer = 9007199254740993\n';
  await assert.rejects(ctx.run({configText:original,skillPaths:['/skills/selected/SKILL.md']}),{kind:'config-transform-failed'});
- assert.equal((await ctx.events()).some(m=>m.method==='config/batchWrite'),false);
+ assert.equal((await ctx.events()).some(m=>['skills/config/write','config/batchWrite'].includes(m.method)),false);
  const disabled=original.replace('enabled = true','enabled = false');
  assert.equal((await ctx.run({configText:disabled,skillPaths:['/skills/selected/SKILL.md']})).text,disabled);
 });

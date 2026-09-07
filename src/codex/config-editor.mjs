@@ -19,7 +19,7 @@ function userLayer(report, file) {
 }
 
 // RPC JSON numbers cannot establish the exact original TOML numeric value.
-// Extra numeric metadata is conservatively unavailable when rewriting the array;
+// Extra numeric metadata is conservatively unavailable when editing Skill config;
 // the exact-byte no-op path below remains available without serialization.
 function containsNumber(value) {
   if (typeof value === 'number') return true;
@@ -58,7 +58,7 @@ export async function disableSkillConfig({ configText, skillPaths, executable, e
     await mkdir(join(project, '.git'), { mode: 0o700 });
     const file = join(profile, 'config.toml');
     await writeFile(file, configText, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
-    client = createRpcTransport({ command: executable, args: [...executableArgs, 'app-server', '--stdio'], cwd: project, env: { ...process.env, CODEX_HOME: profile }, timeoutMs, maxResponseBytes: 8 * 1024 * 1024, allowedMethods: ['initialize', 'config/read', 'config/batchWrite'] });
+    client = createRpcTransport({ command: executable, args: [...executableArgs, 'app-server', '--stdio'], cwd: project, env: { ...process.env, CODEX_HOME: profile }, timeoutMs, maxResponseBytes: 8 * 1024 * 1024, allowedMethods: ['initialize', 'config/read', 'skills/config/write', 'config/batchWrite'] });
     const initialization = await client.request('initialize', { clientInfo: { name: 'unharness_config_editor', version: '0.0.1' }, capabilities: { experimentalApi: true } });
     const codexVersion = typeof initialization?.userAgent === 'string'
       ? initialization.userAgent.match(/^[^/\r\n]{1,80}\/(\d{1,8}\.\d{1,8}\.\d{1,8})(?=[ (]|$)/)?.[1]
@@ -70,7 +70,22 @@ export async function disableSkillConfig({ configText, skillPaths, executable, e
     const expected = disabledConfig(before.config, skillPaths);
     if (isDeepStrictEqual(expected, before.config)) return { text: configText, changed: false, codexVersion };
     if (containsNumber(before.config.skills?.config)) throw failed();
-    await client.request('config/batchWrite', { filePath: file, expectedVersion: before.version, reloadUserConfig: false, edits: [{ keyPath: 'skills.config', mergeStrategy: 'replace', value: expected.skills.config }] });
+    const entries = before.config.skills?.config ?? [];
+    const selectedEntries = skillPaths.map(path => entries.filter(entry => entry.path === path));
+    // The native path-specific method updates only the first duplicate entry.
+    // Retain the guarded array edit for this case so every selected copy is off.
+    if (selectedEntries.some(matches => matches.length > 1 && matches.some(entry => entry.enabled))) {
+      await client.request('config/batchWrite', { filePath: file, expectedVersion: before.version, reloadUserConfig: false, edits: [{ keyPath: 'skills.config', mergeStrategy: 'replace', value: expected.skills.config }] });
+    } else {
+      // The path-specific native edit preserves untouched array-entry comments.
+      // Its implicit destination is confined by the verified private CODEX_HOME;
+      // no caller-controlled config destination or generic write is accepted.
+      for (const [index, path] of skillPaths.entries()) {
+        if (selectedEntries[index].length === 0 || selectedEntries[index][0].enabled) {
+          await client.request('skills/config/write', { path, enabled: false });
+        }
+      }
+    }
     const after = await read();
     if (!isDeepStrictEqual(after.config, expected)) throw failed();
     const text = await readFile(file, 'utf8');

@@ -27,7 +27,7 @@ async function initialize(client) {
 }
 
 test('rejects non-allowlisted requests locally while allowed requests still work', async (t) => {
-  const client = clientFor('all-ok', { allowedMethods: ['config/batchWrite'] });
+  const client = clientFor('all-ok', { allowedMethods: ['config/batchWrite', 'skills/config/write'] });
   t.after(() => client.close());
   await assert.rejects(client.request('config/write', { marker: 'SECRET_MARKER' }), (error) => {
     assert.equal(error.kind, 'forbidden-method');
@@ -35,6 +35,7 @@ test('rejects non-allowlisted requests locally while allowed requests still work
     return true;
   });
   await assert.rejects(client.request('config/batchWrite', {}), { kind: 'forbidden-method' });
+  await assert.rejects(client.request('skills/config/write', {}), { kind: 'forbidden-method' });
   await assert.rejects(client.request('thread/start', {}), { kind: 'forbidden-method' });
   await initialize(client);
   assert.ok((await client.request('config/read', {})).config);
