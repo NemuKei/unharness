@@ -2,6 +2,8 @@
 
 The first GUI connects the existing owned-fixture loadout service to a local browser. It implements the next step in [status.md](status.md), using the [selected PixiJS design](design.md#selected-rendering-stack). It does not expand control to personal settings or claim complete UNSEAL/TRUEFORM support.
 
+This document defines the fixture launch and its routes. The separately launched `--manage-sources` workbench follows the [registered user-source contract](spec-user-sources.md): explicit target declarations, a saved Normal, reviewed next-task preparation and Node-only recovery. It reuses the accepted scene but keeps its controller, records and state separate. The fixture labels and HTTP routes below remain diagnostic contracts.
+
 ## User journey
 
 1. Install and build locally, then run `npm run gui`. The explicit demo launch creates a fresh private workspace under `.unharness/`, containing a generated desktop fixture and record store. Save baseline, manual-only and fixed-only favorite versions there; finish at baseline. Print structured Node arguments (`resumeArgv`, with the absolute CLI entrypoint first) and the store/scope for safe resumption. Existing data is never replaced or automatically deleted.
@@ -56,6 +58,6 @@ State: `{ scopeId, controlScope: 'owned-fixture-only', project, fixture, store, 
 
 ## Validation and evidence limits
 
-The real-source panel centers on additional instructions, Skills and hooks, and collapses retained memory, integration and policy information. Counts may include provider items and do not establish user ownership or a release set. On reconnect, fetch metadata first and compare its non-authenticating `launchId` with the identity accepted by the UI. A new launch, changed cwd or disabled reader is displayed before any collection; a later explicit click can read the accepted context. Failed metadata retrieval must not consume this check. Individual mode customization remains design work until real-source registration/control exists.
+The real-source panel centers on additional instructions, Skills and hooks, and collapses retained memory, integration and policy information. Counts may include provider items and do not establish user ownership or a release set. On reconnect, fetch metadata first and compare its non-authenticating `launchId` with the identity accepted by the UI. A new launch, changed cwd or disabled reader is displayed before any collection; a later explicit click can read the accepted context. Failed metadata retrieval must not consume this check. This inventory panel remains read-only even when the separate registered user-source workbench is available.
 
 Server tests use real temporary fixtures/store and local HTTP. Cover save/apply/restore/observation, stale plans, independent edits, cross-scope targets, duplicate requests, host/origin/token rejection, invalid JSON, oversized requests, and static path confinement. Verify dependencies install, TypeScript checks, production build and existing Node tests. Browser checks cover the real local save/select/apply/recovery flow, refresh, effect settings, observation errors, responsive layout and console errors. Compare screenshots with the selected concept and document deliberate scope/copy changes. This is local GUI evidence, not Windows or complete desktop support.
