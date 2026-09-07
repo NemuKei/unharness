@@ -395,7 +395,31 @@ export async function recoverTransaction(w) {
   const retainedDirectories = await cleanupDirs(j, before, paths, true);
   for (const k of j.keys)
     if (!equal(await captureFile(paths[k]), before[k])) fail('source-conflict');
-  await writeJson(join(w.workspace, 'state.json'), j.beforeState);
+  // Configuration returns to its previous revision, but a newly created
+  // directory retained for foreign contents still needs its verified identity.
+  // Rebuild only from registered journal directories that remain intact;
+  // directories removed by cleanup must not leave stale ownership in state.
+  const recoveredState = { ...j.beforeState, ownedDirs: [] };
+  for (const d of j.dirs) {
+    const current = await exists(d.path);
+    if (!current) continue;
+    await canonical(d.path);
+    if (
+      !d.identity ||
+      !current.isDirectory() ||
+      current.isSymbolicLink() ||
+      current.dev !== d.identity.dev ||
+      current.ino !== d.identity.ino
+    )
+      fail('journal-invalid');
+    recoveredState.ownedDirs.push({
+      key: d.key,
+      path: d.path,
+      identity: { dev: d.identity.dev, ino: d.identity.ino }
+    });
+  }
+  validateState(w.reg, recoveredState);
+  await writeJson(join(w.workspace, 'state.json'), recoveredState);
   await unlink(join(w.workspace, 'pending.json'));
   return {
     status: dependencyConflicts.length

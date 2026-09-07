@@ -781,3 +781,69 @@ nativeTest(
     });
   }
 );
+
+test('recovery retains verified directory ownership so planning can resume with foreign files preserved', async (t) => {
+  const s = await setup(t),
+    r = await register(s);
+  const plan = await service.planUserMode({
+    workspace: r.workspace,
+    mode: 'unseal'
+  });
+  await interrupt(r.workspace, plan.planId, 'write-1');
+  const foreign = join(s.context.codexHome, 'skills/example/agents/foreign');
+  await writeFile(foreign, 'independent contents');
+  const recovered = await service.recoverUserSources({
+    workspace: r.workspace
+  });
+  assert.equal(recovered.status, 'restored');
+  assert.deepEqual(recovered.dependencyConflicts, []);
+  assert.equal(recovered.retainedDirectories.length, 1);
+  assert.equal(
+    (await service.userSourceState({ workspace: r.workspace })).conflict,
+    null
+  );
+  for (const mode of ['unseal', 'normal']) {
+    const next = await service.planUserMode({ workspace: r.workspace, mode });
+    await service.applyUserPlan({
+      workspace: r.workspace,
+      planId: next.planId
+    });
+    assert.equal(await readFile(foreign, 'utf8'), 'independent contents');
+  }
+  assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
+  assert.equal(
+    (await service.userSourceState({ workspace: r.workspace })).conflict,
+    null
+  );
+});
+
+nativeTest(
+  'recognized transform errors are normalized by the facade error boundary',
+  async () => {
+    const { privateCall } = await import('../src/sources/errors.mjs');
+    const { makeManualSkillPolicy } = await import(
+      '../src/sources/skill-policy.mjs'
+    );
+    const { disableSkillConfig } = await import(
+      '../src/codex/config-editor.mjs'
+    );
+    for (const [kind, invoke] of [
+      [
+        'unsupported-skill-policy',
+        () => makeManualSkillPolicy('policy: invalid\n')
+      ],
+      [
+        'config-transform-failed',
+        () => disableSkillConfig({ configText: null, skillPaths: [] })
+      ]
+    ]) {
+      await assert.rejects(privateCall(invoke), (error) => {
+        assert.equal(error.name, 'UserSourceError');
+        assert.equal(error.kind, kind);
+        assert.equal(error.message, kind);
+        assert.equal(Object.hasOwn(error, 'cause'), false);
+        return true;
+      });
+    }
+  }
+);

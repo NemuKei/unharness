@@ -32,8 +32,9 @@ export async function privateCall(fn) {
   try {
     return await fn();
   } catch (e) {
-    if (USER_SOURCE_ERROR_KINDS.includes(e?.kind)) throw e;
-    fail('operation-failed');
+    fail(
+      USER_SOURCE_ERROR_KINDS.includes(e?.kind) ? e.kind : 'operation-failed'
+    );
   }
 }
 export const verification = Object.freeze({
