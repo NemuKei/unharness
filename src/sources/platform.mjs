@@ -39,6 +39,15 @@ export function canReproduceOwnership(file) {
       process.getgroups().includes(file.meta.gid))
   );
 }
+// Portable discovery/registration/plans do not qualify source writes. Only
+// macOS publication is supported, so admission there includes its ownership
+// check; other platforms retain preview support and independent write gates.
+export function canPlanOwnership(file) {
+  return process.platform !== 'darwin' || canReproduceOwnership(file);
+}
+export function assertPlanOwnershipChanges(before, after) {
+  if (process.platform === 'darwin') assertOwnershipChanges(before, after);
+}
 export function assertWritableOwnership(file) {
   if (!canReproduceOwnership(file)) fail('unsupported-metadata');
 }

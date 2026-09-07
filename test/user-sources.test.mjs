@@ -1269,3 +1269,120 @@ test('ownership predicate admits effective and supplementary groups without chan
     file
   );
 });
+
+// This exercises platform routing and missing APIs on the host filesystem;
+// it deliberately does not claim native Windows path/ACL/process evidence.
+async function withMissingPosixIdentity(platform, run) {
+  const names = ['platform', 'geteuid', 'getegid', 'getgroups'];
+  const descriptors = new Map(
+    names.map((name) => [name, Object.getOwnPropertyDescriptor(process, name)])
+  );
+  Object.defineProperty(process, 'platform', {
+    ...descriptors.get('platform'),
+    value: platform
+  });
+  for (const name of names.slice(1))
+    Object.defineProperty(process, name, {
+      ...descriptors.get(name),
+      value: undefined
+    });
+  try {
+    return await run();
+  } finally {
+    for (const [name, descriptor] of descriptors) {
+      if (descriptor) Object.defineProperty(process, name, descriptor);
+      else delete process[name];
+    }
+  }
+}
+async function addExistingControls(s) {
+  const { mkdir } = await import('node:fs/promises');
+  await writeFile(
+    join(s.context.codexHome, 'AGENTS.override.md'),
+    '# Optional existing override\n',
+    { mode: 0o600 }
+  );
+  await mkdir(join(s.context.codexHome, 'skills/example/agents'));
+  await writeFile(
+    join(s.context.codexHome, 'skills/example/agents/openai.yaml'),
+    'policy:\n  allow_implicit_invocation: true\n',
+    { mode: 0o600 }
+  );
+}
+test('synthetic Windows missing-API routing retains discovery registration and changed-file plans while blocking all source writers', async (t) => {
+  const s = await setup(t);
+  await addExistingControls(s);
+  await withMissingPosixIdentity('win32', async () => {
+    s.discovery = await service.discoverUserSources(s.context);
+    assert.equal(s.discovery.instructions.eligible, true);
+    const skill = s.discovery.skills.find((row) => row.label === 'example');
+    assert.equal(skill.eligible, true);
+    assert.equal(skill.availability.unseal, true);
+    assert.equal(skill.availability.trueform, true);
+    const original = await readSourceProfileFiles(s.context),
+      r = await register(s);
+    for (const mode of ['unseal', 'trueform']) {
+      const plan = await service.planUserMode({ workspace: r.workspace, mode });
+      assert.ok(plan.changedFiles.length > 0);
+      await assert.rejects(
+        service.applyUserPlan({ workspace: r.workspace, planId: plan.planId }),
+        { kind: 'unsupported-platform' }
+      );
+    }
+    const { captureFile, writeComplete, canReproduceOwnership } = await import(
+      '../src/sources/platform.mjs'
+    );
+    const file = await captureFile(join(s.context.codexHome, 'config.toml'));
+    assert.equal(canReproduceOwnership(file), false);
+    const stage = join(s.parent, 'no-windows-write.stage');
+    await assert.rejects(writeComplete(stage, file), {
+      kind: 'unsupported-metadata'
+    });
+    const { lstat, readdir } = await import('node:fs/promises');
+    await assert.rejects(lstat(stage), { code: 'ENOENT' });
+    await assert.rejects(lstat(join(r.workspace, 'pending.json')), {
+      code: 'ENOENT'
+    });
+    assert.deepEqual(
+      await readdir(join(r.workspace, 'records/checkpoint')),
+      []
+    );
+    await writeFile(join(r.workspace, 'pending.json'), '{}', { mode: 0o600 });
+    await assert.rejects(
+      service.recoverUserSources({ workspace: r.workspace }),
+      { kind: 'unsupported-platform' }
+    );
+    assert.deepEqual(await readSourceProfileFiles(s.context), original);
+  });
+});
+test('synthetic macOS missing-API routing keeps ownership admission planning and stage creation fail-closed', async (t) => {
+  const s = await setup(t);
+  await addExistingControls(s);
+  s.discovery = await service.discoverUserSources(s.context);
+  const r = await register(s);
+  const { captureFile, writeComplete } = await import(
+    '../src/sources/platform.mjs'
+  );
+  const file = await captureFile(join(s.context.codexHome, 'config.toml'));
+  await withMissingPosixIdentity('darwin', async () => {
+    const d = await service.discoverUserSources(s.context);
+    assert.equal(d.instructions.eligible, false);
+    assert.equal(
+      d.skills.find((row) => row.label === 'example').eligible,
+      false
+    );
+    await assert.rejects(
+      service.planUserMode({ workspace: r.workspace, mode: 'unseal' }),
+      { kind: 'unsupported-metadata' }
+    );
+    const stage = join(s.parent, 'no-missing-identity.stage');
+    await assert.rejects(writeComplete(stage, file), {
+      kind: 'unsupported-metadata'
+    });
+    const { lstat } = await import('node:fs/promises');
+    await assert.rejects(lstat(stage), { code: 'ENOENT' });
+    await assert.rejects(lstat(join(r.workspace, 'pending.json')), {
+      code: 'ENOENT'
+    });
+  });
+});

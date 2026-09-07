@@ -5,8 +5,7 @@ import {
   parentBinding,
   equal,
   defaultMetadata,
-  canReproduceOwnership,
-  assertWritableOwnership
+  canPlanOwnership
 } from './platform.mjs';
 import { fail, verification } from './errors.mjs';
 const ordered = (x) =>
@@ -95,8 +94,8 @@ export async function discoveryCapture(input) {
   const instructionId =
     'instructions-' +
     hash({ paths, base: files.base, override: files.override });
-  const instructionOwnership = canReproduceOwnership(files.override);
-  const configOwnership = canReproduceOwnership(files.config);
+  const instructionOwnership = canPlanOwnership(files.override);
+  const configOwnership = canPlanOwnership(files.config);
   const instructions = {
     id: instructionId,
     label: 'Global Codex instructions',
@@ -163,7 +162,7 @@ export async function discoveryCapture(input) {
         reason = e.kind ?? 'unsupported-source';
         if (e.kind !== 'unsupported-skill-policy') eligible = false;
       }
-    const policyOwnership = canReproduceOwnership(policy);
+    const policyOwnership = canPlanOwnership(policy);
     const unsealAvailable =
       eligible && (!s.enabled || (manual && policyOwnership));
     const trueformAvailable = eligible && configOwnership;
@@ -314,16 +313,17 @@ export async function targetFile(reg, key, text, normal) {
   };
 }
 
-// Recheck the current principal immediately before creating a reservation. A
+// Recheck platform-appropriate admission before creating a reservation. A
 // policy retained read-only by TRUEFORM is not an ownership admission failure.
 export function assertRegistrationOwnership(d, selected, instructionsOptional) {
-  if (instructionsOptional) assertWritableOwnership(d.files.override);
+  if (instructionsOptional && !canPlanOwnership(d.files.override))
+    fail('unsupported-metadata');
   for (const skill of d.skills.filter((s) => selected.includes(s.id))) {
     const manual =
       skill.availability.unseal &&
-      (!skill.enabled || canReproduceOwnership(skill.policy));
+      (!skill.enabled || canPlanOwnership(skill.policy));
     const disable =
-      skill.availability.trueform && canReproduceOwnership(d.files.config);
+      skill.availability.trueform && canPlanOwnership(d.files.config);
     if (!manual && !disable) fail('unsupported-metadata');
   }
 }
