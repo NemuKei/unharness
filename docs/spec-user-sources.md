@@ -51,6 +51,8 @@ Source text and configuration backups are private local records. Never return co
 
 Limits: at most 32 selected Skills, 128 KiB per source text and 768 KiB per snapshot. Reject over-limit sources without truncation. Reject final links, hard-linked write targets, unsupported metadata/ownership and redirected parents. Native real-source publication must preserve supported access metadata; unsupported filesystem cases remain unavailable rather than falling back to a weaker write.
 
+On macOS, existing writable controls must have the executing effective UID and a reproducible effective/supplementary group. Check this before registration and before actual changed-file publication, including old plans and recovery. Retained read-only dependencies may have other owners. Portable read/plan admission is separate from this native write qualification; missing POSIX identity APIs do not enable publication on an unqualified platform.
+
 ## Plans, application and recovery
 
 Persist a plan with exact before/after files, source dependencies, selected targets, guide identity and expected current state. Return a summary with changed file labels, planned Skill states, retained conditions and next-task requirement. No plan writes managed files.

@@ -1,6 +1,6 @@
 # Registered user-source preparation on native macOS
 
-Date: 2026-09-08. Core implementation and reviewed recovery follow-up: `4e36982` and `be1c6ae`. Workbench implementation and reviewed visual corrections: `5c24a97` and `05b2f09`.
+Date: 2026-09-08. Core implementation and reviewed recovery follow-up: `4e36982` and `be1c6ae`. Workbench implementation and reviewed visual corrections: `5c24a97` and `05b2f09`. Final ownership and portable-admission corrections: `1db892a` and `ec5f3cc`; the final integrated runtime checks used `ec5f3cc`.
 
 This pass qualifies preparation and recovery of explicitly registered Codex sources in freshly owned profiles. It does not establish what a desktop task loaded, complete mode switching, or native Windows writes. The [source contract](../spec-user-sources.md) defines the selected global instruction and Skill scope.
 
@@ -41,7 +41,13 @@ The script creates and removes its own synthetic profiles. Private GUI qualifica
 
 The task's full pre-follow-up suite passed 232 tests. Final source/transform/RPC coverage passed 72 tests; the reviewed recovery/error correction passed 24 covering tests with one explicit non-macOS-platform skip. The native checker passed separately. The integrated workbench suite passed 245 tests with that one platform skip; the final UI correction passed 14 relevant HTTP/client tests, type/CSP checks and the production build. These are complementary runs, not an invented sum of unique tests.
 
+After the final ownership/portability corrections, `node --test` passed **264 tests, 0 failures, 1 explicit platform skip** (265 total, 37.992 seconds). The native checker was repeated successfully against `ec5f3cc` on the same Mac/Codex version. Both outputs were free of warnings/failure output, with empty native stderr. Frontend bytes and type/CSP/build inputs remain the qualified `05b2f09` version.
+
 The independent task review found a retained-directory ownership defect after recovery and a facade error-format mismatch. Both were reproduced, corrected and approved in scoped re-review. A configuration rewrite also refuses comments it cannot preserve in place, numeric extra metadata whose original precision cannot be established, and unsupported YAML formats. Those refusals happen before managed publication.
+
+The whole-feature review also found that an unsupported file owner/group could be admitted before a later staging failure. On macOS, writable controls now require the executing effective UID and an effective/supplementary group that can be reproduced. This is checked before reservation/planning and again before checkpoint/journal/stage publication; needed recovery changes have the same guard. Foreign-owned read-only dependencies remain readable. Config, policy and override capabilities stay distinct, including disabled-Skill no-op behavior. Existing records do not bypass these checks, and unfamiliar stages are never discarded as a workaround.
+
+Ownership regressions use UID/GID observations and process identity mocks confined to owned test profiles, without privileged or foreign-owned writes. A follow-up separates portable read/plan admission from qualified publication: simulated missing POSIX identity APIs preserve Windows discovery/registration/nonempty plans while application, recovery and the low-level writer remain blocked. macOS missing-API admission stays strict. These are synthetic routing checks, not native Windows evidence. Both review findings and the follow-up regression were corrected and scoped re-reviewed successfully.
 
 ## Built-browser results
 
@@ -70,7 +76,7 @@ The first browser pass found a misleading page title, an incorrect Normal change
 
 A separate read-only discovery of the maintainer's selected native Codex home/project found no existing source registration. It returned an eligible global override group and 60 Skill rows, of which 30 met the technical control/capture conditions; 30 provider/outside rows were excluded. No global dependency was reported unavailable. These counts do not classify a source as user-authored or optional.
 
-The actual workbench was then opened for that same home/project and read the candidate list. Its setup displayed 61 rows including the global instruction group, with every target/declaration unchecked. No role declaration, source registration or preparation was submitted for that profile. After GUI discovery, the content/existence and recorded ownership/permissions of the three selected personal configuration/instruction files matched their preflight fingerprints. The project config remained absent; the repository's intentional AGENTS documentation update was accounted for separately. The real setup is left unregistered for the maintainer's selection.
+The actual workbench was then opened for that same home/project and read the candidate list, and was restarted/re-read with the final backend. Its setup displayed 61 rows including the global instruction group, with every target/declaration unchecked. No role declaration, source registration or preparation was submitted for that profile. After final GUI discovery, the content/existence and recorded ownership/permissions of the three selected personal configuration/instruction files matched their preflight fingerprints. The project config remained absent; the repository's intentional AGENTS documentation update was accounted for separately. The real setup is left unregistered for the maintainer's selection.
 
 ## Evidence limits
 
