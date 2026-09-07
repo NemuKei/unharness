@@ -18,8 +18,18 @@
   },
   "tests": {
     "command": "node --test",
-    "initial": { "total": 126, "passed": 115, "failed": 10, "skipped": 1 },
-    "final": { "total": 126, "passed": 125, "failed": 0, "skipped": 1 },
+    "initial": {
+      "total": 126,
+      "passed": 115,
+      "failed": 10,
+      "skipped": 1
+    },
+    "final": {
+      "total": 126,
+      "passed": 125,
+      "failed": 0,
+      "skipped": 1
+    },
     "skip": "POSIX FIFO fixture; Windows named-pipe behavior unverified",
     "independentReview": "no-actionable-findings"
   },
@@ -74,5 +84,41 @@
   "desktopSessionAttached": false,
   "runtimeStateVerified": false,
   "modeSwitchingVerified": false,
-  "sourceCoverage": "fixture-only-control-with-incomplete-runtime-observation"
+  "sourceCoverage": "fixture-only-control-with-incomplete-runtime-observation",
+  "integratedGuiSmoke": {
+    "testedRevision": "8993a00fa826b6e760f29b60574d744995f161c4",
+    "upstreamGuiRevision": "17e0f8a",
+    "dependenciesInstalled": true,
+    "typeAndCspCheck": "passed",
+    "build": "passed",
+    "tests": {
+      "total": 149,
+      "passed": 148,
+      "failed": 0,
+      "skipped": 1
+    },
+    "browser": {
+      "surface": "Codex in-app browser",
+      "platform": "native-windows",
+      "viewport": {
+        "width": 1265,
+        "height": 712
+      },
+      "planSelection": true,
+      "manualOnlyApplied": true,
+      "favoriteSaved": true,
+      "checkpointRestored": true,
+      "baselineFavoriteReapplied": true,
+      "artworkRendered": true,
+      "consoleErrors": 0,
+      "consoleWarnings": 0,
+      "effectsOffTested": false,
+      "narrowViewportTested": false,
+      "freshTaskObserved": false
+    },
+    "finalCondition": "baseline",
+    "applicationCurrent": true,
+    "runtimeStateVerified": false,
+    "modeSwitchingVerified": false
+  }
 }

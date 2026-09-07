@@ -40,7 +40,17 @@ The initial full native run found 10 failures, 115 passes and one existing platf
 
 The corrected tests use shared, bounded startup allowances: 5 seconds for ordinary subprocess responses and 3 seconds for readiness-dependent timeout/oversize cleanup scenarios. The existing 100 ms RPC timeout assertion remains. Synthetic readiness/PID publication follows shutdown-handler registration; expected error kinds, bounded caller exit and child-death assertions remain required. Cleanup is registered before assertions, so failed RPC/prompt checks still release their owned children. The POSIX permission-bit assertions remain active on non-Windows systems. These test changes do not alter product deadlines, disable behavior checks or certify Windows ACLs.
 
-Final verification: `node --test` using normal default scheduling passed **125 tests, zero failures, one skip** (126 discovered). The existing skipped case creates a POSIX FIFO; it does not establish Windows named-pipe behavior. Native tests exercised fixture interruption/recovery, conflicting edits, locks, exclusive hard-link publication, immutable records and path handling. The local CLI smoke independently checked registration, saving and exact favorite/checkpoint restoration.
+At the diagnostic baseline, `node --test` using normal default scheduling passed **125 tests, zero failures, one skip** (126 discovered). The existing skipped case creates a POSIX FIFO; it does not establish Windows named-pipe behavior. Native tests exercised fixture interruption/recovery, conflicting edits, locks, exclusive hard-link publication, immutable records and path handling. The local CLI smoke independently checked registration, saving and exact favorite/checkpoint restoration.
+
+## Integrated GUI smoke
+
+The upstream GUI through `17e0f8a` arrived during this verification and was integrated without changing its production runtime. The integrated tested revision is `8993a00fa826b6e760f29b60574d744995f161c4`. Its first Windows test run found one additional POSIX-specific assertion: recovery paths were required to start with `/`. The test now checks native absolute paths with `path.isAbsolute`, preserving the recovery contract for both OSes.
+
+After `npm ci --ignore-scripts`, the integrated `node --test` passed **148 tests, zero failures, one existing skip** (149 discovered). `npm run check` and `npm run build` passed. Tests, checks, build and GUI server used bundled Node 24.19.0; the dependency-install command used the installed Node 24.13.0.
+
+The built loopback GUI was opened in Codex's in-app browser on Windows using the retained store and scope. Its normal viewport was 1265 × 712. Selecting the manual-only favorite displayed a plan while baseline remained prepared; applying it changed prepared readback to manual-only while task confirmation remained pending. Saving created a new manual-only favorite. Restoring the pre-change checkpoint returned baseline. Selecting and applying the original baseline favorite then established the current GUI application receipt. The artwork rendered and the browser's captured warning/error log was empty.
+
+This was a bounded browser smoke of selection, application, save and recovery. Windows browser restart, effects-off, narrow layout and fresh-task/UUID observation were not exercised. The GUI remains at baseline with a current application and the exact project/READY prompt available for the next task. The private handoff was updated to that receipt; full runtime/mode flags remain false.
 
 ## Next Windows desktop check
 

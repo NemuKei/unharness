@@ -53,4 +53,4 @@ Effects on/off and reduced motion affect the scene only. The [bundled artwork](g
 
 Private workspace paths are shown locally for task creation and recovery. Source bodies, marker seeds and raw recordings are not API responses. The server validates its Host, origin, client header and per-launch token and serves only built UI assets. No cloud backend, runtime CDN, model API or X integration is required.
 
-The GUI and its current evidence are development work. Native Windows behavior and complete desktop mode support need their own verification under [the compatibility criteria](compatibility.md).
+The GUI and its current evidence are development work. The [integrated Windows baseline](evidence/2026-09-07-windows-baseline.md) covers a normal-viewport in-app-browser smoke for select, apply, save, checkpoint restore and local artwork. It does not cover browser restart, effects-off, narrow layout, or fresh-task/UUID observation. Complete desktop mode support still needs verification under [the compatibility criteria](compatibility.md).

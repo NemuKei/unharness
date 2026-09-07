@@ -5,7 +5,7 @@
 | OS | Application | Delivery phase | Current evidence |
 | --- | --- | --- | --- |
 | macOS | Codex desktop | 1 | Saved fixture versions associated with fresh desktop tasks, including restoration; full product modes unverified |
-| Windows | Codex desktop | 1 | Native inventory, six-case source controls, current-task recording projection, and fixture/loadout recovery completed; fresh fixture tasks and saved-version associations pending |
+| Windows | Codex desktop | 1 | Native inventory, six-case source controls, current-task projection, fixture/loadout recovery, and a bounded loopback GUI smoke completed; fresh fixture tasks and saved-version associations pending |
 | macOS | Claude Code desktop, Code tab | 2 | Documentation reviewed; integration not implemented or tested |
 | Windows | Claude Code desktop, Code tab | 2 | Test environment available per maintainer; no test result yet |
 
@@ -46,7 +46,7 @@ The [registered-loadout native smoke](evidence/2026-09-06-loadouts-macos.md) add
 
 The [2026-09-07 saved-version desktop check](evidence/2026-09-07-saved-loadout-desktop-macos.md) links two actual Mac tasks to exact favorite/application records: manual-only and refreshed baseline. The old-task control was rejected, baseline version identity was retained and recorded execution settings matched. This closes the fixture service-to-desktop association check on the observed Mac version; source coverage remains unknown and full mode flags remain false. Windows still requires its own result.
 
-The [local fixture GUI check](evidence/2026-09-07-local-gui-macos.md) adds native Mac loopback/browser evidence for select, apply, save, checkpoint restore, restart, conflict handling and local Pixi rendering. Its synthetic suite passes 149 tests. This adds no new real desktop task observation or native Windows result; the full product compatibility matrix remains unchanged.
+The [local fixture GUI check](evidence/2026-09-07-local-gui-macos.md) adds native Mac loopback/browser evidence for select, apply, save, checkpoint restore, restart, conflict handling and local Pixi rendering. Its synthetic suite passes 149 tests. The [integrated Windows baseline](evidence/2026-09-07-windows-baseline.md) adds a normal-viewport in-app-browser smoke for select, apply, save, checkpoint restore and local artwork, with 148 passing tests plus one existing POSIX-FIFO skip, type checks and production build. It does not cover browser restart, effects-off, narrow layout or fresh-task/UUID observation. Neither result changes the full product compatibility matrix.
 
 ## Claude Code investigation baseline
 
