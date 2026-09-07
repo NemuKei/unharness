@@ -13,7 +13,10 @@ test('fixed guide identity hashes the published LF bytes and cannot be mutated b
   assert.equal(guide.text, text);
   assert.equal(guide.digest, createHash('sha256').update(text).digest('hex'));
   assert.equal(guide.reviewedOn, '2026-09-08');
-  assert.equal(guide.references.length, 2);
+  assert.deepEqual(guide.references, [
+    'https://learn.chatgpt.com/guides/best-practices',
+    'https://code.claude.com/docs/en/best-practices',
+  ]);
   try { guide.references.pop(); } catch {}
   assert.equal(getMinimalGuide().references.length, 2);
 });
@@ -103,7 +106,7 @@ test('already disabled selections retain original bytes and send no write; empty
 });
 
 test('native editor rejects invalid controls, hides remote errors, and rejects changed protected values', async t => {
-  for (const scenario of ['rpc-error', 'stale', 'missing-user', 'tamper-retained', 'tamper-selected', 'drop-comments']) await t.test(scenario, async t => {
+  for (const scenario of ['rpc-error', 'stale', 'missing-user', 'tamper-retained', 'tamper-selected', 'drop-comments', 'relocate-comment']) await t.test(scenario, async t => {
     const ctx = await editorSetup(t, scenario);
     await assert.rejects(ctx.run(), error => {
       assert.equal(error.kind, 'config-transform-failed');
@@ -151,4 +154,17 @@ test('TOML comment guard refuses dropped array comments but treats quoted hashes
   assert.equal(preservesTomlComments(quoted, ''), true);
   assert.equal(preservesTomlComments('x = "unterminated\n# ambiguous', ''), false);
   assert.equal(preservesTomlComments('# repeat\n# repeat\n', '# repeat\n'), false);
+});
+
+
+test('TOML comment guard rejects relocation between settings, tables and Skill entries', async () => {
+  const { preservesTomlComments } = await import('../src/codex/toml-comments.mjs');
+  const before = '# belongs to model\nmodel = "example"\n';
+  assert.equal(preservesTomlComments(before, 'model = "example"\n# belongs to model\n'), false);
+  assert.equal(preservesTomlComments('model = "example" # model\n', 'model = "example"\n# model\n'), false);
+  assert.equal(preservesTomlComments('# table\n[one]\na = 1\n[two]\nb = 2\n', '# table\n[two]\nb = 2\n[one]\na = 1\n'), false);
+  const first = '[[skills.config]]\npath = "/first"\n# belongs to first\nenabled = true\n';
+  const second = '[[skills.config]]\npath = "/second"\nenabled = true\n';
+  assert.equal(preservesTomlComments(first + second, first.replace('# belongs to first\n', '') + second.replace('enabled = true', '# belongs to first\nenabled = true')), false);
+  assert.equal(preservesTomlComments(before, '# belongs to model\n\n  model  =  "example"\n'), true);
 });

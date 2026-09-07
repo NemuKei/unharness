@@ -51,6 +51,7 @@ else for await (const line of createInterface({ input: process.stdin })) {
     version = 'v2';
     let prefix = initial.split('[[skills.config]]')[0];
     if (scenario === 'drop-comments') prefix = prefix.replace(/^#.*\n/gm, '');
+    if (scenario === 'relocate-comment') prefix = prefix.replace(/^(#.*\n)([^\n]*\n)/, '$2$1');
     await writeFile(file, prefix + config.skills.config.map(item => '[[skills.config]]\n' + Object.entries(item).map(([k, v]) => `${k} = ${JSON.stringify(v)}\n`).join('')).join(''));
     respond(msg.id, { status: 'ok', version, filePath: file });
   } else process.exit(72); // No model/task/other write APIs are available.
