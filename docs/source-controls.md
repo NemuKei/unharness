@@ -40,9 +40,11 @@ Every prompt command disables hooks and memories for that child process. This av
 
 The report is fixture-only evidence from `codex debug prompt-input`. It does not attach to Codex desktop, request model work, verify observed desktop runtime state, switch a mode, edit user configuration, or establish complete harness control. The temporary fixture is removed after success and failure; cleanup failure prevents success.
 
-## Windows handoff
+## Native Windows result and follow-up
 
-Windows requires the same synthetic command with a native executable, for example:
+The six-case synthetic command completed on native Windows 11 x64 with Codex 0.153.4. Manual-only and absolute `SKILL.md` exclusion worked, the fixed-only override and restoration returned the expected markers, and directory exclusion remained ineffective, matching the Mac observation. The [Windows baseline](evidence/2026-09-07-windows-baseline.md) retains the environment and scope. This remains fixture-only CLI evidence: it does not establish desktop mode application, explicit picker invocation, hooks/memory control, or whole-source control.
+
+To repeat the diagnostic on another Windows installation, use a native executable, for example:
 
 ```text
 node bin/unharness.mjs probe-controls --codex "C:\Program Files\Codex\codex.exe" --output local-evidence/source-controls-windows.json
@@ -50,6 +52,6 @@ node bin/unharness.mjs probe-controls --codex "C:\Program Files\Codex\codex.exe"
 
 This executable path is illustrative; replace it with the installed native Codex executable path on the Windows machine.
 
-`.cmd` and `.bat` wrappers are rejected because subprocess arguments must remain structured with no shell. Windows support remains unverified until this command is run on Windows and the sanitized report and configuration before/after checks are reviewed there.
+`.cmd` and `.bat` wrappers are rejected because subprocess arguments must remain structured with no shell. Treat a later installation or version as a new observation and review its sanitized report and configuration before/after checks. The observed result does not make directory exclusion effective or promote the fixture outcome to desktop support.
 
 For actual desktop recording and a persistent project opened in a fresh task, use [the desktop observation diagnostic](desktop-observation.md). Its fixture recovery is separate from this temporary CLI-only probe.

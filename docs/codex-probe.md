@@ -48,13 +48,15 @@ The desktop host can supply different flags, selected capability roots, or alrea
 
 Exit 0 means the inventory requests completed with recognized shapes. Exit 1 means collection or report writing failed; useful partial results can still be present. Exit 2 means invalid command usage. None of these exit codes is a product support certification.
 
-## Windows handoff to Codex
+## Native Windows baseline and follow-up
 
-Open the same repository revision in Windows Codex. A suitable task prompt is:
+The inventory has now run natively on Windows 11 x64 with Codex 0.153.4, desktop package 26.901.6511.0, and bundled Node 24.19.0. It exited successfully without editing the selected configuration locations. The [sanitized baseline](evidence/2026-09-07-windows-baseline.md) records the tested revision and the related source-control, recording, and local-store boundaries. This standalone inventory still does not attach to the desktop or verify a product mode.
+
+To reproduce this check on another Windows installation, open the same repository revision in Windows Codex. A suitable task prompt is:
 
 > Read AGENTS.md and docs/codex-probe.md. Verify this read-only diagnostic on Windows. Resolve a Node.js 24+ runtime and the native Codex executable on this machine, then run the test suite and the inspect command. Do not modify my harness settings, restart the desktop app, or start model comparison tasks. Return the tested Git revision, Node/Codex/desktop versions, CPU architecture, whether execution was native Windows or WSL, the test result, and the sanitized probe JSON. If collection fails, report the fixed error classification and the relevant environment finding; do not paste raw settings, credentials, or raw doctor logs.
 
-For a clearly named Windows result, run:
+For a clearly named additional Windows result, run:
 
 ```text
 git rev-parse HEAD
@@ -64,7 +66,7 @@ node bin/unharness.mjs inspect --cwd . --output local-evidence/windows-codex-pro
 
 Use `--codex` if the PATH entry resolves to a launcher instead of the native binary. The Windows desktop version is recorded separately from the CLI version, because the probe itself does not establish a desktop attachment.
 
-Return the safe JSON and test summary through the working conversation. Keep the local raw diagnostic/schema files out of commits. Real Windows evidence is still required even when all synthetic tests pass on macOS.
+Return the safe JSON and test summary through the working conversation. Keep the local raw diagnostic/schema files out of commits. A second installation or later version needs its own evidence; this command alone never establishes fresh-task or mode behavior.
 
 ### Moving the repository without publishing it
 

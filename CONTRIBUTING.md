@@ -27,6 +27,8 @@ Use a focused development branch; the default branch-name prefix for new work is
 
 Documentation-only changes should preserve relative links and pass `git diff --check`. Update English and Japanese READMEs together when changing claims or availability. New runtime work must add its actual setup and test commands to the documentation rather than referring to commands that do not exist yet.
 
+The current native Windows baseline uses shared bounded startup allowances in subprocess tests: five seconds for ordinary responses and three seconds for readiness-dependent timeout/oversize cleanup scenarios. Keep the 100 ms RPC timeout assertion and cleanup checks intact. The existing POSIX-FIFO case is skipped on Windows; that skip does not test Windows named pipes.
+
 ## Evidence and configuration data
 
 Use synthetic configuration fixtures in automated tests. Record exact revisions, OSes, application/runtime versions, environment type, and observed outcomes for desktop tests. Keep personal backups, credentials, raw chats, and real user data out of Git. A test performed in a CLI or WSL environment must be identified as such.

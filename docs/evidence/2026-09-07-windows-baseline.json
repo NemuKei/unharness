@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-07",
+  "kind": "native-windows-diagnostic-baseline",
+  "runtimeRevision": "13c590205fae6ded3238eb0c137cd411b82235b7",
+  "testRevision": "af91a9a92ff29fff92c7901935c01f620c6b04bd",
+  "productionRuntimeChanged": false,
+  "environment": {
+    "os": "Windows 11 Home",
+    "osVersion": "10.0.26100",
+    "platform": "win32",
+    "architecture": "x64",
+    "execution": "native-windows",
+    "desktopPackageVersion": "26.901.6511.0",
+    "codexCliVersion": "0.153.4",
+    "recordedRuntimeVersion": "0.153.4",
+    "nodeVersion": "24.19.0"
+  },
+  "tests": {
+    "command": "node --test",
+    "initial": { "total": 126, "passed": 115, "failed": 10, "skipped": 1 },
+    "final": { "total": 126, "passed": 125, "failed": 0, "skipped": 1 },
+    "skip": "POSIX FIFO fixture; Windows named-pipe behavior unverified",
+    "independentReview": "no-actionable-findings"
+  },
+  "inventory": {
+    "surface": "standalone-app-server",
+    "initialized": true,
+    "config": "ok",
+    "skills": "ok",
+    "hooks": "ok",
+    "requirements": "ok"
+  },
+  "sourceControls": {
+    "allSixCasesCollected": true,
+    "baselineVisible": true,
+    "manualCatalogOmitted": true,
+    "fileDisableEffective": true,
+    "directoryDisableEffective": false,
+    "fixedConstraintPreserved": true,
+    "restored": true,
+    "fixtureCleanup": "ok",
+    "hooksAndMemoriesDisabledForAllCases": true
+  },
+  "currentTaskRecording": {
+    "collected": true,
+    "desktopOriginator": true,
+    "recordedStartRoute": "user-created",
+    "hostSkillCatalog": true,
+    "memoryGuidance": true,
+    "sourceFieldsRecorded": true,
+    "numericUsageFieldsPresent": true,
+    "firstTurnCompletedAtCollection": false,
+    "usageTotalsCollected": false,
+    "fixtureSupplied": false
+  },
+  "registeredLoadoutSmoke": {
+    "registered": true,
+    "sameVersionAfterRefresh": true,
+    "distinctVersionsInSameFamily": true,
+    "plannedFavoriteReadback": "matched",
+    "checkpointReadback": "matched",
+    "checkpointCondition": "manual-only",
+    "baselineVersionReused": true,
+    "finalCondition": "baseline",
+    "baselineApplicationPrepared": true,
+    "freshDesktopTaskObserved": false
+  },
+  "selectedPersonalLocationsUnchanged": true,
+  "personalConfigurationWrites": false,
+  "desktopRestartRequested": false,
+  "modelComparisonRequested": false,
+  "windowsAclIsolationVerified": false,
+  "desktopSessionAttached": false,
+  "runtimeStateVerified": false,
+  "modeSwitchingVerified": false,
+  "sourceCoverage": "fixture-only-control-with-incomplete-runtime-observation"
+}
