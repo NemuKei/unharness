@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 import { createReadOnlyClient } from '../src/codex/rpc-client.mjs';
+import { SUBPROCESS_TIMEOUT_MS } from '../test-support/process-timeouts.mjs';
 
 const fixture = fileURLToPath(new URL('./fixtures/codex-server.mjs', import.meta.url));
 const node = process.execPath;
@@ -14,7 +15,7 @@ function clientFor(scenario, overrides = {}) {
     command: node,
     args: [fixture, '--scenario', scenario, 'app-server', '--stdio'],
     cwd: process.cwd(),
-    timeoutMs: 500,
+    timeoutMs: SUBPROCESS_TIMEOUT_MS,
     ...overrides,
   });
 }
@@ -25,8 +26,9 @@ async function initialize(client) {
   return result;
 }
 
-test('rejects non-allowlisted requests locally while allowed requests still work', async () => {
+test('rejects non-allowlisted requests locally while allowed requests still work', async (t) => {
   const client = clientFor('all-ok');
+  t.after(() => client.close());
   await assert.rejects(client.request('config/write', { marker: 'SECRET_MARKER' }), (error) => {
     assert.equal(error.kind, 'forbidden-method');
     assert.equal(JSON.stringify(error).includes('SECRET_MARKER'), false);
@@ -37,8 +39,9 @@ test('rejects non-allowlisted requests locally while allowed requests still work
   await client.close();
 });
 
-test('handles fragmented responses and rejects server requests without servicing them', async () => {
+test('handles fragmented responses and rejects server requests without servicing them', async (t) => {
   const client = clientFor('server-request');
+  t.after(() => client.close());
   const result = await initialize(client);
   assert.ok(result.serverInfo);
   await new Promise((resolve) => setTimeout(resolve, 20));
@@ -82,8 +85,9 @@ test('allows the initialized notification only once and only after initialize su
   await client.close();
 });
 
-test('matches out-of-order responses to monotonically assigned requests', async () => {
+test('matches out-of-order responses to monotonically assigned requests', async (t) => {
   const client = clientFor('out-of-order');
+  t.after(() => client.close());
   await initialize(client);
   const configPromise = client.request('config/read', {});
   const skillsPromise = client.request('skills/list', {});
@@ -93,8 +97,9 @@ test('matches out-of-order responses to monotonically assigned requests', async 
   await client.close();
 });
 
-test('classifies RPC errors without exposing remote message or data', async () => {
+test('classifies RPC errors without exposing remote message or data', async (t) => {
   const client = clientFor('rpc-error');
+  t.after(() => client.close());
   await assert.rejects(client.request('initialize', {}), (error) => {
     assert.equal(error.kind, 'rpc-error');
     assert.equal(error.rpcCode, -32001);
@@ -106,38 +111,43 @@ test('classifies RPC errors without exposing remote message or data', async () =
 });
 
 test('classifies malformed and oversized server output with fixed local errors', async (t) => {
-  await t.test('malformed JSON', async () => {
+  await t.test('malformed JSON', async (t) => {
     const client = clientFor('malformed');
+    t.after(() => client.close());
     await assert.rejects(client.request('initialize', {}), { kind: 'malformed-response' });
     await client.close();
   });
-  await t.test('oversized buffer', async () => {
+  await t.test('oversized buffer', async (t) => {
     const client = clientFor('oversized', { maxResponseBytes: 1024 });
+    t.after(() => client.close());
     await assert.rejects(client.request('initialize', {}), { kind: 'response-too-large' });
     await client.close();
   });
 });
 
 test('settles pending requests on timeout and early child exit, then closes cleanly', async (t) => {
-  await t.test('timeout', async () => {
+  await t.test('timeout', async (t) => {
     const client = clientFor('timeout', { timeoutMs: 100 });
+    t.after(() => client.close());
     await assert.rejects(client.request('initialize', {}), { kind: 'timeout' });
     await client.close();
   });
-  await t.test('early exit', async () => {
+  await t.test('early exit', async (t) => {
     const client = clientFor('early-exit');
+    t.after(() => client.close());
     await assert.rejects(client.request('initialize', {}), { kind: 'process-exit' });
     await client.close();
   });
 });
 
-test('classifies startup errors without exposing the executable path', async () => {
+test('classifies startup errors without exposing the executable path', async (t) => {
   const client = createReadOnlyClient({
     command: join(tmpdir(), 'SECRET_MARKER', 'missing-codex-executable'),
     args: [],
     cwd: process.cwd(),
-    timeoutMs: 500,
+    timeoutMs: SUBPROCESS_TIMEOUT_MS,
   });
+  t.after(() => client.close());
   await assert.rejects(client.request('initialize', {}), (error) => {
     assert.equal(error.kind, 'spawn-error');
     assert.equal(String(error).includes('SECRET_MARKER'), false);

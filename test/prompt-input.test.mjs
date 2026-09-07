@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { readPromptInput, summarizePromptInput } from '../src/codex/prompt-input.mjs';
+import { CLEANUP_TIMEOUT_MS, SUBPROCESS_TIMEOUT_MS } from '../test-support/process-timeouts.mjs';
 
 const fixture = fileURLToPath(new URL('./fixtures/source-controls-cli.mjs', import.meta.url));
 
@@ -69,7 +70,7 @@ test('runs the fixed debug command and projects only recognized response text', 
       executable: process.execPath,
       executableArgs: [fixture, '--scenario', 'static', '--response-text', 'REQUIRED_RED_17 BODY_AMBER_47 USER_VIOLET_59', '--metadata-marker', 'CATALOG_GREEN_31', '--expected-config', configOverride],
       cwd,
-      timeoutMs: 1000,
+      timeoutMs: SUBPROCESS_TIMEOUT_MS,
       markers,
       configOverride,
     });
@@ -93,7 +94,7 @@ test('returns fixed error kinds for unsuccessful and malformed commands', async 
         executable: process.execPath,
         executableArgs: [fixture, '--scenario', scenario],
         cwd: process.cwd(),
-        timeoutMs: 1000,
+        timeoutMs: SUBPROCESS_TIMEOUT_MS,
         markers,
       }),
       (error) => error?.kind === kind && !JSON.stringify(error).includes('PRIVATE_'),
@@ -103,32 +104,46 @@ test('returns fixed error kinds for unsuccessful and malformed commands', async 
     readPromptInput({
       executable: join(tmpdir(), 'missing-unharness-source-controls-executable'),
       cwd: process.cwd(),
-      timeoutMs: 1000,
+      timeoutMs: SUBPROCESS_TIMEOUT_MS,
       markers,
     }),
     { kind: 'spawn-error' },
   );
 });
 
-test('bounds output and force-terminates children that ignore graceful shutdown', async () => {
+test('bounds output and force-terminates children that ignore graceful shutdown', {
+  timeout: 2 * (CLEANUP_TIMEOUT_MS + SUBPROCESS_TIMEOUT_MS),
+}, async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'prompt reader cleanup '));
-  try {
-    for (const [scenario, kind] of [['timeout', 'timeout'], ['oversize', 'response-too-large']]) {
-      const pidFile = join(root, `${scenario}.pid`);
-      await assert.rejects(
-        readPromptInput({
-          executable: process.execPath,
-          executableArgs: [fixture, '--scenario', scenario, '--pid-file', pidFile],
-          cwd: root,
-          timeoutMs: 100,
-          markers,
-        }),
-        { kind },
-      );
-      const pid = Number(await readFile(pidFile, 'utf8'));
-      assert.throws(() => process.kill(pid, 0), { code: 'ESRCH' });
+  const pidFiles = new Set();
+  t.after(async () => {
+    for (const pidFile of pidFiles) {
+      try {
+        const pid = Number(await readFile(pidFile, 'utf8'));
+        assert.ok(Number.isSafeInteger(pid) && pid > 0, 'fixture published a valid process ID');
+        process.kill(pid, 'SIGKILL');
+      } catch (error) {
+        if (!['ENOENT', 'ESRCH'].includes(error.code)) throw error;
+      }
     }
-  } finally {
     await rm(root, { recursive: true, force: true });
+  });
+  for (const [scenario, kind] of [['timeout', 'timeout'], ['oversize', 'response-too-large']]) {
+    const pidFile = join(root, `${scenario}.pid`);
+    pidFiles.add(pidFile);
+    await assert.rejects(
+      readPromptInput({
+        executable: process.execPath,
+        executableArgs: [fixture, '--scenario', scenario, '--pid-file', pidFile],
+        cwd: root,
+        timeoutMs: CLEANUP_TIMEOUT_MS,
+        markers,
+      }),
+      { kind },
+    );
+    const pid = Number(await readFile(pidFile, 'utf8'));
+    assert.ok(Number.isSafeInteger(pid) && pid > 0, 'fixture reached the shutdown-resistant scenario');
+    assert.throws(() => process.kill(pid, 0), { code: 'ESRCH' });
+    pidFiles.delete(pidFile);
   }
 });

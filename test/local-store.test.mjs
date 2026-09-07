@@ -124,8 +124,10 @@ test('createStore initializes only a private canonical child of an existing pare
   assert.equal(result.schemaVersion, 1);
   assert.equal(result.store, await realpath(result.store));
   assert.equal(basename(result.store).startsWith('unharness-loadouts-'), true);
-  assert.equal((await lstat(result.store)).mode & 0o777, 0o700);
-  assert.equal((await lstat(join(result.store, 'store.json'))).mode & 0o777, 0o600);
+  if (process.platform !== 'win32') {
+    assert.equal((await lstat(result.store)).mode & 0o777, 0o700);
+    assert.equal((await lstat(join(result.store, 'store.json'))).mode & 0o777, 0o600);
+  }
 
   const metadata = JSON.parse(await readFile(join(result.store, 'store.json'), 'utf8'));
   assert.deepEqual(metadata, {

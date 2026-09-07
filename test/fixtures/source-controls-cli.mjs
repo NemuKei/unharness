@@ -22,7 +22,6 @@ function disabledPath(config) {
 
 const scenario = option('--scenario') ?? 'fixture';
 const pidFile = option('--pid-file');
-if (pidFile) await writeFile(pidFile, String(process.pid), 'utf8');
 
 if (argv.at(-1) === '--version') {
   process.stdout.write('codex-cli 0.200.1\n');
@@ -54,11 +53,13 @@ if (scenario === 'malformed') {
 }
 if (scenario === 'timeout') {
   process.on('SIGTERM', () => {});
+  if (pidFile) await writeFile(pidFile, String(process.pid), 'utf8');
   setInterval(() => {}, 1000);
   await new Promise(() => {});
 }
 if (scenario === 'oversize') {
   process.on('SIGTERM', () => {});
+  if (pidFile) await writeFile(pidFile, String(process.pid), 'utf8');
   process.stdout.write('x'.repeat((8 * 1024 * 1024) + 1));
   setInterval(() => {}, 1000);
   await new Promise(() => {});

@@ -9,6 +9,7 @@ import {
   collectSourceControlProbe,
   sourceControlProbeSucceeded,
 } from '../src/codex/source-controls.mjs';
+import { SUBPROCESS_TIMEOUT_MS } from '../test-support/process-timeouts.mjs';
 
 const fixture = fileURLToPath(new URL('./fixtures/source-controls-cli.mjs', import.meta.url));
 
@@ -25,7 +26,7 @@ test('runs the six file-derived cases and removes only its owned fixture', async
   const report = await collectSourceControlProbe({
     executable: process.execPath,
     executableArgs: [fixture],
-    timeoutMs: 1000,
+    timeoutMs: SUBPROCESS_TIMEOUT_MS,
     tempRoot: root,
   });
 
@@ -80,7 +81,7 @@ test('stops after a command error, marks later cases not-run, and still cleans u
   const report = await collectSourceControlProbe({
     executable: process.execPath,
     executableArgs: [fixture, '--fail-manual', 'true'],
-    timeoutMs: 1000,
+    timeoutMs: SUBPROCESS_TIMEOUT_MS,
     tempRoot: root,
   });
 
@@ -103,7 +104,7 @@ test('treats a malformed mid-matrix response as an error and removes its fixture
   const report = await collectSourceControlProbe({
     executable: process.execPath,
     executableArgs: [fixture, '--malformed-manual', 'true'],
-    timeoutMs: 1000,
+    timeoutMs: SUBPROCESS_TIMEOUT_MS,
     tempRoot: root,
   });
 
@@ -119,7 +120,7 @@ test('unexpected observations finish the matrix but fail the affected checks', a
   const report = await collectSourceControlProbe({
     executable: process.execPath,
     executableArgs: [fixture, '--drop-procedure', 'true'],
-    timeoutMs: 1000,
+    timeoutMs: SUBPROCESS_TIMEOUT_MS,
     tempRoot: root,
   });
 
@@ -138,7 +139,7 @@ test('reports setup failure safely when no fixture was created', async (t) => {
   const report = await collectSourceControlProbe({
     executable: process.execPath,
     executableArgs: [fixture],
-    timeoutMs: 1000,
+    timeoutMs: SUBPROCESS_TIMEOUT_MS,
     tempRoot: missing,
   });
 

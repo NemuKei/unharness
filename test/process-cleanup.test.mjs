@@ -6,6 +6,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { CLEANUP_TIMEOUT_MS, SUBPROCESS_TIMEOUT_MS } from '../test-support/process-timeouts.mjs';
+
 const serverFixture = fileURLToPath(new URL('./fixtures/codex-server.mjs', import.meta.url));
 const runnerFixture = fileURLToPath(new URL('./fixtures/probe-runner.mjs', import.meta.url));
 
@@ -60,7 +62,7 @@ async function runScenario(t, scenario) {
     '--fixture', serverFixture,
     '--scenario', scenario,
     '--pid-file', pidFile,
-    '--timeout-ms', '100',
+    '--timeout-ms', String(CLEANUP_TIMEOUT_MS),
   ], { shell: false, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
 
   let stdout = '';
@@ -79,7 +81,7 @@ async function runScenario(t, scenario) {
     await within(closed, 1000);
     await rm(root, { recursive: true, force: true });
   });
-  const outcome = await within(closed, 1800);
+  const outcome = await within(closed, CLEANUP_TIMEOUT_MS + SUBPROCESS_TIMEOUT_MS);
   const ownedPid = await readPid(pidFile);
 
   if (outcome === null) {

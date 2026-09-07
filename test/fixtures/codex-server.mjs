@@ -16,8 +16,9 @@ if (scenarioIndex === -1) process.exit(0);
 
 if (process.argv.includes('--version')) {
   if (scenario === 'ignore-version-timeout' || scenario === 'ignore-version-oversize') {
-    writeFileSync(pidFile, String(process.pid), 'utf8');
     process.on('SIGTERM', () => {});
+    // PID publication also confirms that the shutdown-resistant scenario is ready.
+    writeFileSync(pidFile, String(process.pid), 'utf8');
     if (scenario === 'ignore-version-oversize') process.stdout.write('x'.repeat(70 * 1024));
     setInterval(() => {}, 1000);
     await new Promise(() => {});
@@ -43,8 +44,8 @@ if (scenario === 'early-exit') {
 }
 
 if (scenario === 'ignore-app-shutdown') {
-  writeFileSync(pidFile, String(process.pid), 'utf8');
   process.on('SIGTERM', () => {});
+  writeFileSync(pidFile, String(process.pid), 'utf8');
   setInterval(() => {}, 1000);
 }
 

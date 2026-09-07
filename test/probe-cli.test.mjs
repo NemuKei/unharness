@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 import { main } from '../bin/unharness.mjs';
 import { collectProbe, probeSucceeded } from '../src/codex/probe.mjs';
+import { SUBPROCESS_TIMEOUT_MS } from '../test-support/process-timeouts.mjs';
 
 const fixture = fileURLToPath(new URL('./fixtures/codex-server.mjs', import.meta.url));
 const sourceControlsFixture = fileURLToPath(new URL('./fixtures/source-controls-cli.mjs', import.meta.url));
@@ -25,7 +26,7 @@ test('collects a complete sanitized report with fixed evidence limits', async ()
   const root = await mkdtemp(join(tmpdir(), 'probe space 日本語 '));
   const cwd = join(root, 'work dir 日本語');
   await mkdir(cwd);
-  const report = await collectProbe({ executable: process.execPath, executableArgs: [fixture, '--scenario', 'strict-ok', '--expected-cwd', cwd], cwd, timeoutMs: 1000 });
+  const report = await collectProbe({ executable: process.execPath, executableArgs: [fixture, '--scenario', 'strict-ok', '--expected-cwd', cwd], cwd, timeoutMs: SUBPROCESS_TIMEOUT_MS });
 
   assert.equal(report.schemaVersion, 1);
   assert.equal(report.probeVersion, '0.0.1');
@@ -56,7 +57,7 @@ test('returns safe partial results and preserves failures as errors', async () =
   const report = await collectProbe({
     executable: process.execPath,
     executableArgs: [fixture, '--scenario', 'strict-partial', '--expected-cwd', process.cwd()],
-    timeoutMs: 1000,
+    timeoutMs: SUBPROCESS_TIMEOUT_MS,
   });
   assert.equal(report.connection.initialized, true);
   assert.equal(report.queries.config.status, 'ok');
@@ -71,7 +72,7 @@ test('does not run inventory requests when initialization fails', async () => {
   const report = await collectProbe({
     executable: process.execPath,
     executableArgs: [fixture, '--scenario', 'rpc-error'],
-    timeoutMs: 1000,
+    timeoutMs: SUBPROCESS_TIMEOUT_MS,
   });
   assert.equal(report.connection.initialized, false);
   assert.deepEqual(report.queries, {
@@ -88,7 +89,7 @@ test('reports invalid version output without copying it', async () => {
   const report = await collectProbe({
     executable: process.execPath,
     executableArgs: [fixture, '--scenario', 'strict-bad-version', '--expected-cwd', process.cwd()],
-    timeoutMs: 1000,
+    timeoutMs: SUBPROCESS_TIMEOUT_MS,
   });
   assert.deepEqual(report.codexCli, { status: 'error', error: { kind: 'invalid-version' } });
   assert.equal(probeSucceeded(report), false);
@@ -99,7 +100,7 @@ test('rejects strings that only resemble semantic versions', async () => {
   const report = await collectProbe({
     executable: process.execPath,
     executableArgs: [fixture, '--scenario', 'strict-invalid-semver', '--expected-cwd', process.cwd()],
-    timeoutMs: 1000,
+    timeoutMs: SUBPROCESS_TIMEOUT_MS,
   });
   assert.deepEqual(report.codexCli, { status: 'error', error: { kind: 'invalid-version' } });
   assert.equal(JSON.stringify(report).includes(SECRET), false);
@@ -133,7 +134,7 @@ test('CLI writes identical JSON once for a spaces and Unicode path', async () =>
     const output = join(root, 'nested output', 'report 日本語.json');
     const stdout = capture();
     const stderr = capture();
-    const code = await main(['inspect', '--cwd', cwd, '--codex', process.execPath, '--output', output, '--timeout-ms', '1000'], {
+    const code = await main(['inspect', '--cwd', cwd, '--codex', process.execPath, '--output', output, '--timeout-ms', String(SUBPROCESS_TIMEOUT_MS)], {
       stdout: stdout.stream,
       stderr: stderr.stream,
       executableArgs: [fixture, '--scenario', 'strict-ok', '--expected-cwd', cwd],
@@ -251,7 +252,7 @@ test('probe-controls prints safe JSON and exclusively creates an identical Unico
       'probe-controls',
       '--codex', process.execPath,
       '--output', output,
-      '--timeout-ms', '1000',
+      '--timeout-ms', String(SUBPROCESS_TIMEOUT_MS),
     ], {
       stdout: stdout.stream,
       stderr: stderr.stream,
@@ -271,7 +272,7 @@ test('probe-controls prints safe JSON and exclusively creates an identical Unico
       'probe-controls',
       '--codex', process.execPath,
       '--output', output,
-      '--timeout-ms', '1000',
+      '--timeout-ms', String(SUBPROCESS_TIMEOUT_MS),
     ], {
       stdout: collisionOut.stream,
       stderr: collisionErr.stream,
