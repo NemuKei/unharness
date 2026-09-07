@@ -1,6 +1,6 @@
 # Architecture boundaries
 
-This page separates the code present on 2026-09-07 from the intended product architecture. The working runtime contains Node.js 24+ inventory, source-control fixtures, and desktop-record observation using ES modules and the standard library. A separate local record store and fixture-loadout service are now present. PixiJS is pinned for the planned browser presentation layer; the diagnostic/core modules do not import it. GUI/MCP endpoints and real-source control/storage migration remain future work.
+This page separates the code present on 2026-09-07 from the intended product architecture. The working runtime contains Node.js 24+ inventory, source-control fixtures, desktop-record observation and a local record store/service. A loopback GUI connects that fixture service to React/TypeScript and PixiJS; diagnostic/core modules do not import browser dependencies. MCP endpoints and real-source control/storage migration remain future work.
 
 ## Current runnable architecture
 
@@ -57,6 +57,14 @@ The fixture-only `refresh` operation journals a same-case notification before to
 
 [The CLI](../src/loadouts/cli.mjs) calls that service directly. Future web/AI endpoints can use the same operations; neither endpoint is implemented yet. The [contract](spec-loadout-store.md) and [runbook](loadouts.md) define the current scope, raw-data boundary, explicit versions and recovery sequence. The store does not implement cross-machine migration, an exactly-once protocol or general personal-configuration recovery.
 
+## Local fixture GUI
+
+The [GUI contract](spec-gui.md) limits a server to one registered owned fixture scope. Its controller calls the existing loadout service for plans, save, restore and recording association; the HTTP layer validates the local request boundary and serves only the Vite production output. Browser inputs contain record IDs and a selected task UUID, never arbitrary source paths. The UI receives summaries and explicit local handoff/recovery paths, not source bodies or recordings.
+
+React owns controls, selection and operation feedback. PixiJS owns only the scene and effects. Selection previews a favorite; applying submits its reviewed plan. The core checks exact preparation identity again before writing. A detected external change marks the GUI's application stale, and completed artwork never advances evidence state. The server retains duplicate request identities for the launch, while the core retains immutable favorites, checkpoints, applications and observations on disk. Restarting requires reapplication before a new observation boundary is established.
+
+The Pixi entry includes its local `unsafe-eval` compatibility extension: despite the upstream name, that extension replaces generated helper functions with static implementations. This keeps initialization compatible with the server's strict `script-src 'self'` policy. The dependency check disables runtime code generation to cover this boundary.
+
 ## Intended product architecture
 
 Every dotted connection below is a planned integration. The CLI and Codex integration boxes have existing diagnostic slices; that does not mean they are already connected to the future shared core or can control the desktop. The OS box represents shared responsibilities, not a library already implemented.
@@ -94,7 +102,7 @@ flowchart TB
 
 The Unharness-owned control, storage, artwork, and export layers run on the user's computer. Free use with no recurring operator service expense is a product constraint: no paid API, hosted runtime, or free-tier cloud quota is required for the base design. Existing Codex/Claude Code model execution and optional AI authoring/judging use the user's separately chosen AI environment and its allowance. Optional AI judging has a contract but no selected execution implementation. The default three-candidate artwork route is local composition/drawing.
 
-The fixture core uses local content-addressed JSON records. The [selected visual stack](design.md#selected-rendering-stack) uses PixiJS for artwork/effects and HTML/CSS for controls and readable state. The surrounding GUI framework/build setup, production storage migration and the full desktop application/reflection mechanism remain undecided. The database symbol above represents the broader storage responsibility, not a selected database service.
+The fixture core uses local content-addressed JSON records. The [selected visual stack](design.md#selected-rendering-stack) uses PixiJS for artwork/effects and React/TypeScript with HTML/CSS for controls and readable state, built with Vite. Production storage migration and the full desktop application/reflection mechanism remain undecided. The database symbol above represents the broader storage responsibility, not a selected database service.
 
 Load PixiJS only through the browser presentation entry point. It consumes saved appearance data and the core's operation/assessment state; a ticker, asset-load completion or animation callback cannot apply settings or mark a task verified. Configuration and recovery remain usable independently of renderer availability. Bundle browser dependencies/assets locally, and keep CLI diagnostics callable without installing the presentation dependencies.
 

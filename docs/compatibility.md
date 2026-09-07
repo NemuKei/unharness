@@ -46,6 +46,8 @@ The [registered-loadout native smoke](evidence/2026-09-06-loadouts-macos.md) add
 
 The [2026-09-07 saved-version desktop check](evidence/2026-09-07-saved-loadout-desktop-macos.md) links two actual Mac tasks to exact favorite/application records: manual-only and refreshed baseline. The old-task control was rejected, baseline version identity was retained and recorded execution settings matched. This closes the fixture service-to-desktop association check on the observed Mac version; source coverage remains unknown and full mode flags remain false. Windows still requires its own result.
 
+The [local fixture GUI check](evidence/2026-09-07-local-gui-macos.md) adds native Mac loopback/browser evidence for select, apply, save, checkpoint restore, restart, conflict handling and local Pixi rendering. Its synthetic suite passes 149 tests. This adds no new real desktop task observation or native Windows result; the full product compatibility matrix remains unchanged.
+
 ## Claude Code investigation baseline
 
 The [desktop reference](https://code.claude.com/docs/en/desktop#shared-configuration), reviewed on 2026-09-06, describes shared instructions, skills, hooks, and settings with the CLI, while its local Code tab can also read MCP definitions from the desktop chat configuration. Source precedence can differ, and CLI scripting options do not establish desktop automation support. Inspect the actual Code tab environment and every applicable source.

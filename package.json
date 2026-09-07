@@ -8,9 +8,21 @@
   },
   "scripts": {
     "test": "node --test",
-    "inspect": "node bin/unharness.mjs inspect"
+    "inspect": "node bin/unharness.mjs inspect",
+    "check": "tsc -p web/tsconfig.json --noEmit && node --disallow-code-generation-from-strings web/checks/pixi-csp.check.mjs",
+    "build": "vite build",
+    "gui": "node bin/unharness.mjs gui --demo"
   },
   "dependencies": {
-    "pixi.js": "8.20.1"
+    "pixi.js": "8.20.1",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "@vitejs/plugin-react": "6.1.1",
+    "typescript": "7.0.2",
+    "vite": "8.2.2"
   }
 }

@@ -4,13 +4,16 @@ Unharness is being prepared for an open-source release. This repository contains
 
 ## Presentation dependencies
 
-PixiJS is selected for the planned GUI's artwork and effects, with HTML/CSS handling controls and readable state. Its exact version and transitive dependencies are recorded in `package.json` and `package-lock.json`. Install that dependency set for GUI development:
+The local fixture GUI uses React, TypeScript and Vite with PixiJS artwork/effects and HTML/CSS controls. Exact versions and transitive dependencies are recorded in `package.json` and `package-lock.json`. Build and start it with:
 
 ```text
 npm ci --ignore-scripts
+npm run check
+npm run build
+npm run gui
 ```
 
-The GUI, bundler and browser entry point are not implemented yet, so there is no GUI start command. Existing diagnostics and `node --test` still run without this install. Keep PixiJS imports in the future browser presentation layer, and commit lockfile changes when updating dependencies. See [the rendering decision](docs/design.md#selected-rendering-stack).
+Open the printed loopback URL. `gui --demo` creates a fresh owned fixture/store; use the printed store/scope or structured resumeArgv to keep working with that environment. Existing diagnostics and `node --test` still run without the frontend dependency install. Keep PixiJS imports in the browser presentation layer and commit lockfile changes when updating dependencies. See [GUI usage](docs/gui.md) and [the rendering decision](docs/design.md#selected-rendering-stack). `npm run check` covers TypeScript and Pixi's static shader/geometry helpers with dynamic code generation disabled. For GUI changes, run this check, the production build and real browser interaction checks in addition to affected Node tests; keep screenshots containing private paths/IDs outside Git.
 
 ## Work that is useful now
 

@@ -1,6 +1,6 @@
 # Product contract
 
-The requirements below are agreed product targets. The [read-only inventory](spec-probe.md) and [owned-fixture source-control diagnostic](spec-source-controls.md) and [desktop record/fixture observations](desktop-observation.md), plus the [registered fixture loadout core](spec-loadout-store.md), are the working slices delivered so far; the full product implementation is not yet present. See [status](status.md).
+The requirements below are agreed product targets. The [read-only inventory](spec-probe.md), [owned-fixture source-control diagnostic](spec-source-controls.md), [desktop record/fixture observations](desktop-observation.md), [registered fixture loadout core](spec-loadout-store.md), and [local fixture GUI](spec-gui.md) are the working slices delivered so far; the full product implementation is not yet present. See [status](status.md).
 
 ## Target and delivery order
 

@@ -28,7 +28,20 @@ node bin/unharness.mjs probe-controls --output local-evidence/source-controls.js
 
 `inspect-desktop --current` reads the selected desktop task's local recording and reports source/usage availability without source text or token totals. `desktop-fixture create` prepares a synthetic project for manually started fresh-task checks, with fixture-only restore/recovery. Native Windows has observed a selected current-task recording and the local fixture/recovery loop, but not a fresh generated-fixture task. These commands do not apply a mode or establish desktop support. See [desktop observation and recovery steps](docs/desktop-observation.md). Fresh Mac fixture trials observed source changes and restoration, with a stale-catalog limitation. `desktop-fixture refresh` offers an owned-file notification for diagnosis; it still requires a following task observation.
 
-`loadouts` adds registered fixture settings, immutable favorite versions, pre-change checkpoints, guarded restore and version-bound recording associations. The shared local service is implemented; real personal-source control and GUI/MCP endpoints remain future work. See [the loadout commands](docs/loadouts.md). [The Mac desktop check](docs/evidence/2026-09-07-saved-loadout-desktop-macos.md) links saved fixture versions to real fresh tasks and verifies baseline restoration within that synthetic scope; the Windows equivalent remains the next fresh-task check.
+`loadouts` adds registered fixture settings, immutable favorite versions, pre-change checkpoints, guarded restore and version-bound recording associations. The local GUI uses that same service; real personal-source control and MCP endpoints remain future work. See [the loadout commands](docs/loadouts.md). [The Mac desktop check](docs/evidence/2026-09-07-saved-loadout-desktop-macos.md) links saved fixture versions to real fresh tasks and verifies baseline restoration within that synthetic scope; the Windows equivalent remains the next fresh-task check.
+
+## Try the local fixture GUI
+
+With Node.js 24+, build and open the development interface:
+
+```text
+npm ci --ignore-scripts
+npm run check
+npm run build
+npm run gui
+```
+
+Open the printed local URL. Select a saved fixture version, review/apply it, save the current settings, check a selected fresh task's recording, or restore a checkpoint. Each demo launch creates a new private workspace under `.unharness/`; the printed store/scope and structured resume arguments identify that same environment for later use. The screen explicitly identifies its synthetic scope. It does not change personal Codex settings or claim full mode support. [Mac GUI evidence](docs/evidence/2026-09-07-local-gui-macos.md) covers this fixture flow; a native Windows GUI run has not been observed. See [GUI usage and recovery](docs/gui.md).
 
 ## Make “what if I removed this?” easy to try
 
@@ -85,9 +98,9 @@ The visual direction uses a pixel-art machine hangar: the outer equipment opens,
 
 ![Static concept: normal equipment, limited release, and the AI entity emerging in Zero mode](docs/assets/04-mecha-release-stages.png)
 
-*Static design concept. Animation and working controls are not implemented yet.*
+*Original static design concept. The current fixture GUI implements a smaller, explicitly labelled diagnostic flow.*
 
-The planned GUI uses PixiJS for pixel-art equipment and effects, with HTML/CSS for controls and readable state. Bundled PNG sprites and JSON recipes support local artwork without image generation. The dependency and [rendering design](docs/design.md#selected-rendering-stack) are in place; GUI integration is the next implementation step.
+The local GUI uses PixiJS for the equipment scene and effects, with React and HTML/CSS for controls and readable state. A bundled three-state PNG sheet and versioned frame recipe play locally without image generation. See [the rendering design](docs/design.md#selected-rendering-stack) and [bundled artwork](docs/gui-artwork.md). Random appearance assembly and original-form creation remain future work.
 
 Equipment can also be shown as supportive armor or a resonating frame when a comparison shows it fits the work. Unmeasured setups remain neutral, and the illustration stays separate from the measured result.
 

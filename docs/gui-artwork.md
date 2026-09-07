@@ -1,0 +1,15 @@
+# Bundled GUI artwork
+
+The first local GUI uses [hangar-states-v1.png](../web/assets/hangar-states-v1.png), a 2172 × 724 PNG with three equal 724 × 724 frames. [hangar-v1.json](../web/assets/hangar-v1.json) records the art-pack version and frame coordinates. The source image is retained unchanged; the renderer selects frames and adds light/particle effects. UI copy, configuration state and all controls are HTML.
+
+The visual references are the approved [machine-hangar interface](assets/02-mecha-release.png) and [three release stages](assets/04-mecha-release-stages.png). The built-in image generation tool created the sheet during development on 2026-09-07. Ordinary playback, fixture switching and reuse of these bundled frames make no image/model call. These are rendered state portraits; separately animated armor parts are not present in this first asset pack.
+
+The sheet was inspected for recognizable identity, equal frame boundaries, open/closed casing progression, a clear lattice in the final state, dark steel/amber/white-blue palette, and absence of UI text. The GUI labels it as a selected fixture-condition preview. The art cannot verify a live harness state or a performance improvement.
+
+## Production prompt
+
+Input 1 was the three-stage concept; input 2 was the machine-hangar interface. They were references, not targets whose UI should remain.
+
+```text
+Use case: stylized-concept. Asset type: production scene sprite sheet for the local Unharness GUI. The two input images are visual identity references, not edit targets to retain UI. Create ONE WIDE 3:1 image with EXACTLY THREE EQUAL SQUARE CELLS edge-to-edge in a single row, ideally 3072x1024. No borders or spacing between cells. Each square is the same fixed front camera in the same dark pixel-art industrial machine hangar, with one detailed floating black/gunmetal diamond-shaped mechanical casing centered, amber hardware lights, steel platform at bottom, subtle industrial wall detail. Cell 1: closed heavy angular diamond casing, tiny white-blue core slit. Cell 2: same casing panels opened around a recognizable brilliant white-blue nonhuman branching luminous lattice inside, still attached by mechanical arms. Cell 3: same empty opened casing lowered below, the same branching lattice floating just above it, restrained geometric halo. Maintain identical entity proportions, camera and hangar structure across all three cells. Pixel-art treatment with clearly intentional hard pixel edges and small readable mechanical details, moderate contrast so the dark structure remains visible. Subject fills central 65% of each square; keep generous 15% space around it for particle effects. Match black/steel/amber/white-blue of references closely. The exact three equal cell boundaries are crucial because code samples frames by thirds. Absolutely NO TEXT, NO LETTERS, NO NUMBERS, NO LABELS, NO UI controls, NO logos, NO captions, NO watermarks. Pure artwork only; all product UI is implemented as HTML separately. This is a reusable bundled asset, not an app screenshot.
+```
