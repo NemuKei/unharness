@@ -69,7 +69,15 @@ The Pixi entry includes its local `unsafe-eval` compatibility extension: despite
 
 An opt-in [inventory reader](../src/gui/inventory.mjs) binds a separate real cwd/native executable at startup, checks target replacement and shares one concurrent collection. Its launch identity is separate from authentication. The browser refreshes metadata before reading and compares it with the identity accepted by the UI; even a failed metadata fetch cannot consume a launch-change check. Inventory runs outside the fixture mutation queue and is never promoted into a favorite/application. This separation keeps fixture recovery usable during an external runtime timeout.
 
-The [initial management scope](harness-scope.md) selects user-added optional instructions, automatic Skills and optional hooks. Memory and native continuity settings are retained comparison conditions. Future registration must bind ownership/role decisions to exact source versions; installation scope and presence-only inventory are insufficient.
+The [initial management scope](harness-scope.md) selects user-added optional instructions, automatic Skills and optional hooks. Memory and native continuity settings are retained comparison conditions. Registration must bind ownership/role decisions to exact source versions; installation scope and presence-only inventory are insufficient.
+
+## Registered user-source preparation
+
+The [user-source contract](spec-user-sources.md) keeps personal-source work in a separate workspace and adapter. A canonical Codex home has one registered Normal, with explicit optional-role declarations and versioned snapshots. Plans derive from that Normal and reference exact before/after state; fixture favorites never become personal-source plans.
+
+The fixed guide and Skill-policy transformer have no model calls. The native configuration editor writes only a private copy in its own temporary CODEX_HOME, changes the selected Skill settings and verifies retained values and comments before returning bytes. Source publication belongs to the transaction layer, which checks the registered scope and current metadata, saves a checkpoint and journal, and reads back each change. Offline recovery uses saved bytes and the same filesystem boundary, without Codex or YAML.
+
+The first writable instruction group is the global Codex AGENTS pair. Project requirements and hooks stay unchanged; provider-owned Skill caches are not edited to manufacture a manual-only control. Successful publication prepares settings for a later task. It does not establish what the current desktop task has loaded or complete the cross-OS support matrix.
 
 ## Intended product architecture
 
