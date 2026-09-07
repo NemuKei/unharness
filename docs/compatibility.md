@@ -4,7 +4,7 @@
 
 | OS | Application | Delivery phase | Current evidence |
 | --- | --- | --- | --- |
-| macOS | Codex desktop | 1 | Saved fixture versions associated with fresh desktop tasks, including restoration; full product modes unverified |
+| macOS | Codex desktop | 1 | Saved fixture versions associated with fresh desktop tasks; registered-source preparation/recovery qualified in owned profiles; full product modes unverified |
 | Windows | Codex desktop | 1 | Native inventory, six-case source controls, current-task projection, fixture/loadout recovery, GUI smoke, and one qualified fresh task completed; baseline recording did not match, so successful saved-version association remains pending |
 | macOS | Claude Code desktop, Code tab | 2 | Documentation reviewed; integration not implemented or tested |
 | Windows | Claude Code desktop, Code tab | 2 | Test environment available per maintainer; no test result yet |
@@ -14,6 +14,8 @@ Both OSes are design targets from the beginning. Phase 1 is complete only when t
 Record the desktop app version, embedded or external runtime version, CPU architecture, and execution environment. Native Windows and WSL results must not be merged into one undifferentiated “Windows passed” result. The [native Windows baseline](evidence/2026-09-07-windows-baseline.md) records a Windows 11 x64 result separately; it does not satisfy the remaining fresh-task or full desktop criteria. See [the probe guide](codex-probe.md).
 
 The [Mac source-inventory pass](evidence/2026-09-08-source-inventory-macos.md) adds the optional real-source read panel and standard instruction candidate census. It verifies read-only collection, UI/reconnection and privacy boundaries on native Mac, not personal-source control or full desktop modes. The new slice has no native Windows or Claude Code result yet.
+
+The [registered user-source pass](evidence/2026-09-08-user-source-modes-macos.md) verifies the selected global instruction/Skill preparation and recovery service with native Mac owned profiles. It covers exact frozen restoration, supported metadata, bounded interruption and conflict handling. Native Windows writes remain gated; GUI and fresh desktop evidence are separate steps. Existing memory, native continuity, policy, permissions, hooks and unselected sources are retained by this preparation contract.
 
 ## What to record for a real test
 
