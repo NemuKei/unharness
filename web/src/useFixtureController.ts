@@ -177,6 +177,10 @@ export function useFixtureController() {
       setCheckpointError("");
     } else {
       setCheckpointError(listing.message);
+      if (listing.connection === "unconfirmed") {
+        setConnected(false);
+        invalidatePlan();
+      }
     }
   }
   async function reloadCheckpoints() {

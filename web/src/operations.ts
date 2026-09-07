@@ -49,7 +49,11 @@ export async function refreshCheckpointPage(
   api: Api,
 ): Promise<
   | { status: "current"; page: CheckpointPage }
-  | { status: "stale"; message: string }
+  | {
+      status: "stale";
+      message: string;
+      connection: "connected" | "unconfirmed";
+    }
 > {
   try {
     const page = await api.get<CheckpointPage>("/checkpoints");
@@ -61,11 +65,16 @@ export async function refreshCheckpointPage(
       throw new ApiError("invalid-response", undefined, "uncertain");
     }
     return { status: "current", page };
-  } catch {
+  } catch (reason) {
+    const { connection } = operationFailure(reason);
     return {
       status: "stale",
+      connection,
       message:
-        "復帰点の一覧を更新できませんでした。確認済みの適用記録と復帰点IDは保持しています。一覧を再取得してください。",
+        "復帰点の一覧を更新できませんでした。確認済みの適用記録と復帰点IDは保持しています。" +
+        (connection === "unconfirmed"
+          ? "現在の接続状態を確認できないため、接続と状態を再取得してください。"
+          : "一覧を再取得してください。"),
     };
   }
 }

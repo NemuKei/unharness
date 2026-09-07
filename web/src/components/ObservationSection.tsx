@@ -11,6 +11,7 @@ export function ObservationSection({
   controller: Pick<
     FixtureController,
     | "state"
+    | "connected"
     | "busy"
     | "copy"
     | "mutate"
@@ -22,6 +23,7 @@ export function ObservationSection({
 }) {
   const {
     state,
+    connected,
     busy,
     copy,
     mutate,
@@ -110,7 +112,7 @@ export function ObservationSection({
           <div className="observation">
             <h3>記録による確認</h3>
             <p>
-              {state?.observation && !state.applicationCurrent
+              {state?.observation && (!state.applicationCurrent || !connected)
                 ? "以前の準備状態についての記録です。"
                 : ""}
               {observationText}

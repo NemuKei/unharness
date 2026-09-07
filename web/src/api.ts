@@ -68,7 +68,9 @@ export class Api {
       const disposition =
         response.status === 401 || response.status === 403
           ? "auth-required"
-          : "rejected";
+          : response.status >= 500
+            ? "uncertain"
+            : "rejected";
       throw new ApiError(
         payload.error.kind,
         payload.error.checkpointId,
@@ -80,8 +82,8 @@ export class Api {
 }
 export function errorMessage(error: unknown) {
   const kind = error instanceof ApiError ? error.kind : "request-failed";
-  if (kind === "connection-lost" || kind === "invalid-response")
-    return "接続を確認できません。操作の結果は未確認です。「状態を再取得」で確認してください。自動再送は行いません。";
+  if (error instanceof ApiError && error.disposition === "uncertain")
+    return "操作の結果は未確認です。「状態を再取得」で確認してください。自動再送は行いません。";
   if (kind.includes("stale-plan"))
     return "準備状態が変わったため、この変更計画は使えません。状態を再取得し、変更計画を確認してください。";
   if (kind.includes("stale-application"))

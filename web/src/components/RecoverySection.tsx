@@ -17,6 +17,7 @@ export function RecoverySection({
     | "loadMore"
     | "checkpointError"
     | "reloadCheckpoints"
+    | "refresh"
     | "copy"
   >;
 }) {
@@ -31,6 +32,7 @@ export function RecoverySection({
     loadMore,
     checkpointError,
     reloadCheckpoints,
+    refresh,
     copy,
   } = controller;
   return (
@@ -59,9 +61,9 @@ export function RecoverySection({
           <button
             className="text-button"
             disabled={!!busy}
-            onClick={() => void reloadCheckpoints()}
+            onClick={() => void (connected ? reloadCheckpoints() : refresh())}
           >
-            復帰点の一覧を再取得
+            {connected ? "復帰点の一覧を再取得" : "接続と状態を再取得"}
           </button>
         </div>
       )}
