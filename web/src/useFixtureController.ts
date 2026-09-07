@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Api, ApiError, errorMessage, RequestGeneration } from "./api";
 import {
   operationFailure,
+  preparationUsability,
   submitOperation,
   refreshCheckpointPage,
 } from "./operations";
@@ -32,6 +33,7 @@ export function useFixtureController() {
   const busyRef = useRef(false);
   const [state, setState] = useState<State | null>(null);
   const [connected, setConnected] = useState(false);
+  const [preparationConfirmed, setPreparationConfirmed] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("ローカルの検証環境に接続しています。");
@@ -50,7 +52,21 @@ export function useFixtureController() {
   const shownCase: FixtureCase =
     selected?.case ?? state?.current?.case ?? "baseline";
   const condition = conditions[shownCase];
-  const canChange = connected && !busy && !!state?.current && !state.conflict;
+  const { canUsePreparation, applicationCurrent } = preparationUsability(
+    state,
+    connected,
+    preparationConfirmed,
+  );
+  const canChange = canUsePreparation && !busy;
+
+  function acceptState(next: State) {
+    setState(next);
+    setPreparationConfirmed(!!next.current && !next.conflict);
+  }
+  function invalidatePreparation() {
+    setPreparationConfirmed(false);
+    invalidatePlan();
+  }
 
   function invalidatePlan() {
     planGeneration.next();
@@ -61,8 +77,9 @@ export function useFixtureController() {
     setError(errorMessage(reason));
     if (reason instanceof ApiError && reason.checkpointId)
       setRecoveryId(reason.checkpointId);
-    if (operationFailure(reason).connection === "unconfirmed")
-      setConnected(false);
+    const failure = operationFailure(reason);
+    if (failure.connection === "unconfirmed") setConnected(false);
+    if (failure.invalidatePreparation) invalidatePreparation();
   }
   async function refresh() {
     if (busyRef.current) return;
@@ -78,7 +95,7 @@ export function useFixtureController() {
         api.get<CheckpointPage>("/checkpoints"),
       ]);
       if (!alive.current) return;
-      setState(next);
+      acceptState(next);
       setFavorites(saved.favorites);
       setFavoriteCursor(saved.nextCursor);
       setCheckpoints(recovery.checkpoints);
@@ -117,7 +134,7 @@ export function useFixtureController() {
         favoriteId: favorite.favoriteId,
       });
       if (!alive.current || !planGeneration.isCurrent(generation)) return;
-      setState(response.state);
+      acceptState(response.state);
       setPlan(response.result);
       setNotice(
         "選択した保存版の変更計画です。適用すると次のタスク向けの設定を準備します。",
@@ -131,7 +148,7 @@ export function useFixtureController() {
     }
   }
   async function mutate<T>(route: string, body: object, message: string) {
-    if (busyRef.current || !connected) return;
+    if (busyRef.current || !canUsePreparation) return;
     busyRef.current = true;
     setBusy(route);
     invalidatePlan();
@@ -145,10 +162,11 @@ export function useFixtureController() {
         setNotice(outcome.notice);
         if (outcome.checkpointId) setRecoveryId(outcome.checkpointId);
         if (outcome.connection === "unconfirmed") setConnected(false);
+        if (outcome.invalidatePreparation) invalidatePreparation();
         return;
       }
       const { response } = outcome;
-      setState(response.state);
+      acceptState(response.state);
       setNotice(message);
       if (route === "/save") {
         const saved = response.result as Favorite;
@@ -177,10 +195,8 @@ export function useFixtureController() {
       setCheckpointError("");
     } else {
       setCheckpointError(listing.message);
-      if (listing.connection === "unconfirmed") {
-        setConnected(false);
-        invalidatePlan();
-      }
+      if (listing.connection === "unconfirmed") setConnected(false);
+      if (listing.invalidatePreparation) invalidatePreparation();
     }
   }
   async function reloadCheckpoints() {
@@ -286,6 +302,8 @@ export function useFixtureController() {
     shownCase,
     condition,
     canChange,
+    preparationConfirmed,
+    applicationCurrent,
     refresh,
     choose,
     mutate,

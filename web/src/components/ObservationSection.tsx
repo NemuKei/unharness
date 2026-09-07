@@ -12,6 +12,7 @@ export function ObservationSection({
     FixtureController,
     | "state"
     | "connected"
+    | "applicationCurrent"
     | "busy"
     | "copy"
     | "mutate"
@@ -24,6 +25,7 @@ export function ObservationSection({
   const {
     state,
     connected,
+    applicationCurrent,
     busy,
     copy,
     mutate,
@@ -102,7 +104,7 @@ export function ObservationSection({
               disabled={
                 !canChange ||
                 !state?.application ||
-                !state.applicationCurrent ||
+                !applicationCurrent ||
                 !sessionId.trim()
               }
             >
@@ -112,7 +114,7 @@ export function ObservationSection({
           <div className="observation">
             <h3>記録による確認</h3>
             <p>
-              {state?.observation && (!state.applicationCurrent || !connected)
+              {state?.observation && (!applicationCurrent || !connected)
                 ? "以前の準備状態についての記録です。"
                 : ""}
               {observationText}

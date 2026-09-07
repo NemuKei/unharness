@@ -1,5 +1,40 @@
 import { Api, ApiError, errorMessage } from "./api.ts";
-import type { Envelope, CheckpointPage } from "./types.ts";
+import type { Envelope, CheckpointPage, State } from "./types.ts";
+
+// These failures contradict the cached preparation even when HTTP is healthy.
+const stalePreparationKinds = new Set([
+  "fixture-conflict",
+  "fixture-changed",
+  "fixture-locked",
+  "fixture-link-or-type",
+  "invalid-fixture",
+  "fixture-recovery-required",
+  "fixture-cleanup-required",
+  "fixture-incompatible-snapshot",
+  "loadout-incompatible-scope",
+  "loadout-source-unready",
+  "loadout-readback-conflict",
+  "loadout-stale-plan",
+  "loadout-stale-application",
+  "gui-application-not-current",
+]);
+const possiblyPostWriteKinds = new Set([
+  "fixture-conflict",
+  "loadout-readback-conflict",
+]);
+
+export function preparationUsability(
+  state: State | null,
+  connected: boolean,
+  confirmed: boolean,
+) {
+  const canUsePreparation =
+    connected && confirmed && !!state?.current && !state.conflict;
+  return {
+    canUsePreparation,
+    applicationCurrent: canUsePreparation && !!state?.applicationCurrent,
+  };
+}
 
 export type OperationFailure = {
   status: "rejected" | "uncertain" | "auth-required";
@@ -7,16 +42,24 @@ export type OperationFailure = {
   message: string;
   notice: string;
   checkpointId?: string;
+  invalidatePreparation: boolean;
 };
 export function operationFailure(reason: unknown): OperationFailure {
   const disposition =
     reason instanceof ApiError ? reason.disposition : "uncertain";
+  const kind = reason instanceof ApiError ? reason.kind : "";
+  const possiblyPostWrite = possiblyPostWriteKinds.has(kind);
   return {
-    status: disposition,
+    status: possiblyPostWrite ? "uncertain" : disposition,
+    invalidatePreparation:
+      disposition !== "rejected" || stalePreparationKinds.has(kind),
     connection: disposition === "rejected" ? "connected" : "unconfirmed",
-    message: errorMessage(reason),
-    notice:
-      disposition === "rejected"
+    message: possiblyPostWrite
+      ? "変更が途中まで進んだ可能性があります。復帰点を保持し、準備状態を再取得して確認してください。"
+      : errorMessage(reason),
+    notice: possiblyPostWrite
+      ? "変更後の準備状態は未確認です。状態を再取得してください。"
+      : disposition === "rejected"
         ? "操作を完了できませんでした。表示された理由を確認してください。"
         : disposition === "auth-required"
           ? "接続を再確認してください。状態を再取得してから操作できます。"
@@ -45,14 +88,13 @@ export async function submitOperation<T>(
   }
 }
 // Auxiliary reads do not change the outcome or identity of a confirmed mutation.
-export async function refreshCheckpointPage(
-  api: Api,
-): Promise<
+export async function refreshCheckpointPage(api: Api): Promise<
   | { status: "current"; page: CheckpointPage }
   | {
       status: "stale";
       message: string;
       connection: "connected" | "unconfirmed";
+      invalidatePreparation: boolean;
     }
 > {
   try {
@@ -66,10 +108,11 @@ export async function refreshCheckpointPage(
     }
     return { status: "current", page };
   } catch (reason) {
-    const { connection } = operationFailure(reason);
+    const { connection, invalidatePreparation } = operationFailure(reason);
     return {
       status: "stale",
       connection,
+      invalidatePreparation,
       message:
         "復帰点の一覧を更新できませんでした。確認済みの適用記録と復帰点IDは保持しています。" +
         (connection === "unconfirmed"

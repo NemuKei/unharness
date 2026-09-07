@@ -6,10 +6,22 @@ export function PreparedState({
 }: {
   controller: Pick<
     FixtureController,
-    "state" | "connected" | "busy" | "refresh"
+    | "state"
+    | "connected"
+    | "busy"
+    | "refresh"
+    | "preparationConfirmed"
+    | "applicationCurrent"
   >;
 }) {
-  const { state, connected, busy, refresh } = controller;
+  const {
+    state,
+    connected,
+    busy,
+    refresh,
+    preparationConfirmed,
+    applicationCurrent,
+  } = controller;
   return (
     <section className="control-section">
       <p className="eyebrow">準備状態</p>
@@ -19,8 +31,18 @@ export function PreparedState({
             ? conditions[state.current.case].label
             : "状態を確認中"}
         </h2>
-        <span className={connected ? "connection" : "connection disconnected"}>
-          {connected ? "接続中" : state ? "要再確認" : "未接続"}
+        <span
+          className={
+            connected && preparationConfirmed
+              ? "connection"
+              : "connection disconnected"
+          }
+        >
+          {connected && preparationConfirmed
+            ? "接続中"
+            : state
+              ? "要再確認"
+              : "未接続"}
         </span>
       </div>
       <p className="muted">
@@ -29,11 +51,11 @@ export function PreparedState({
           : "検証用の設定だけを読み取ります。"}
       </p>
       <p className="boundary">
-        {!connected && state
+        {(!connected || !preparationConfirmed) && state
           ? "表示は最後に取得した記録です。現在の準備状態を再取得してください。"
           : !state?.application
             ? "この起動ではまだ適用していません。"
-            : state.applicationCurrent
+            : applicationCurrent
               ? "設定の読み戻しは一致。新しいタスクで記録の確認が必要です。"
               : "適用後に準備状態が変わっています。再度、変更計画を確認してください。"}
       </p>
