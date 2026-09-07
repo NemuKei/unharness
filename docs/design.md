@@ -28,7 +28,7 @@ Suggested animation sequence: casing opens → a brief visual pause → rings an
 
 ## Selected rendering stack
 
-On 2026-09-07 the maintainer selected **PixiJS** for the first GUI and explicitly accepted the additional dependencies. The [local fixture GUI](gui.md) now uses a layered background, complementary armor halves and an inner lattice entity, with continuous idle motion and directional release transitions. The [bundled artwork](gui-artwork.md) is local; comparison views and the full appearance/collection system remain future work.
+On 2026-09-07 the maintainer selected **PixiJS** for the first GUI and explicitly accepted the additional dependencies. The [local fixture GUI](gui.md) animates the approved three-state painting with textured meshes, continuous idle motion and directional transitions. The maintainer preferred the original armor, thick cables and fine branching entity over the separately regenerated v2 parts. The [bundled artwork](gui-artwork.md) now retains those original pixels; comparison views and the full appearance/collection system remain future work.
 
 | Responsibility | Selected approach |
 | --- | --- |
@@ -48,11 +48,11 @@ Technical references: [PixiJS introduction](https://pixijs.com/8.x/guides/gettin
 
 ## Continuous motion and directional transitions
 
-The maintainer clarified that the scene should feel alive continuously, and that changing modes should animate from the previous displayed form. The idle scene floats the same body, pulses its light, moves charge along the equipment links and drifts particles through the hangar. Exposed states add a breathing core and slowly rotating halos.
+The maintainer clarified that the scene should feel alive continuously, and that changing modes should animate from the previous displayed form. The idle scene gently moves the entity and nearby flexible equipment, pulses light sampled from the original artwork and drifts small particles through the hangar. Preserve the original fine lattice and mechanical detail; large added halos and newly invented armor shapes are not part of the selected reference.
 
-Use one visual release path: closed shell → open shell with core inside → core lifted above the lowered shell. Reverse travel lowers the core before closing the shell. Direct first-to-last transitions follow this same path. Retargeting mid-transition starts from the displayed intermediate pose, and reselecting the same target does not restart it. Timing is about 1.7 seconds per full adjacent stage, up to 3.4 seconds for a direct full release/return.
+Use one visual release path: closed shell → open shell with core inside → core lifted above the lowered shell. Textured mesh displacement and a short blend between adjacent source portraits connect those poses; this is a 2.5D interpolation, not a separate physical hinge simulation. Keep mesh boundaries fixed and avoid folded geometry. Reverse and direct travel follow the same path. Retargeting starts from the displayed intermediate pose, and reselecting the same target does not restart it. Timing is about 1.7 seconds per full adjacent stage, up to 3.4 seconds for a direct full release/return.
 
-The renderer uses active visual time, paused when hidden, and caps its ticker at 30 fps. Effects off and reduced motion settle immediately on the selected static pose. Initial loading starts at the selected condition without pretending a new configuration switch occurred. Selection drives a labelled preview; a confirmed checkpoint restore returns that preview to the restored condition. An animation callback never changes preparation, application or verification state.
+The renderer uses active visual time, paused when hidden, and caps its ticker at 30 fps. Effects off and reduced motion settle immediately on the selected original portrait with unchanged mesh coordinates. Initial loading starts at the selected condition without pretending a new configuration switch occurred. Selection drives a labelled preview; a confirmed checkpoint restore returns that preview to the restored condition. An animation callback never changes preparation, application or verification state.
 
 ## Everyday controls and development details
 
@@ -101,7 +101,7 @@ In implementation, render tables and proportional charts from actual data rather
 
 The maintainer prefers a random discovery over a taste-optimized appearance. The proposed default selects from prepared entities and compatible variations with weighted probabilities, without using personal memories to infer taste. Keep the selected body recognizable across release states and app restarts; sample another appearance only when creating an entity or explicitly requested. The user can keep/name a discovery and associate it with a build card.
 
-Prepared sprites, code-drawn pixel grids, and optional image-model generation are distinct creation routes. Pixel art does not require an image model. The [appearance and memory proposal](personalization.md) defines these routes, reproducible local selection, optional creation skills, and benchmark separation. Random visual rarity is independent of measured performance. The GUI animates a fixed bundled layered entity; random assembly, the collection runtime and distribution skill remain unimplemented.
+Prepared sprites, code-drawn pixel grids, and optional image-model generation are distinct creation routes. Pixel art does not require an image model. The [appearance and memory proposal](personalization.md) defines these routes, reproducible local selection, optional creation skills, and benchmark separation. Random visual rarity is independent of measured performance. The GUI animates fixed bundled reference art; random assembly, the collection runtime and distribution skill remain unimplemented.
 
 ## A comparison can unlock an original form
 

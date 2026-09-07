@@ -49,7 +49,7 @@ All three results leave full `runtimeStateVerified` and `modeSwitchingVerified` 
 
 ## Display and data
 
-With effects on, the visible scene continually floats, glows and moves particles/charge. Changing the preview animates the same armor and core from their current pose; direct changes and reverse travel follow the same opening/lifting path. Effects off and reduced motion use a static destination pose; hidden tabs pause animation. The [bundled artwork](gui-artwork.md) and display preferences do not change a loadout, eligibility or verification status. Core controls remain usable if graphics initialization fails.
+With effects on, the original scene continually floats, glows and moves small particles. Changing the preview interpolates the original armor/core portraits from the current release position; direct changes and reverse travel follow the same opening/lifting path. Effects off and reduced motion show the selected original portrait; hidden tabs pause animation. The [bundled artwork](gui-artwork.md) and display preferences do not change a loadout, eligibility or verification status. Core controls remain usable if graphics initialization fails.
 
 Private workspace paths are shown locally for task creation and recovery. Source bodies, marker seeds and raw recordings are not API responses. The server validates its Host, origin, client header and per-launch token and serves only built UI assets. No cloud backend, runtime CDN, model API or X integration is required.
 

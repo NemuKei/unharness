@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "artPackVersion": "hangar-v3-reference-motion",
+  "worldSize": 724,
+  "source": {
+    "file": "hangar-states-v1.png",
+    "width": 2172,
+    "height": 724,
+    "sha256": "c52d86961576963e0cfcec1bad915fa8510d622c7d3d83ddba35e6e44db224dc",
+    "rgbSha256": "3126f2f7fcf44ef20d76d3c0993478ae575f8b2dbc331cd983d632f62b5da79f"
+  },
+  "frames": [
+    { "case": "baseline", "x": 0, "y": 0, "width": 724, "height": 724, "light": [220, 350, 284, 48] },
+    { "case": "manual-only", "x": 724, "y": 0, "width": 724, "height": 724, "light": [253, 107, 218, 471] },
+    { "case": "fixed-only", "x": 1448, "y": 0, "width": 724, "height": 724, "light": [250, 45, 225, 458] }
+  ]
+}

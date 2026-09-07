@@ -1,12 +1,9 @@
 import "./pixi-csp";
 import { Application, Rectangle, Texture } from "pixi.js";
-import backgroundUrl from "../assets/background-v2.png";
-import capsuleUrl from "../assets/capsule-v2.png";
-import coreUrl from "../assets/core-v2.png";
-import recipe from "../assets/hangar-v2.json";
+import artworkUrl from "../assets/hangar-states-v1.png";
+import recipe from "../assets/hangar-v3.json";
 import { createReleaseMotion } from "./scene-motion";
 import { createHangarRig } from "./scene-rig";
-import type { RigTextures } from "./scene-rig";
 import type { FixtureCase } from "./types";
 
 export interface Scene {
@@ -54,30 +51,22 @@ export async function createScene(
     initialized = true;
     if (signal.aborted) { dispose(); return null; }
     phase = "artwork-decode";
-    const resources = { background: backgroundUrl, capsule: capsuleUrl, core: coreUrl };
-    const loaded = await Promise.all(
-      Object.entries(resources).map(async ([name, url]) => {
-        const image = new Image();
-        image.src = url;
-        await image.decode();
-        return { name: name as keyof RigTextures, image };
-      }),
-    );
+    const image = new Image();
+    image.src = artworkUrl;
+    await image.decode();
     if (signal.aborted) { dispose(); return null; }
     phase = "scene-setup";
-    const textures = {} as RigTextures;
-    for (const { name, image } of loaded) {
-      const full = Texture.from(image);
-      full.source.scaleMode = "nearest";
-      sourceTextures.push(full);
-      const [x0, y0, x1, y1] = recipe.assets[name].bounds;
+    const full = Texture.from(image);
+    full.source.scaleMode = "nearest";
+    sourceTextures.push(full);
+    const textures = recipe.frames.map(({ x, y, width, height }) => {
       const cropped = new Texture({
         source: full.source,
-        frame: new Rectangle(x0, y0, x1 - x0, y1 - y0),
+        frame: new Rectangle(x, y, width, height),
       });
       croppedTextures.push(cropped);
-      textures[name] = cropped;
-    }
+      return cropped;
+    });
     rig = createHangarRig(app.stage, textures);
     const motion = createReleaseMotion("baseline");
     let elapsed = 0;
@@ -94,6 +83,7 @@ export async function createScene(
         if (!signal.aborted) onMotionChange(lastMoving);
       }
       host.dataset.motion = pose.moving ? "transition" : "idle";
+      host.dataset.release = pose.release.toFixed(3);
     };
     const syncTicker = () => {
       if (effects && visible) app.start();

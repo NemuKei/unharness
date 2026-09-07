@@ -1,178 +1,80 @@
-import { Container, Graphics, Rectangle, Sprite, Texture } from "pixi.js";
-import { releasePose } from "./scene-motion";
-import recipe from "../assets/hangar-v2.json";
+import { Container, MeshPlane, Rectangle, Sprite, Texture } from "pixi.js";
+import recipe from "../assets/hangar-v3.json";
+import { referenceField, referenceLayers, updateReferencePositions } from "./scene-reference";
 
-export interface RigTextures {
-  background: Texture;
-  capsule: Texture;
-  core: Texture;
-}
-
-export function createHangarRig(stage: Container, textures: RigTextures) {
-  const background = new Sprite(textures.background);
-  background.width = background.height = 724;
-  stage.addChild(background);
-
-  const shadow = new Graphics().ellipse(0, 0, 100, 16).fill(0x020609);
-  shadow.position.set(362, 643);
-  stage.addChild(shadow);
-  const tethers = new Graphics();
-  stage.addChild(tethers);
-
-  const halo = new Container();
-  const rings = [110, 138, 164].map((radius, index) => {
-    const ring = new Graphics();
-    for (let segment = 0; segment < 36; segment++) {
-      if (segment % 6 === 5) continue;
-      const start = (segment / 36) * Math.PI * 2;
-      const end = ((segment + 0.72) / 36) * Math.PI * 2;
-      ring
-        .moveTo(Math.cos(start) * radius, Math.sin(start) * radius * 0.36)
-        .lineTo(Math.cos(end) * radius, Math.sin(end) * radius * 0.36);
-    }
-    ring.stroke({ color: index === 1 ? 0xffffff : 0x99d6ff, width: 2 });
-    ring.blendMode = "add";
-    halo.addChild(ring);
-    return ring;
+/** The approved paintings are the actual textures, including armor and cables. */
+export function createHangarRig(stage: Container, textures: readonly Texture[]) {
+  const planes = textures.map(texture => {
+    const plane = new MeshPlane({ texture, verticesX: 49, verticesY: 49 });
+    plane.autoResize = false;
+    stage.addChild(plane);
+    return plane;
   });
-  const orbitLights = Array.from({ length: 6 }, (_, index) => {
-    const point = new Sprite(Texture.WHITE);
-    point.tint = index % 2 ? 0xffffff : 0x80c9ff;
-    point.width = point.height = index % 2 ? 3 : 4;
-    point.anchor.set(0.5);
-    halo.addChild(point);
-    return point;
-  });
-  stage.addChild(halo);
+  const geometries = planes.map(plane => plane.geometry);
+  const buffers = geometries.map(geometry => geometry.getAttribute("aPosition").buffer);
+  const fields = Array.from({ length: buffers[0].data.length / 2 }, (_, index) =>
+    referenceField(buffers[0].data[index * 2], buffers[0].data[index * 2 + 1]));
 
-  const body = new Container();
-  stage.addChild(body);
-  const core = new Sprite(textures.core);
-  core.anchor.set(0.5, 0.538);
-  core.blendMode = "add";
-  body.addChild(core);
-
-  // One closed sprite supplies both complementary halves, keeping its seam exact.
-  const frame = textures.capsule.frame;
-  const split = Math.floor(frame.width / 2);
-  const leftFrame = new Texture({
-    source: textures.capsule.source,
-    frame: new Rectangle(frame.x, frame.y, split, frame.height),
+  // Light is sampled from the source art, keeping its fine branching silhouette.
+  const lightTextures = textures.map((texture, index) => {
+    const [x, y, width, height] = recipe.frames[index].light;
+    return new Texture({
+      source: texture.source,
+      frame: new Rectangle(texture.frame.x + x, texture.frame.y + y, width, height),
+    });
   });
-  const rightFrame = new Texture({
-    source: textures.capsule.source,
-    frame: new Rectangle(frame.x + split, frame.y, frame.width - split, frame.height),
+  const lightFields = recipe.frames.map(({ light: [x, y, width, height] }) =>
+    [referenceField(x + width / 2, y + height / 2)]);
+  const lightPosition = new Float32Array(2);
+  const lights = lightTextures.map(texture => {
+    const sprite = new Sprite(texture);
+    sprite.anchor.set(0.5);
+    sprite.blendMode = "add";
+    stage.addChild(sprite);
+    return sprite;
   });
-  const left = new Container();
-  const right = new Container();
-  const leftSprite = new Sprite(leftFrame);
-  const rightSprite = new Sprite(rightFrame);
-  leftSprite.anchor.set(1, 0.5);
-  rightSprite.anchor.set(0, 0.5);
-  // The source PNG stays unchanged. Geometry masks exclude its background and
-  // move with each armor half, preserving interior highlights and the seam.
-  const leftMask = new Graphics().poly(recipe.assets.capsule.leftMask).fill(0xffffff);
-  const rightMask = new Graphics().poly(recipe.assets.capsule.rightMask).fill(0xffffff);
-  left.addChild(leftSprite, leftMask);
-  right.addChild(rightSprite, rightMask);
-  leftSprite.mask = leftMask;
-  rightSprite.mask = rightMask;
-  body.addChild(left, right);
-  const glint = new Graphics()
-    .rect(-35, -1, 70, 2).fill({ color: 0xb8dfff, alpha: 0.6 })
-    .rect(-2, -5, 4, 10).fill(0xffffff);
-  glint.blendMode = "add";
-  body.addChild(glint);
-
   const atmosphere = new Container();
   stage.addChild(atmosphere);
-  const dust = Array.from({ length: 48 }, (_, index) => {
+  const dust = Array.from({ length: 36 }, (_, index) => {
     const point = new Sprite(Texture.WHITE);
-    point.tint = index % 5 === 0 ? 0xc2e8ff : 0xe7a64b;
-    point.width = index % 7 === 0 ? 3 : 1.5;
-    point.height = index % 3 === 0 ? 3 : 1.5;
+    point.tint = index % 7 === 0 ? 0xc9eaff : 0xd99436;
+    point.width = index % 7 === 0 ? 2 : 1;
+    point.height = index % 3 === 0 ? 2 : 1;
     atmosphere.addChild(point);
     return point;
   });
-  const charges = Array.from({ length: 6 }, () => {
-    const point = new Sprite(Texture.WHITE);
-    point.tint = 0xffd187;
-    point.width = 7;
-    point.height = 2;
-    point.blendMode = "add";
-    stage.addChild(point);
-    return point;
-  });
 
-  const capsuleScale = 420 / frame.height;
-  const coreScale = 350 / textures.core.height;
   return {
     render(release: number, time: number, effects: boolean) {
-      const pose = releasePose(release);
-      const bob = effects ? Math.sin(time * 0.85) * 8 : 0;
-      const sway = effects ? Math.sin(time * 0.53) * 3 : 0;
-      body.position.set(362 + Math.round(sway), 375 + Math.round(bob));
-      core.position.set(0, pose.coreY + (effects ? Math.sin(time * 1.3) * 3 * pose.open : 0));
-      core.scale.set(coreScale * pose.coreScale * (effects ? 1 + Math.sin(time * 1.1) * 0.012 : 1));
-      core.alpha = pose.coreOpacity * (effects ? 0.85 + Math.sin(time * 1.5) ** 2 * 0.15 : 1);
-      left.position.set(-Math.round(pose.shellX), Math.round(pose.shellY));
-      right.position.set(Math.round(pose.shellX), Math.round(pose.shellY));
-      left.rotation = -pose.shellRotation;
-      right.rotation = pose.shellRotation;
-      left.scale.set(capsuleScale * pose.shellScale);
-      right.scale.set(capsuleScale * pose.shellScale);
-      glint.alpha = (1 - pose.open) * (effects ? 0.35 + Math.sin(time * 1.6) ** 2 * 0.6 : 0.3);
-      shadow.scale.x = 1 - pose.rise * 0.12 - bob * 0.004;
-      shadow.alpha = 0.6 - pose.rise * 0.25;
+      const layers = referenceLayers(release);
+      planes.forEach(plane => { plane.visible = false; });
+      lights.forEach(light => { light.visible = false; });
+      layers.forEach(({ frame, alpha }, index) => {
+        const plane = planes[frame];
+        plane.visible = true;
+        plane.alpha = alpha;
+        updateReferencePositions(fields, buffers[frame].data as Float32Array, frame, release, time, effects);
+        buffers[frame].update();
 
-      halo.position.set(body.x, body.y + pose.coreY);
-      halo.alpha = pose.haloOpacity;
-      halo.visible = effects && pose.open > 0.001;
-      halo.scale.set(0.65 + pose.rise * 0.4);
-      rings.forEach((ring, index) => {
-        ring.rotation = (index * Math.PI) / 3 + time * (index % 2 ? -0.19 : 0.14);
-        ring.alpha = 0.35 + index * 0.12;
-      });
-      orbitLights.forEach((point, index) => {
-        const angle = time * (index % 2 ? -0.3 : 0.24) + index * Math.PI / 3;
-        point.position.set(Math.cos(angle) * 145, Math.sin(angle) * 70);
-      });
-
-      // The links retract as the entity leaves its equipment. Moving charge marks
-      // make even the closed state feel powered without moving the background.
-      tethers.clear();
-      const tetherAlpha = 1 - pose.rise;
-      for (const side of [-1, 1]) {
-        const startX = 362 + side * 270;
-        const endX = body.x + side * (132 + pose.shellX);
-        const endY = body.y + pose.shellY;
-        const midX = (startX + endX) / 2;
-        tethers.moveTo(startX, 385).lineTo(midX, 385).lineTo(endX, endY)
-          .stroke({ color: 0x34434b, width: 7, alpha: tetherAlpha });
-        tethers.moveTo(startX, 383).lineTo(midX, 383).lineTo(endX, endY - 2)
-          .stroke({ color: 0xb37a32, width: 1.5, alpha: tetherAlpha * 0.8 });
-      }
-      charges.forEach((point, index) => {
-        const side = index < 3 ? -1 : 1;
-        const startX = 362 + side * 270;
-        const endX = body.x + side * (132 + pose.shellX);
-        const fraction = (time * 0.33 + (index % 3) / 3) % 1;
-        point.position.set(startX + (endX - startX) * fraction,
-          384 + (body.y + pose.shellY - 385) * Math.max(0, fraction * 2 - 1));
-        point.visible = effects && tetherAlpha > 0.01;
-        point.alpha = tetherAlpha * Math.sin(fraction * Math.PI);
+        const contribution = index === 0 ? 1 - (layers[1]?.alpha ?? 0) : alpha;
+        const light = lights[frame];
+        light.visible = effects;
+        light.alpha = contribution * (0.018 + Math.sin(time * 1.3) ** 2 * 0.065);
+        updateReferencePositions(lightFields[frame], lightPosition, frame, release, time, effects);
+        light.position.set(lightPosition[0], lightPosition[1]);
+        light.scale.set(1 + (effects ? Math.sin(time * 1.25) * 0.004 : 0));
       });
       atmosphere.visible = effects;
       dust.forEach((point, index) => {
-        const speed = 8 + (index % 6) * 3;
+        const speed = 4 + index % 5 * 2;
         const y = ((index * 113 - time * speed) % 650 + 650) % 650;
-        point.position.set(30 + (index * 137) % 665 + Math.sin(time * 0.2 + index) * 6, y + 35);
-        point.alpha = 0.16 + Math.sin(time * 0.7 + index) ** 2 * 0.5;
+        point.position.set(30 + index * 137 % 665 + Math.sin(time * 0.2 + index) * 3, y + 30);
+        point.alpha = 0.08 + Math.sin(time * 0.65 + index) ** 2 * 0.34;
       });
     },
     destroy() {
-      leftFrame.destroy(false);
-      rightFrame.destroy(false);
+      geometries.forEach(geometry => geometry.destroy(true));
+      lightTextures.forEach(texture => texture.destroy(false));
     },
   };
 }
