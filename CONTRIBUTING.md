@@ -2,6 +2,16 @@
 
 Unharness is being prepared for an open-source release. This repository contains product/design documentation, a read-only Codex inventory CLI, a diagnostic that changes only its own temporary source fixture, and a desktop-record observer with a persistent synthetic fixture. A shared fixture-only loadout store/service also supports registration, immutable favorites, checkpoints and recording association. The full application and live personal mode switching are still under development. Use Node.js 24+ and `node --test`; the diagnostics have no external package dependencies. See [the inventory guide](docs/codex-probe.md) and [source-control guide](docs/source-controls.md) for real-environment checks. The [desktop observation guide](docs/desktop-observation.md) covers fresh tasks and fixture-only recovery; [the loadout guide](docs/loadouts.md) covers the shared save/restore service.
 
+## Presentation dependencies
+
+PixiJS is selected for the planned GUI's artwork and effects, with HTML/CSS handling controls and readable state. Its exact version and transitive dependencies are recorded in `package.json` and `package-lock.json`. Install that dependency set for GUI development:
+
+```text
+npm ci --ignore-scripts
+```
+
+The GUI, bundler and browser entry point are not implemented yet, so there is no GUI start command. Existing diagnostics and `node --test` still run without this install. Keep PixiJS imports in the future browser presentation layer, and commit lockfile changes when updating dependencies. See [the rendering decision](docs/design.md#selected-rendering-stack).
+
 ## Work that is useful now
 
 - Investigate actual Codex desktop loading and control behavior on macOS and Windows.

@@ -1,6 +1,6 @@
 # Architecture boundaries
 
-This page separates the code present on 2026-09-06 from the intended product architecture. The working runtime contains Node.js 24+ inventory, source-control fixtures, and desktop-record observation using ES modules and the standard library. A separate local record store and fixture-loadout service are now present. GUI/MCP endpoints and real-source control/storage migration remain future work.
+This page separates the code present on 2026-09-07 from the intended product architecture. The working runtime contains Node.js 24+ inventory, source-control fixtures, and desktop-record observation using ES modules and the standard library. A separate local record store and fixture-loadout service are now present. PixiJS is pinned for the planned browser presentation layer; the diagnostic/core modules do not import it. GUI/MCP endpoints and real-source control/storage migration remain future work.
 
 ## Current runnable architecture
 
@@ -63,7 +63,7 @@ Every dotted connection below is a planned integration. The CLI and Codex integr
 
 ```mermaid
 flowchart TB
-  UI["ドットGUI<br/>装備・比較・演出"]
+  UI["ドットGUI<br/>PixiJS演出 + HTML/CSS操作・状態"]
   MCP["AI操作入口 / MCP<br/>自然言語の依頼"]
   CLI["CLI<br/>診断・復帰"]
   Core["共通ローカルコア<br/>装備の保存・切替・復帰<br/>比較の実行・計測・評価"]
@@ -94,7 +94,9 @@ flowchart TB
 
 The Unharness-owned control, storage, artwork, and export layers run on the user's computer. Free use with no recurring operator service expense is a product constraint: no paid API, hosted runtime, or free-tier cloud quota is required for the base design. Existing Codex/Claude Code model execution and optional AI authoring/judging use the user's separately chosen AI environment and its allowance. Optional AI judging has a contract but no selected execution implementation. The default three-candidate artwork route is local composition/drawing.
 
-The fixture core uses local content-addressed JSON records. GUI framework, production storage migration and the full desktop application/reflection mechanism remain undecided. The database symbol above represents the broader storage responsibility, not a selected database service.
+The fixture core uses local content-addressed JSON records. The [selected visual stack](design.md#selected-rendering-stack) uses PixiJS for artwork/effects and HTML/CSS for controls and readable state. The surrounding GUI framework/build setup, production storage migration and the full desktop application/reflection mechanism remain undecided. The database symbol above represents the broader storage responsibility, not a selected database service.
+
+Load PixiJS only through the browser presentation entry point. It consumes saved appearance data and the core's operation/assessment state; a ticker, asset-load completion or animation callback cannot apply settings or mark a task verified. Configuration and recovery remain usable independently of renderer availability. Bundle browser dependencies/assets locally, and keep CLI diagnostics callable without installing the presentation dependencies.
 
 ## Shared local core
 

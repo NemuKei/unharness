@@ -26,6 +26,26 @@ The original generation inputs for these selected assets are preserved in [desig
 
 Suggested animation sequence: casing opens → a brief visual pause → rings and particles expand → the AI rises → the scene settles to an idle state. Timing, sound, and motion amplitude are not yet specified. Preserve readable controls and an unambiguous status area throughout.
 
+## Selected rendering stack
+
+On 2026-09-07 the maintainer selected **PixiJS** for the first GUI and explicitly accepted the additional dependencies. Use its scene graph, sprites, asset loading, masks and filters for the equipment and release effects. The rendering choice is adopted; the GUI and renderer integration are not implemented yet.
+
+| Responsibility | Selected approach |
+| --- | --- |
+| Entity, armor, layered movement, halos and particles | PixiJS in the browser |
+| Controls, readable state, numbers and comparison tables | Semantic HTML and CSS, with charts generated from application data |
+| Detailed artwork and animation frames | Reviewed, bundled PNG sprites and sprite sheets |
+| Assembly, palette roles, attachment points and animation parameters | Versioned JSON recipes referring to compatible parts |
+| Code-authored pixel art and geometric variation | Validated pixel data or local drawing rules producing PixiJS textures/graphics |
+
+This hybrid asset route keeps detailed artwork editable in a pixel editor while allowing an AI without image generation to change recipes or author pixel data. Aseprite is an optional authoring tool; using the app does not require it. Imported appearances remain validated data/images, not executable scripts. See [the appearance contract](personalization.md#pixel-art-does-not-require-an-image-model).
+
+Keep a consistent pixel grid, nearest-neighbor texture sampling and aligned sprite positions. Scope glow and other filters to the intended effect layers so body details and controls remain legible. Effects off and reduced motion need a static, readable presentation. Pause unnecessary animation when the view is hidden and release renderer resources when it is removed. If graphics initialization fails, retain the HTML controls and truthful state display.
+
+Bundle the renderer and default assets for local use; normal playback and candidate assembly must not depend on a CDN or model service. PixiJS belongs to the browser presentation layer, while configuration, recovery and assessment remain in the shared core. The surrounding GUI framework/build setup is a separate choice. The pinned dependency is in [package.json](../package.json); setup is documented in [CONTRIBUTING.md](../CONTRIBUTING.md).
+
+Technical references: [PixiJS introduction](https://pixijs.com/8.x/guides/getting-started/intro) and [adding PixiJS to an existing project](https://pixijs.com/8.x/guides/getting-started/quick-start).
+
 ## Effects and product state
 
 - Support effects off and reduced motion. These are display preferences, separate from favorites.

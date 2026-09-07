@@ -24,11 +24,13 @@ This default runs locally without a model call or image-generation service. OS, 
 
 | Method | How it works | Role in Unharness |
 | --- | --- | --- |
-| Prepared sprites and parts | Select or combine authored pixel layers and animation frames | Recommended default: predictable art quality and immediate local playback |
-| Procedural drawing | A renderer fills a small pixel grid from shape rules, palette values, and a seed; for example, with Canvas | Local variation, particles, geometric cores, and new code-authored art without an image model |
+| Prepared sprites and parts | PixiJS displays bundled PNG layers and animation frames according to a saved JSON recipe | Selected default asset route: predictable art quality and immediate local playback |
+| Procedural drawing | Validated pixel grids or local shape/palette/seed rules produce textures and graphics for PixiJS | Local variation, particles, geometric cores, and new code-authored art without an image model |
 | Optional image generation | An available image tool creates assets to a documented layout/state contract | An additional way to make custom artwork, not a runtime requirement |
 
 Claude Code can author pixel data, a component recipe, or drawing code in its coding environment. A conventional renderer produces the pixels; no image model is needed for that path. A code-produced result still needs visual review, particularly for recognizable silhouettes and consistent animation. The optional skill should therefore describe a creation contract with multiple routes, not require a raster-generation provider for every user.
+
+The maintainer selected [PixiJS for the GUI](design.md#selected-rendering-stack), accepting its additional dependencies. Use reviewed PNG sprites together with versioned JSON assembly/pixel data; detailed entities do not have to be authored entirely as text arrays. These are adopted implementation choices, not a completed appearance runtime. Aseprite or another pixel editor is optional for authoring bundled sprites and is not required by app users.
 
 ## Original creation unlocked by comparison evidence
 

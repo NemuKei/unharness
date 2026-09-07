@@ -87,6 +87,8 @@ The visual direction uses a pixel-art machine hangar: the outer equipment opens,
 
 *Static design concept. Animation and working controls are not implemented yet.*
 
+The planned GUI uses PixiJS for pixel-art equipment and effects, with HTML/CSS for controls and readable state. Bundled PNG sprites and JSON recipes support local artwork without image generation. The dependency and [rendering design](docs/design.md#selected-rendering-stack) are in place; GUI integration is the next implementation step.
+
 Equipment can also be shown as supportive armor or a resonating frame when a comparison shows it fits the work. Unmeasured setups remain neutral, and the illustration stays separate from the measured result.
 
 Original forms selected from the three-candidate creation flow stay in a reusable appearance collection. Current evidence constrains their active treatment: confirmed adverse performance allows BAD variants, while unknown evidence stays neutral. Previously acquired forms remain owned; choosing a look does not change the actual harness configuration. These collection and assessment features are planned, not implemented.

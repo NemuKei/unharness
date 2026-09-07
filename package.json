@@ -9,5 +9,8 @@
   "scripts": {
     "test": "node --test",
     "inspect": "node bin/unharness.mjs inspect"
+  },
+  "dependencies": {
+    "pixi.js": "8.20.1"
   }
 }

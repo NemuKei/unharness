@@ -4,6 +4,9 @@ Thumbs.db
 Desktop.ini
 *.swp
 
+# Installed JavaScript dependencies
+node_modules/
+
 # Local secrets and private agent configuration
 .env
 .env.*
