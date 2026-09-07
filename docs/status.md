@@ -55,6 +55,8 @@ The maintainer then reselected the original three-state painting. That v3 correc
 
 After accepting that motion, the maintainer requested one visual refinement: stronger light around the fully released AI entity. A source-shaped white-blue radiance now ramps in at final release and pulses slowly, with its intensity adjusted to preserve branch detail. Effects off removes the added light. The cel motion and configuration operations remain the same.
 
+The maintainer accepted the combined motion and radiance at `a0ce80c` as the visual baseline on 2026-09-07. The next milestone is the desktop setting/observation/recovery loop; visual acceptance does not establish configuration or runtime verification.
+
 ## Next useful work
 
 The maintainer accepted the [feasibility boundaries](feasibility.md). Continue with the desktop control/observation gate; local artwork and sharing do not resolve it. The desktop primitives, fixture-only core, saved-version desktop association and first GUI are present. For Windows, the owner has refreshed the unchanged fixture Skill and reapplied the same baseline favorite; start another new user-created task through the same route and observe it against that new receipt before changing cases. Do not infer a cache cause from the first mismatch. The GUI remains explicitly synthetic and keeps configuration readback separate from recorded input confirmation. Real registered-source classification/control coverage remains a separate gate before extending personal-setting writes. The AI/MCP entry point must later call these same deterministic operations.

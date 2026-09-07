@@ -58,6 +58,8 @@ The renderer uses active visual time, paused when hidden, and caps its ticker at
 
 After accepting the mechanical motion, the maintainer requested a more radiant AI body in the TRUEFORM visual. Two source-shaped white-blue light layers strengthen as the final release completes and pulse slowly at rest. Keep the crisp lattice above the glow so its branches remain readable. This additional radiance is absent in Normal/Manual and disabled by effects off or reduced motion; it does not alter any part pose or configuration state.
 
+On 2026-09-07 the maintainer accepted the combined mechanical motion and final radiance at `a0ce80c` as the visual baseline. Subsequent integration work should preserve this appearance and optional-effects behavior.
+
 ## Everyday controls and development details
 
 The visible lower interface centers on favorites and returning to a recorded pre-change setting, with short explanations of what each operation does. Older recovery points remain available in an expandable history. Task UUIDs, project paths, manual recording checks and CLI recovery coordinates belong in a closed development-details section. Record/plan identifiers remain available when their details are expanded.
