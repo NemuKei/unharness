@@ -10,9 +10,9 @@ import { readDesktopFixture, changeDesktopFixture, createDesktopFixture } from '
 import { putRecord } from '../src/core/local-store.mjs';
 import { captureFixture } from '../src/codex/fixture-loadout.mjs';
 import { registerFixture, saveFavorite } from '../src/loadouts/service.mjs';
-import { createDemoWorkspace, createGuiController } from '../src/gui/controller.mjs';
+import { createDemoWorkspace, createGuiController, demoWorkspaceRecovery } from '../src/gui/controller.mjs';
 import { startGuiServer } from '../src/gui/server.mjs';
-import { guiMain } from '../src/gui/cli.mjs';
+import { buildResumeArgv, guiMain } from '../src/gui/cli.mjs';
 import { main } from '../bin/unharness.mjs';
 
 async function temporary(t, prefix = 'unharness-gui-') {
@@ -324,4 +324,79 @@ test('GUI CLI validates modes and help is side-effect free', async t => {
     const result = await invoke(argv);
     assert.equal(result.exitCode, 2, argv.join(' '));
   }
+});
+
+test('resume instructions preserve shell metacharacters and Windows backslashes only as structured argv', () => {
+  const entryPoint = String.raw`C:\Program Files\Unharness\bin\unharness.mjs`;
+  const store = String.raw`C:\Users\Test User\$(touch NEVER)\quote'and\backtick` + String.fromCharCode(96) + 'store';
+  const scopeId = 'a'.repeat(64);
+  assert.deepEqual(buildResumeArgv({ entryPoint, store, scopeId }), [
+    entryPoint, 'gui', '--store', store, '--scope', scopeId,
+  ]);
+});
+
+test('a post-listen launch-output failure closes the server and sanitizes the error', async t => {
+  const parent = await temporary(t);
+  const demo = await createDemoWorkspace({ parent });
+  const assetsDirectory = await assets(t, parent);
+  let running;
+  let stderr = '';
+  const exitCode = await guiMain(['gui', '--store', demo.store, '--scope', demo.scopeId], {
+    assetsDirectory,
+    startServer: async options => {
+      running = await startGuiServer({ ...options, assetsDirectory });
+      return running;
+    },
+    stdout: { write() { throw new Error('PRIVATE output failure'); } },
+    stderr: { write(value) { stderr += value; } },
+  });
+  assert.equal(exitCode, 1);
+  assert.equal(running.server.listening, false);
+  assert.equal(JSON.parse(stderr).error.kind, 'gui-start-error');
+  assert.ok(!stderr.includes('PRIVATE output failure'));
+});
+
+test('demo failure after scope registration retains owned recovery coordinates', async t => {
+  const parent = await temporary(t);
+  let failure;
+  try {
+    await createDemoWorkspace({ parent }, {
+      saveFavorite: async () => { throw Object.assign(new Error('PRIVATE save detail'), { kind: 'injected-demo-failure' }); },
+    });
+  } catch (error) { failure = error; }
+  const recovery = demoWorkspaceRecovery(failure);
+  assert.match(recovery.store, /^\//);
+  assert.match(recovery.scopeId, /^[a-f0-9]{64}$/);
+  assert.match(recovery.fixture, /^\//);
+  assert.match(recovery.project, /^\//);
+  const controller = await createGuiController(recovery);
+  assert.equal((await controller.state()).current.case, 'baseline');
+  assert.deepEqual((await controller.favorites()).favorites, []);
+});
+
+test('demo failure after a condition change is safely reported with resumable argv', async t => {
+  const parent = await temporary(t);
+  const assetsDirectory = await assets(t, parent);
+  let saves = 0;
+  const createDemo = options => createDemoWorkspace(options, {
+    saveFavorite: async args => {
+      saves += 1;
+      if (saves === 2) throw Object.assign(new Error('PRIVATE second-save detail'), { kind: 'injected-demo-failure' });
+      return saveFavorite(args);
+    },
+  });
+  let stderr = '';
+  const exitCode = await guiMain(['gui', '--demo', '--parent', parent], {
+    assetsDirectory,
+    createDemo,
+    stdout: { write() {} },
+    stderr: { write(value) { stderr += value; } },
+  });
+  assert.equal(exitCode, 1);
+  assert.ok(!stderr.includes('PRIVATE second-save detail'));
+  const result = JSON.parse(stderr);
+  assert.equal(result.error.kind, 'gui-start-error');
+  assert.match(result.recovery.scopeId, /^[a-f0-9]{64}$/);
+  assert.deepEqual(result.recovery.resumeArgv, buildResumeArgv(result.recovery));
+  assert.equal((await readDesktopFixture(result.recovery.fixture)).state.condition, 'manual-only');
 });

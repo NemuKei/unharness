@@ -2,11 +2,13 @@ import { lstat, mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { createDemoWorkspace, createGuiController } from './controller.mjs';
+import { createDemoWorkspace, createGuiController, demoWorkspaceRecovery } from './controller.mjs';
 import { startGuiServer } from './server.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const DEFAULT_ASSETS = resolve(ROOT, 'dist');
+const ENTRY_POINT = resolve(ROOT, 'bin', 'unharness.mjs');
+const HASH = /^[a-f0-9]{64}$/;
 
 export const GUI_USAGE = `Usage:
   node bin/unharness.mjs gui --demo [--parent <existing-directory>] [--port <0..65535>]
@@ -46,25 +48,53 @@ function safeFailure(error) {
   return known.has(error?.kind) ? error.kind : 'gui-start-error';
 }
 
-export async function guiMain(argv, { stdout = process.stdout, stderr = process.stderr } = {}) {
+export function buildResumeArgv({ entryPoint = ENTRY_POINT, store, scopeId } = {}) {
+  return [entryPoint, 'gui', '--store', store, '--scope', scopeId];
+}
+
+function recoveryProjection(value) {
+  if (value === null || typeof value !== 'object') return null;
+  const result = {};
+  for (const key of ['store', 'scopeId', 'fixture', 'project']) {
+    if (typeof value[key] === 'string') result[key] = value[key];
+  }
+  if (typeof result.store === 'string' && HASH.test(result.scopeId ?? '')) {
+    result.resumeArgv = buildResumeArgv(result);
+  }
+  return Object.keys(result).length > 0 ? result : null;
+}
+
+export async function guiMain(argv, {
+  stdout = process.stdout,
+  stderr = process.stderr,
+  assetsDirectory = DEFAULT_ASSETS,
+  createDemo = createDemoWorkspace,
+  createController = createGuiController,
+  startServer = startGuiServer,
+} = {}) {
   const options = parse(argv);
   if (options?.help) { stdout.write(GUI_USAGE); return 0; }
   if (!options) { stderr.write('Invalid gui usage. Run with --help.\n'); return 2; }
 
   let selected;
+  let running;
+  let recovery = null;
+  let stop;
   try {
     let index;
-    try { index = await lstat(resolve(DEFAULT_ASSETS, 'index.html')); }
+    try { index = await lstat(resolve(assetsDirectory, 'index.html')); }
     catch { throw Object.assign(new Error('gui-build-missing'), { kind: 'gui-build-missing' }); }
     if (!index.isFile() || index.isSymbolicLink()) throw Object.assign(new Error('gui-build-missing'), { kind: 'gui-build-missing' });
     if (options.demo) {
       const parent = options.parent === undefined ? resolve(ROOT, '.unharness') : resolve(options.parent);
       if (options.parent === undefined) await mkdir(parent, { recursive: true, mode: 0o700 });
-      selected = await createDemoWorkspace({ parent });
+      try { selected = await createDemo({ parent }); }
+      catch (error) { recovery = recoveryProjection(demoWorkspaceRecovery(error)); throw error; }
+      recovery = recoveryProjection(selected);
     } else selected = { store: resolve(options.store), scopeId: options.scopeId };
-    const running = await startGuiServer({ ...selected, assetsDirectory: DEFAULT_ASSETS, port: options.port });
-    const state = await createGuiController(selected).then(controller => controller.state());
-    const resumeArgv = ['gui', '--store', state.store, '--scope', state.scopeId];
+    const state = await createController(selected).then(controller => controller.state());
+    recovery = recoveryProjection(state);
+    running = await startServer({ ...selected, assetsDirectory, port: options.port });
     const summary = {
       schemaVersion: 1,
       url: running.url,
@@ -72,11 +102,10 @@ export async function guiMain(argv, { stdout = process.stdout, stderr = process.
       scopeId: state.scopeId,
       fixture: state.fixture,
       project: state.project,
-      resumeArgv,
-      resumeCommand: `node bin/unharness.mjs ${resumeArgv.map(value => JSON.stringify(value)).join(' ')}`,
+      resumeArgv: buildResumeArgv(state),
     };
     stdout.write(`${JSON.stringify(summary)}\n`);
-    const stop = async () => {
+    stop = async () => {
       process.off('SIGINT', stop);
       process.off('SIGTERM', stop);
       try { await running.close(); } catch {}
@@ -85,11 +114,15 @@ export async function guiMain(argv, { stdout = process.stdout, stderr = process.
     process.once('SIGTERM', stop);
     return 0;
   } catch (error) {
-    const failure = { schemaVersion: 1, error: { kind: safeFailure(error) } };
-    if (selected?.store && selected?.scopeId) {
-      failure.recovery = { store: selected.store, scopeId: selected.scopeId,
-        resumeArgv: ['gui', '--store', selected.store, '--scope', selected.scopeId] };
+    if (stop) {
+      process.off('SIGINT', stop);
+      process.off('SIGTERM', stop);
     }
+    if (running) {
+      try { await running.close(); } catch {}
+    }
+    const failure = { schemaVersion: 1, error: { kind: safeFailure(error) } };
+    if (recovery) failure.recovery = recovery;
     stderr.write(`${JSON.stringify(failure)}\n`);
     return 1;
   }

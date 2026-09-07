@@ -17,6 +17,7 @@ import {
 
 const HASH = /^[a-f0-9]{64}$/;
 const UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
+const DEMO_RECOVERY = Symbol('demo-recovery');
 const SAFE_CONFLICTS = new Set([
   'fixture-conflict', 'fixture-changed', 'fixture-locked', 'fixture-link-or-type',
   'fixture-recovery-required', 'fixture-cleanup-required', 'invalid-fixture',
@@ -35,6 +36,18 @@ function exactObject(value, keys) {
 function hash(value) {
   if (typeof value !== 'string' || !HASH.test(value)) fail('gui-invalid-request');
   return value;
+}
+
+function demoFailure(error, recovery) {
+  const failure = new Error('demo-workspace-creation-failed', { cause: error });
+  if (typeof error?.kind === 'string') failure.kind = error.kind;
+  Object.defineProperty(failure, DEMO_RECOVERY, { value: Object.freeze({ ...recovery }) });
+  return failure;
+}
+
+export function demoWorkspaceRecovery(error) {
+  const recovery = error?.[DEMO_RECOVERY];
+  return recovery && typeof recovery === 'object' ? { ...recovery } : null;
 }
 
 async function favoriteInScope(store, favoriteId, scopeId) {
@@ -67,18 +80,32 @@ async function checkpointInScope(store, checkpointId, scopeId) {
   fail('loadout-invalid-checkpoint');
 }
 
-export async function createDemoWorkspace({ parent } = {}) {
-  const { store } = await createStore({ parent });
-  const created = await createDesktopFixture({ parent });
-  const fixture = created.fixture;
-  const { scopeId } = await registerFixture({ store, fixture });
-  await saveFavorite({ store, scopeId, name: 'Normal / 通常の確認条件' });
-  await changeDesktopFixture(fixture, 'manual-only');
-  await saveFavorite({ store, scopeId, name: 'Manual only / Skillを手動のみ' });
-  await changeDesktopFixture(fixture, 'fixed-only');
-  await saveFavorite({ store, scopeId, name: 'Fixed only / 固定指示のみ' });
-  const baseline = await changeDesktopFixture(fixture, 'baseline');
-  return { store, scopeId, fixture, project: baseline.project };
+export async function createDemoWorkspace({ parent } = {}, {
+  createStore: createStoreOperation = createStore,
+  createDesktopFixture: createFixtureOperation = createDesktopFixture,
+  registerFixture: registerFixtureOperation = registerFixture,
+  saveFavorite: saveFavoriteOperation = saveFavorite,
+  changeDesktopFixture: changeFixtureOperation = changeDesktopFixture,
+} = {}) {
+  const recovery = {};
+  try {
+    const { store } = await createStoreOperation({ parent });
+    recovery.store = store;
+    const created = await createFixtureOperation({ parent });
+    recovery.fixture = created.fixture;
+    recovery.project = created.project;
+    const { scopeId } = await registerFixtureOperation({ store, fixture: created.fixture });
+    recovery.scopeId = scopeId;
+    await saveFavoriteOperation({ store, scopeId, name: 'Normal / 通常の確認条件' });
+    await changeFixtureOperation(created.fixture, 'manual-only');
+    await saveFavoriteOperation({ store, scopeId, name: 'Manual only / Skillを手動のみ' });
+    await changeFixtureOperation(created.fixture, 'fixed-only');
+    await saveFavoriteOperation({ store, scopeId, name: 'Fixed only / 固定指示のみ' });
+    const baseline = await changeFixtureOperation(created.fixture, 'baseline');
+    return { store, scopeId, fixture: created.fixture, project: baseline.project };
+  } catch (error) {
+    throw demoFailure(error, recovery);
+  }
 }
 
 export async function createGuiController({ store, scopeId, codexHome } = {}) {
