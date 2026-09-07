@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { createDemoWorkspace, createGuiController, demoWorkspaceRecovery } from './controller.mjs';
 import { startGuiServer } from './server.mjs';
 import { normalizeInventoryOptions } from './inventory.mjs';
+import { USER_SOURCE_ERROR_KINDS } from '../sources/service.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const DEFAULT_ASSETS = resolve(ROOT, 'dist');
@@ -14,6 +15,7 @@ const HASH = /^[a-f0-9]{64}$/;
 export const GUI_USAGE = `Usage:
   node bin/unharness.mjs gui --demo [--parent <existing-directory>] [--port <0..65535>]
   node bin/unharness.mjs gui --store <store> --scope <hash> [--port <0..65535>]
+  node bin/unharness.mjs gui --manage-sources --codex-home <directory> --project <directory> [--codex <native-executable>] [--port <0..65535>]
   node bin/unharness.mjs gui --help
 
 Optional read-only inventory: --inspect-cwd <directory> [--codex <native-executable>]
@@ -26,12 +28,12 @@ function parse(argv) {
   const seen = new Set();
   for (let index = 1; index < argv.length;) {
     const flag = argv[index];
-    if (flag === '--demo') {
+    if (flag === '--demo' || flag === '--manage-sources') {
       if (seen.has(flag)) return null;
-      seen.add(flag); values.demo = true; index += 1; continue;
+      seen.add(flag); values[flag === '--demo' ? 'demo' : 'manageSources'] = true; index += 1; continue;
     }
     const key = new Map([['--parent', 'parent'], ['--store', 'store'], ['--scope', 'scopeId'], ['--port', 'port'],
-      ['--inspect-cwd', 'inspectCwd'], ['--codex', 'executable']]).get(flag);
+      ['--codex-home', 'codexHome'], ['--project', 'project'], ['--inspect-cwd', 'inspectCwd'], ['--codex', 'executable']]).get(flag);
     const value = argv[index + 1];
     if (!key || value === undefined || value.length === 0 || seen.has(flag)) return null;
     seen.add(flag); values[key] = value; index += 2;
@@ -39,6 +41,11 @@ function parse(argv) {
   if (!/^\d+$/.test(String(values.port))) return null;
   values.port = Number(values.port);
   if (!Number.isSafeInteger(values.port) || values.port < 0 || values.port > 65535) return null;
+  if (values.manageSources) {
+    if (!values.codexHome || !values.project || values.demo || values.store || values.scopeId || values.parent || values.inspectCwd) return null;
+    return values;
+  }
+  if (values.codexHome || values.project) return null;
   if (values.executable !== undefined && values.inspectCwd === undefined) return null;
   if (values.demo) {
     if (values.store !== undefined || values.scopeId !== undefined) return null;
@@ -47,7 +54,7 @@ function parse(argv) {
 }
 
 function safeFailure(error) {
-  const known = new Set(['gui-build-missing', 'gui-assets-invalid', 'gui-invalid-port', 'store-init-error',
+  const known = new Set([...USER_SOURCE_ERROR_KINDS, 'gui-source-context-changed', 'gui-build-missing', 'gui-assets-invalid', 'gui-invalid-port', 'store-init-error',
     'store-invalid', 'store-link-or-type', 'record-not-found', 'record-corrupt', 'invalid-record-id',
     'gui-inventory-target-invalid', 'gui-inventory-native-executable-required',
     'loadout-incompatible-scope', 'invalid-fixture', 'fixture-conflict']);
@@ -97,6 +104,15 @@ export async function guiMain(argv, {
     try { index = await lstat(resolve(assetsDirectory, 'index.html')); }
     catch { throw Object.assign(new Error('gui-build-missing'), { kind: 'gui-build-missing' }); }
     if (!index.isFile() || index.isSymbolicLink()) throw Object.assign(new Error('gui-build-missing'), { kind: 'gui-build-missing' });
+    if (options.manageSources) {
+      const context = { codexHome: resolve(options.codexHome), project: resolve(options.project), executable: options.executable ?? 'codex' };
+      running = await startServer({ manageSources: context, assetsDirectory, port: options.port });
+      const resumeArgv = [ENTRY_POINT, 'gui', '--manage-sources', '--codex-home', context.codexHome, '--project', context.project, '--codex', context.executable];
+      stdout.write(`${JSON.stringify({ schemaVersion: 1, kind: 'user-sources', url: running.url, context, resumeArgv })}\n`);
+      stop = async () => { process.off('SIGINT', stop); process.off('SIGTERM', stop); try { await running.close(); } catch {} };
+      process.once('SIGINT', stop); process.once('SIGTERM', stop);
+      return 0;
+    }
     if (options.demo) {
       const parent = options.parent === undefined ? resolve(ROOT, '.unharness') : resolve(options.parent);
       if (options.parent === undefined) await mkdir(parent, { recursive: true, mode: 0o700 });

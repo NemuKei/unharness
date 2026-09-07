@@ -2,6 +2,8 @@
 
 This development interface connects the shared [loadout service](loadouts.md) to a browser with PixiJS artwork. It operates only on a generated, owned Codex fixture. Personal settings, full product modes, automatic task dispatch and performance comparisons are outside this slice. The [GUI contract](spec-gui.md) defines the evidence and HTTP boundaries.
 
+The separate [registered-source workbench](user-source-gui.md) uses `--manage-sources` for explicitly selected optional user settings. Its controller, records and routes are independent of this diagnostic fixture.
+
 ## Build and start
 
 Use Node.js 24+ in the checkout on either target OS:

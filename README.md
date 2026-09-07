@@ -8,7 +8,7 @@ Try different combinations of skills and instructions on your own work. Find wha
 
 [日本語](README.ja.md)
 
-> **Draft for the intended public release.** Codex inventory, isolated source-control fixtures, and local desktop-record diagnostics are available for feasibility testing. The product experience described below remains the target; live personal-configuration switching, comparison runs, and production recovery have not been implemented or verified. The target is macOS and Windows: Codex desktop first, followed by Claude Code desktop.
+> **Draft for the intended public release.** Codex inventory, isolated source-control fixtures, and local desktop-record diagnostics are available for feasibility testing. Registered optional-source preparation and recovery are implemented for macOS; desktop-loaded mode switching, comparison runs, and complete production support remain unverified. The target is macOS and Windows: Codex desktop first, followed by Claude Code desktop.
 
 **Free, with no required paid API or hosted backend.** Unharness is designed to run locally with no recurring operator service expense. Your existing AI subscription and usage are separate. Artwork, including three-candidate original forms, and card export have a local route without model calls. See [feasibility and limitations](docs/feasibility.md).
 
@@ -31,7 +31,7 @@ node bin/unharness.mjs probe-controls --output local-evidence/source-controls.js
 
 `inspect-desktop --current` reads the selected desktop task's local recording and reports source/usage availability without source text or token totals. `desktop-fixture create` prepares a synthetic project for manually started fresh-task checks, with fixture-only restore/recovery. Native Windows has observed a qualified fresh generated-fixture task through the GUI, but its baseline recording was `not-matched-record`; a fresh task after the completed refresh/reapplication is pending. These commands do not apply a mode or establish desktop support. See [desktop observation and recovery steps](docs/desktop-observation.md) and [the Windows fresh-task evidence](docs/evidence/2026-09-07-windows-fresh-task.md). Fresh Mac fixture trials observed source changes and restoration, with a stale-catalog limitation. `desktop-fixture refresh` offers an owned-file notification for diagnosis; it still requires a following task observation.
 
-`loadouts` adds registered fixture settings, immutable favorite versions, pre-change checkpoints, guarded restore and version-bound recording associations. The local GUI uses that same service; real personal-source control and MCP endpoints remain future work. See [the loadout commands](docs/loadouts.md). [The Mac desktop check](docs/evidence/2026-09-07-saved-loadout-desktop-macos.md) links saved fixture versions to real fresh tasks and verifies baseline restoration within that synthetic scope. The first Windows fresh-task observation qualified but did not match its baseline; it is not a successful saved-version association.
+`loadouts` adds registered fixture settings, immutable favorite versions, pre-change checkpoints, guarded restore and version-bound recording associations. The local GUI uses that same service; the separately launched registered-source workbench handles selected optional personal sources, while MCP endpoints remain future work. See [the loadout commands](docs/loadouts.md). [The Mac desktop check](docs/evidence/2026-09-07-saved-loadout-desktop-macos.md) links saved fixture versions to real fresh tasks and verifies baseline restoration within that synthetic scope. The first Windows fresh-task observation qualified but did not match its baseline; it is not a successful saved-version association.
 
 ## Try the local fixture GUI
 
@@ -47,6 +47,12 @@ npm run gui
 Open the printed local URL. Select a saved fixture version, review/apply it, save the current settings, check a selected fresh task's recording, or restore a checkpoint. Each demo launch creates a new private workspace under `.unharness/`; the printed store/scope and structured resume arguments identify that same environment for later use. The screen explicitly identifies its synthetic scope. It does not change personal Codex settings or claim full mode support. [Mac GUI evidence](docs/evidence/2026-09-07-local-gui-macos.md) and a [bounded native Windows smoke](docs/evidence/2026-09-07-windows-baseline.md) cover this fixture flow. The Windows smoke used the earlier scene; browser restart, effects-off, narrow layout and the current animation revision remain unverified there. See [GUI usage and recovery](docs/gui.md).
 
 To show the selected real project's read-only inventory alongside the fixture GUI, append `--inspect-cwd <project>` to its resume arguments, or use `npm run gui -- --inspect-cwd .` for a fresh demo. Click **Codex設定を読み取る** to collect. The panel focuses on additional instructions, Skills and hooks; retained memory, integrations and policy information are collapsed. Reading does not change personal settings. [Inventory setup and limits](docs/source-inventory.md).
+
+## Prepare registered optional sources
+
+After building, use `node bin/unharness.mjs gui --manage-sources --codex-home "<canonical home>" --project "<canonical project>" --codex "<native executable>"`. Review discovered candidates, explicitly declare selected sources user-added and optional, and save Normal before choosing UNSEAL or TRUEFORM. Selection previews a plan; a separate reviewed action prepares its files. Global controls remain shared by future tasks using that Codex home until restored. Memory, native continuity, permissions, project requirements, hooks and unselected sources are retained.
+
+The [workbench runbook](docs/user-source-gui.md) covers launch/resume, saved versions, readback and Node-only recovery. Native macOS source preparation is distinct from desktop-loaded verification; Windows real-source writes remain gated. No model or desktop task is started.
 
 ## Make “what if I removed this?” easy to try
 
@@ -77,12 +83,12 @@ Numerical comparisons should show the tokens and attempts needed to reach task-d
 | Mode | What it is intended to do |
 | --- | --- |
 | Normal loadout | Use the saved configuration. |
-| Limited release — UNSEAL | Make selected user-added skills manual-only while retaining the other configured guidance. |
+| Limited release — UNSEAL | Replace selected optional instructions with a fixed minimal guide and make selected enabled user-added skills manual-only. |
 | Zero — TRUEFORM | Stop loading selected user-added optional instructions and skills, plus selected optional steering hooks. |
 
 Keep the task requirements and execution permissions consistent. Show the elements that remain, including the minimal control connection needed to switch back. Availability and exact behavior must be established for each supported tool version.
 
-The initial release set includes self-authored and personally added third-party sources, primarily global AGENTS.md / CLAUDE.md and automatic Skill selection. Existing memory and native task-continuity settings stay unchanged. Provider defaults and managed sources remain outside that set. Keep everyday mode selection simple, with optional target customization beneath each release mode. A short, officially informed replacement guide for UNSEAL is a [design proposal](docs/harness-scope.md), not a universal official template or implemented replacement.
+The initial release set includes self-authored and personally added third-party sources, primarily global AGENTS.md / CLAUDE.md and automatic Skill selection. Existing memory and native task-continuity settings stay unchanged. Provider defaults and managed sources remain outside that set. Keep everyday mode selection simple, with optional target customization beneath each release mode. The accepted [mode scope](docs/harness-scope.md) uses a fixed, versioned Unharness-authored guide for selected optional instructions in UNSEAL; it is comparison material based on official guidance, not a universal template.
 
 These modes are starting points. A custom combination can be saved as a favorite too.
 

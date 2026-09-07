@@ -1,0 +1,118 @@
+.source-workbench details {
+  margin-top: 12px;
+}
+.source-workbench summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+}
+.source-workbench pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 420px;
+  overflow: auto;
+  font:
+    12px/1.7 ui-monospace,
+    monospace;
+  background: #080f13;
+  padding: 12px;
+}
+.source-workbench code,
+.source-context dd,
+.source-workbench details p {
+  overflow-wrap: anywhere;
+}
+.source-workbench .source-mode-selector {
+  align-items: start;
+}
+.source-mode {
+  min-width: 0;
+}
+.source-mode > button {
+  width: 100%;
+  min-height: 66px;
+}
+.source-mode details {
+  padding: 0 10px 10px;
+}
+.source-target,
+.source-declaration,
+.source-choice > label {
+  display: flex;
+  gap: 9px;
+  align-items: start;
+  margin-top: 12px;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.source-workbench input[type="checkbox"] {
+  accent-color: var(--red);
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+.source-context {
+  font-size: 12px;
+}
+.source-context dd {
+  margin: 0 0 9px;
+  color: var(--muted);
+}
+.source-context dt {
+  color: var(--amber);
+}
+.source-workbench .secondary {
+  margin-top: 10px;
+}
+.source-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.source-favorites {
+  list-style: none;
+  padding: 0;
+}
+.source-favorites button {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+.source-changes {
+  padding-left: 20px;
+  font-size: 13px;
+}
+.source-name {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 13px;
+  margin-top: 14px;
+}
+.source-name input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--line);
+  background: #080f13;
+  color: inherit;
+}
+.source-review {
+  margin: 0 38px;
+}
+.source-setup > .primary {
+  margin-top: 15px;
+}
+@media (max-width: 600px) {
+  .source-workbench .scope-label {
+    display: none;
+  }
+  .source-workbench .source-mode-selector {
+    grid-template-columns: 1fr;
+  }
+  .source-mode > button {
+    min-height: 55px;
+    justify-content: flex-start;
+  }
+  .source-review {
+    margin: 0;
+  }
+}

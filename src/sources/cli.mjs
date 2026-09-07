@@ -26,7 +26,7 @@ export async function sourcesMain(
   }
   if (
     argv.length !== 4 ||
-    !operations[argv[1]] ||
+    !Object.hasOwn(operations, argv[1]) ||
     argv[2] !== '--json' ||
     Buffer.byteLength(argv[3]) > 65536
   ) {

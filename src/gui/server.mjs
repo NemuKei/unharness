@@ -6,13 +6,15 @@ import { extname, relative, resolve, sep } from 'node:path';
 import { LOCAL_STORE_ERROR_KINDS } from '../core/local-store.mjs';
 import { createGuiController } from './controller.mjs';
 import { createGuiInventory } from './inventory.mjs';
+import { createSourceController, sourceRequestShape } from './sources.mjs';
+import { USER_SOURCE_ERROR_KINDS } from '../sources/service.mjs';
 
 const MAX_BODY_BYTES = 16 * 1024;
 const MAX_REQUESTS = 1000;
 const UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 const CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'";
 const SAFE_ERRORS = new Set([
-  ...LOCAL_STORE_ERROR_KINDS,
+  ...LOCAL_STORE_ERROR_KINDS, ...USER_SOURCE_ERROR_KINDS, 'gui-source-context-changed',
   'loadout-invalid-reference', 'loadout-invalid-name', 'loadout-invalid-snapshot',
   'loadout-invalid-favorite', 'loadout-invalid-checkpoint', 'loadout-invalid-application',
   'loadout-incompatible-scope', 'loadout-source-unready', 'loadout-readback-conflict',
@@ -138,15 +140,17 @@ async function readJson(request) {
   }
 }
 
-export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0, codexHome, inventory: inventoryOptions } = {}, {
+export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0, codexHome, manageSources, inventory: inventoryOptions } = {}, {
   collectInventory,
 } = {}) {
   if (!Number.isSafeInteger(port) || port < 0 || port > 65535) {
     throw Object.assign(new Error('gui-invalid-port'), { kind: 'gui-invalid-port' });
   }
   const files = await staticFiles(assetsDirectory);
-  const controller = await createGuiController({ store, scopeId, codexHome });
-  const inventory = await createGuiInventory(inventoryOptions, { collect: collectInventory });
+  const sourceController = manageSources ? await createSourceController(manageSources) : null;
+  const controller = sourceController ?? await createGuiController({ store, scopeId, codexHome });
+  const kind = sourceController ? 'user-sources' : 'fixture';
+  const inventory = await createGuiInventory(sourceController ? undefined : inventoryOptions, { collect: collectInventory });
   const token = randomBytes(32).toString('hex');
   const requests = new Map();
   let queue = Promise.resolve();
@@ -185,7 +189,12 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
 
       if (request.method === 'GET') {
         const params = [...parsed.searchParams.keys()];
-        if (parsed.pathname === '/api/bootstrap' && params.length === 0) sendJson(response, 200, { token });
+        if (parsed.pathname === '/api/bootstrap' && params.length === 0) sendJson(response, 200, { token, kind });
+        else if (sourceController) {
+          if (parsed.pathname === '/api/sources/metadata' && params.length === 0) sendJson(response, 200, await sourceController.metadata());
+          else if (parsed.pathname === '/api/sources/state' && params.length === 0) sendJson(response, 200, await sourceController.state());
+          else sendJson(response, 404, { error: { kind: 'gui-route-not-found' } });
+        }
         else if (parsed.pathname === '/api/state' && params.length === 0) sendJson(response, 200, await controller.state());
         else if (parsed.pathname === '/api/inventory' && params.length === 0) sendJson(response, 200, inventory.state());
         else if (['/api/favorites', '/api/checkpoints'].includes(parsed.pathname)
@@ -202,8 +211,12 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
         sendJson(response, 404, { error: { kind: 'gui-route-not-found' } });
         return;
       }
-      const action = parsed.pathname.slice('/api/'.length);
-      const parsedBody = requestShape(await readJson(request), action);
+      const sourceRoute = parsed.pathname.startsWith('/api/sources/');
+      if (sourceRoute !== !!sourceController) {
+        sendJson(response, 404, { error: { kind: 'gui-route-not-found' } }); return;
+      }
+      const action = parsed.pathname.slice(sourceRoute ? '/api/sources/'.length : '/api/'.length);
+      const parsedBody = (sourceRoute ? sourceRequestShape : requestShape)(await readJson(request), action);
       const fingerprint = canonical({ action, input: parsedBody.input });
       const existing = requests.get(parsedBody.requestId);
       if (existing) {
