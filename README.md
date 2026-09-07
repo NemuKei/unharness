@@ -57,6 +57,8 @@ The [workbench runbook](docs/user-source-gui.md) covers launch/resume, saved ver
 
 Skill configuration preparation preserves unrelated settings and comment placement. If the native editor would lose a comment, preparation stops before changing personal files.
 
+A [selected real-source Mac check](docs/evidence/2026-09-08-real-source-desktop-macos.md) observed all three conditions and saved-Normal restoration in fresh desktop tasks. These scoped operator observations are not yet displayed as task associations in the workbench and do not establish complete desktop support.
+
 ## Make “what if I removed this?” easy to try
 
 You have added skills, instructions, and workflows to help your AI work the way you want. Now you want to know which parts fit the model and the work in front of you.

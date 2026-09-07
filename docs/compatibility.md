@@ -19,6 +19,8 @@ The [registered user-source pass](evidence/2026-09-08-user-source-modes-macos.md
 
 The [native editor follow-up](evidence/2026-09-08-native-config-comments-macos.md) qualifies preservation of unrelated Skill-entry comments and guarded duplicate handling on 0.153.4. A private copy of the real configuration passed preparation while its original remained unchanged. This does not add desktop loading evidence or qualify another OS/runtime version.
 
+The subsequent [selected real-source desktop sequence](evidence/2026-09-08-real-source-desktop-macos.md) records four Mac tasks after workbench Normal, UNSEAL, TRUEFORM and saved-Normal restoration. Initial selected-source patterns matched, manual Skill reading worked in UNSEAL, and an old-task control failed freshness. The profile is restored to its chosen Normal. This is operator-associated, scoped recording evidence; automated user-source task association, complete runtime coverage and the remaining product features are not established.
+
 ## What to record for a real test
 
 - Tested source revision and local changes, if any.
