@@ -24,6 +24,8 @@ The lower interface explains favorites and pre-change recovery in plain language
 
 Effects off, reduced motion and hidden tabs stop continuous animation; state remains visible. Graphics failure retains usable HTML controls. Layout must work at desktop and a narrow mobile viewport, with keyboard focus, labelled fields, disabled pending actions and readable error/status announcements. Local storage may retain display preferences only.
 
+With effects on, the fully released body gains stronger source-shaped white-blue radiance, introduced smoothly in the latter half of the final release. Keep its sharp lattice visible above the glow. This added radiance is disabled with effects off/reduced motion and does not change the existing cel geometry or preparation state.
+
 ## Local HTTP boundary
 
 Use Node.js 24+ standard-library HTTP on `127.0.0.1` only, with an OS-assigned port by default. Serve only the built `dist/` UI and its assets, never workspace/configuration files. Exact Host validation, same-origin checks, a custom client header and an ephemeral server token protect API requests. Do not enable CORS. Apply no-store and a restrictive CSP; reject oversized or unexpected request shapes and sanitize errors.

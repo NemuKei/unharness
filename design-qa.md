@@ -9,7 +9,7 @@ Implementation: the built loopback GUI at `http://127.0.0.1:54715/`. The same Pi
 ## Captured evidence
 
 - [49-cel contact sheet](docs/assets/07-mechanical-cels-v4.png): 1204 × 1386 pixels, seven columns; each image preview is 172 × 172.
-- [Motion recording](docs/assets/08-mechanical-motion-v4.webm): the actual canvas, 724 × 724 pixels, approximately 9.24 seconds, forward and reverse travel with endpoint holds. Browser metadata reported readyState 4 and no media error.
+- [Motion recording](docs/assets/08-mechanical-motion-v4.webm): the actual canvas, 724 × 724 pixels, approximately 9.30 seconds, forward and reverse travel with endpoint holds and the final radiance refinement. Browser metadata reported readyState 4 and no media error.
 - Native atlas: 5068 × 5068 pixels, 49 complete 724 × 724 cels, retained in local evidence. The contact sheet is a downsampled overview; the full-size artist view and native cells were used for armor/cable/core detail checks.
 - Main GUI screenshots were inspected at 1104 × 1040 and 390 × 844. At the desktop size the scene region was 724 × 724 CSS pixels with devicePixelRatio 1. Existing HTML headings/controls remain outside the source-art matching scope. These page screenshots were inline captures, not the saved canvas exports above.
 
@@ -21,6 +21,7 @@ The original source, native rig views and exported sequence were compared for si
 2. **Early v4 cutout contamination corrected:** cable masks included moving wall fragments. Source-coordinate masks were refined; alpha mattes are baked once while preserving the original RGB material. The background now uses one empty plate and the original fixed floor, so old hardware does not remain behind moving parts.
 3. **Early v4 thin armor corrected:** flat triangular faces looked like thin sheets. The parts now have 16-unit thickness, textured side/back faces and depth sorting. Unit checks preserve all original 3D edge lengths and the thickness across every cel.
 4. **Final sequence inspected:** latch separation precedes staged upper/lower opening; supports retreat before the core rises; reverse travel retraces the same sequence. The final contact sheet, recorded motion and live GUI were recaptured after these corrections. No actionable P0/P1/P2 finding remains within this animation scope.
+5. **Accepted motion, focused radiance refinement:** the maintainer accepted v4 and requested stronger light around the fully released AI body. Source-shaped close/wide glow layers were added behind the sharp lattice. The first intensity was reduced after visual comparison to retain branch definition. Normal/Manual receive no additional light; effects off restores the prior static appearance. The updated live preview was checked at normal and narrow widths.
 
 ## Required fidelity surfaces
 

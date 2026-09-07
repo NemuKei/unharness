@@ -48,13 +48,15 @@ Technical references: [PixiJS introduction](https://pixijs.com/8.x/guides/gettin
 
 ## Continuous motion and directional transitions
 
-The maintainer clarified that the scene should feel alive continuously, and that changing modes should animate from the previous displayed form. Whole-painting warps and portrait dissolves were rejected because they made metal and background structures deform. Idle motion now moves only the foreground body, source-sampled light and small particles. Preserve the original fine lattice and mechanical detail; broad added halos are not part of the selected reference.
+The maintainer clarified that the scene should feel alive continuously, and that changing modes should animate from the previous displayed form. Whole-painting warps and portrait dissolves were rejected because they made metal and background structures deform. Idle motion now moves only the foreground body, source-sampled light and small particles. Preserve the original fine lattice and mechanical detail; large geometric rings are not part of the selected reference.
 
 Use one visual release path: latch separation → upper/lower plates open in order → supports retreat → armor settles below the rising core. The 49-cel table contains Normal at 0, Manual only at 24 and Fixed only at 48. It is drawn deterministically from reused pieces, rather than generating unrelated images for each step. Armor edge lengths and thickness remain constant in 3D; projected faces retain the same source texture. Cutouts and glow are baked locally once, while the small pose table drives playback. See [the cel sheet](assets/07-mechanical-cels-v4.png) and [the recorded motion](assets/08-mechanical-motion-v4.webm).
 
 Reverse and direct travel use this same ordered table. Retargeting continues from the current release position, and reselecting the same target does not restart it. Timing is about 1.7 seconds per adjacent stage, up to 3.4 seconds for a direct full release/return. The original paintings are the identity and material reference; their independently illustrated end poses are not treated as a physically interchangeable sequence.
 
 The renderer uses active visual time, paused when hidden, and caps its ticker at 30 fps. Effects off and reduced motion settle immediately on the selected canonical cel. Initial loading starts at the selected condition without pretending a new configuration switch occurred. Selection drives a labelled preview; a confirmed checkpoint restore returns that preview to the restored condition. An animation callback never changes preparation, application or verification state.
+
+After accepting the mechanical motion, the maintainer requested a more radiant AI body in the TRUEFORM visual. Two source-shaped white-blue light layers strengthen as the final release completes and pulse slowly at rest. Keep the crisp lattice above the glow so its branches remain readable. This additional radiance is absent in Normal/Manual and disabled by effects off or reduced motion; it does not alter any part pose or configuration state.
 
 ## Everyday controls and development details
 

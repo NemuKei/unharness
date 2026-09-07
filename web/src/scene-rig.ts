@@ -103,7 +103,25 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
     glow.anchor.set((coreNucleus.x - coreBounds.x + margin) / glowTexture.width, (coreNucleus.y - coreBounds.y + margin) / glowTexture.height);
     glow.blendMode = "add";
     glow.alpha = 0.7;
-    entity.addChild(glow, core);
+    const makeRadiance = (spread: number, gain: number, tint: number) => {
+      const softening = new BlurFilter({ strength: spread, quality: 2 });
+      const brightness = new ColorMatrixFilter();
+      brightness.brightness(gain, false);
+      filters.push(softening, brightness);
+      const source = new Sprite(coreTexture);
+      source.tint = tint;
+      source.filters = [softening, brightness];
+      const padding = Math.ceil(spread * 4);
+      const texture = bake(source, new Rectangle(-padding, -padding, coreBounds.width + padding * 2, coreBounds.height + padding * 2));
+      const radiance = new Sprite(texture);
+      radiance.anchor.set((coreNucleus.x - coreBounds.x + padding) / texture.width, (coreNucleus.y - coreBounds.y + padding) / texture.height);
+      radiance.blendMode = "add";
+      return radiance;
+    };
+    // Light follows the original lattice silhouette; the sharp body stays on top.
+    const wideRadiance = makeRadiance(20, 2.5, 0x55aaff);
+    const closeRadiance = makeRadiance(7, 1.5, 0xc1e7ff);
+    entity.addChild(wideRadiance, closeRadiance, glow, core);
     stage.addChild(entity);
 
     const hardware = new Container({ sortableChildren: true });
@@ -190,6 +208,13 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
         entity.position.set(cel.core.x, cel.core.y + (effects ? Math.sin(time * 0.85) * 3.5 : 0));
         entity.scale.set(cel.core.scale);
         entity.alpha = cel.core.alpha * (effects ? 0.90 + Math.sin(time * 1.1) ** 2 * 0.10 : 1);
+        const reveal = Math.max(0, Math.min(1, (release - 1.5) / 0.5));
+        const radiance = effects ? reveal * reveal * (3 - 2 * reveal) : 0;
+        const breath = 0.88 + Math.sin(time * 0.85) * 0.12;
+        wideRadiance.visible = closeRadiance.visible = radiance > 0;
+        wideRadiance.alpha = radiance * breath * 0.65;
+        closeRadiance.alpha = radiance * breath * 0.65;
+        glow.alpha = 0.7 + radiance * 0.3;
         glint.y = 374 + bob;
         glint.alpha = cel.glint * (effects ? 0.80 + Math.sin(time * 1.3) ** 2 * 0.20 : 1);
         atmosphere.visible = effects;
