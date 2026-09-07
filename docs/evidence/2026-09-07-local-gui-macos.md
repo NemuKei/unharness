@@ -1,6 +1,6 @@
 # Local fixture GUI — macOS development evidence
 
-Date: 2026-09-07. Runtime revisions: backend through `6895473`, frontend through `0209039`. The final documentation and check-script commit does not extend the configuration scope.
+Date: 2026-09-07. Runtime revisions: backend through `6895473`, frontend through `7d297dd`. The final documentation and check-script commit does not extend the configuration scope.
 
 ## Environment and boundary
 
@@ -16,14 +16,14 @@ This is GUI and owned-fixture service evidence. It does not establish Windows be
 | Check | Observed result |
 | --- | --- |
 | `npm ci --ignore-scripts` | Locked dependencies installed successfully |
-| `node --test` | 147 passed, 0 failed, 0 skipped |
+| `node --test --test-reporter=dot` | 149 passed, 0 failed, 0 skipped |
 | `npm run check` | TypeScript and code-generation-disabled Pixi helper check passed |
 | `npm run build` | Vite production build passed, 746 modules, no build warnings |
 | Relative documentation links and `git diff --check` | Passed |
 
 The new HTTP/controller tests use real temporary records/fixtures. They cover exact-plan restoration, independent edits, exact receipt freshness, scope rejection, bounded paging, selected UUID recording lookup, Host/origin/client/token checks, body bounds, static confinement, serialized duplicate successes/failures, cache capacity, structured resume arguments, startup cleanup and partial-setup recovery. Existing recovery and desktop projection tests remain included.
 
-Six client tests exercise real local HTTP responses, no retry after uncertain POSTs, request generations, confirmed rejection, structured HTTP 500 uncertainty and successful apply/restore followed by a failed checkpoint read. Authentication/transport/invalid-response failures require state reconfirmation without discarding an already-confirmed receipt.
+Eight client tests exercise real local HTTP responses, no retry after uncertain POSTs, request generations, confirmed rejection, structured HTTP 500 uncertainty and successful apply/restore followed by a failed checkpoint read. Authentication/transport/invalid-response failures require state reconfirmation without discarding an already-confirmed receipt.
 
 ## Browser interaction
 
@@ -39,7 +39,7 @@ The built app was operated through the in-app browser, using its UI and DOM insp
 8. Confirmed one actual Pixi canvas, local scene-frame selection and no unhandled application/CSP warning/error in the normal flow. An initial strict-CSP incompatibility was fixed using Pixi's static-helper extension. During that initial failure, the HTML fallback still supported the actual apply/save/restore loop.
 9. Toggled effects off and exercised browser reduced-motion emulation. Static presentation was visible while configuration state remained separate. Emulation was reset. Hidden-tab ticker cleanup was reviewed in code; it was not independently profiled for resource consumption.
 
-After the final uncertainty-classification fix, the latest build was reloaded, previously saved records were visible and baseline application completed. The uncommon transport/authorization failure boundaries were verified by the focused HTTP client tests.
+After the final uncertainty/freshness fixes, the latest build was reloaded, previously saved records were visible and baseline application completed. A guarded external edit to the owned fixture reproduced a 409 conflict: the old matched/current presentation became historical, Save and recording actions were disabled, and the independent edit was preserved. Restoring the exact pre-test bytes and retrieving state again re-enabled operations. The client tests also induce an actual one-write fixture conflict with a pending journal. The uncommon transport/authorization failure boundaries were verified by the focused HTTP client tests.
 
 ## Visual comparison
 

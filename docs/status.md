@@ -43,7 +43,7 @@ The registered-loadout core at `29c13e2` now completes a synthetic native Mac CL
 
 The [saved-version desktop loop](evidence/2026-09-07-saved-loadout-desktop-macos.md) now connects the service to actual Mac tasks. A saved manual-only version and the restored baseline each produced a completed fresh task and a `matched-record` observation tied to the exact favorite/application. An older task from the same project was `unqualified-record`. A refresh was followed by a replacement application receipt before the baseline task; the original baseline favorite ID was reused. Recorded model/execution conditions matched, three selected personal locations were unchanged, and the retained fixture is at baseline. These are fixture-scoped recording observations, not full runtime/mode verification.
 
-The [local GUI check](evidence/2026-09-07-local-gui-macos.md) records 147 passing tests, type/CSP checks, a production build, and real in-app-browser select/apply/save/checkpoint-restore behavior. The same store was reopened after restart. Desktop, laptop and narrow viewports were inspected. This is fixture GUI evidence; no new real desktop task or Windows run was added.
+The [local GUI check](evidence/2026-09-07-local-gui-macos.md) records 149 passing tests, type/CSP checks, a production build, and real in-app-browser select/apply/save/checkpoint-restore behavior. The same store was reopened after restart. Desktop, laptop and narrow viewports were inspected. This is fixture GUI evidence; no new real desktop task or Windows run was added.
 
 ## Next useful work
 
