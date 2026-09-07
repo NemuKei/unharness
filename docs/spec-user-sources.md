@@ -27,6 +27,8 @@ Ship `unharness-minimal-v1` with fixed UTF-8/LF content and SHA-256 identity:
 
 Record the guide ID, content hash, review date and official Codex/Claude guide references. It is Unharness-authored comparison material, not an official universal template or a performance promise. Show it in the UNSEAL customization disclosure. No model call generates or rewrites it during selection, planning or application.
 
+For this initial version, `reviewedOn` is `2026-09-08`; references are `https://learn.chatgpt.com/guides/best-practices` and `https://code.claude.com/docs/en/best-practices`.
+
 TRUEFORM writes a nonempty inert `<!-- -->\n` override when selected global optional instructions should be absent. An empty override would permit fallback. Normal restores the exact original override content or absence; the base AGENTS.md stays unchanged and guarded.
 
 ## Compilation
