@@ -847,3 +847,425 @@ nativeTest(
     }
   }
 );
+
+// Synthetic ownership is confined to lstat views of freshly owned test files.
+// No foreign uid/gid is ever passed to an OS ownership-changing operation.
+async function withOwnershipView(t, entries, run) {
+  const { default: fs } = await import('node:fs/promises');
+  const { syncBuiltinESMExports } = await import('node:module');
+  const original = fs.lstat;
+  const view = t.mock.method(fs, 'lstat', async (...args) => {
+    const info = await original(...args);
+    const override = entries.get(String(args[0]));
+    if (override) Object.assign(info, override);
+    return info;
+  });
+  syncBuiltinESMExports();
+  try {
+    return await run();
+  } finally {
+    view.mock.restore();
+    syncBuiltinESMExports();
+  }
+}
+function unsupportedOwnershipCases() {
+  const groups = new Set([process.getegid(), ...process.getgroups()]);
+  let gid = 2147483647;
+  while (groups.has(gid)) gid -= 1;
+  return [
+    ['foreign uid', { uid: process.geteuid() === 0 ? 1 : 0 }],
+    ['unsupported gid', { gid }]
+  ];
+}
+for (const [label, ownership] of process.platform === 'darwin'
+  ? unsupportedOwnershipCases()
+  : []) {
+  test(`ownership admission rejects ${label} on the selected override before reservation`, async (t) => {
+    const s = await setup(t);
+    const override = join(s.context.codexHome, 'AGENTS.override.md');
+    await writeFile(override, '# Owned optional override\n', { mode: 0o600 });
+    await withOwnershipView(t, new Map([[override, ownership]]), async () => {
+      const { captureFile } = await import('../src/sources/platform.mjs');
+      assert.equal(
+        (await captureFile(override)).text,
+        '# Owned optional override\n'
+      );
+      const d = await service.discoverUserSources(s.context);
+      assert.equal(d.instructions.eligible, false);
+      assert.equal(d.instructions.availability.unseal, false);
+      assert.equal(d.instructions.availability.trueform, false);
+      assert.equal(d.instructions.reason, 'unsupported-metadata');
+      await assert.rejects(
+        service.registerUserSources({
+          context: s.context,
+          discoveryId: d.discoveryId,
+          instructionsOptional: true,
+          selectedSkillIds: [],
+          userAddedOptional: true
+        }),
+        { kind: 'unsupported-source' }
+      );
+      const { lstat } = await import('node:fs/promises');
+      await assert.rejects(
+        lstat(join(s.context.codexHome, '.unharness-user-sources')),
+        { code: 'ENOENT' }
+      );
+    });
+  });
+  test(`ownership admission makes a ${label} policy manual-unavailable but permits config disablement`, async (t) => {
+    const s = await setup(t);
+    const { mkdir } = await import('node:fs/promises');
+    const dir = join(s.context.codexHome, 'skills/example/agents');
+    await mkdir(dir);
+    const policy = join(dir, 'openai.yaml');
+    await writeFile(policy, 'policy:\n  allow_implicit_invocation: true\n', {
+      mode: 0o600
+    });
+    await withOwnershipView(t, new Map([[policy, ownership]]), async () => {
+      s.discovery = await service.discoverUserSources(s.context);
+      const skill = s.discovery.skills.find((row) => row.label === 'example');
+      assert.equal(skill.eligible, true);
+      assert.equal(skill.availability.unseal, false);
+      assert.equal(skill.availability.trueform, true);
+      assert.equal(skill.reason, 'unsupported-metadata');
+      const before = await readSourceProfileFiles(s.context),
+        r = await register(s);
+      await assert.rejects(
+        service.planUserMode({
+          workspace: r.workspace,
+          mode: 'unseal',
+          selectedIds: [skill.id]
+        }),
+        { kind: 'unsupported-source' }
+      );
+      for (const mode of ['trueform', 'normal']) {
+        const p = await service.planUserMode({
+          workspace: r.workspace,
+          mode,
+          ...(mode === 'trueform' ? { selectedIds: [skill.id] } : {})
+        });
+        await service.applyUserPlan({
+          workspace: r.workspace,
+          planId: p.planId
+        });
+      }
+      assert.deepEqual(await readSourceProfileFiles(s.context), before);
+    });
+  });
+  test(`ownership admission retains ${label} config while allowing instruction and manual-policy controls`, async (t) => {
+    const s = await setup(t),
+      config = join(s.context.codexHome, 'config.toml');
+    await withOwnershipView(t, new Map([[config, ownership]]), async () => {
+      s.discovery = await service.discoverUserSources(s.context);
+      const skill = s.discovery.skills.find((row) => row.label === 'example');
+      assert.equal(s.discovery.instructions.eligible, true);
+      assert.equal(skill.eligible, true);
+      assert.equal(skill.availability.unseal, true);
+      assert.equal(skill.availability.trueform, false);
+      const before = await readSourceProfileFiles(s.context),
+        r = await register(s);
+      const manual = await service.planUserMode({
+        workspace: r.workspace,
+        mode: 'unseal'
+      });
+      await service.applyUserPlan({
+        workspace: r.workspace,
+        planId: manual.planId
+      });
+      const absent = await service.planUserMode({
+        workspace: r.workspace,
+        mode: 'trueform',
+        selectedIds: [s.discovery.instructions.id]
+      });
+      await service.applyUserPlan({
+        workspace: r.workspace,
+        planId: absent.planId
+      });
+      const normal = await service.planUserMode({
+        workspace: r.workspace,
+        mode: 'normal'
+      });
+      await service.applyUserPlan({
+        workspace: r.workspace,
+        planId: normal.planId
+      });
+      assert.deepEqual(await readSourceProfileFiles(s.context), before);
+    });
+  });
+}
+test('ownership admission keeps retained foreign-owned base instructions and Skill bodies readable', async (t) => {
+  const s = await setup(t),
+    foreign = { uid: process.geteuid() === 0 ? 1 : 0 };
+  await withOwnershipView(
+    t,
+    new Map([
+      [join(s.context.codexHome, 'AGENTS.md'), foreign],
+      [join(s.context.codexHome, 'skills/example/SKILL.md'), foreign]
+    ]),
+    async () => {
+      s.discovery = await service.discoverUserSources(s.context);
+      assert.equal(s.discovery.instructions.eligible, true);
+      assert.equal(
+        s.discovery.skills.find((row) => row.label === 'example').availability
+          .unseal,
+        true
+      );
+      const before = await readSourceProfileFiles(s.context),
+        r = await register(s);
+      for (const mode of ['unseal', 'trueform', 'normal']) {
+        const p = await service.planUserMode({ workspace: r.workspace, mode });
+        await service.applyUserPlan({
+          workspace: r.workspace,
+          planId: p.planId
+        });
+      }
+      assert.deepEqual(await readSourceProfileFiles(s.context), before);
+    }
+  );
+});
+for (const label of ['foreign uid', 'unsupported gid'])
+  test(`ownership preflight rejects existing plans after ${label} principal change before checkpoint or stage`, async (t) => {
+    const s = await setup(t),
+      r = await register(s),
+      p = await service.planUserMode({
+        workspace: r.workspace,
+        mode: 'unseal'
+      });
+    const methods = [];
+    if (label === 'foreign uid')
+      methods.push(t.mock.method(process, 'geteuid', () => 2147483647));
+    else {
+      methods.push(t.mock.method(process, 'getegid', () => 2147483647));
+      methods.push(t.mock.method(process, 'getgroups', () => []));
+    }
+    try {
+      await assert.rejects(
+        service.applyUserPlan({ workspace: r.workspace, planId: p.planId }),
+        { kind: 'unsupported-metadata' }
+      );
+      const { readdir, lstat } = await import('node:fs/promises');
+      await assert.rejects(lstat(join(r.workspace, 'pending.json')), {
+        code: 'ENOENT'
+      });
+      assert.deepEqual(
+        await readdir(join(r.workspace, 'records/checkpoint')),
+        []
+      );
+      assert.equal(
+        (await readdir(s.context.codexHome)).some((name) =>
+          name.startsWith('AGENTS.override.md.unharness-')
+        ),
+        false
+      );
+      assert.deepEqual(
+        await readSourceProfileFiles(s.context),
+        s.originalFiles
+      );
+    } finally {
+      methods.forEach((method) => method.mock.restore());
+    }
+  });
+
+for (const [label, ownership] of process.platform === 'darwin'
+  ? unsupportedOwnershipCases()
+  : []) {
+  test(`ownership admission rejects ${label} when neither selected Skill control is reproducible`, async (t) => {
+    const s = await setup(t),
+      { mkdir, lstat } = await import('node:fs/promises');
+    const dir = join(s.context.codexHome, 'skills/example/agents');
+    await mkdir(dir);
+    const policy = join(dir, 'openai.yaml');
+    await writeFile(policy, 'policy:\n  allow_implicit_invocation: true\n', {
+      mode: 0o600
+    });
+    await withOwnershipView(
+      t,
+      new Map([
+        [policy, ownership],
+        [join(s.context.codexHome, 'config.toml'), ownership]
+      ]),
+      async () => {
+        const d = await service.discoverUserSources(s.context),
+          skill = d.skills.find((row) => row.label === 'example');
+        assert.equal(skill.eligible, false);
+        assert.equal(skill.availability.unseal, false);
+        assert.equal(skill.availability.trueform, false);
+        await assert.rejects(
+          service.registerUserSources({
+            context: s.context,
+            discoveryId: d.discoveryId,
+            instructionsOptional: false,
+            selectedSkillIds: [skill.id],
+            userAddedOptional: true
+          }),
+          { kind: 'unsupported-source' }
+        );
+        await assert.rejects(
+          lstat(join(s.context.codexHome, '.unharness-user-sources')),
+          { code: 'ENOENT' }
+        );
+      }
+    );
+  });
+}
+test('ownership admission preserves a foreign-owned override in a Skill-only registration', async (t) => {
+  const s = await setup(t),
+    override = join(s.context.codexHome, 'AGENTS.override.md');
+  await writeFile(override, '# Retained global requirements\n', {
+    mode: 0o600
+  });
+  await withOwnershipView(
+    t,
+    new Map([[override, { uid: process.geteuid() === 0 ? 1 : 0 }]]),
+    async () => {
+      const d = await service.discoverUserSources(s.context),
+        skill = d.skills.find((row) => row.label === 'example');
+      assert.equal(d.instructions.eligible, false);
+      assert.equal(skill.eligible, true);
+      const before = await readSourceProfileFiles(s.context);
+      const r = await service.registerUserSources({
+        context: s.context,
+        discoveryId: d.discoveryId,
+        instructionsOptional: false,
+        selectedSkillIds: [skill.id],
+        userAddedOptional: true
+      });
+      for (const mode of ['unseal', 'trueform', 'normal']) {
+        const p = await service.planUserMode({ workspace: r.workspace, mode });
+        await service.applyUserPlan({
+          workspace: r.workspace,
+          planId: p.planId
+        });
+      }
+      assert.deepEqual(await readSourceProfileFiles(s.context), before);
+    }
+  );
+});
+test('ownership admission keeps disabled Skills unchanged when their policy and config are read-only', async (t) => {
+  const s = await setup(t),
+    { mkdir } = await import('node:fs/promises');
+  const dir = join(s.context.codexHome, 'skills/example/agents');
+  await mkdir(dir);
+  const policy = join(dir, 'openai.yaml'),
+    config = join(s.context.codexHome, 'config.toml');
+  await writeFile(policy, 'policy:\n  allow_implicit_invocation: true\n', {
+    mode: 0o600
+  });
+  await writeFile(
+    config,
+    `[[skills.config]]\npath = ${JSON.stringify(join(s.context.codexHome, 'skills/example/SKILL.md'))}\nenabled = false\n`,
+    { mode: 0o600 }
+  );
+  const foreign = { uid: process.geteuid() === 0 ? 1 : 0 };
+  await withOwnershipView(
+    t,
+    new Map([
+      [policy, foreign],
+      [config, foreign]
+    ]),
+    async () => {
+      const d = await service.discoverUserSources(s.context),
+        skill = d.skills.find((row) => row.label === 'example');
+      assert.equal(skill.enabled, false);
+      assert.equal(skill.eligible, true);
+      assert.equal(skill.availability.unseal, true);
+      assert.equal(skill.availability.trueform, false);
+      const before = await readSourceProfileFiles(s.context);
+      const r = await service.registerUserSources({
+        context: s.context,
+        discoveryId: d.discoveryId,
+        instructionsOptional: false,
+        selectedSkillIds: [skill.id],
+        userAddedOptional: true
+      });
+      const p = await service.planUserMode({
+        workspace: r.workspace,
+        mode: 'unseal'
+      });
+      assert.deepEqual(p.changedFiles, []);
+      await service.applyUserPlan({ workspace: r.workspace, planId: p.planId });
+      assert.deepEqual(await readSourceProfileFiles(s.context), before);
+    }
+  );
+});
+test('ownership preflight preserves a pending recovery until its ownership can be reproduced', async (t) => {
+  const s = await setup(t),
+    r = await register(s),
+    p = await service.planUserMode({ workspace: r.workspace, mode: 'unseal' });
+  await interrupt(r.workspace, p.planId, 'write-1');
+  const beforeRecovery = await readSourceProfileFiles(s.context);
+  const uid = t.mock.method(process, 'geteuid', () => 2147483647);
+  try {
+    await assert.rejects(
+      service.recoverUserSources({ workspace: r.workspace }),
+      { kind: 'unsupported-metadata' }
+    );
+    assert.deepEqual(await readSourceProfileFiles(s.context), beforeRecovery);
+    assert.equal(
+      (await service.userSourceState({ workspace: r.workspace })).recovery
+        .pending,
+      true
+    );
+  } finally {
+    uid.mock.restore();
+  }
+  assert.equal(
+    (await service.recoverUserSources({ workspace: r.workspace })).status,
+    'restored'
+  );
+  assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
+});
+
+for (const label of ['foreign uid', 'unsupported gid'])
+  test(`ownership stage guard rejects ${label} principal changes before creating a file`, async (t) => {
+    const s = await setup(t),
+      { captureFile, writeComplete } = await import(
+        '../src/sources/platform.mjs'
+      );
+    const file = await captureFile(join(s.context.codexHome, 'config.toml'));
+    const methods =
+      label === 'foreign uid'
+        ? [t.mock.method(process, 'geteuid', () => 2147483647)]
+        : [
+            t.mock.method(process, 'getegid', () => 2147483647),
+            t.mock.method(process, 'getgroups', () => [])
+          ];
+    try {
+      const stage = join(s.parent, 'never-created.stage');
+      await assert.rejects(writeComplete(stage, file), {
+        kind: 'unsupported-metadata'
+      });
+      const { lstat } = await import('node:fs/promises');
+      await assert.rejects(lstat(stage), { code: 'ENOENT' });
+    } finally {
+      methods.forEach((method) => method.mock.restore());
+    }
+  });
+test('ownership predicate admits effective and supplementary groups without changing file metadata', async (t) => {
+  const s = await setup(t),
+    { captureFile, canReproduceOwnership } = await import(
+      '../src/sources/platform.mjs'
+    );
+  const file = await captureFile(join(s.context.codexHome, 'config.toml'));
+  const group = file.meta.gid;
+  const primary = t.mock.method(process, 'getegid', () => group),
+    groups = t.mock.method(process, 'getgroups', () => []);
+  try {
+    assert.equal(canReproduceOwnership(file), true);
+  } finally {
+    primary.mock.restore();
+    groups.mock.restore();
+  }
+  const otherPrimary = t.mock.method(process, 'getegid', () => 2147483647),
+    supplementary = t.mock.method(process, 'getgroups', () => [group]);
+  try {
+    assert.equal(canReproduceOwnership(file), true);
+  } finally {
+    otherPrimary.mock.restore();
+    supplementary.mock.restore();
+  }
+  assert.deepEqual(
+    await captureFile(join(s.context.codexHome, 'config.toml')),
+    file
+  );
+});

@@ -14,7 +14,8 @@ import {
   pathsFor,
   validateFiles,
   hash,
-  captureRegistered
+  captureRegistered,
+  assertRegistrationOwnership
 } from './capture.mjs';
 import { fail } from './errors.mjs';
 export const ownerPath = (home) => join(home, '.unharness-user-sources');
@@ -172,6 +173,7 @@ export async function openWorkspace(workspace) {
   return { workspace, scopeId: manifest.scopeId, reg, state, owner };
 }
 export async function initializeWorkspace(d, selected, instructionsOptional) {
+  assertRegistrationOwnership(d, selected, instructionsOptional);
   const owner = ownerPath(d.context.codexHome);
   try {
     await mkdir(owner, { mode: 0o700 });

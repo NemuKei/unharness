@@ -11,7 +11,9 @@ import {
   unlink,
   mkdir,
   rmdir,
-  canonical
+  canonical,
+  assertWritableOwnership,
+  assertOwnershipChanges
 } from './platform.mjs';
 import {
   readJson,
@@ -180,6 +182,7 @@ export async function transact(w, plan, planId) {
   const keys = changes(w, before, after),
     paths = pathsFor(w.reg);
   await assertCurrent(w, before);
+  assertOwnershipChanges(before, after);
   const checkpointId = await record(w.workspace, 'checkpoint', {
     role: 'checkpoint',
     scopeId: w.scopeId,
@@ -228,6 +231,8 @@ export async function transact(w, plan, planId) {
   await assertCurrent(active, before);
   for (let i = 0; i < keys.length; i++) {
     const k = keys[i];
+    assertWritableOwnership(before[k]);
+    assertWritableOwnership(after[k]);
     await checkParents(w.reg);
     if (!equal(await captureFile(paths[k]), before[k])) fail('source-conflict');
     if (after[k] === null) await unlink(paths[k]);
@@ -375,6 +380,7 @@ export async function recoverTransaction(w) {
     if (j.keys.includes(k)) {
       if (!equal(current, before[k]) && !equal(current, after[k]))
         fail('source-conflict');
+      assertOwnershipChanges({ file: current }, { file: before[k] });
     } else if (!equal(current, before[k])) dependencyConflicts.push(k);
   }
   for (const k of j.keys) {

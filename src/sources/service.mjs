@@ -27,7 +27,7 @@ import {
   transact,
   recoverTransaction
 } from './transaction.mjs';
-import { canonical, equal } from './platform.mjs';
+import { canonical, equal, assertOwnershipChanges } from './platform.mjs';
 import {
   fail,
   privateCall,
@@ -154,6 +154,7 @@ async function buildPlan(
   if (['unseal', 'trueform'].includes(mode)) await freshCatalog(w.reg);
   const before = await loadSnapshot(w.workspace, w.reg, w.state.snapshotId);
   await assertCurrent(w, before);
+  assertOwnershipChanges(before, after);
   const afterId = await saveSnapshot(w.workspace, w.reg, after);
   const plan = {
     role: 'plan',

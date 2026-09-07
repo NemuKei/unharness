@@ -4,7 +4,9 @@ import {
   captureFile,
   parentBinding,
   equal,
-  defaultMetadata
+  defaultMetadata,
+  canReproduceOwnership,
+  assertWritableOwnership
 } from './platform.mjs';
 import { fail, verification } from './errors.mjs';
 const ordered = (x) =>
@@ -93,18 +95,26 @@ export async function discoveryCapture(input) {
   const instructionId =
     'instructions-' +
     hash({ paths, base: files.base, override: files.override });
+  const instructionOwnership = canReproduceOwnership(files.override);
+  const configOwnership = canReproduceOwnership(files.config);
   const instructions = {
     id: instructionId,
     label: 'Global Codex instructions',
     path: effective ? paths[effective] : paths.override,
     effective,
-    eligible: !!effective && !globalReason,
+    eligible: !!effective && !globalReason && instructionOwnership,
     availability: {
-      normal: !globalReason,
-      unseal: !!effective && !globalReason,
-      trueform: !!effective && !globalReason
+      normal: !globalReason && instructionOwnership,
+      unseal: !!effective && !globalReason && instructionOwnership,
+      trueform: !!effective && !globalReason && instructionOwnership
     },
-    reason: globalReason ?? (effective ? null : 'no-effective-instructions')
+    reason:
+      globalReason ??
+      (!instructionOwnership
+        ? 'unsupported-metadata'
+        : effective
+          ? null
+          : 'no-effective-instructions')
   };
   const skills = [];
   for (const s of cat.skills) {
@@ -153,6 +163,14 @@ export async function discoveryCapture(input) {
         reason = e.kind ?? 'unsupported-source';
         if (e.kind !== 'unsupported-skill-policy') eligible = false;
       }
+    const policyOwnership = canReproduceOwnership(policy);
+    const unsealAvailable =
+      eligible && (!s.enabled || (manual && policyOwnership));
+    const trueformAvailable = eligible && configOwnership;
+    const ownershipLimited =
+      eligible &&
+      ((!policyOwnership && s.enabled && manual) || !configOwnership);
+    eligible = eligible && (unsealAvailable || trueformAvailable);
     const sourceDigest = hash({ body, policy, format });
     const id = 'skill-' + hash({ identity, sourceDigest });
     skills.push({
@@ -166,10 +184,16 @@ export async function discoveryCapture(input) {
       eligible,
       availability: {
         normal: eligible,
-        unseal: eligible && (!s.enabled || manual),
-        trueform: eligible
+        unseal: unsealAvailable,
+        trueform: trueformAvailable
       },
-      reason: reason ?? (manual ? null : 'manual-control-unavailable'),
+      reason:
+        reason ??
+        (ownershipLimited
+          ? 'unsupported-metadata'
+          : manual
+            ? null
+            : 'manual-control-unavailable'),
       identity,
       body,
       policy,
@@ -288,4 +312,18 @@ export async function targetFile(reg, key, text, normal) {
     text,
     meta: normal[key]?.meta ?? (await defaultMetadata(reg.context.codexHome))
   };
+}
+
+// Recheck the current principal immediately before creating a reservation. A
+// policy retained read-only by TRUEFORM is not an ownership admission failure.
+export function assertRegistrationOwnership(d, selected, instructionsOptional) {
+  if (instructionsOptional) assertWritableOwnership(d.files.override);
+  for (const skill of d.skills.filter((s) => selected.includes(s.id))) {
+    const manual =
+      skill.availability.unseal &&
+      (!skill.enabled || canReproduceOwnership(skill.policy));
+    const disable =
+      skill.availability.trueform && canReproduceOwnership(d.files.config);
+    if (!manual && !disable) fail('unsupported-metadata');
+  }
 }

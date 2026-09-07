@@ -21,6 +21,35 @@ import { isDeepStrictEqual, promisify } from 'node:util';
 import { fail } from './errors.mjs';
 const exec = promisify(execFile);
 export const equal = isDeepStrictEqual;
+// Capture remains ownership-neutral for retained read-only dependencies.
+// Publication can reproduce only the effective user's ownership and a group
+// currently available to that process. Root receives no broader implicit scope.
+export function canReproduceOwnership(file) {
+  if (file === null) return true;
+  if (
+    !file?.meta ||
+    typeof process.geteuid !== 'function' ||
+    typeof process.getegid !== 'function' ||
+    typeof process.getgroups !== 'function'
+  )
+    return false;
+  return (
+    file.meta.uid === process.geteuid() &&
+    (file.meta.gid === process.getegid() ||
+      process.getgroups().includes(file.meta.gid))
+  );
+}
+export function assertWritableOwnership(file) {
+  if (!canReproduceOwnership(file)) fail('unsupported-metadata');
+}
+export function assertOwnershipChanges(before, after) {
+  for (const [key, file] of Object.entries(before)) {
+    if (equal(file, after[key])) continue;
+    // Both sides must remain reproducible, including rollback of deletion.
+    assertWritableOwnership(file);
+    assertWritableOwnership(after[key]);
+  }
+}
 export async function canonical(path) {
   if (typeof path !== 'string' || !isAbsolute(path) || resolve(path) !== path)
     fail('source-redirection');
@@ -118,6 +147,7 @@ export async function defaultMetadata(parent) {
   }
 }
 export async function writeComplete(path, file) {
+  assertWritableOwnership(file);
   const h = await open(path, 'wx', 0o600);
   try {
     await h.writeFile(file.text, 'utf8');
