@@ -1,3 +1,4 @@
+import './pixi-csp';
 import { Application, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
 import recipe from '../assets/hangar-v1.json';
 import artwork from '../assets/hangar-states-v1.png';
@@ -7,6 +8,7 @@ export interface Scene { setCondition: (condition: FixtureCase) => void; setEffe
 export async function createScene(host: HTMLElement, signal: AbortSignal): Promise<Scene | null> {
   const app = new Application();
   let initialized = false;
+  let phase = 'renderer-init';
   let disposed = false;
   let texture: Texture | undefined;
   const frames: Partial<Record<FixtureCase, Texture>> = {};
@@ -21,8 +23,10 @@ export async function createScene(host: HTMLElement, signal: AbortSignal): Promi
     await app.init({ width: recipe.frameWidth, height: recipe.frameHeight, backgroundAlpha: 0, antialias: false, autoStart: false, preference: 'webgl', resolution: 1 });
     initialized = true;
     if (signal.aborted) { dispose(); return null; }
+    phase = 'artwork-decode';
     const image = new Image(); image.src = artwork; await image.decode();
     if (signal.aborted) { dispose(); return null; }
+    phase = 'scene-setup';
     texture = Texture.from(image); texture.source.scaleMode = 'nearest';
     for (const [key, origin] of Object.entries(recipe.frames)) frames[key as FixtureCase] = new Texture({ source: texture.source, frame: new Rectangle(origin.x, origin.y, recipe.frameWidth, recipe.frameHeight) });
     const sprite = new Sprite(frames.baseline!); app.stage.addChild(sprite);
@@ -46,5 +50,9 @@ export async function createScene(host: HTMLElement, signal: AbortSignal): Promi
       destroy: dispose,
     };
     scene.setEffects(false); return scene;
-  } catch (error) { dispose(); throw error; }
+  } catch (error) {
+    // Fixed phase labels only: never expose source bodies, paths or raw error text.
+    console.warn(`[Unharness graphics] ${phase} failed; static fallback retained.`);
+    dispose(); throw error;
+  }
 }
