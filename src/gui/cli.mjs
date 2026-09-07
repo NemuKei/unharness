@@ -91,7 +91,10 @@ export async function guiMain(argv, {
       try { selected = await createDemo({ parent }); }
       catch (error) { recovery = recoveryProjection(demoWorkspaceRecovery(error)); throw error; }
       recovery = recoveryProjection(selected);
-    } else selected = { store: resolve(options.store), scopeId: options.scopeId };
+    } else {
+      selected = { store: resolve(options.store), scopeId: options.scopeId };
+      recovery = recoveryProjection(selected);
+    }
     const state = await createController(selected).then(controller => controller.state());
     recovery = recoveryProjection(state);
     running = await startServer({ ...selected, assetsDirectory, port: options.port });

@@ -400,3 +400,24 @@ test('demo failure after a condition change is safely reported with resumable ar
   assert.deepEqual(result.recovery.resumeArgv, buildResumeArgv(result.recovery));
   assert.equal((await readDesktopFixture(result.recovery.fixture)).state.condition, 'manual-only');
 });
+
+test('resume startup retains store and scope recovery when fixture state is corrupt', async t => {
+  const parent = await temporary(t);
+  const demo = await createDemoWorkspace({ parent });
+  const assetsDirectory = await assets(t, parent);
+  await writeFile(join(demo.fixture, 'fixture.json'), 'PRIVATE CORRUPT STATE\n');
+  let stderr = '';
+  const exitCode = await guiMain(['gui', '--store', demo.store, '--scope', demo.scopeId], {
+    assetsDirectory,
+    startServer: async () => { assert.fail('server must not start after fixture validation fails'); },
+    stdout: { write() {} },
+    stderr: { write(value) { stderr += value; } },
+  });
+  assert.equal(exitCode, 1);
+  assert.ok(!stderr.includes('PRIVATE CORRUPT STATE'));
+  const result = JSON.parse(stderr);
+  assert.equal(result.error.kind, 'invalid-fixture');
+  assert.equal(result.recovery.store, demo.store);
+  assert.equal(result.recovery.scopeId, demo.scopeId);
+  assert.deepEqual(result.recovery.resumeArgv, buildResumeArgv(result.recovery));
+});
