@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createReleaseMotion, releasePose } from '../src/scene-motion.ts';
+import { createReleaseMotion } from '../src/scene-motion.ts';
 
 test('a mode change moves through intermediate poses and reaches its destination', () => {
   const motion = createReleaseMotion('baseline');
@@ -12,24 +12,12 @@ test('a mode change moves through intermediate poses and reaches its destination
   assert.equal(motion.sample(5).moving, false);
 });
 
-test('release opens the shell before lifting the core, with continuous stage boundaries', () => {
-  const opening = releasePose(0.65);
-  assert.ok(opening.shellX > 0);
-  assert.equal(opening.coreY, 0);
-  assert.equal(releasePose(1.5).open, 1);
-  assert.ok(releasePose(1.5).coreY < 0);
-  const before = releasePose(1 - 1e-6);
-  const after = releasePose(1 + 1e-6);
-  for (const key of Object.keys(before)) assert.ok(Math.abs(before[key] - after[key]) < 0.001, key);
-});
-
 test('reverse and direct transitions start from the displayed release state', () => {
   const motion = createReleaseMotion('fixed-only');
   assert.equal(motion.sample(0).release, 2);
   motion.retarget('baseline', 0);
   const middle = motion.sample(1.2);
   assert.ok(middle.release > 1 && middle.release < 2);
-  assert.equal(releasePose(middle.release).open, 1);
   assert.equal(motion.sample(10).release, 0);
   motion.retarget('fixed-only', 10);
   assert.equal(motion.sample(10).release, 0);

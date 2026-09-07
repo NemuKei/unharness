@@ -100,7 +100,7 @@ The visual direction uses a pixel-art machine hangar: the outer equipment opens,
 
 *Original static design concept. The current fixture GUI implements a smaller, explicitly labelled diagnostic flow.*
 
-The local GUI uses PixiJS for the equipment scene and effects, with React and HTML/CSS for controls and readable state. It preserves the selected original artwork's armor, cables and branching core, adds continuous idle movement, and smoothly interpolates the three portraits from the displayed state. Reverse travel follows the same path. All playback is local, with no image generation. Technical recording/ID fields are available in a collapsed development section. See [the rendering design](docs/design.md#selected-rendering-stack) and [bundled artwork](docs/gui-artwork.md). Random appearance assembly and original-form creation remain future work.
+The local GUI uses PixiJS for the equipment scene and effects, with React and HTML/CSS for controls and readable state. It reuses the original armor, supports and branching core in a 49-cel sequence against fixed architecture. Plates open about their seams, supports withdraw and the core rises; reverse travel follows the same sequence. Foreground idle motion remains continuous. All playback is local, with no image generation. Technical recording/ID fields are available in a collapsed development section. See [the rendering design](docs/design.md#selected-rendering-stack) and [bundled artwork](docs/gui-artwork.md). Random appearance assembly and original-form creation remain future work.
 
 Equipment can also be shown as supportive armor or a resonating frame when a comparison shows it fits the work. Unmeasured setups remain neutral, and the illustration stays separate from the measured result.
 

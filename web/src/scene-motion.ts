@@ -40,21 +40,3 @@ export function createReleaseMotion(initial: FixtureCase) {
     },
   };
 }
-
-/** The core can rise only after the shell is open; reversing uses the same path. */
-export function releasePose(release: number) {
-  const open = ease(clamp(release));
-  const rise = ease(clamp(release - 1));
-  return {
-    open,
-    rise,
-    shellX: 72 * open + 38 * rise,
-    shellY: 112 * rise,
-    shellRotation: 0.08 * open + 0.32 * rise,
-    shellScale: 1 - 0.17 * rise,
-    coreY: 0 - 125 * rise,
-    coreScale: 1 + 0.1 * rise,
-    coreOpacity: open,
-    haloOpacity: 0.18 * open + 0.58 * rise,
-  };
-}

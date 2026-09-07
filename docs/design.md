@@ -28,7 +28,7 @@ Suggested animation sequence: casing opens → a brief visual pause → rings an
 
 ## Selected rendering stack
 
-On 2026-09-07 the maintainer selected **PixiJS** for the first GUI and explicitly accepted the additional dependencies. The [local fixture GUI](gui.md) animates the approved three-state painting with textured meshes, continuous idle motion and directional transitions. The maintainer preferred the original armor, thick cables and fine branching entity over the separately regenerated v2 parts. The [bundled artwork](gui-artwork.md) now retains those original pixels; comparison views and the full appearance/collection system remain future work.
+On 2026-09-07 the maintainer selected **PixiJS** for the first GUI and explicitly accepted the additional dependencies. The [local fixture GUI](gui.md) now draws 49 coherent poses from the same original armor, supports and branching entity. Each armor piece folds about its seam as a rigid prism; the architecture stays fixed. The [bundled artwork](gui-artwork.md) preserves original foreground material and uses an empty background plate where the apparatus previously hid the wall. Comparison views and the full appearance/collection system remain future work.
 
 | Responsibility | Selected approach |
 | --- | --- |
@@ -48,11 +48,13 @@ Technical references: [PixiJS introduction](https://pixijs.com/8.x/guides/gettin
 
 ## Continuous motion and directional transitions
 
-The maintainer clarified that the scene should feel alive continuously, and that changing modes should animate from the previous displayed form. The idle scene gently moves the entity and nearby flexible equipment, pulses light sampled from the original artwork and drifts small particles through the hangar. Preserve the original fine lattice and mechanical detail; large added halos and newly invented armor shapes are not part of the selected reference.
+The maintainer clarified that the scene should feel alive continuously, and that changing modes should animate from the previous displayed form. Whole-painting warps and portrait dissolves were rejected because they made metal and background structures deform. Idle motion now moves only the foreground body, source-sampled light and small particles. Preserve the original fine lattice and mechanical detail; broad added halos are not part of the selected reference.
 
-Use one visual release path: closed shell → open shell with core inside → core lifted above the lowered shell. Textured mesh displacement and a short blend between adjacent source portraits connect those poses; this is a 2.5D interpolation, not a separate physical hinge simulation. Keep mesh boundaries fixed and avoid folded geometry. Reverse and direct travel follow the same path. Retargeting starts from the displayed intermediate pose, and reselecting the same target does not restart it. Timing is about 1.7 seconds per full adjacent stage, up to 3.4 seconds for a direct full release/return.
+Use one visual release path: latch separation → upper/lower plates open in order → supports retreat → armor settles below the rising core. The 49-cel table contains Normal at 0, Manual only at 24 and Fixed only at 48. It is drawn deterministically from reused pieces, rather than generating unrelated images for each step. Armor edge lengths and thickness remain constant in 3D; projected faces retain the same source texture. Cutouts and glow are baked locally once, while the small pose table drives playback. See [the cel sheet](assets/07-mechanical-cels-v4.png) and [the recorded motion](assets/08-mechanical-motion-v4.webm).
 
-The renderer uses active visual time, paused when hidden, and caps its ticker at 30 fps. Effects off and reduced motion settle immediately on the selected original portrait with unchanged mesh coordinates. Initial loading starts at the selected condition without pretending a new configuration switch occurred. Selection drives a labelled preview; a confirmed checkpoint restore returns that preview to the restored condition. An animation callback never changes preparation, application or verification state.
+Reverse and direct travel use this same ordered table. Retargeting continues from the current release position, and reselecting the same target does not restart it. Timing is about 1.7 seconds per adjacent stage, up to 3.4 seconds for a direct full release/return. The original paintings are the identity and material reference; their independently illustrated end poses are not treated as a physically interchangeable sequence.
+
+The renderer uses active visual time, paused when hidden, and caps its ticker at 30 fps. Effects off and reduced motion settle immediately on the selected canonical cel. Initial loading starts at the selected condition without pretending a new configuration switch occurred. Selection drives a labelled preview; a confirmed checkpoint restore returns that preview to the restored condition. An animation callback never changes preparation, application or verification state.
 
 ## Everyday controls and development details
 

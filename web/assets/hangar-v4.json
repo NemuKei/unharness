@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "artPackVersion": "hangar-v4-mechanical-cels",
+  "worldSize": 724,
+  "source": {
+    "file": "hangar-states-v1.png",
+    "width": 2172,
+    "height": 724,
+    "sha256": "c52d86961576963e0cfcec1bad915fa8510d622c7d3d83ddba35e6e44db224dc"
+  },
+  "emptyPlate": {
+    "file": "hangar-empty-v4.png",
+    "width": 1254,
+    "height": 1254,
+    "sha256": "926a3ef15b4aa80c85571d6c1658719e30032b4fce95a9127e07cab91a90f062",
+    "originalFloorFromY": 600
+  }
+}

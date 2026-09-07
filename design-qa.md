@@ -1,46 +1,50 @@
-# Reference-art correction QA
+# Mechanical-cel animation QA
 
-Source visual truth: [the original three-state sheet](web/assets/hangar-states-v1.png), reselected by the maintainer on 2026-09-07. The supplied attachment and this sheet have identical RGB pixels. The source contains artwork only; the existing HTML labels and controls are outside the requested visual replacement.
+Updated: 2026-09-07.
 
-Implementation: the built loopback GUI at `http://127.0.0.1:54715/`. Native in-app-browser screenshots were captured and displayed together with the source image in the same comparison input. The capture API returned inline images without filesystem paths; no saved screenshot file is claimed.
+Source visual truth: [the original three-state painting](web/assets/hangar-states-v1.png), reselected by the maintainer. The subsequent request rejected unnatural motion and authorized coherent intermediate cels with fixed architecture. The source supplies foreground identity, material, supports and the branching entity; the new end poses are one mechanically coherent assembly, not pixel-identical copies of three independently illustrated poses.
 
-## Normalization and scope
+Implementation: the built loopback GUI at `http://127.0.0.1:54715/`. The same Pixi rig was inspected one cel at a time in a temporary local artist page and exercised through the real GUI's mode-selection buttons.
 
-- Source: 2172 × 724 pixels, three complete 724 × 724 frames.
-- Full implementation captures: 1104 × 1040 pixels and CSS pixels, device pixel ratio 1.
-- Scene region: 724 × 724 CSS pixels at x=0, y=92. No image-density conversion was needed.
-- States: Normal, Manual only and Fixed only, initially with effects off for direct source comparison.
-- Whole-scene comparison covers composition and scale. The same native-size inputs also expose the armor facets, cable joints and individual lattice branches clearly enough for focused inspection; separate enlarged crops were not needed.
+## Captured evidence
 
-## Findings and comparison history
+- [49-cel contact sheet](docs/assets/07-mechanical-cels-v4.png): 1204 × 1386 pixels, seven columns; each image preview is 172 × 172.
+- [Motion recording](docs/assets/08-mechanical-motion-v4.webm): the actual canvas, 724 × 724 pixels, approximately 9.24 seconds, forward and reverse travel with endpoint holds. Browser metadata reported readyState 4 and no media error.
+- Native atlas: 5068 × 5068 pixels, 49 complete 724 × 724 cels, retained in local evidence. The contact sheet is a downsampled overview; the full-size artist view and native cells were used for armor/cable/core detail checks.
+- Main GUI screenshots were inspected at 1104 × 1040 and 390 × 844. At the desktop size the scene region was 724 × 724 CSS pixels with devicePixelRatio 1. Existing HTML headings/controls remain outside the source-art matching scope. These page screenshots were inline captures, not the saved canvas exports above.
 
-1. The maintainer reported that the regenerated v2 layers lost the preferred original design. The implementation now uses the actual original sheet. Paired browser/source comparisons of all three effects-off endpoints show the original armor silhouette, cable density, core branches and floor composition. The source-coordinate and retained-file checks separately protect exact endpoint geometry and source identity.
-2. [P2, corrected] The initial transition blend left two armor outlines visible for too much of each stage. Mid-transition browser captures exposed that overlap. The blend was narrowed to the middle of the stage, and source-relative vertical opening displacement aligns the closed/open tips while preserving the original endpoint coordinates. A new built preview was captured during both opening and release and at the final state, then compared with the source in the same input. The remaining brief blend is intentional; the prolonged duplicate outlines no longer persist through most of the motion. No further P0/P1/P2 visual finding remains.
+The original source, native rig views and exported sequence were compared for silhouette, retained material, fixed architecture and continuity. The recorded sequence also exposes the entire intermediate motion rather than only completed poses.
+
+## Findings and correction history
+
+1. **V3 motion rejected:** complete paintings were warped and dissolved, bending metal/background and overlapping unrelated outlines. The warp module was removed. V4 selects an ordered 49-cel pose table and draws the same original parts at every step.
+2. **Early v4 cutout contamination corrected:** cable masks included moving wall fragments. Source-coordinate masks were refined; alpha mattes are baked once while preserving the original RGB material. The background now uses one empty plate and the original fixed floor, so old hardware does not remain behind moving parts.
+3. **Early v4 thin armor corrected:** flat triangular faces looked like thin sheets. The parts now have 16-unit thickness, textured side/back faces and depth sorting. Unit checks preserve all original 3D edge lengths and the thickness across every cel.
+4. **Final sequence inspected:** latch separation precedes staged upper/lower opening; supports retreat before the core rises; reverse travel retraces the same sequence. The final contact sheet, recorded motion and live GUI were recaptured after these corrections. No actionable P0/P1/P2 finding remains within this animation scope.
 
 ## Required fidelity surfaces
 
 | Surface | Assessment |
 | --- | --- |
-| Fonts and typography | The reference has no text. Existing HTML typography, labels and controls are retained as intentional application UI. |
-| Spacing and layout rhythm | Complete square source frames render at the correct proportion. Existing heading and edge overlays remain intentional UI; the scene stays centered. |
-| Colors and tokens | Original dark steel, amber details and white-blue core are retained. Large added v2 halos are removed; glow samples the source pixels. |
-| Image quality and asset fidelity | Original raster detail is used directly, with nearest sampling and no new generated character or code-drawn substitute. Canonical endpoint comparison passed. |
-| Copy and content | No product copy or diagnostic-state behavior was changed by this correction. The artwork remains labelled as a selection preview. |
+| Fonts/typography | No typography changes; the source painting contains no UI text. Existing readable HTML labels remain. |
+| Spacing/layout rhythm | Scene remains square and centered. Desktop and narrow controls remain usable; narrow document width is 390 pixels. |
+| Colors/tokens | Original dark steel, amber details and white-blue lattice material are retained. Source-sampled glow is separate from rigid hardware. |
+| Image/asset fidelity | Foreground pieces use original source pixels. The empty architecture plate is approximate, with the original floor retained. Each part has stable identity across cels; no complete-scene dissolve or warp remains. |
+| Copy/content | Configuration and verification copy remains unchanged. Art is labelled as a selection preview, separate from prepared state. |
 
-## Implementation checklist
+## Validation
 
-- Original reference textures restored: complete.
-- Endpoint source and geometry checks: complete.
-- Final motion: forward travel reached the original released form. Reverse travel was interrupted at release 1.546; the next observed value was 1.520 and it settled at Manual (1.000), without resetting to a canonical end state.
-- Effects and reduced motion: both stopped the actual ticker. Clearing the temporary reduced-motion override resumed playback.
-- Narrow view: inspected at 390 × 844; document width stayed 390 pixels and the artwork, labels and mode buttons remained readable. Viewport and media overrides were reset.
-- Console: no runtime exception or console warning/error was observed after the final reload and interaction sequence.
-- Independent source review: the final calibration has no actionable findings. Actual 49 × 49 meshes were checked over 401 release samples and eight idle-motion extreme combinations, with no folded triangles; geometry/light resources dispose correctly.
-- Automated validation: 160 tests passed, with zero failures/skips; TypeScript, strict-CSP rendering check and production build passed.
-- Prepared fixture: still baseline at the original preparation revision. This visual pass made no loadout application; full runtime/mode verification remains false.
+- `node --test`: 160 passed, zero failures/skips. New checks cover rigid edges/thickness, staged motion, source-coordinate bounds, part ordering and forward/reverse cel selection.
+- `npm run check`: TypeScript and strict-CSP Pixi checks passed. `npm run build` passed.
+- Independent code review found no P0/P1/P2 issue. Bounded actual-Pixi checks covered part mapping, depth sorting and cleanup after injected bake failures; GPU baking was then exercised in the real browser.
+- Six unobstructed architecture/floor sample pixels were identical across all 49 native exported cels.
+- Real GUI: Normal → Manual → Fixed, reverse travel interrupted toward Manual, canonical effects-off display, and reduced-motion handling were exercised. The interrupted sequence remained intermediate and settled at cel 24 without resetting through an endpoint.
+- Effects off and reduced motion stopped the actual ticker. Removing the temporary override resumed playback. Viewport/media overrides were reset.
+- A fresh final GUI reload attached the canvas at cel 0 and started its ticker, with no runtime exception or console warning/error in the bounded check.
+- The existing fixture preparation remains baseline; this visual verification made no loadout application. Full runtime and mode-switch verification remain false.
 
-## Follow-up polish
+## Limits and follow-up
 
-There is no blocking visual mismatch within the requested artwork correction. The portrait interpolation is intentionally 2.5D; separately articulated physical armor remains a different asset/animation project. Windows rendering and long-session resource use were not tested in this pass.
+These checks establish this local Mac renderer and its coherent cel sequence. They do not establish Windows rendering, complete desktop mode support, long-session resource measurements or a claim that the original independently illustrated end poses are geometrically identical. The original sheet remains available as the static graphics fallback.
 
 final result: passed

@@ -1,10 +1,22 @@
 # Bundled GUI artwork
 
-The current scene uses **hangar-v3-reference-motion**, with the original [hangar-states-v1.png](../web/assets/hangar-states-v1.png) as its actual texture source. The maintainer reselected that image after reviewing v2. The supplied reference had the exact same 2172 × 724 RGB pixels as this retained sheet; no new image generation or pixel editing was needed for the correction.
+The current scene uses **hangar-v4-mechanical-cels**. It reuses the original [hangar-states-v1.png](../web/assets/hangar-states-v1.png) for the armor faces, textured supports, central light and branching entity. A [generated empty plate](../web/assets/hangar-empty-v4.png) supplies the previously occluded wall; the floor is retained from the original first frame. [hangar-v4.json](../web/assets/hangar-v4.json) records the two source hashes and dimensions.
 
-[hangar-v3.json](../web/assets/hangar-v3.json) records the source file/RGB hashes, three complete square frames and source-light sampling bounds. PixiJS uses textured meshes to add small local motion and spatial interpolation, blending adjacent portraits briefly as the release position moves. It preserves the source armor facets, thick mechanical cables and fine white branching core. Effects-off endpoints retain every original texture coordinate. Source-sampled glow and small particles animate the active scene; the broad added v2 rings are not used.
+There are 49 deterministic poses from closed through fully released, with the middle state at cel 24. [scene-cels.ts](../web/src/scene-cels.ts) rotates rigid prisms about their outer seams, stages the support retreat and raises the core. [scene-parts.ts](../web/src/scene-parts.ts) records source-coordinate masks. The renderer bakes reusable alpha cutouts and glow once, then draws the same source material at each pose. These are code-rendered cels, not 49 independently generated pictures. No full-scene warp or portrait dissolve remains.
 
-The same scalar release position controls forward, reverse, direct and interrupted changes. The three paintings remain the visual truth; interpolation does not assert a physical model, a new loadout or verified runtime state. The original sheet also remains the HTML fallback, so a graphics failure does not substitute a different design.
+The [contact sheet](assets/07-mechanical-cels-v4.png) and [approximately nine-second motion recording](assets/08-mechanical-motion-v4.webm) were exported from the actual Pixi rig. The native atlas contains 49 frames of 724 × 724 pixels and is retained with local QA evidence. Each armor piece keeps its original 3D edge lengths and 16-unit thickness. Background structures stay fixed; only foreground parts, light and particles move.
+
+The empty background required two built-in ImageGen calls during development. The second plate improved the floor geometry, but still did not exactly align its track and floor with the original; preserving the original floor avoids adopting that mismatch. Foreground parts were not regenerated. The [exact prompt set](gui-artwork-v4-prompts.md) records both calls. Ordinary playback and all cel construction run locally without a model/API request.
+
+The source paintings remain the visual identity reference. The new end poses are a mechanically coherent assembly of the same parts, not pixel-identical copies of the three independently illustrated compositions. The original sheet remains the HTML fallback if graphics cannot initialize. See [the current QA record](../design-qa.md).
+
+## Retired v3 reference-warp experiment
+
+The earlier **hangar-v3-reference-motion** revision used the original sheet as complete scene textures. The maintainer reselected that image after reviewing v2. The supplied reference had the exact same 2172 × 724 RGB pixels as the retained sheet.
+
+[hangar-v3.json](../web/assets/hangar-v3.json) recorded source file/RGB hashes, three complete square frames and light bounds. That renderer warped meshes and blended adjacent portraits. Its effects-off endpoints retained the original coordinates, but the maintainer rejected the intermediate motion because metal and background appeared to deform. The v3 warp code has been removed.
+
+The shared scalar release timeline remains in v4 to preserve direct, reverse and interrupted changes. It has no configuration or verification authority.
 
 ## Retired v2 layered experiment
 

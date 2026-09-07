@@ -1,7 +1,8 @@
 import "./pixi-csp";
-import { Application, Rectangle, Texture } from "pixi.js";
+import { Application, Texture } from "pixi.js";
 import artworkUrl from "../assets/hangar-states-v1.png";
-import recipe from "../assets/hangar-v3.json";
+import emptyUrl from "../assets/hangar-empty-v4.png";
+import recipe from "../assets/hangar-v4.json";
 import { createReleaseMotion } from "./scene-motion";
 import { createHangarRig } from "./scene-rig";
 import type { FixtureCase } from "./types";
@@ -21,7 +22,6 @@ export async function createScene(
   if (signal.aborted || !host) return null;
   const app = new Application();
   const sourceTextures: Texture[] = [];
-  const croppedTextures: Texture[] = [];
   let rig: ReturnType<typeof createHangarRig> | undefined;
   let initialized = false;
   let disposed = false;
@@ -32,7 +32,6 @@ export async function createScene(
     const ownedCanvasWasAttached = initialized && app.canvas.parentElement === host;
     if (initialized) app.destroy(true, { children: true, texture: false, textureSource: false });
     rig?.destroy();
-    croppedTextures.forEach(texture => texture.destroy(false));
     sourceTextures.forEach(texture => texture.destroy(true));
     // A late aborted load must not overwrite a newer scene's diagnostic state.
     if (ownedCanvasWasAttached) host.dataset.playback = "stopped";
@@ -51,23 +50,21 @@ export async function createScene(
     initialized = true;
     if (signal.aborted) { dispose(); return null; }
     phase = "artwork-decode";
-    const image = new Image();
-    image.src = artworkUrl;
-    await image.decode();
+    const images = await Promise.all([artworkUrl, emptyUrl].map(async url => {
+      const image = new Image();
+      image.src = url;
+      await image.decode();
+      return image;
+    }));
     if (signal.aborted) { dispose(); return null; }
     phase = "scene-setup";
-    const full = Texture.from(image);
-    full.source.scaleMode = "nearest";
-    sourceTextures.push(full);
-    const textures = recipe.frames.map(({ x, y, width, height }) => {
-      const cropped = new Texture({
-        source: full.source,
-        frame: new Rectangle(x, y, width, height),
-      });
-      croppedTextures.push(cropped);
-      return cropped;
+    const textures = images.map(image => {
+      const texture = Texture.from(image);
+      texture.source.scaleMode = "nearest";
+      sourceTextures.push(texture);
+      return texture;
     });
-    rig = createHangarRig(app.stage, textures);
+    rig = createHangarRig(app.stage, { sheet: textures[0], empty: textures[1] }, app.renderer);
     const motion = createReleaseMotion("baseline");
     let elapsed = 0;
     let effects = false;
@@ -77,13 +74,14 @@ export async function createScene(
     const render = () => {
       if (disposed) return;
       const pose = motion.sample(elapsed);
-      rig!.render(pose.release, elapsed, effects);
+      const cel = rig!.render(pose.release, elapsed, effects);
       if (pose.moving !== lastMoving) {
         lastMoving = pose.moving;
         if (!signal.aborted) onMotionChange(lastMoving);
       }
       host.dataset.motion = pose.moving ? "transition" : "idle";
       host.dataset.release = pose.release.toFixed(3);
+      host.dataset.cel = String(cel);
     };
     const syncTicker = () => {
       if (effects && visible) app.start();
