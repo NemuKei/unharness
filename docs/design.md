@@ -28,7 +28,7 @@ Suggested animation sequence: casing opens → a brief visual pause → rings an
 
 ## Selected rendering stack
 
-On 2026-09-07 the maintainer selected **PixiJS** for the first GUI and explicitly accepted the additional dependencies. Use its scene graph, sprites, asset loading, masks and filters for the equipment and release effects. The rendering choice is adopted; the GUI and renderer integration are not implemented yet.
+On 2026-09-07 the maintainer selected **PixiJS** for the first GUI and explicitly accepted the additional dependencies. Use its scene graph, sprites, asset loading, masks and filters for the equipment and release effects. The first [local fixture GUI](gui.md) connects scene-frame playback and optional effects to a smaller diagnostic flow. It uses [bundled state portraits](gui-artwork.md); individually moving armor parts, comparison views and the full appearance system remain future work.
 
 | Responsibility | Selected approach |
 | --- | --- |
@@ -42,7 +42,7 @@ This hybrid asset route keeps detailed artwork editable in a pixel editor while 
 
 Keep a consistent pixel grid, nearest-neighbor texture sampling and aligned sprite positions. Scope glow and other filters to the intended effect layers so body details and controls remain legible. Effects off and reduced motion need a static, readable presentation. Pause unnecessary animation when the view is hidden and release renderer resources when it is removed. If graphics initialization fails, retain the HTML controls and truthful state display.
 
-Bundle the renderer and default assets for local use; normal playback and candidate assembly must not depend on a CDN or model service. PixiJS belongs to the browser presentation layer, while configuration, recovery and assessment remain in the shared core. The surrounding GUI framework/build setup is a separate choice. The pinned dependency is in [package.json](../package.json); setup is documented in [CONTRIBUTING.md](../CONTRIBUTING.md).
+Bundle the renderer and default assets for local use; normal playback and candidate assembly must not depend on a CDN or model service. PixiJS belongs to the browser presentation layer, while configuration, recovery and assessment remain in the shared core. The first GUI uses React/TypeScript and Vite. Pinned dependencies are in [package.json](../package.json); setup is documented in [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 Technical references: [PixiJS introduction](https://pixijs.com/8.x/guides/getting-started/intro) and [adding PixiJS to an existing project](https://pixijs.com/8.x/guides/getting-started/quick-start).
 
@@ -87,7 +87,7 @@ In implementation, render tables and proportional charts from actual data rather
 
 The maintainer prefers a random discovery over a taste-optimized appearance. The proposed default selects from prepared entities and compatible variations with weighted probabilities, without using personal memories to infer taste. Keep the selected body recognizable across release states and app restarts; sample another appearance only when creating an entity or explicitly requested. The user can keep/name a discovery and associate it with a build card.
 
-Prepared sprites, code-drawn pixel grids, and optional image-model generation are distinct creation routes. Pixel art does not require an image model. The [appearance and memory proposal](personalization.md) defines these routes, reproducible local selection, optional creation skills, and benchmark separation. Random visual rarity is independent of measured performance. These are design directions; the appearance runtime and distribution skill are not implemented.
+Prepared sprites, code-drawn pixel grids, and optional image-model generation are distinct creation routes. Pixel art does not require an image model. The [appearance and memory proposal](personalization.md) defines these routes, reproducible local selection, optional creation skills, and benchmark separation. Random visual rarity is independent of measured performance. The first GUI plays fixed bundled state portraits; random assembly, the collection runtime and distribution skill remain unimplemented.
 
 ## A comparison can unlock an original form
 

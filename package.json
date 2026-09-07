@@ -9,7 +9,7 @@
   "scripts": {
     "test": "node --test",
     "inspect": "node bin/unharness.mjs inspect",
-    "check": "tsc -p web/tsconfig.json --noEmit",
+    "check": "tsc -p web/tsconfig.json --noEmit && node --disallow-code-generation-from-strings web/checks/pixi-csp.check.mjs",
     "build": "vite build",
     "gui": "node bin/unharness.mjs gui --demo"
   },

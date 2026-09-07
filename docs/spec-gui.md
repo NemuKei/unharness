@@ -4,7 +4,7 @@ The first GUI connects the existing owned-fixture loadout service to a local bro
 
 ## User journey
 
-1. Install and build locally, then run `npm run gui`. The explicit demo launch creates a fresh private workspace under `.unharness/`, containing a generated desktop fixture and record store. Save baseline, manual-only and fixed-only favorite versions there; finish at baseline. Print a resume command for this exact store/scope. Existing data is never replaced or automatically deleted.
+1. Install and build locally, then run `npm run gui`. The explicit demo launch creates a fresh private workspace under `.unharness/`, containing a generated desktop fixture and record store. Save baseline, manual-only and fixed-only favorite versions there; finish at baseline. Print structured Node arguments (`resumeArgv`, with the absolute CLI entrypoint first) and the store/scope for safe resumption. Existing data is never replaced or automatically deleted.
 2. Show the three saved fixture conditions, prepared configuration, readable source summary and version identity. The visible scope label is `専用の検証環境`. Personal Codex settings are outside this surface.
 3. Selecting a favorite previews it and requests a read-only change plan. The apply button submits that exact plan. A concurrent or external change invalidates it and requires another review. Create the normal core checkpoint before mutation.
 4. Save the current prepared configuration with an optional name. List versioned favorites and checkpoints with bounded pagination; do not lose older entries after the first page.
