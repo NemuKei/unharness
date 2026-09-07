@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "artPackVersion": "hangar-v1",
+  "frameWidth": 724,
+  "frameHeight": 724,
+  "frames": {
+    "baseline": {
+      "x": 0,
+      "y": 0
+    },
+    "manual-only": {
+      "x": 724,
+      "y": 0
+    },
+    "fixed-only": {
+      "x": 1448,
+      "y": 0
+    }
+  }
+}
