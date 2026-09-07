@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Api, ApiError } from "./api";
+import { modePresentation } from "./sources";
 import {
   readSourceState,
   sameSourceContext,
@@ -119,15 +120,28 @@ export function useSourceController() {
           );
         }
       }
-      setNotice(
-        action === "apply"
-          ? "選んだ設定を準備し、ファイルの一致を確認しました。新しいタスクで使用してください。"
-          : action === "register"
-            ? "通常装備を保存しました。比較するモードを選べます。"
-            : action === "recover"
-              ? "復旧結果と現在の状態を確認してください。"
-              : "操作が完了しました。",
-      );
+      if (action === "save") {
+        const saved = response.result as Pick<
+          SourceFavorite,
+          "favoriteId" | "name" | "preparedMode"
+        >;
+        setNotice(
+          `「${saved.name}」（${modePresentation[saved.preparedMode].title}）をお気に入りに保存しました。`,
+        );
+        setFavorites((previous) => [
+          { ...saved, revision: response.state.source!.revision },
+          ...previous.filter((item) => item.favoriteId !== saved.favoriteId),
+        ]);
+      } else
+        setNotice(
+          action === "apply"
+            ? "選んだ設定を準備し、ファイルの一致を確認しました。新しいタスクで使用してください。"
+            : action === "register"
+              ? "通常装備を保存しました。比較するモードを選べます。"
+              : action === "recover"
+                ? "復旧結果と現在の状態を確認してください。"
+                : "操作が完了しました。",
+        );
       if (action === "apply" || action === "recover") {
         setSelected(response.state.source?.preparedMode ?? "normal");
         setPlan(null);
@@ -154,7 +168,17 @@ export function useSourceController() {
       after ? { after } : {},
       (page) => {
         setFavorites((previous) =>
-          after ? [...previous, ...page.favorites] : page.favorites,
+          after
+            ? [
+                ...previous,
+                ...page.favorites.filter(
+                  (item) =>
+                    !previous.some(
+                      (existing) => existing.favoriteId === item.favoriteId,
+                    ),
+                ),
+              ]
+            : page.favorites,
         );
         setCursor(page.nextCursor);
       },

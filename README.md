@@ -17,11 +17,12 @@ Try different combinations of skills and instructions on your own work. Find wha
 With Node.js 24+ and a native Codex executable available, run the dependency-free diagnostic from this checkout:
 
 ```text
-node --test
 node bin/unharness.mjs inspect --cwd . --output local-evidence/codex-probe.json
 node bin/unharness.mjs inspect-sources --cwd . --output local-evidence/source-inventory.json
 node bin/unharness.mjs probe-controls --output local-evidence/source-controls.json
 ```
+
+For the full `node --test` suite, install the locked dependencies first with `npm ci --ignore-scripts`; the suite also covers YAML transformations and the frontend.
 
 `inspect` reports sanitized configuration inventory from a separate Codex process. It does not change settings or verify a desktop mode switch. See [the probe guide and Windows handoff](docs/codex-probe.md).
 

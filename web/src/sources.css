@@ -96,7 +96,9 @@
   color: inherit;
 }
 .source-review {
-  margin: 0 38px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
 }
 .source-setup > .primary {
   margin-top: 15px;

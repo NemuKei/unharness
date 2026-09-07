@@ -17,11 +17,12 @@ Skillや追加指示の組み合わせを、自分の仕事で試す。今のモ
 Node.js 24以上とネイティブのCodex実行ファイルが使える環境で、このrepoから実行します。追加パッケージは不要です。
 
 ```text
-node --test
 node bin/unharness.mjs inspect --cwd . --output local-evidence/codex-probe.json
 node bin/unharness.mjs inspect-sources --cwd . --output local-evidence/source-inventory.json
 node bin/unharness.mjs probe-controls --output local-evidence/source-controls.json
 ```
+
+全体の `node --test` を実行する前に、`npm ci --ignore-scripts` でロック済み依存関係を導入してください。全体テストにはYAML変換とフロントエンドも含まれます。
 
 `inspect` は別プロセスのCodexから、設定本文などを含まない一覧の要約を取得します。設定変更やデスクトップのモード切替は行いません。[使い方とWindows側への引き継ぎ](docs/codex-probe.md)を参照してください。
 

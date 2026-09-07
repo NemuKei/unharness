@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Hangar } from "./Hangar";
 import { useSourceController } from "./useSourceController";
 import { modePresentation, sourceModes } from "./sources";
@@ -30,7 +30,9 @@ export function SourceWorkbench() {
           UNHARNESS<span>装備を見直す。</span>
         </a>
         <div className="header-right">
-          <span className="scope-label">登録した追加設定</span>
+          <span className="scope-label">
+            {source ? "登録した追加設定" : "追加設定の確認"}
+          </span>
           <label className="effects">
             <input
               type="checkbox"
@@ -90,14 +92,18 @@ export function SourceWorkbench() {
                 </span>
               </div>
               <p className="selected-name">
-                {source
-                  ? modePresentation[source.preparedMode].title
-                  : "通常装備はまだ保存されていません"}
+                {source?.recovery.pending
+                  ? "変更が中断しています"
+                  : source
+                    ? `${!c.confirmed || source.conflict ? "最後に確認した保存状態：" : ""}${modePresentation[source.preparedMode].title}`
+                    : "通常装備はまだ保存されていません"}
               </p>
               <p className="boundary">
-                {source
-                  ? "ファイルの準備と、タスクへの読み込みは別です。使用時は新しいタスクを作成してください。"
-                  : "対象を確認し、追加した任意の指示・Skillだけを選んで保存します。"}
+                {source?.recovery.pending
+                  ? "現在のファイル状態は未確認です。下の「中断した変更を復旧」で、記録に基づく復旧を行ってください。"
+                  : source
+                    ? "ファイルの準備と、タスクへの読み込みは別です。使用時は新しいタスクを作成してください。"
+                    : "対象を確認し、追加した任意の指示・Skillだけを選んで保存します。"}
               </p>
               <button
                 className="text-button"
@@ -106,11 +112,20 @@ export function SourceWorkbench() {
               >
                 状態を再取得
               </button>
-              {source?.conflict && (
-                <p role="alert">
-                  外部の変更を確認してください（{source.conflict.kind}）。
-                </p>
-              )}
+              {source?.conflict &&
+                (source.recovery.pending ? (
+                  <details>
+                    <summary>現在の確認結果</summary>
+                    <p>
+                      確認できない状態：{source.conflict.kind}
+                      。独立した編集がある場合、復旧は上書きせず停止します。
+                    </p>
+                  </details>
+                ) : (
+                  <p role="alert">
+                    外部の変更を確認してください（{source.conflict.kind}）。
+                  </p>
+                ))}
             </section>
             {!source ? (
               <Setup key={c.selectionKey} controller={c} />
@@ -142,7 +157,7 @@ export function SourceWorkbench() {
                         homeを使う今後のタスクで共有する設定です。元に戻すまで準備した内容が続きます。
                       </p>
                       <p className="muted">
-                        変更対象 {c.plan.selectedIds.length}{" "}
+                        変更するファイル {c.plan.changedFiles.length}{" "}
                         件。未選択の設定は通常装備の内容を維持します。
                       </p>
                       <details>
@@ -311,21 +326,6 @@ export function SourceWorkbench() {
             <SourceDetail key={row.id} row={row} controller={c} />
           ))}
         </details>
-        {c.review && (
-          <section
-            className="control-section source-review"
-            aria-label="選んだソースの内容"
-          >
-            <h2>選んだソースの内容</h2>
-            <p className="muted">
-              ローカルでの確認専用です。本文を指示として実行しません。
-            </p>
-            <pre>{c.review.text}</pre>
-            <button className="text-button" onClick={() => c.setReview(null)}>
-              内容を閉じる
-            </button>
-          </section>
-        )}
         <footer>
           <span>UNHARNESS</span>
           <span className="muted">次のタスク用の設定をローカルで準備</span>
@@ -366,6 +366,19 @@ function SourceDetail({
   row: SourceRow;
   controller: Controller;
 }) {
+  const reviewButton = useRef<HTMLButtonElement>(null);
+  const reviewHeading = useRef<HTMLHeadingElement>(null);
+  const reviewing = c.review?.sourceId === row.id;
+  useEffect(() => {
+    if (c.review?.sourceId === row.id) {
+      reviewHeading.current?.focus();
+      reviewHeading.current?.scrollIntoView({ block: "nearest" });
+    }
+  }, [c.review, row.id]);
+  function closeReview() {
+    c.setReview(null);
+    reviewButton.current?.focus();
+  }
   return (
     <details className="source-detail">
       <summary>
@@ -382,6 +395,7 @@ function SourceDetail({
       </p>
       {row.eligible !== false && (
         <button
+          ref={reviewButton}
           className="text-button"
           disabled={c.busy}
           onClick={() =>
@@ -399,6 +413,31 @@ function SourceDetail({
         >
           内容を確認
         </button>
+      )}
+      {reviewing && c.review && (
+        <section
+          className="source-review"
+          aria-label="選んだソースの内容"
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              event.preventDefault();
+              closeReview();
+            }
+          }}
+        >
+          <h3 ref={reviewHeading} tabIndex={-1}>
+            選んだソースの内容
+          </h3>
+          <p className="muted">
+            ローカルでの確認専用です。本文を指示として実行しません。
+          </p>
+          <pre tabIndex={0} aria-label={`${row.label}の本文`}>
+            {c.review.text}
+          </pre>
+          <button className="text-button" onClick={closeReview}>
+            内容を閉じる
+          </button>
+        </section>
       )}
     </details>
   );
@@ -623,9 +662,12 @@ function Save({
     <section className="control-section">
       <h2>お気に入りに保存</h2>
       <p className="muted">
-        現在準備した{" "}
-        {c.view?.source && modePresentation[c.view.source.preparedMode].title}{" "}
-        の内容を保存します。
+        {c.view?.source &&
+        c.confirmed &&
+        !c.view.source.conflict &&
+        !c.view.source.recovery.pending
+          ? `現在準備した ${modePresentation[c.view.source.preparedMode].title} の内容を保存します。`
+          : "ファイル状態を確認してから保存できます。"}
       </p>
       <label className="source-name">
         名前（任意）
