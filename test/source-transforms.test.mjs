@@ -168,3 +168,12 @@ test('TOML comment guard rejects relocation between settings, tables and Skill e
   assert.equal(preservesTomlComments(first + second, first.replace('# belongs to first\n', '') + second.replace('enabled = true', '# belongs to first\nenabled = true')), false);
   assert.equal(preservesTomlComments(before, '# belongs to model\n\n  model  =  "example"\n'), true);
 });
+
+test('native editor rejects numeric extra Skill metadata before any rewrite but preserves no-op bytes', async t => {
+ const ctx=await editorSetup(t);
+ const original='[[skills.config]]\npath = "/skills/selected/SKILL.md"\nenabled = true\n\n[[skills.config]]\npath = "/skills/untouched/SKILL.md"\nenabled = true\ncustom_integer = 9007199254740993\n';
+ await assert.rejects(ctx.run({configText:original,skillPaths:['/skills/selected/SKILL.md']}),{kind:'config-transform-failed'});
+ assert.equal((await ctx.events()).some(m=>m.method==='config/batchWrite'),false);
+ const disabled=original.replace('enabled = true','enabled = false');
+ assert.equal((await ctx.run({configText:disabled,skillPaths:['/skills/selected/SKILL.md']})).text,disabled);
+});

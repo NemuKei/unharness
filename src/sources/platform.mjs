@@ -1,0 +1,151 @@
+import { constants } from 'node:fs';
+import {
+  open,
+  lstat,
+  realpath,
+  chmod,
+  chown,
+  unlink,
+  link,
+  rename,
+  mkdir,
+  rmdir,
+  mkdtemp,
+  rm,
+  writeFile
+} from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { dirname, isAbsolute, resolve, join } from 'node:path';
+import { execFile } from 'node:child_process';
+import { isDeepStrictEqual, promisify } from 'node:util';
+import { fail } from './errors.mjs';
+const exec = promisify(execFile);
+export const equal = isDeepStrictEqual;
+export async function canonical(path) {
+  if (typeof path !== 'string' || !isAbsolute(path) || resolve(path) !== path)
+    fail('source-redirection');
+  if ((await realpath(path)) !== path) fail('source-redirection');
+  return path;
+}
+export async function parentBinding(path) {
+  let parent = dirname(path),
+    missing = [];
+  for (;;) {
+    try {
+      await canonical(parent);
+      const s = await lstat(parent);
+      if (!s.isDirectory()) fail('source-redirection');
+      return { path: parent, dev: s.dev, ino: s.ino, missing };
+    } catch (e) {
+      if (e.code !== 'ENOENT') throw e;
+      missing.unshift(parent);
+      parent = dirname(parent);
+    }
+  }
+}
+export async function checkBinding(binding) {
+  await canonical(binding.path);
+  const s = await lstat(binding.path);
+  if (s.dev !== binding.dev || s.ino !== binding.ino || !s.isDirectory())
+    fail('source-redirection');
+}
+async function metadata(path, s) {
+  const m = { uid: s.uid, gid: s.gid, mode: s.mode & 0o777, xattrs: {} };
+  if (s.nlink !== 1 || !s.isFile() || s.isSymbolicLink() || s.mode & 0o7000)
+    fail('unsupported-metadata');
+  if (process.platform === 'darwin') {
+    const { stdout } = await exec('/bin/ls', ['-ldneO', path], {
+      maxBuffer: 65536
+    });
+    // ACL rows and nonempty file flags are deliberately unavailable.
+    if (
+      /^\s*\d+:/m.test(stdout) ||
+      stdout.split('\n')[0].trim().split(/\s+/)[4] !== '-'
+    )
+      fail('unsupported-metadata');
+    const names = (
+      await exec('/usr/bin/xattr', [path], { maxBuffer: 65536 })
+    ).stdout
+      .trim()
+      .split('\n')
+      .filter(Boolean)
+      .sort();
+    for (const name of names) {
+      if (!/^[a-zA-Z0-9_.-]{1,128}$/.test(name)) fail('unsupported-metadata');
+      m.xattrs[name] = (
+        await exec('/usr/bin/xattr', ['-px', name, path], { maxBuffer: 65536 })
+      ).stdout
+        .replace(/\s/g, '')
+        .toLowerCase();
+    }
+  }
+  return m;
+}
+export async function captureFile(path) {
+  await parentBinding(path);
+  let s;
+  try {
+    s = await lstat(path);
+  } catch (e) {
+    if (e.code === 'ENOENT') return null;
+    throw e;
+  }
+  if (s.size > 128 * 1024) fail('source-too-large');
+  const meta = await metadata(path, s);
+  const h = await open(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+  try {
+    const hs = await h.stat();
+    if (hs.ino !== s.ino || hs.dev !== s.dev) fail('source-redirection');
+    const b = await h.readFile();
+    if (b.length > 128 * 1024) fail('source-too-large');
+    if (!b.equals(Buffer.from(b.toString('utf8'), 'utf8')))
+      fail('unsupported-source');
+    return { text: b.toString('utf8'), meta };
+  } finally {
+    await h.close();
+  }
+}
+export async function defaultMetadata(parent) {
+  const dir = await realpath(
+    await mkdtemp(join(tmpdir(), 'unharness-metadata-'))
+  );
+  try {
+    const path = join(dir, 'sample');
+    await writeFile(path, '', { mode: 0o600 });
+    return (await captureFile(path)).meta;
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}
+export async function writeComplete(path, file) {
+  const h = await open(path, 'wx', 0o600);
+  try {
+    await h.writeFile(file.text, 'utf8');
+    await h.sync();
+  } finally {
+    await h.close();
+  }
+  if (process.platform !== 'win32') {
+    await chown(path, file.meta.uid, file.meta.gid);
+    await chmod(path, file.meta.mode);
+  }
+  if (process.platform === 'darwin') {
+    const names = (await exec('/usr/bin/xattr', [path])).stdout
+      .trim()
+      .split('\n')
+      .filter(Boolean);
+    for (const name of names)
+      if (!Object.hasOwn(file.meta.xattrs, name))
+        await exec('/usr/bin/xattr', ['-d', name, path]);
+    for (const [name, value] of Object.entries(file.meta.xattrs))
+      await exec('/usr/bin/xattr', ['-wx', name, value, path]);
+  }
+  if (!equal(await captureFile(path), file)) fail('unsupported-metadata');
+}
+export async function publish(stage, path, before) {
+  if (before === null) {
+    await link(stage, path);
+    await unlink(stage);
+  } else await rename(stage, path);
+}
+export { unlink, mkdir, rmdir };

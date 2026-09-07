@@ -8,6 +8,6 @@ const READ_METHODS = Object.freeze([
   'configRequirements/read',
 ]);
 
-export function createReadOnlyClient({ command, args = [], cwd, timeoutMs = 10000, maxResponseBytes = 8 * 1024 * 1024 }) {
-  return createRpcTransport({ command, args, cwd, timeoutMs, maxResponseBytes, allowedMethods: READ_METHODS });
+export function createReadOnlyClient({ command, args = [], cwd, env, timeoutMs = 10000, maxResponseBytes = 8 * 1024 * 1024 }) {
+  return createRpcTransport({ command, args, cwd, env, timeoutMs, maxResponseBytes, allowedMethods: READ_METHODS });
 }

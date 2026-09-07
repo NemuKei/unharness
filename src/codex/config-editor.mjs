@@ -18,6 +18,15 @@ function userLayer(report, file) {
   return layer;
 }
 
+// RPC JSON numbers cannot establish the exact original TOML numeric value.
+// Extra numeric metadata is conservatively unavailable when rewriting the array;
+// the exact-byte no-op path below remains available without serialization.
+function containsNumber(value) {
+  if (typeof value === 'number') return true;
+  if (value && typeof value === 'object') return Object.values(value).some(containsNumber);
+  return false;
+}
+
 function disabledConfig(config, paths) {
   if (Object.hasOwn(config, 'skills') && !object(config.skills)) throw failed();
   const entries = config.skills?.config ?? [];
@@ -60,6 +69,7 @@ export async function disableSkillConfig({ configText, skillPaths, executable, e
     const before = await read();
     const expected = disabledConfig(before.config, skillPaths);
     if (isDeepStrictEqual(expected, before.config)) return { text: configText, changed: false, codexVersion };
+    if (containsNumber(before.config.skills?.config)) throw failed();
     await client.request('config/batchWrite', { filePath: file, expectedVersion: before.version, reloadUserConfig: false, edits: [{ keyPath: 'skills.config', mergeStrategy: 'replace', value: expected.skills.config }] });
     const after = await read();
     if (!isDeepStrictEqual(after.config, expected)) throw failed();

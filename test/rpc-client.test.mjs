@@ -157,3 +157,11 @@ test('classifies startup errors without exposing the executable path', async (t)
   });
   await client.close();
 });
+
+test('optional environment binds the selected profile without widening read methods', async t => {
+ const code="const r = await import('node:readline'); for await (const line of r.createInterface({input:process.stdin})) {const m=JSON.parse(line);if(m.id)process.stdout.write(JSON.stringify({id:m.id,result:{codexHome:process.env.CODEX_HOME}})+'\\n');}";
+ const client=createReadOnlyClient({command:node,args:['--input-type=module','-e',code],cwd:process.cwd(),env:{...process.env,CODEX_HOME:'synthetic-selected-profile'}});
+ t.after(()=>client.close());
+ assert.equal((await initialize(client)).codexHome,'synthetic-selected-profile');
+ await assert.rejects(client.request('config/batchWrite',{}),{kind:'forbidden-method'});
+});

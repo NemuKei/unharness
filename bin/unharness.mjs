@@ -8,6 +8,7 @@ import { collectProbe, probeSucceeded } from '../src/codex/probe.mjs';
 import { collectSourceInventory } from '../src/codex/inventory.mjs';
 import { desktopMain, DESKTOP_USAGE } from '../src/codex/desktop-cli.mjs';
 import { loadoutMain, LOADOUT_USAGE } from '../src/loadouts/cli.mjs';
+import { sourcesMain, SOURCES_USAGE } from '../src/sources/cli.mjs';
 import { guiMain, GUI_USAGE } from '../src/gui/cli.mjs';
 import {
   collectSourceControlProbe,
@@ -25,7 +26,7 @@ Options:
   --output <file>         Create a JSON report without overwriting
   --timeout-ms <integer>  Request timeout from 100 to 60000 (default: 10000)
   --help                  Show this help
-${DESKTOP_USAGE}\n${LOADOUT_USAGE}\n${GUI_USAGE}`;
+${DESKTOP_USAGE}\n${LOADOUT_USAGE}\n${GUI_USAGE}\n${SOURCES_USAGE}`;
 
 function parseArgs(argv) {
   if (argv.length === 1 && argv[0] === '--help') return { help: true };
@@ -69,6 +70,7 @@ export async function main(argv = process.argv.slice(2), {
 } = {}) {
   if (['desktop-fixture', 'inspect-desktop'].includes(argv[0])) return desktopMain(argv, { stdout, stderr });
   if (argv[0] === 'loadouts') return loadoutMain(argv, { stdout, stderr });
+  if (argv[0] === 'sources') return sourcesMain(argv, { stdout, stderr });
   if (argv[0] === 'gui') return guiMain(argv, { stdout, stderr });
   const options = parseArgs(argv);
   if (options?.help) {
