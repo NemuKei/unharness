@@ -33,7 +33,7 @@ disableSkillConfig({ configText, skillPaths, executable, timeoutMs })
 // async -> { text, changed, codexVersion }; only owned temporary configuration writes
 ```
 
-- [ ] Add failing checks with literal input metadata: preserve interface/dependencies, set implicit invocation false, reject invalid/duplicate/alias side effects, preserve comments and return unchanged text when already manual.
+- [x] Add failing checks with literal input metadata: preserve interface/dependencies, set implicit invocation false, reject invalid/duplicate/alias side effects, preserve comments and return unchanged text when already manual.
 
 ```js
 const original = 'interface:\n  display_name: Example\npolicy:\n  allow_implicit_invocation: true\n';
@@ -42,10 +42,10 @@ assert.equal(parse(next).policy.allow_implicit_invocation, false);
 assert.equal(parse(next).interface.display_name, 'Example');
 ```
 
-- [ ] Implement the exact guide from the spec and compute its SHA-256 from fixed content. Use `parseDocument` with silent/bounded error handling for metadata, compare all resolved values except the one changed policy key, and retain original bytes for no-op output.
-- [ ] Add an owned-config editor test using the real transport and a synthetic native executable; assert fixed write method/key/path, no thread/turn requests, rejected inbound requests, timeout cleanup and unchanged original input file.
-- [ ] Implement the editor with a freshly owned temporary profile. Read its user layer, preserve the existing `skills.config` entries, disable only selected exact paths, write with `expectedVersion` and `reloadUserConfig:false`, compare all other parsed keys, and return staged text. Never expose a caller-selected write path or raw RPC errors.
-- [ ] Run `node --test test/source-transforms.test.mjs test/rpc-client.test.mjs test/process-cleanup.test.mjs`, then native synthetic-profile checks. Commit this tested unit and record the report.
+- [x] Implement the exact guide from the spec and compute its SHA-256 from fixed content. Use `parseDocument` with silent/bounded error handling for metadata, compare all resolved values except the one changed policy key, and retain original bytes for no-op output.
+- [x] Add an owned-config editor test using the real transport and a synthetic native executable; assert fixed write method/key/path, no thread/turn requests, rejected inbound requests, timeout cleanup and unchanged original input file.
+- [x] Implement the editor with a freshly owned temporary profile. Read its user layer, preserve the existing `skills.config` entries, disable only selected exact paths, write with `expectedVersion` and `reloadUserConfig:false`, compare all other parsed keys, and return staged text. Never expose a caller-selected write path or raw RPC errors.
+- [x] Run `node --test test/source-transforms.test.mjs test/rpc-client.test.mjs test/process-cleanup.test.mjs`, then native synthetic-profile checks. Commit this tested unit and record the report.
 
 ## Task 2: Registered profile, plans and recovery
 
@@ -70,11 +70,11 @@ createOwnedSourceProfile({ parent }) // test/qualification helper -> { context, 
 readSourceProfileFiles(context) // helper -> exact file/absence map matching originalFiles
 ```
 
-- [ ] Write failing tests for optional-role declarations, stale discovery, excluded provider/system sources, canonical roots, normal snapshot privacy/identity and a second workspace trying to manage an owned profile.
-- [ ] Implement bounded capture of the global AGENTS pair, config.toml and selected Skill bodies/metadata. Bind source IDs to paths/content, preserve absence and supported metadata, and keep local display projection separate from public diagnostics. Reject unsupported sources before registration/application.
-- [ ] Create an owned workspace and immutable Normal record before any source write; persist profile ownership and operation state. Retain interrupted initialization information instead of overwriting an unfamiliar directory.
-- [ ] Build plans from Normal. UNSEAL uses `getMinimalGuide()` and `makeManualSkillPolicy()` for selected enabled Skills. TRUEFORM uses the inert override and `disableSkillConfig()`. Unselected files use original contents. Normal/favorites use saved bytes without regenerating them.
-- [ ] Add exact-loop and stale-plan tests:
+- [x] Write failing tests for optional-role declarations, stale discovery, excluded provider/system sources, canonical roots, normal snapshot privacy/identity and a second workspace trying to manage an owned profile.
+- [x] Implement bounded capture of the global AGENTS pair, config.toml and selected Skill bodies/metadata. Bind source IDs to paths/content, preserve absence and supported metadata, and keep local display projection separate from public diagnostics. Reject unsupported sources before registration/application.
+- [x] Create an owned workspace and immutable Normal record before any source write; persist profile ownership and operation state. Retain interrupted initialization information instead of overwriting an unfamiliar directory.
+- [x] Build plans from Normal. UNSEAL uses `getMinimalGuide()` and `makeManualSkillPolicy()` for selected enabled Skills. TRUEFORM uses the inert override and `disableSkillConfig()`. Unselected files use original contents. Normal/favorites use saved bytes without regenerating them.
+- [x] Add exact-loop and stale-plan tests:
 
 ```js
 const parent = await realpath(await mkdtemp(join(tmpdir(), 'unharness-source-test-')));
@@ -91,10 +91,10 @@ for (const mode of ['unseal', 'trueform', 'normal']) {
 assert.deepEqual(await readSourceProfileFiles(setup.context), setup.originalFiles);
 ```
 
-- [ ] Implement exclusive profile locking, immutable pre-change checkpoints and a pending before/after journal. Stage complete writes with supported metadata preservation, recheck before publication and perform readback. Reject independent edits, ambiguous/live locks and source redirection.
-- [ ] Add interruption tests at every managed write and before completion, plus concurrent duplicate callers, malformed journals, foreign stages, source-body changes and config changes. Recovery restores only known control-file changes and explicitly reports mismatched read-only dependencies.
-- [ ] Expose Node-only `sources status`, `sources recover`, and the service's normal/favorite/plan operations with structured arguments. Keep error output fixed and private source contents out of it.
-- [ ] Run the focused source suite, the full existing suite, and a native owned-profile loop that checks metadata and retained settings. Commit the tested service and recovery unit.
+- [x] Implement exclusive profile locking, immutable pre-change checkpoints and a pending before/after journal. Stage complete writes with supported metadata preservation, recheck before publication and perform readback. Reject independent edits, ambiguous/live locks and source redirection.
+- [x] Add interruption tests at every managed write and before completion, plus concurrent duplicate callers, malformed journals, foreign stages, source-body changes and config changes. Recovery restores only known control-file changes and explicitly reports mismatched read-only dependencies.
+- [x] Expose Node-only `sources status`, `sources recover`, and the service's normal/favorite/plan operations with structured arguments. Keep error output fixed and private source contents out of it.
+- [x] Run the focused source suite, the full existing suite, and a native owned-profile loop that checks metadata and retained settings. Commit the tested service and recovery unit.
 
 ## Task 3: User-source workbench and final integration
 
@@ -102,10 +102,10 @@ assert.deepEqual(await readSourceProfileFiles(setup.context), setup.originalFile
 
 **Interfaces:** GUI controllers call Task 2 only. Request bodies carry IDs, declarations and mode/target selection, never arbitrary paths. State includes an accepted launch/context identity. Fixed guide text is from Task 1. Artist input remains the existing three scene conditions and display effects only.
 
-- [ ] Add HTTP tests proving that old read-only launches cannot register/apply, foreign selectors and stale contexts are rejected, duplicates are stable and uncertain writes are not automatically retried.
-- [ ] Add explicit `--manage-sources` setup. Discover sources on request, allow local review/optional-role confirmation, and register a saved Normal before mode controls become active. Keep configuration text private, with only bounded explicitly selected review text available locally.
-- [ ] Use Normal / UNSEAL / TRUEFORM with closed **対象を調整** disclosures, a fixed-guide preview, a single reviewed prepare action, optional-name saving and recovery. Show unsupported controls and retained memory/native features. Keep the old fixture experience available as development diagnostics without mixing its state or records.
-- [ ] Bind metadata before every action. If the launch/profile/workspace changes, update the view before any write; preserve that check after failed metadata reads.
-- [ ] Install locked dependencies, run `npm run check`, `npm run build` and the full Node suite. Exercise an owned profile through the actual built GUI: register, plan, UNSEAL, TRUEFORM, Normal, favorite and undo, plus reconnect/error and 390px layout. Check source bytes/metadata and retained config before/after.
-- [ ] Discover the maintainer's actual profile read-only and present its reviewable setup. Do not guess optional declarations or apply real configuration to manufacture an integration result. Record Windows/desktop verification gaps precisely.
+- [x] Add HTTP tests proving that old read-only launches cannot register/apply, foreign selectors and stale contexts are rejected, duplicates are stable and uncertain writes are not automatically retried.
+- [x] Add explicit `--manage-sources` setup. Discover sources on request, allow local review/optional-role confirmation, and register a saved Normal before mode controls become active. Keep configuration text private, with only bounded explicitly selected review text available locally.
+- [x] Use Normal / UNSEAL / TRUEFORM with closed **対象を調整** disclosures, a fixed-guide preview, a single reviewed prepare action, optional-name saving and recovery. Show unsupported controls and retained memory/native features. Keep the old fixture experience available as development diagnostics without mixing its state or records.
+- [x] Bind metadata before every action. If the launch/profile/workspace changes, update the view before any write; preserve that check after failed metadata reads.
+- [x] Install locked dependencies, run `npm run check`, `npm run build` and the full Node suite. Exercise an owned profile through the actual built GUI: register, plan, UNSEAL, TRUEFORM, Normal, favorite and undo, plus reconnect/error and 390px layout. Check source bytes/metadata and retained config before/after.
+- [x] Discover the maintainer's actual profile read-only and present its reviewable setup. Do not guess optional declarations or apply real configuration to manufacture an integration result. Record Windows/desktop verification gaps precisely.
 - [ ] Update accepted mode docs and evidence, check relative links and `git diff --check`, conduct the broad final review, then commit/push only the authorized private branch and verify remote SHA/clean state.

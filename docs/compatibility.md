@@ -15,7 +15,7 @@ Record the desktop app version, embedded or external runtime version, CPU archit
 
 The [Mac source-inventory pass](evidence/2026-09-08-source-inventory-macos.md) adds the optional real-source read panel and standard instruction candidate census. It verifies read-only collection, UI/reconnection and privacy boundaries on native Mac, not personal-source control or full desktop modes. The new slice has no native Windows or Claude Code result yet.
 
-The [registered user-source pass](evidence/2026-09-08-user-source-modes-macos.md) verifies the selected global instruction/Skill preparation and recovery service with native Mac owned profiles. It covers exact frozen restoration, supported metadata, bounded interruption and conflict handling. Native Windows writes remain gated; GUI and fresh desktop evidence are separate steps. Existing memory, native continuity, policy, permissions, hooks and unselected sources are retained by this preparation contract.
+The [registered user-source pass](evidence/2026-09-08-user-source-modes-macos.md) verifies the selected global instruction/Skill preparation and recovery service with native Mac owned profiles. It covers exact frozen restoration, supported metadata, bounded interruption, conflict handling and the built workbench's registration/mode/save/recovery/reconnection paths. The maintainer's real setup was discovered in the GUI and remains unregistered. Native Windows writes remain gated and fresh desktop loading is unverified. Existing memory, native continuity, policy, permissions, hooks and unselected sources are retained by this preparation contract.
 
 ## What to record for a real test
 
