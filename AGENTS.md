@@ -7,7 +7,7 @@ Unharness makes it easy to take off, compare, and save AI harness configurations
 ## Product commitments
 
 - Unharness is free to use and must not require a paid API, hosted backend, or recurring operator service expense. The user's separately chosen AI subscription and usage are outside this cost boundary. Default artwork, three-candidate creation, storage, export, and sharing preparation run locally without model calls.
-- Target macOS and Windows from the start. Complete Codex desktop support on both first, then implement Claude Code desktop support on both. Claude Code handles its integration implementation and validation; Codex handles the final integration review and finish.
+- Keep macOS and Windows as design targets, with macOS completion first. Complete the Codex desktop core on macOS, then Claude Code desktop on macOS, and finish the Mac product before resuming Windows delivery. On Windows, complete Codex support before Claude Code support. Claude Code handles its integration implementation and validation on the active OS; Codex handles integration review and finish. Windows qualification is not a gate for Mac completion.
 - Keep the core experience together: save, Normal / Limited release / Zero, truthful state display, comparable fresh tasks, favorites, and recovery.
 - Product name: **Unharness**. Display labels: **限定解除 — UNSEAL** and **零式 — TRUEFORM**. Normal is the saved loadout.
 - Support both the local web interface and natural-language requests through an AI tool connection. Both entry points use the same deterministic operations.

@@ -8,7 +8,7 @@ Try different combinations of skills and instructions on your own work. Find wha
 
 [日本語](README.ja.md)
 
-> **Draft for the intended public release.** Codex inventory, isolated source-control fixtures, and local desktop-record diagnostics are available for feasibility testing. Registered optional-source preparation and recovery are implemented for macOS; desktop-loaded mode switching, comparison runs, and complete production support remain unverified. The target is macOS and Windows: Codex desktop first, followed by Claude Code desktop.
+> **Draft for the intended public release.** Codex inventory, isolated source-control fixtures, and local desktop-record diagnostics are available for feasibility testing. Registered optional-source preparation and recovery are implemented for macOS; desktop-loaded mode switching, comparison runs, and complete production support remain unverified. Delivery now prioritizes the Mac version: Codex core, Claude Code integration, then Mac product finish. Windows remains a later target, with Codex before Claude Code.
 
 **Free, with no required paid API or hosted backend.** Unharness is designed to run locally with no recurring operator service expense. Your existing AI subscription and usage are separate. Artwork, including three-candidate original forms, and card export have a local route without model calls. See [feasibility and limitations](docs/feasibility.md).
 
@@ -132,14 +132,14 @@ Recovery should restore managed configuration without silently overwriting indep
 
 ## Availability and contributing
 
-Unharness is being prepared for an open-source release. There is no published installation procedure or verified compatibility matrix yet. Both operating systems are included from the start; support is implemented in this order:
+Unharness is being prepared for an open-source release. There is no published installation procedure or verified compatibility matrix yet. Both operating systems remain design targets; Mac completion comes first:
 
 | Application | macOS | Windows |
 | --- | --- | --- |
-| Codex desktop | Phase 1 target | Phase 1 target |
-| Claude Code desktop | Phase 2 target | Phase 2 target |
+| Codex desktop | Phase 1, current priority | Phase 4, deferred |
+| Claude Code desktop | Phase 2, after Mac Codex | Phase 5, after Windows Codex |
 
-These are delivery targets, not completed compatibility tests. See [compatibility and evidence](docs/compatibility.md).
+Phase 3 finishes the Mac product; Phase 6 later reconciles all four combinations. Windows qualification does not block Mac completion. These are delivery targets, not completed compatibility tests. See [delivery](docs/delivery.md) and [compatibility and evidence](docs/compatibility.md).
 
 Useful early contributions include reproducible compatibility observations, small comparison examples, feedback on the save–try–compare–restore flow, and documentation improvements. Contributor instructions, the license, and reporting channels will be established in the dedicated repository before public use.
 

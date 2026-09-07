@@ -1,15 +1,15 @@
 # Product contract
 
-The requirements below are agreed product targets. The [read-only inventory](spec-probe.md), [owned-fixture source-control diagnostic](spec-source-controls.md), [desktop record/fixture observations](desktop-observation.md), [registered fixture loadout core](spec-loadout-store.md), and [local fixture GUI](spec-gui.md) are the working slices delivered so far; the full product implementation is not yet present. See [status](status.md).
+The requirements below are agreed product targets. The [read-only inventory](spec-probe.md), [owned-fixture source-control diagnostic](spec-source-controls.md), [desktop record/fixture observations](desktop-observation.md), [registered fixture loadout core](spec-loadout-store.md), [local fixture GUI](spec-gui.md), and [registered user-source workbench](spec-user-sources.md) are working slices; the full product implementation is not yet present. See [status](status.md).
 
 ## Target and delivery order
 
 | OS | Codex desktop | Claude Code desktop |
 | --- | --- | --- |
 | macOS | Phase 1 | Phase 2 |
-| Windows | Phase 1 | Phase 2 |
+| Windows | Phase 4, deferred | Phase 5, deferred |
 
-Complete Phase 1 on both OSes before handing Claude Code its integration work. Codex performs the final review and finish across all four combinations. The target is the desktop experience using local work, not an assumption that a successful CLI run covers it. Windows native and WSL execution must be identified separately in evidence.
+On 2026-09-08, the maintainer chose to complete macOS first. Complete the Codex core on Mac before handing Claude Code its Mac integration; Codex then reviews and finishes the Mac product in Phase 3. Windows qualification does not block these Mac milestones. Preserve portable boundaries and existing Windows evidence, then resume Windows Codex followed by Windows Claude Code, with a final review across all four combinations in Phase 6. See [delivery](delivery.md). The target is the desktop experience using local work, not an assumption that a successful CLI run covers it. Windows native and WSL execution must be identified separately in evidence.
 
 ## One useful loop
 

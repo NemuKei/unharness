@@ -5,11 +5,11 @@
 | OS | Application | Delivery phase | Current evidence |
 | --- | --- | --- | --- |
 | macOS | Codex desktop | 1 | Saved fixture versions associated with fresh desktop tasks; registered-source preparation/recovery qualified in owned profiles; full product modes unverified |
-| Windows | Codex desktop | 1 | Native inventory, six-case source controls, current-task projection, fixture/loadout recovery, GUI smoke, and one qualified fresh task completed; baseline recording did not match, so successful saved-version association remains pending |
 | macOS | Claude Code desktop, Code tab | 2 | Documentation reviewed; integration not implemented or tested |
-| Windows | Claude Code desktop, Code tab | 2 | Test environment available per maintainer; no test result yet |
+| Windows | Codex desktop | 4, deferred | Native inventory, six-case source controls, current-task projection, fixture/loadout recovery, GUI smoke, and one qualified fresh task completed; baseline recording did not match, so successful saved-version association remains pending |
+| Windows | Claude Code desktop, Code tab | 5, deferred | Test environment available per maintainer; no test result yet |
 
-Both OSes are design targets from the beginning. Phase 1 is complete only when the agreed Codex behavior has desktop evidence on both. Phase 2 adds Claude Code on both. This table is a delivery target, not a support guarantee.
+Both OSes remain design targets. The current delivery goal is Mac completion: Phase 1 qualifies the Codex core on Mac, Phase 2 adds Claude Code on Mac, and Phase 3 finishes the Mac product. Windows delivery follows in Phases 4–5; its unfinished qualification does not block Mac completion. Phase 6 reconciles all four combinations. This order does not change any evidence result or enable unqualified Windows writes. See [delivery](delivery.md); this table is a target, not a support guarantee.
 
 Record the desktop app version, embedded or external runtime version, CPU architecture, and execution environment. Native Windows and WSL results must not be merged into one undifferentiated “Windows passed” result. The [native Windows baseline](evidence/2026-09-07-windows-baseline.md) records a Windows 11 x64 result separately; it does not satisfy the remaining fresh-task or full desktop criteria. See [the probe guide](codex-probe.md).
 
