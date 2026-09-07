@@ -22,12 +22,14 @@ The [registered fixture loadout core](loadouts.md) now supplies immutable settin
 
 The full product cannot yet be promised merely because local settings files can be edited. The next scoped investigation must determine:
 
-1. Which optional sources the real desktop task loads, including app/plugin-provided sources outside standalone discovery.
+1. Which user-added optional instruction/Skill/hook sources the real desktop task loads, distinguishing them from provider/managed sources outside the initial release set.
 2. Which of those sources can be managed without changing fixed instructions or permissions, and whether the scope is task-local or affects other tasks.
 3. How a fresh desktop task receives the prepared settings, whether a restart/manual step is needed, and what observable evidence confirms the state.
 4. Whether restore can preserve unrelated edits, and whether the selected task's usage, retries, and child tasks can be observed sufficiently for the intended metrics.
 
 Continue toward full desktop support only with concrete results for these boundaries. A manual restart/new-task step may be an acceptable integration outcome, but must be reflected in the workflow. If required sources cannot be controlled or observed, expose the limit and revisit the supported scope with the maintainer; do not label partial control as verified TRUEFORM or silently substitute CLI-only work for the agreed desktop product.
+
+The [scope refinement](harness-scope.md) preserves existing memory and native task-continuity settings. Controlling those retained features is not a release-mode requirement; observing their conditions still matters for fair comparisons. The new [read-only source inventory](source-inventory.md) establishes candidate metadata, not ownership, role or desktop control. A minimal instruction guide versus no selected extra instructions is a proposed comparison, not an automatic improvement or a universal official template.
 
 The maintainer clarified that initial use selects one mode at a time. Simultaneous multi-mode dispatch is not required. The [App Server thread APIs](https://learn.chatgpt.com/docs/app-server) provide a way to address separate conversations, but do not establish independent desktop harnesses or memory for concurrent trials. Sequential use avoids requiring that concurrent boundary, while source discovery, fresh-task application, restoration, and honest measurement still need verification.
 

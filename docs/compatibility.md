@@ -13,6 +13,8 @@ Both OSes are design targets from the beginning. Phase 1 is complete only when t
 
 Record the desktop app version, embedded or external runtime version, CPU architecture, and execution environment. Native Windows and WSL results must not be merged into one undifferentiated “Windows passed” result. The [native Windows baseline](evidence/2026-09-07-windows-baseline.md) records a Windows 11 x64 result separately; it does not satisfy the remaining fresh-task or full desktop criteria. See [the probe guide](codex-probe.md).
 
+The [Mac source-inventory pass](evidence/2026-09-08-source-inventory-macos.md) adds the optional real-source read panel and standard instruction candidate census. It verifies read-only collection, UI/reconnection and privacy boundaries on native Mac, not personal-source control or full desktop modes. The new slice has no native Windows or Claude Code result yet.
+
 ## What to record for a real test
 
 - Tested source revision and local changes, if any.

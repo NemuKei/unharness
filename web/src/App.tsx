@@ -8,6 +8,7 @@ import { FavoritesSection } from "./components/FavoritesSection";
 import { RecoverySection } from "./components/RecoverySection";
 import { ObservationSection } from "./components/ObservationSection";
 import { RecoveryDetails } from "./components/RecoveryDetails";
+import { SourceInventory } from "./components/SourceInventory";
 
 export function App() {
   const controller = useFixtureController();
@@ -31,6 +32,7 @@ export function App() {
           UNHARNESS<span>装備を見直す。</span>
         </a>
         <div className="header-right">
+          <a className="inventory-link" href="#source-inventory">Codex設定を確認</a>
           <span className="scope-label">専用の検証環境</span>
           <label className="effects">
             <input
@@ -107,6 +109,7 @@ export function App() {
             )}
           </div>
         )}
+        <SourceInventory />
         <p className="fixture-note">
           ここにある保存版は、操作を確かめるための検証用データです。
         </p>

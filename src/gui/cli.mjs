@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 import { createDemoWorkspace, createGuiController, demoWorkspaceRecovery } from './controller.mjs';
 import { startGuiServer } from './server.mjs';
+import { normalizeInventoryOptions } from './inventory.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const DEFAULT_ASSETS = resolve(ROOT, 'dist');
@@ -14,6 +15,8 @@ export const GUI_USAGE = `Usage:
   node bin/unharness.mjs gui --demo [--parent <existing-directory>] [--port <0..65535>]
   node bin/unharness.mjs gui --store <store> --scope <hash> [--port <0..65535>]
   node bin/unharness.mjs gui --help
+
+Optional read-only inventory: --inspect-cwd <directory> [--codex <native-executable>]
 `;
 
 function parse(argv) {
@@ -27,7 +30,8 @@ function parse(argv) {
       if (seen.has(flag)) return null;
       seen.add(flag); values.demo = true; index += 1; continue;
     }
-    const key = new Map([['--parent', 'parent'], ['--store', 'store'], ['--scope', 'scopeId'], ['--port', 'port']]).get(flag);
+    const key = new Map([['--parent', 'parent'], ['--store', 'store'], ['--scope', 'scopeId'], ['--port', 'port'],
+      ['--inspect-cwd', 'inspectCwd'], ['--codex', 'executable']]).get(flag);
     const value = argv[index + 1];
     if (!key || value === undefined || value.length === 0 || seen.has(flag)) return null;
     seen.add(flag); values[key] = value; index += 2;
@@ -35,6 +39,7 @@ function parse(argv) {
   if (!/^\d+$/.test(String(values.port))) return null;
   values.port = Number(values.port);
   if (!Number.isSafeInteger(values.port) || values.port < 0 || values.port > 65535) return null;
+  if (values.executable !== undefined && values.inspectCwd === undefined) return null;
   if (values.demo) {
     if (values.store !== undefined || values.scopeId !== undefined) return null;
   } else if (values.store === undefined || values.scopeId === undefined || values.parent !== undefined) return null;
@@ -44,12 +49,14 @@ function parse(argv) {
 function safeFailure(error) {
   const known = new Set(['gui-build-missing', 'gui-assets-invalid', 'gui-invalid-port', 'store-init-error',
     'store-invalid', 'store-link-or-type', 'record-not-found', 'record-corrupt', 'invalid-record-id',
+    'gui-inventory-target-invalid', 'gui-inventory-native-executable-required',
     'loadout-incompatible-scope', 'invalid-fixture', 'fixture-conflict']);
   return known.has(error?.kind) ? error.kind : 'gui-start-error';
 }
 
-export function buildResumeArgv({ entryPoint = ENTRY_POINT, store, scopeId } = {}) {
-  return [entryPoint, 'gui', '--store', store, '--scope', scopeId];
+export function buildResumeArgv({ entryPoint = ENTRY_POINT, store, scopeId, inventory } = {}) {
+  return [entryPoint, 'gui', '--store', store, '--scope', scopeId,
+    ...(inventory ? ['--inspect-cwd', inventory.cwd, '--codex', inventory.executable] : [])];
 }
 
 function recoveryProjection(value) {
@@ -57,6 +64,9 @@ function recoveryProjection(value) {
   const result = {};
   for (const key of ['store', 'scopeId', 'fixture', 'project']) {
     if (typeof value[key] === 'string') result[key] = value[key];
+  }
+  if (typeof value.inventory?.cwd === 'string' && typeof value.inventory?.executable === 'string') {
+    result.inventory = { cwd: value.inventory.cwd, executable: value.inventory.executable };
   }
   if (typeof result.store === 'string' && HASH.test(result.scopeId ?? '')) {
     result.resumeArgv = buildResumeArgv(result);
@@ -81,6 +91,8 @@ export async function guiMain(argv, {
   let recovery = null;
   let stop;
   try {
+    const inventory = await normalizeInventoryOptions(options.inspectCwd === undefined
+      ? undefined : { cwd: options.inspectCwd, executable: options.executable });
     let index;
     try { index = await lstat(resolve(assetsDirectory, 'index.html')); }
     catch { throw Object.assign(new Error('gui-build-missing'), { kind: 'gui-build-missing' }); }
@@ -95,8 +107,9 @@ export async function guiMain(argv, {
       selected = { store: resolve(options.store), scopeId: options.scopeId };
       recovery = recoveryProjection(selected);
     }
+    if (inventory) selected.inventory = inventory;
     const state = await createController(selected).then(controller => controller.state());
-    recovery = recoveryProjection(state);
+    recovery = recoveryProjection({ ...state, inventory });
     running = await startServer({ ...selected, assetsDirectory, port: options.port });
     const summary = {
       schemaVersion: 1,
@@ -105,7 +118,8 @@ export async function guiMain(argv, {
       scopeId: state.scopeId,
       fixture: state.fixture,
       project: state.project,
-      resumeArgv: buildResumeArgv(state),
+      ...(inventory ? { inventory } : {}),
+      resumeArgv: buildResumeArgv({ ...state, inventory }),
     };
     stdout.write(`${JSON.stringify(summary)}\n`);
     stop = async () => {

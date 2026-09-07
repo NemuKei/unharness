@@ -19,10 +19,13 @@ With Node.js 24+ and a native Codex executable available, run the dependency-fre
 ```text
 node --test
 node bin/unharness.mjs inspect --cwd . --output local-evidence/codex-probe.json
+node bin/unharness.mjs inspect-sources --cwd . --output local-evidence/source-inventory.json
 node bin/unharness.mjs probe-controls --output local-evidence/source-controls.json
 ```
 
 `inspect` reports sanitized configuration inventory from a separate Codex process. It does not change settings or verify a desktop mode switch. See [the probe guide and Windows handoff](docs/codex-probe.md).
+
+`inspect-sources` adds a bounded census of standard instruction-file candidates to that inventory. The [source inventory](docs/source-inventory.md) shows what was read and which ownership, role and loading checks remain unknown. It does not register personal sources for switching.
 
 `probe-controls` creates and removes its own temporary AGENTS/Skill fixture and inspects Codex's rendered input under six conditions. It does not edit personal configuration or start a model turn. Its results verify the fixture's source behavior, not desktop mode application. The [native Windows baseline](docs/evidence/2026-09-07-windows-baseline.md) covers the completed inventory and fixture checks; it does not establish a desktop mode. See [source-control checks](docs/source-controls.md).
 
@@ -42,6 +45,8 @@ npm run gui
 ```
 
 Open the printed local URL. Select a saved fixture version, review/apply it, save the current settings, check a selected fresh task's recording, or restore a checkpoint. Each demo launch creates a new private workspace under `.unharness/`; the printed store/scope and structured resume arguments identify that same environment for later use. The screen explicitly identifies its synthetic scope. It does not change personal Codex settings or claim full mode support. [Mac GUI evidence](docs/evidence/2026-09-07-local-gui-macos.md) and a [bounded native Windows smoke](docs/evidence/2026-09-07-windows-baseline.md) cover this fixture flow. The Windows smoke used the earlier scene; browser restart, effects-off, narrow layout and the current animation revision remain unverified there. See [GUI usage and recovery](docs/gui.md).
+
+To show the selected real project's read-only inventory alongside the fixture GUI, append `--inspect-cwd <project>` to its resume arguments, or use `npm run gui -- --inspect-cwd .` for a fresh demo. Click **Codex設定を読み取る** to collect. The panel focuses on additional instructions, Skills and hooks; retained memory, integrations and policy information are collapsed. Reading does not change personal settings. [Inventory setup and limits](docs/source-inventory.md).
 
 ## Make “what if I removed this?” easy to try
 
@@ -72,10 +77,12 @@ Numerical comparisons should show the tokens and attempts needed to reach task-d
 | Mode | What it is intended to do |
 | --- | --- |
 | Normal loadout | Use the saved configuration. |
-| Limited release — UNSEAL | Make selected skills manual-only while retaining the other configured guidance. |
-| Zero — TRUEFORM | Stop automatic loading of selected skills, added procedures, steering hooks, and memory within the supported management scope. |
+| Limited release — UNSEAL | Make selected user-added skills manual-only while retaining the other configured guidance. |
+| Zero — TRUEFORM | Stop loading selected user-added optional instructions and skills, plus selected optional steering hooks. |
 
 Keep the task requirements and execution permissions consistent. Show the elements that remain, including the minimal control connection needed to switch back. Availability and exact behavior must be established for each supported tool version.
+
+The initial release set includes self-authored and personally added third-party sources, primarily global AGENTS.md / CLAUDE.md and automatic Skill selection. Existing memory and native task-continuity settings stay unchanged. Provider defaults and managed sources remain outside that set. Keep everyday mode selection simple, with optional target customization beneath each release mode. A short, officially informed replacement guide for UNSEAL is a [design proposal](docs/harness-scope.md), not a universal official template or implemented replacement.
 
 These modes are starting points. A custom combination can be saved as a favorite too.
 

@@ -30,7 +30,7 @@ The same repository and a concrete tested source revision, plus:
 - Exact build/test instructions that exist by then, Codex desktop evidence from both OSes, and known limitations.
 - The bounded task: implement and verify the Claude Code desktop adapter on both OSes while preserving the shared behavior and existing Codex support.
 
-Claude Code should inspect its own desktop environment and current primary documentation. It must identify all instruction, skill, hook, memory, and MCP sources that affect the chosen scope. A needed shared-contract change should be documented with its Codex impact and checked against the baseline.
+Claude Code should inspect its own desktop environment and current primary documentation. It must identify the selected user-added instruction/Skill/hook sources and the retained memory, native continuity, provider and MCP conditions that affect the chosen scope. Memory is not an initial release target. A needed shared-contract change should be documented with its Codex impact and checked against the baseline.
 
 Use a separate development branch for the handoff and keep the source revision explicit. The final integration mechanism can be selected when the repository has a remote; there is no need to require a public repository for development handoff.
 

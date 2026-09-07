@@ -62,6 +62,8 @@ On 2026-09-07 the maintainer accepted the combined mechanical motion and final r
 
 ## Everyday controls and development details
 
+Keep ordinary use to a mode choice. The accepted [scope refinement](harness-scope.md) centers on self-authored/personally added instructions and automatic Skills, with optional hooks secondary. Memory and native task-continuity remain in the common environment. When real-source registration/control exists, place a small **対象を調整** disclosure beneath each release mode; show eligible items and the resulting plan only when opened. Keep paths, IDs and unsupported-source diagnostics secondary. The current read-only inventory uses this hierarchy by showing the three candidate source categories first and collapsing retained information. It does not expose nonfunctional per-item release controls.
+
 The visible lower interface centers on favorites and returning to a recorded pre-change setting, with short explanations of what each operation does. Older recovery points remain available in an expandable history. Task UUIDs, project paths, manual recording checks and CLI recovery coordinates belong in a closed development-details section. Record/plan identifiers remain available when their details are expanded.
 
 This improves readability in the fixture GUI; the eventual product centers on selecting a mode, using it for work, reviewing evidence and keeping a useful setup. Routine users should not have to interpret hashes or manually associate raw task IDs. The verified desktop/AI integration must provide that simpler path. Current diagnostic access remains available until those integrations exist.

@@ -5,6 +5,7 @@ import { extname, relative, resolve, sep } from 'node:path';
 
 import { LOCAL_STORE_ERROR_KINDS } from '../core/local-store.mjs';
 import { createGuiController } from './controller.mjs';
+import { createGuiInventory } from './inventory.mjs';
 
 const MAX_BODY_BYTES = 16 * 1024;
 const MAX_REQUESTS = 1000;
@@ -24,6 +25,7 @@ const SAFE_ERRORS = new Set([
   'current-session-unavailable', 'session-index-too-large',
   'gui-invalid-request', 'gui-request-forbidden', 'gui-request-too-large',
   'gui-request-id-reused', 'gui-request-capacity', 'gui-application-not-current',
+  'gui-inventory-disabled', 'gui-inventory-target-changed',
 ]);
 
 const MIME = new Map([
@@ -101,7 +103,7 @@ function requestShape(body, action) {
   const { requestId, ...input } = body;
   const expected = {
     plan: ['favoriteId'], apply: ['favoriteId', 'planId'], save: ['name'],
-    'restore-checkpoint': ['checkpointId'], observe: ['applicationId', 'sessionId'],
+    'restore-checkpoint': ['checkpointId'], observe: ['applicationId', 'sessionId'], inspect: [],
   }[action];
   if (!expected) throw Object.assign(new Error('gui-invalid-request'), { kind: 'gui-invalid-request' });
   const keys = Object.keys(input).sort();
@@ -136,12 +138,15 @@ async function readJson(request) {
   }
 }
 
-export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0, codexHome } = {}) {
+export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0, codexHome, inventory: inventoryOptions } = {}, {
+  collectInventory,
+} = {}) {
   if (!Number.isSafeInteger(port) || port < 0 || port > 65535) {
     throw Object.assign(new Error('gui-invalid-port'), { kind: 'gui-invalid-port' });
   }
   const files = await staticFiles(assetsDirectory);
   const controller = await createGuiController({ store, scopeId, codexHome });
+  const inventory = await createGuiInventory(inventoryOptions, { collect: collectInventory });
   const token = randomBytes(32).toString('hex');
   const requests = new Map();
   let queue = Promise.resolve();
@@ -182,6 +187,7 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
         const params = [...parsed.searchParams.keys()];
         if (parsed.pathname === '/api/bootstrap' && params.length === 0) sendJson(response, 200, { token });
         else if (parsed.pathname === '/api/state' && params.length === 0) sendJson(response, 200, await controller.state());
+        else if (parsed.pathname === '/api/inventory' && params.length === 0) sendJson(response, 200, inventory.state());
         else if (['/api/favorites', '/api/checkpoints'].includes(parsed.pathname)
           && params.every(key => key === 'after') && params.length <= 1) {
           const after = parsed.searchParams.get('after') ?? undefined;
@@ -213,16 +219,19 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
         sendJson(response, 409, { error: { kind: 'gui-request-capacity' } });
         return;
       }
-      const run = queue.then(async () => {
+      const execute = async () => {
         try {
-          const result = await controller.execute(action, parsedBody.input);
+          const result = action === 'inspect'
+            ? await inventory.inspect()
+            : await controller.execute(action, parsedBody.input);
           return { status: 200, body: { result, state: await controller.state() } };
         } catch (error) {
           const safe = safeError(error);
           return { status: statusFor(safe.kind), body: { error: safe } };
         }
-      });
-      queue = run.then(() => undefined, () => undefined);
+      };
+      const run = action === 'inspect' ? execute() : queue.then(execute);
+      if (action !== 'inspect') queue = run.then(() => undefined, () => undefined);
       requests.set(parsedBody.requestId, { fingerprint, result: run });
       const completed = await run;
       sendJson(response, completed.status, completed.body);

@@ -35,6 +35,12 @@ Add `--port <port>` when a fixed local port is useful. A demo can use an existin
 
 Favorite/checkpoint histories use cursor pages. Continue loading when a page has a next cursor, including a page with no matching entries for the selected scope. Reopening the browser retains the server's active application. Restarting the server requires applying a saved version again to establish a fresh observation boundary; immutable application/observation records remain in the core store.
 
+## Read the real project's sources
+
+The optional **このPCのCodex設定** panel uses a different, explicitly selected context from the fixture controls. Append `--inspect-cwd <project>` to the existing GUI resume arguments, or use `npm run gui -- --inspect-cwd .` for a fresh demo. The native executable can be selected with `--codex`; neither value can be supplied by browser requests.
+
+Click **Codex設定を読み取る** to collect a dated source overview. Additional instructions, Skills and hooks are shown first; retained memory, integration and policy information are collapsed. Counts include provider items and are not a release set. The [inventory guide](source-inventory.md) explains what was read, what is unknown, and how reconnection presents a changed target before another read. No personal setting is changed or registered as a favorite.
+
 ## Check a fresh Codex task
 
 Expand **開発用の確認** to see the generated project directory and the existing short READY request. These are diagnostic controls, not the intended everyday product workflow. Add that directory as a local Codex project, start a fresh local task there, and send the displayed request. The GUI does not dispatch it or choose an AI model.

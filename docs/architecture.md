@@ -31,6 +31,8 @@ flowchart LR
 
 The four data queries are `config/read`, `skills/list`, `hooks/list`, and `configRequirements/read`, preceded by initialization. No configuration-write request or model task is started by this command.
 
+The [source inventory](source-inventory.md) adds [inventory.mjs](../src/codex/inventory.mjs), which combines that same probe with a bounded metadata/hash census of standard instruction candidates. Both `inspect-sources` and the opt-in GUI reader call it. Paths and file contents are never evaluated as instructions; no candidate becomes a registered or removable source merely because it was found.
+
 The `probe-controls` path runs through [source-controls.mjs](../src/codex/source-controls.mjs), which owns a temporary fixture and the six-case sequence, and [prompt-input.mjs](../src/codex/prompt-input.mjs), which runs the bounded CLI debug command and projects recognized text into five marker booleans. It reuses the existing version-command and owned-process cleanup behavior. It does not extend the inventory RPC allowlist or retain raw prompt text. Its interpretation and failure boundaries are in [the control-probe contract](spec-source-controls.md).
 
 Both diagnostics are separate from the desktop app's active session. They retain `desktopSessionAttached: false`, `runtimeStateVerified: false`, and `modeSwitchingVerified: false`; inventory coverage is `"unknown"`, and the control probe covers only its owned fixture. Those two diagnostics persist optional JSON reports; they do not use the separate loadout store described below. macOS has real standalone observations; Windows evidence is pending.
@@ -55,7 +57,7 @@ The fixture-only `refresh` operation journals a same-case notification before to
 
 [service.mjs](../src/loadouts/service.mjs) registers scope, saves/lists versions, plans/restores configurations, publishes pre-change checkpoints/application receipts and associates a sanitized recording with an explicit version. An application receipt records a new task-time boundary even when restoring the current case without a source rewrite. The observer checks that boundary as well as fixture preparation and rejects stale application state. Matching fixture markers never promote full runtime/mode verification.
 
-[The CLI](../src/loadouts/cli.mjs) calls that service directly. Future web/AI endpoints can use the same operations; neither endpoint is implemented yet. The [contract](spec-loadout-store.md) and [runbook](loadouts.md) define the current scope, raw-data boundary, explicit versions and recovery sequence. The store does not implement cross-machine migration, an exactly-once protocol or general personal-configuration recovery.
+[The CLI](../src/loadouts/cli.mjs) and the local GUI call that service directly. The AI/MCP endpoint remains future work. The [contract](spec-loadout-store.md) and [runbook](loadouts.md) define the current scope, raw-data boundary, explicit versions and recovery sequence. The store does not implement cross-machine migration, an exactly-once protocol or general personal-configuration recovery.
 
 ## Local fixture GUI
 
@@ -64,6 +66,10 @@ The [GUI contract](spec-gui.md) limits a server to one registered owned fixture 
 React owns controls, selection and operation feedback. PixiJS owns only the scene and effects. Selection previews a favorite; applying submits its reviewed plan. The core checks exact preparation identity again before writing. A detected external change marks the GUI's application stale, and completed artwork never advances evidence state. The server retains duplicate request identities for the launch, while the core retains immutable favorites, checkpoints, applications and observations on disk. Restarting requires reapplication before a new observation boundary is established.
 
 The Pixi entry includes its local `unsafe-eval` compatibility extension: despite the upstream name, that extension replaces generated helper functions with static implementations. This keeps initialization compatible with the server's strict `script-src 'self'` policy. The dependency check disables runtime code generation to cover this boundary.
+
+An opt-in [inventory reader](../src/gui/inventory.mjs) binds a separate real cwd/native executable at startup, checks target replacement and shares one concurrent collection. Its launch identity is separate from authentication. The browser refreshes metadata before reading and compares it with the identity accepted by the UI; even a failed metadata fetch cannot consume a launch-change check. Inventory runs outside the fixture mutation queue and is never promoted into a favorite/application. This separation keeps fixture recovery usable during an external runtime timeout.
+
+The [initial management scope](harness-scope.md) selects user-added optional instructions, automatic Skills and optional hooks. Memory and native continuity settings are retained comparison conditions. Future registration must bind ownership/role decisions to exact source versions; installation scope and presence-only inventory are insufficient.
 
 ## Intended product architecture
 

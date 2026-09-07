@@ -5,7 +5,7 @@ The first GUI connects the existing owned-fixture loadout service to a local bro
 ## User journey
 
 1. Install and build locally, then run `npm run gui`. The explicit demo launch creates a fresh private workspace under `.unharness/`, containing a generated desktop fixture and record store. Save baseline, manual-only and fixed-only favorite versions there; finish at baseline. Print structured Node arguments (`resumeArgv`, with the absolute CLI entrypoint first) and the store/scope for safe resumption. Existing data is never replaced or automatically deleted.
-2. Show the three saved fixture conditions, prepared configuration, readable source summary and version identity. The visible scope label is `専用の検証環境`. Personal Codex settings are outside this surface.
+2. Show the three saved fixture conditions, prepared configuration, readable source summary and version identity. The visible scope label is `専用の検証環境`. Personal Codex settings are outside this control scope. An optional separate read-only inventory panel inspects one real project selected by the local launcher.
 3. Selecting a favorite previews it and requests a read-only change plan. The apply button submits that exact plan. A concurrent or external change invalidates it and requires another review. Create the normal core checkpoint before mutation.
 4. Save the current prepared configuration with an optional name. List versioned favorites and checkpoints with bounded pagination; do not lose older entries after the first page.
 5. Show the fixture project path and the existing no-tools READY request so the user can create a fresh local Codex task. The GUI never dispatches a model request. Entering a task UUID locates only that task's recording through the existing filename-only session lookup, then calls `observeApplication` for the current application receipt.
@@ -30,7 +30,7 @@ With effects on, the fully released body gains stronger source-shaped white-blue
 
 Use Node.js 24+ standard-library HTTP on `127.0.0.1` only, with an OS-assigned port by default. Serve only the built `dist/` UI and its assets, never workspace/configuration files. Exact Host validation, same-origin checks, a custom client header and an ephemeral server token protect API requests. Do not enable CORS. Apply no-store and a restrictive CSP; reject oversized or unexpected request shapes and sanitize errors.
 
-The CLI supplies one store and scope; API calls cannot register arbitrary paths or switch scope. Task lookup accepts a UUID, not a filesystem path. Mutation requests include an operation UUID, are serialized, and duplicate UUIDs return the same result without another mutation. Reuse with a different payload is rejected. Keep the cache bounded and report capacity instead of silently forgetting identities. No automatic client mutation retries.
+The CLI supplies one store and scope; API calls cannot register arbitrary paths or switch scope. Task lookup accepts a UUID, not a filesystem path. Mutation requests include an operation UUID, are serialized, and duplicate UUIDs return the same result without another mutation. Reuse with a different payload is rejected. Keep the cache bounded and report capacity instead of silently forgetting identities. No automatic client mutation retries. The optional read-only source inventory uses a separate fixed startup context and collection lane so it cannot block fixture recovery; see [its contract](source-inventory.md).
 
 The controller uses the existing shared loadout service for save, plan, restore, checkpoint restore and observation. It projects summaries only, never source bodies, fixture marker seeds or raw transcripts. Recheck current fixture state; after a detected external edit, show the conflict and keep recovery information available. A successful animation or asset load cannot advance evidence state. In-memory application/observation presentation resets on server restart; immutable core records do not.
 
@@ -42,6 +42,7 @@ All API requests send `X-Unharness-Client: 1`. Bootstrap returns the per-launch 
 | --- | --- |
 | GET `/api/bootstrap` | `{ token }` |
 | GET `/api/state` | State projection below |
+| GET `/api/inventory` | `{ launchId, enabled, cwd, report }`; cached metadata only, no collection |
 | GET `/api/favorites?after=<hash>` | Existing `listFavorites` page, scoped to this GUI |
 | GET `/api/checkpoints?after=<hash>` | Existing `listCheckpoints` page, filtered to this scope; retain nextCursor even on empty pages |
 | POST `/api/plan` | `{ requestId, favoriteId }` → core plan |
@@ -49,9 +50,12 @@ All API requests send `X-Unharness-Client: 1`. Bootstrap returns the per-launch 
 | POST `/api/save` | `{ requestId, name }` → favorite summary |
 | POST `/api/restore-checkpoint` | `{ requestId, checkpointId }` → application; enforce this scope |
 | POST `/api/observe` | `{ requestId, applicationId, sessionId }` → observation; enforce current application |
+| POST `/api/inspect` | `{ requestId }` → read-only source inventory for the launcher's selected context |
 
 State: `{ scopeId, controlScope: 'owned-fixture-only', project, fixture, store, current: { case, revision, configurationDigest } | null, conflict: string | null, application: object | null, applicationCurrent: boolean, observation: object | null, runtimeStateVerified: false, modeSwitchingVerified: false }`. Project/fixture/store paths are deliberately local, authenticated recovery/handoff information. Current configuration capture failures yield a safe conflict, not a guessed case. Favorite/checkpoint lists are separate paginated endpoints.
 
 ## Validation and evidence limits
+
+The real-source panel centers on additional instructions, Skills and hooks, and collapses retained memory, integration and policy information. Counts may include provider items and do not establish user ownership or a release set. On reconnect, fetch metadata first and compare its non-authenticating `launchId` with the identity accepted by the UI. A new launch, changed cwd or disabled reader is displayed before any collection; a later explicit click can read the accepted context. Failed metadata retrieval must not consume this check. Individual mode customization remains design work until real-source registration/control exists.
 
 Server tests use real temporary fixtures/store and local HTTP. Cover save/apply/restore/observation, stale plans, independent edits, cross-scope targets, duplicate requests, host/origin/token rejection, invalid JSON, oversized requests, and static path confinement. Verify dependencies install, TypeScript checks, production build and existing Node tests. Browser checks cover the real local save/select/apply/recovery flow, refresh, effect settings, observation errors, responsive layout and console errors. Compare screenshots with the selected concept and document deliberate scope/copy changes. This is local GUI evidence, not Windows or complete desktop support.

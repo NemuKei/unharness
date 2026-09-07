@@ -30,10 +30,14 @@ The [feasibility boundaries](feasibility.md) identify what is established, what 
 | Stable meaning | Display label | Managed behavior |
 | --- | --- | --- |
 | Normal | 通常装備 | Use the saved loadout. |
-| Limited release | 限定解除 — UNSEAL | Make selected skills manual-only, retaining the other configured guidance. |
-| Zero | 零式 — TRUEFORM | Stop automatic loading of the selected managed extra skills, procedures, steering hooks, and memory. |
+| Limited release | 限定解除 — UNSEAL | Make selected user-added skills manual-only, retaining the other configured guidance. |
+| Zero | 零式 — TRUEFORM | Stop loading selected user-added optional instructions and skills, plus selected optional steering hooks. Preserve existing memory and native task-continuity settings. |
 
 The same policy names express the same user intent in both applications. Each integration must declare which controls implement that intent. Unsupported controls are not silently approximated by a weaker mode.
+
+The initial scope includes self-authored and personally added third-party sources, primarily global AGENTS.md / CLAUDE.md and automatic Skill selection. Provider defaults, managed sources and mandatory project requirements remain outside the release set. A user directory or `user` scope is not evidence of authorship or removability. Hooks require an optional-role classification. Memory remains a common comparison condition rather than varied equipment. See [the accepted scope and minimal-guide proposal](harness-scope.md); replacing additional instructions with a short guide in UNSEAL is a proposed refinement, not yet the implemented or finalized default.
+
+Keep the default UI to mode selection, with a collapsed **対象を調整** entry under each release mode. Customization must operate on registered, classified sources and a reviewable change plan; it must not expose unimplemented toggles or put memory/provider protections back into the initial release set.
 
 Task requirements, managed configuration, and execution permissions remain consistent. Show remaining elements, including the minimal connection used to manage modes. Written instructions and enforced execution controls are different kinds of conditions.
 

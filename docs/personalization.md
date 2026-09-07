@@ -108,7 +108,7 @@ Animation and comparison state remain independent. “Generation complete” mea
 | Personal quests | Recurring task types, common corrections, previously accepted work requirements | Suggested tasks with explicit starting conditions and versioned acceptance criteria |
 | Personal evaluation | Stated priorities such as correctness, readability, brevity, or acceptable human effort | A reviewable scorecard fixed before the comparison begins |
 | Contextual favorites | Recorded outcomes, user ratings, app/model/configuration versions, task type | “This loadout worked for similar work” with evidence and a re-test suggestion when stale |
-| Memory as equipment | A selected optional memory source or a prepared memory summary | A comparison of fixed, omitted, or deliberately varied memory under recorded conditions |
+| Retained memory conditions | Existing memory settings and observable input versions | Interpret comparisons without treating memory as removable equipment |
 
 An AI recollection that a setup “worked well” is a lead, not a substitute for experiment evidence. Unharness owns the exact local configuration and comparison records. It can give the user's AI a short summary and record references for future recall when that client's memory capabilities and the user's settings permit it; do not promise automatic cross-app memory synchronization.
 
@@ -118,11 +118,11 @@ Default artwork selection does not consume this work-memory profile. Store task/
 
 Use memory to prepare the experience and the experiment. The experiment runner must then receive only its declared inputs. Do not silently inject the design brief, the conversation used to choose equipment, or the generation skill into candidate tasks.
 
-For each comparison, record whether memory is fixed across candidates, omitted, or deliberately part of the varied equipment. Preserve the permitted input version when observable, and record read and future-write behavior. If a client cannot expose or control the relevant source, mark that part unknown and the comparison potentially confounded rather than claiming identical inputs or verified Zero.
+The [initial harness scope](harness-scope.md) keeps existing memory and native task-continuity settings unchanged across modes. Record observable input versions and read/write behavior. Unchanged settings do not guarantee unchanged contents; if a client cannot expose the relevant source, mark that part unknown and the comparison potentially confounded rather than claiming identical inputs. Memory is not an initial release or customization target.
 
 Freeze task criteria and relevant memory inputs during the comparison. Avoid allowing the first trial's answers or ratings to enter a later trial through background memory updates. A fresh task alone does not prove memory isolation. Generation and optional judging usage belong to separate overhead records, not the candidate's task-token total.
 
-The appearance skill is invoked only for a requested, eligible creation/revision, outside benchmark execution. In Codex, explicit-only invocation is available, but it does not by itself prove a skill is absent from discovery or already loaded context. Benchmark isolation must cover the selected source and fresh-task boundary. TRUEFORM must not regain disabled memories through a personalization helper. The minimal recovery/control connection remains separate from the optional appearance workflow.
+The appearance skill is invoked only for a requested, eligible creation/revision, outside benchmark execution. In Codex, explicit-only invocation is available, but it does not by itself prove a skill is absent from discovery or already loaded context. Benchmark isolation must cover the selected source and fresh-task boundary. Personalization must not reintroduce selected disabled procedures or change the shared memory conditions behind the user's back. The minimal recovery/control connection remains separate from the optional appearance workflow.
 
 ## App capabilities and evidence
 

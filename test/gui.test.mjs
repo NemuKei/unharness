@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { request as httpRequest } from 'node:http';
 import { tmpdir } from 'node:os';
-import { dirname, isAbsolute, join } from 'node:path';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
 
 import { readDesktopFixture, changeDesktopFixture, createDesktopFixture } from '../src/codex/desktop-fixture.mjs';
 import { putRecord } from '../src/core/local-store.mjs';
@@ -14,6 +14,9 @@ import { createDemoWorkspace, createGuiController, demoWorkspaceRecovery } from 
 import { startGuiServer } from '../src/gui/server.mjs';
 import { buildResumeArgv, guiMain } from '../src/gui/cli.mjs';
 import { main } from '../bin/unharness.mjs';
+import { collectSourceInventory, inspectInstructionCandidates } from '../src/codex/inventory.mjs';
+import { collectProbe } from '../src/codex/probe.mjs';
+import { SUBPROCESS_TIMEOUT_MS } from '../test-support/process-timeouts.mjs';
 
 async function temporary(t, prefix = 'unharness-gui-') {
   const parent = await realpath(await mkdtemp(join(tmpdir(), prefix)));
@@ -324,6 +327,140 @@ test('GUI CLI validates modes and help is side-effect free', async t => {
     const result = await invoke(argv);
     assert.equal(result.exitCode, 2, argv.join(' '));
   }
+});
+
+test('personal inventory is opt-in and cannot turn a fixture server into an arbitrary reader', async t => {
+  const parent = await temporary(t);
+  const demo = await createDemoWorkspace({ parent });
+  const gui = await startGuiServer({ ...demo, assetsDirectory: await assets(t, parent) });
+  t.after(gui.close);
+  const bootstrap = await raw(gui.url, { path: '/api/bootstrap', headers: apiHeaders(gui.url) });
+  const { token } = JSON.parse(bootstrap.text);
+  const before = await controllerState(gui.url, token);
+  const metadata = await raw(gui.url, { path: '/api/inventory', headers: apiHeaders(gui.url, token) });
+  assert.equal(metadata.status, 200);
+  const { launchId, ...disabledState } = JSON.parse(metadata.text);
+  assert.match(launchId, /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/);
+  assert.deepEqual(disabledState, { enabled: false, cwd: null, report: null });
+  const disabled = await jsonRequest(gui.url, token, '/api/inspect', { requestId: randomUUID() });
+  assert.equal(disabled.status, 400);
+  assert.deepEqual(disabled.json, { error: { kind: 'gui-inventory-disabled' } });
+  const injected = await jsonRequest(gui.url, token, '/api/inspect', { requestId: randomUUID(), cwd: parent });
+  assert.equal(injected.status, 400);
+  assert.deepEqual(injected.json, { error: { kind: 'gui-invalid-request' } });
+  assert.deepEqual(await controllerState(gui.url, token), before);
+});
+
+test('GUI resume argv preserves the explicitly selected inventory context as data', () => {
+  const entryPoint = String.raw`C:\Program Files\Unharness\bin\unharness.mjs`;
+  const store = String.raw`C:\Users\Test\store`;
+  const scopeId = 'a'.repeat(64);
+  const inventory = { cwd: String.raw`C:\Projects\選択した project`, executable: String.raw`C:\Program Files\Codex\codex.exe` };
+  assert.deepEqual(buildResumeArgv({ entryPoint, store, scopeId, inventory }), [
+    entryPoint, 'gui', '--store', store, '--scope', scopeId,
+    '--inspect-cwd', inventory.cwd, '--codex', inventory.executable,
+  ]);
+});
+
+test('authenticated inventory reads only its startup context and caches reports without changing fixture state', async t => {
+  const parent = await temporary(t);
+  const demo = await createDemoWorkspace({ parent });
+  const selected = join(parent, 'selected project');
+  const instructionHome = join(parent, 'profile');
+  await mkdir(selected);
+  await mkdir(instructionHome);
+  await writeFile(join(selected, 'AGENTS.md'), 'PRIVATE_SOURCE_BODY');
+  let collections = 0;
+  const gui = await startGuiServer({ ...demo, assetsDirectory: await assets(t, parent),
+    inventory: { cwd: selected, executable: process.execPath },
+  }, { collectInventory: options => {
+    collections += 1;
+    assert.equal(options.cwd, selected);
+    return collectSourceInventory(options, {
+      probe: args => collectProbe({ ...args, executableArgs: [resolve('test/fixtures/codex-server.mjs'),
+        '--scenario', 'strict-ok', '--expected-cwd', selected], timeoutMs: SUBPROCESS_TIMEOUT_MS }),
+      instructions: args => inspectInstructionCandidates({ ...args, codexHome: instructionHome }),
+    });
+  } });
+  t.after(gui.close);
+  const { token } = JSON.parse((await raw(gui.url, { path: '/api/bootstrap', headers: apiHeaders(gui.url) })).text);
+  const before = await controllerState(gui.url, token);
+  const initial = await raw(gui.url, { path: '/api/inventory', headers: apiHeaders(gui.url, token) });
+  const { launchId, ...initialState } = JSON.parse(initial.text);
+  assert.deepEqual(initialState, { enabled: true, cwd: selected, report: null });
+  assert.equal(collections, 0, 'opening the page does not launch Codex');
+  const refused = await jsonRequest(gui.url, 'wrong-token', '/api/inspect', { requestId: randomUUID() });
+  assert.equal(refused.status, 403);
+  assert.equal(collections, 0);
+  const body = { requestId: randomUUID() };
+  const [first, duplicate] = await Promise.all([
+    jsonRequest(gui.url, token, '/api/inspect', body),
+    jsonRequest(gui.url, token, '/api/inspect', body),
+  ]);
+  assert.equal(first.status, 200, first.text);
+  assert.deepEqual(first.json, duplicate.json);
+  assert.equal(collections, 1);
+  assert.equal(first.json.result.launchId, launchId);
+  assert.equal(first.json.result.cwd, selected);
+  assert.equal(first.json.result.report.probe.queries.skills.status, 'ok');
+  assert.equal(first.json.result.report.instructions.files.filter(item => item.state === 'present').length, 1);
+  assert.equal(first.json.result.report.management.control, 'unverified');
+  assert.doesNotMatch(first.text, /SECRET_MARKER|PRIVATE_SOURCE_BODY/);
+  const reread = await raw(gui.url, { path: '/api/inventory', headers: apiHeaders(gui.url, token) });
+  assert.deepEqual(JSON.parse(reread.text), first.json.result);
+  assert.equal(collections, 1, 'a browser reload uses the dated report without another collection');
+  assert.deepEqual(await controllerState(gui.url, token), before);
+  assert.equal(await readFile(join(selected, 'AGENTS.md'), 'utf8'), 'PRIVATE_SOURCE_BODY');
+});
+
+test('a slow personal inventory does not block fixture changes or recovery', { timeout: SUBPROCESS_TIMEOUT_MS * 2 }, async t => {
+  const parent = await temporary(t);
+  const demo = await createDemoWorkspace({ parent });
+  let began;
+  let finish;
+  const started = new Promise(resolveStarted => { began = resolveStarted; });
+  const delayed = new Promise(resolveFinished => { finish = resolveFinished; });
+  const gui = await startGuiServer({ ...demo, assetsDirectory: await assets(t, parent), inventory: { cwd: parent } }, {
+    collectInventory: async () => { began(); return delayed; },
+  });
+  t.after(() => { finish(null); return gui.close(); });
+  const { token } = JSON.parse((await raw(gui.url, { path: '/api/bootstrap', headers: apiHeaders(gui.url) })).text);
+  const inspection = jsonRequest(gui.url, token, '/api/inspect', { requestId: randomUUID() });
+  await started;
+  const save = await jsonRequest(gui.url, token, '/api/save', { requestId: randomUUID(), name: 'save during inventory' });
+  assert.equal(save.status, 200);
+  finish(null);
+  assert.equal((await inspection).status, 200);
+});
+
+test('GUI CLI validates inventory before creating a demo and preserves it in recovery instructions', async t => {
+  const parent = await temporary(t);
+  const demo = await createDemoWorkspace({ parent });
+  const assetsDirectory = await assets(t, parent);
+  let demos = 0;
+  let stderr = '';
+  const invalid = await guiMain(['gui', '--demo', '--inspect-cwd', join(parent, 'missing')], {
+    assetsDirectory, createDemo: async () => { demos += 1; return demo; },
+    stdout: { write() {} }, stderr: { write(value) { stderr += value; } },
+  });
+  assert.equal(invalid, 1);
+  assert.equal(demos, 0);
+  assert.equal(JSON.parse(stderr).error.kind, 'gui-inventory-target-invalid');
+  stderr = '';
+  const result = await guiMain(['gui', '--store', demo.store, '--scope', demo.scopeId,
+    '--inspect-cwd', parent, '--codex', process.execPath], {
+    assetsDirectory,
+    startServer: async options => {
+      assert.deepEqual(options.inventory, { cwd: parent, executable: process.execPath });
+      throw Object.assign(new Error('PRIVATE START ERROR'), { kind: 'gui-build-missing' });
+    },
+    stdout: { write() {} }, stderr: { write(value) { stderr += value; } },
+  });
+  assert.equal(result, 1);
+  const failed = JSON.parse(stderr);
+  assert.deepEqual(failed.recovery.inventory, { cwd: parent, executable: process.execPath });
+  assert.deepEqual(failed.recovery.resumeArgv.slice(-4), ['--inspect-cwd', parent, '--codex', process.execPath]);
+  assert.ok(!stderr.includes('PRIVATE START ERROR'));
 });
 
 test('resume instructions preserve shell metacharacters and Windows backslashes only as structured argv', () => {
