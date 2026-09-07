@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-windows-fresh-fixture-evidence",
+  "observedOn": "2026-09-07",
+  "testedRevision": "995bc37003b1e92b98d1a590cc4d22dd2f412351",
+  "environment": {
+    "platform": "win32",
+    "architecture": "x64",
+    "nodeVersion": "24.19.0",
+    "windowsVersion": "10.0.26100",
+    "desktopVersion": "26.901.6511.0",
+    "codexRuntimeVersion": "0.153.4",
+    "native": true
+  },
+  "recordedExecutionSettings": {
+    "model": "gpt-6-astra",
+    "reasoningEffort": "max",
+    "approvalPolicy": "never",
+    "sandboxType": "danger-full-access"
+  },
+  "baselineAttempt": {
+    "condition": "baseline",
+    "provenance": {
+      "desktopOriginator": true,
+      "recordedStartRoute": "user-created",
+      "hasForkParent": false,
+      "knownFork": false,
+      "contextRecorded": true,
+      "cwdMatches": true,
+      "preparedBeforeStart": true,
+      "freshFixtureTaskCandidate": true
+    },
+    "firstTurnCompleted": true,
+    "noTaskToolsUsed": true,
+    "initialMarkers": {
+      "fixed": "present",
+      "procedure": "present",
+      "skillCatalog": "absent-in-record",
+      "skillBody": "absent-in-record"
+    },
+    "guiUuidObservationSaved": true,
+    "fixtureMarkerCheck": "not-matched-record",
+    "standaloneProjectionAgreed": true,
+    "usageTotalsCollected": false
+  },
+  "sameBaselineRetryPreparation": {
+    "refreshRequested": "owned-skill-mtime",
+    "runtimeReloadVerified": false,
+    "fixtureSourceBytesUnchanged": true,
+    "originalFavoriteVersionRetained": true,
+    "replacementApplicationCreated": true,
+    "guiPreviousApplicationMarkedStale": true,
+    "guiStaleRecordingSubmissionDisabled": true,
+    "finalCondition": "baseline",
+    "configurationReadback": "matched",
+    "postRefreshFreshTaskObserved": false
+  },
+  "selectedPersonalLocationsUnchanged": true,
+  "personalConfigurationWrites": false,
+  "desktopRestartRequested": false,
+  "desktopSessionAttached": false,
+  "runtimeStateVerified": false,
+  "modeSwitchingVerified": false,
+  "sourceCoverage": "unknown"
+}

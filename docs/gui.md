@@ -45,7 +45,7 @@ Enter that task's UUID in the recording form. The server searches the standard l
 - `not-matched-record`: the recording qualifies as a candidate but its fixture markers differ.
 - `unqualified-record`: the recording is old, from another project, a known fork or otherwise does not meet the fresh-task boundary.
 
-All three results leave full `runtimeStateVerified` and `modeSwitchingVerified` false. A match is evidence about recorded fixture input. If settings changed since application, apply the intended saved version again before observing another fresh task. A stale restored Skill catalog remains a known desktop limitation; [fixture refresh](desktop-observation.md) is an explicit diagnostic, not an automatic GUI guarantee.
+All three results leave full `runtimeStateVerified` and `modeSwitchingVerified` false. A match is evidence about recorded fixture input. The [first native Windows GUI observation](evidence/2026-09-07-windows-fresh-task.md) qualified as fresh but was `not-matched-record`: it does not confirm the baseline or establish why the Skill catalog/body were absent. The follow-up refresh and reapplication use a new receipt before another task. If settings changed since application, apply the intended saved version again before observing another fresh task. A stale restored Skill catalog is a known desktop limitation; [fixture refresh](desktop-observation.md) is an explicit diagnostic, not an automatic GUI guarantee.
 
 ## Display and data
 
@@ -53,4 +53,4 @@ Effects on/off and reduced motion affect the scene only. The [bundled artwork](g
 
 Private workspace paths are shown locally for task creation and recovery. Source bodies, marker seeds and raw recordings are not API responses. The server validates its Host, origin, client header and per-launch token and serves only built UI assets. No cloud backend, runtime CDN, model API or X integration is required.
 
-The GUI and its current evidence are development work. The [integrated Windows baseline](evidence/2026-09-07-windows-baseline.md) covers a normal-viewport in-app-browser smoke for select, apply, save, checkpoint restore and local artwork. It does not cover browser restart, effects-off, narrow layout, or fresh-task/UUID observation. Complete desktop mode support still needs verification under [the compatibility criteria](compatibility.md).
+The GUI and its current evidence are development work. The [integrated Windows baseline](evidence/2026-09-07-windows-baseline.md) covers a normal-viewport in-app-browser smoke for select, apply, save, checkpoint restore and local artwork. The [first Windows fresh task](evidence/2026-09-07-windows-fresh-task.md) exercises UUID observation but does not match the baseline. Browser restart, effects-off, narrow layout and a matching fresh-task association remain unverified. Complete desktop mode support still needs verification under [the compatibility criteria](compatibility.md).

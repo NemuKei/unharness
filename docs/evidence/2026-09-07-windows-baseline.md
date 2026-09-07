@@ -1,6 +1,6 @@
 # Native Windows diagnostic baseline, 2026-09-07
 
-The inventory, source-control matrix, current-task recording projection and registered-fixture save/restore loop ran on native Windows. Fresh tasks in the generated fixture project have not yet been observed. This establishes the available diagnostic and local filesystem slices, not complete Codex desktop support or product modes.
+The inventory, source-control matrix, current-task recording projection and registered-fixture save/restore loop ran on native Windows. The later [fresh-task follow-up](2026-09-07-windows-fresh-task.md) observed one qualified generated-fixture task, but its baseline record did not match. This baseline preserves the earlier diagnostic and local filesystem results; neither record establishes complete Codex desktop support or product modes.
 
 ## Environment and revision
 
@@ -50,14 +50,14 @@ After `npm ci --ignore-scripts`, the integrated `node --test` passed **148 tests
 
 The built loopback GUI was opened in Codex's in-app browser on Windows using the retained store and scope. Its normal viewport was 1265 × 712. Selecting the manual-only favorite displayed a plan while baseline remained prepared; applying it changed prepared readback to manual-only while task confirmation remained pending. Saving created a new manual-only favorite. Restoring the pre-change checkpoint returned baseline. Selecting and applying the original baseline favorite then established the current GUI application receipt. The artwork rendered and the browser's captured warning/error log was empty.
 
-This was a bounded browser smoke of selection, application, save and recovery. Windows browser restart, effects-off, narrow layout and fresh-task/UUID observation were not exercised. The GUI remains at baseline with a current application and the exact project/READY prompt available for the next task. The private handoff was updated to that receipt; full runtime/mode flags remain false.
+This was a bounded browser smoke of selection, application, save and recovery. The later [fresh-task follow-up](2026-09-07-windows-fresh-task.md) exercised UUID observation and returned `not-matched-record`; it did not confirm the baseline. Windows browser restart, effects-off and narrow layout remain unexercised. The GUI remains at baseline with a current application and the exact project/READY prompt available for the next task. The private handoff was updated to that receipt; full runtime/mode flags remain false.
 
-## Next Windows desktop check
+## Historical next Windows desktop check
 
-The retained fixture is at baseline; its store, exact favorite/application IDs, project path and prompts are in ignored local handoff data. Open that exact generated `project` folder as a **new local task**, preserving model, reasoning and execution permissions. Send only the generated marker-free READY prompt. Collect its recording before changing the fixture.
+The retained fixture was opened as an exact generated-project task in the [fresh-task follow-up](2026-09-07-windows-fresh-task.md). Its qualified result did not match baseline. The owner has since refreshed the unchanged Skill and reapplied the same baseline favorite; use that new receipt for another same-route fresh task before changing cases.
 
 Follow the [fresh-task runbook](../desktop-observation.md#fresh-task-sequence-on-macos-or-native-windows) through baseline → manual-only (including explicit Skill invocation) → fixed-only → restored baseline, one new task at a time. Use the same creation route. Connect the saved manual-only and baseline versions to their application receipts with [loadout observation](../loadouts.md#associate-a-fresh-task-with-the-saved-version). A refresh requires a new receipt before the next task. Retain baseline at the end and preserve conflicts; do not restart the app automatically.
 
-Pending: fresh fixture/task and saved-version associations on Windows, picker selection, generic refresh guarantees, Windows ACL isolation/named-pipe behavior, real personal-source classification/control and full Normal/UNSEAL/TRUEFORM. `desktopSessionAttached`, `runtimeStateVerified` and `modeSwitchingVerified` remain false. A local save/restore success does not promote these flags.
+Pending: a matching Windows baseline, successful saved-version associations, later manual-only/fixed-only/restored cases, picker selection, generic refresh guarantees, Windows ACL isolation/named-pipe behavior, real personal-source classification/control and full Normal/UNSEAL/TRUEFORM. `desktopSessionAttached`, `runtimeStateVerified` and `modeSwitchingVerified` remain false. A local save/restore success or qualified mismatch does not promote these flags.
 
 The [reduced result](2026-09-07-windows-baseline.json) contains versions, test counts, fixed labels and booleans only. Private paths, source hashes/bodies, favorite/application IDs and raw recordings remain outside Git.
