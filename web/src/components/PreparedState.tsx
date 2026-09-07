@@ -1,5 +1,5 @@
 import type { FixtureController } from "../useFixtureController";
-import { conditions, shortId } from "../types";
+import { conditions } from "../types";
 
 export function PreparedState({
   controller,
@@ -45,11 +45,13 @@ export function PreparedState({
               : "未接続"}
         </span>
       </div>
-      <p className="muted">
-        {state?.current
-          ? `準備版 ${state.current.revision} · 設定 ${shortId(state.current.configurationDigest)}`
-          : "検証用の設定だけを読み取ります。"}
-      </p>
+      {state?.current && (
+        <details className="identity-details">
+          <summary>設定の記録を表示</summary>
+          <p>準備版 {state.current.revision}</p>
+          <p><code>{state.current.configurationDigest}</code></p>
+        </details>
+      )}
       <p className="boundary">
         {(!connected || !preparationConfirmed) && state
           ? "表示は最後に取得した記録です。現在の準備状態を再取得してください。"

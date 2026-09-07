@@ -1,5 +1,5 @@
 import type { FixtureController } from "../useFixtureController";
-import { conditions, shortId } from "../types";
+import { conditions } from "../types";
 import type { Application } from "../types";
 const sourceLabels: Record<string, string> = {
   "project-instructions": "プロジェクトの指示",
@@ -41,10 +41,7 @@ export function PlanSection({
       </div>
       {selected ? (
         <p className="selected-name">
-          {selected.name || conditions[selected.case].label}{" "}
-          <code title={selected.favoriteId}>
-            {shortId(selected.favoriteId)}
-          </code>
+          {selected.name || conditions[selected.case].label}
         </p>
       ) : (
         <p className="muted">下の確認条件か、お気に入りを選択してください。</p>
@@ -83,7 +80,11 @@ export function PlanSection({
                 ))}
               </ul>
             )}
-            <code title={plan.planId}>計画 {shortId(plan.planId)}</code>
+            <details className="identity-details">
+              <summary>版と計画のID</summary>
+              <p><code>保存版 {selected?.favoriteId}</code></p>
+              <p><code>計画 {plan.planId}</code></p>
+            </details>
           </>
         ) : selected ? (
           <p>適用前に変更計画を再確認してください。</p>

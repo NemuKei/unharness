@@ -177,6 +177,9 @@ export function useFixtureController() {
         setName("");
       }
       if (route === "/apply" || route === "/restore-checkpoint") {
+        // A confirmed undo returns the visual preview to the restored setting.
+        // Failed restoration must retain the selected preview and its error state.
+        if (route === "/restore-checkpoint") setSelected(null);
         setRecoveryId((response.result as Application).checkpointId);
         setBusy("checkpoints");
         await readCheckpointPage();

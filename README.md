@@ -41,7 +41,7 @@ npm run build
 npm run gui
 ```
 
-Open the printed local URL. Select a saved fixture version, review/apply it, save the current settings, check a selected fresh task's recording, or restore a checkpoint. Each demo launch creates a new private workspace under `.unharness/`; the printed store/scope and structured resume arguments identify that same environment for later use. The screen explicitly identifies its synthetic scope. It does not change personal Codex settings or claim full mode support. [Mac GUI evidence](docs/evidence/2026-09-07-local-gui-macos.md) and a [bounded native Windows smoke](docs/evidence/2026-09-07-windows-baseline.md) cover this fixture flow; the Windows smoke did not test a fresh task, browser restart, effects-off, or narrow layout. See [GUI usage and recovery](docs/gui.md).
+Open the printed local URL. Select a saved fixture version, review/apply it, save the current settings, check a selected fresh task's recording, or restore a checkpoint. Each demo launch creates a new private workspace under `.unharness/`; the printed store/scope and structured resume arguments identify that same environment for later use. The screen explicitly identifies its synthetic scope. It does not change personal Codex settings or claim full mode support. [Mac GUI evidence](docs/evidence/2026-09-07-local-gui-macos.md) and a [bounded native Windows smoke](docs/evidence/2026-09-07-windows-baseline.md) cover this fixture flow. The Windows smoke used the earlier scene; browser restart, effects-off, narrow layout and the new layered animation remain unverified there. See [GUI usage and recovery](docs/gui.md).
 
 ## Make “what if I removed this?” easy to try
 
@@ -100,7 +100,7 @@ The visual direction uses a pixel-art machine hangar: the outer equipment opens,
 
 *Original static design concept. The current fixture GUI implements a smaller, explicitly labelled diagnostic flow.*
 
-The local GUI uses PixiJS for the equipment scene and effects, with React and HTML/CSS for controls and readable state. A bundled three-state PNG sheet and versioned frame recipe play locally without image generation. See [the rendering design](docs/design.md#selected-rendering-stack) and [bundled artwork](docs/gui-artwork.md). Random appearance assembly and original-form creation remain future work.
+The local GUI uses PixiJS for the equipment scene and effects, with React and HTML/CSS for controls and readable state. A bundled background, armor and core move continuously and transform from the displayed pose when the preview changes. Reverse transitions return the entity to its equipment. All playback is local, with no image generation. Technical recording/ID fields are available in a collapsed development section. See [the rendering design](docs/design.md#selected-rendering-stack) and [bundled artwork](docs/gui-artwork.md). Random appearance assembly and original-form creation remain future work.
 
 Equipment can also be shown as supportive armor or a resonating frame when a comparison shows it fits the work. Unmeasured setups remain neutral, and the illustration stays separate from the measured result.
 

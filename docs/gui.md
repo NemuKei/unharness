@@ -31,13 +31,13 @@ Add `--port <port>` when a fixed local port is useful. A demo can use an existin
 2. Review the changed sources and exact favorite version, then apply that version. The core captures the pre-change checkpoint and performs guarded restoration.
 3. Read the prepared configuration separately from task confirmation. The three conditions are baseline, manual-only and fixed-only in the synthetic fixture; fixed-only does not establish complete TRUEFORM.
 4. Save the current prepared configuration, optionally giving it a name. Saving preserves the versioned content; selecting a different preview does not change what gets saved.
-5. Restore the application's pre-change checkpoint or select an older checkpoint. Inspect conflicts instead of replacing independent edits. The original [CLI recovery](loadouts.md#recover-without-the-ai) remains available when the GUI or AI is unavailable.
+5. Use the primary undo for the currently accepted application's pre-change checkpoint, or expand recovery history to choose an older checkpoint. A successful restore moves the preview back to that condition. Inspect conflicts instead of replacing independent edits. The original [CLI recovery](loadouts.md#recover-without-the-ai) remains available when the GUI or AI is unavailable.
 
 Favorite/checkpoint histories use cursor pages. Continue loading when a page has a next cursor, including a page with no matching entries for the selected scope. Reopening the browser retains the server's active application. Restarting the server requires applying a saved version again to establish a fresh observation boundary; immutable application/observation records remain in the core store.
 
 ## Check a fresh Codex task
 
-The GUI shows the exact generated project directory and the existing short READY request. Add that directory as a local Codex project, start a fresh local task there, and send the displayed request. The GUI does not dispatch it or choose an AI model.
+Expand **開発用の確認** to see the generated project directory and the existing short READY request. These are diagnostic controls, not the intended everyday product workflow. Add that directory as a local Codex project, start a fresh local task there, and send the displayed request. The GUI does not dispatch it or choose an AI model.
 
 Enter that task's UUID in the recording form. The server searches the standard local Codex session filenames for that ID only and uses the existing bounded record projection. It does not accept a browser-supplied file path or return raw chat text.
 
@@ -49,7 +49,7 @@ All three results leave full `runtimeStateVerified` and `modeSwitchingVerified` 
 
 ## Display and data
 
-Effects on/off and reduced motion affect the scene only. The [bundled artwork](gui-artwork.md) and display preferences do not change a loadout, eligibility or verification status. Core controls remain usable if graphics initialization fails.
+With effects on, the visible scene continually floats, glows and moves particles/charge. Changing the preview animates the same armor and core from their current pose; direct changes and reverse travel follow the same opening/lifting path. Effects off and reduced motion use a static destination pose; hidden tabs pause animation. The [bundled artwork](gui-artwork.md) and display preferences do not change a loadout, eligibility or verification status. Core controls remain usable if graphics initialization fails.
 
 Private workspace paths are shown locally for task creation and recovery. Source bodies, marker seeds and raw recordings are not API responses. The server validates its Host, origin, client header and per-launch token and serves only built UI assets. No cloud backend, runtime CDN, model API or X integration is required.
 

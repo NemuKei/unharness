@@ -1,5 +1,5 @@
 import type { FixtureController } from "../useFixtureController";
-import { conditions, shortId } from "../types";
+import { conditions } from "../types";
 
 export function FavoritesSection({
   controller,
@@ -28,14 +28,18 @@ export function FavoritesSection({
     <section className="records-section">
       <div className="section-heading">
         <h2>お気に入り</h2>
-        <span>設定内容を保存した版</span>
+        <span>保存した設定を、また使う</span>
       </div>
+      <p className="muted">
+        選ぶと上のプレビューで確認できます。適用するまで、現在の設定は変わりません。
+      </p>
       {favorites.length ? (
         <ul className="record-list">
           {favorites.map((favorite) => (
             <li key={favorite.favoriteId}>
               <button
                 aria-pressed={selected?.favoriteId === favorite.favoriteId}
+                title={`保存版 ${favorite.favoriteId}`}
                 disabled={!connected || !!busy}
                 onClick={() => void choose(favorite)}
               >
@@ -45,8 +49,7 @@ export function FavoritesSection({
                 <span className="record-name">
                   {favorite.name || conditions[favorite.case].label}
                   <small>
-                    {conditions[favorite.case].title} ·{" "}
-                    {shortId(favorite.favoriteId)}
+                    {conditions[favorite.case].label}
                   </small>
                 </span>
                 <span aria-hidden="true">›</span>

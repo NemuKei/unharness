@@ -19,21 +19,27 @@ export function Hangar({
     "loading" | "ready" | "failed"
   >("loading");
   const [reduced, setReduced] = useState(false);
+  const [moving, setMoving] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
     const media = matchMedia("(prefers-reduced-motion: reduce)");
     const syncPlayback = () => {
       setReduced(media.matches);
-      scene.current?.setEffects(
-        effectsRef.current && !media.matches && !document.hidden,
-      );
+      scene.current?.setEffects(effectsRef.current && !media.matches);
+      scene.current?.setVisible(!document.hidden);
     };
     syncPlayback();
     media.addEventListener("change", syncPlayback);
     document.addEventListener("visibilitychange", syncPlayback);
     // Import starts after the semantic controls have mounted. No renderer owns configuration state.
     void import("./renderer")
-      .then((module) => module.createScene(host.current!, controller.signal))
+      .then((module) => {
+        const element = host.current;
+        if (controller.signal.aborted || !element) return null;
+        return module.createScene(element, controller.signal, (active) => {
+          if (!controller.signal.aborted) setMoving(active);
+        });
+      })
       .then((renderer) => {
         if (!renderer) return;
         if (controller.signal.aborted) {
@@ -41,7 +47,7 @@ export function Hangar({
           return;
         }
         scene.current = renderer;
-        renderer.setCondition(conditionRef.current);
+        renderer.setCondition(conditionRef.current, true);
         syncPlayback();
         setGraphicsState("ready");
       })
@@ -62,8 +68,7 @@ export function Hangar({
   useEffect(() => {
     scene.current?.setEffects(
       effects &&
-        !matchMedia("(prefers-reduced-motion: reduce)").matches &&
-        !document.hidden,
+        !matchMedia("(prefers-reduced-motion: reduce)").matches,
     );
   }, [effects]);
   return (
@@ -73,12 +78,14 @@ export function Hangar({
       </div>
       <div className="pixi-host" ref={host} />
       <span className="scene-indicator">
-        {graphicsState === "failed"
+        {graphicsState === "loading"
+          ? "描画を準備中…"
+          : graphicsState === "failed"
           ? "静止画表示 · 操作は利用できます"
           : reduced
             ? "静止画表示 · 動きを減らす設定"
             : effects
-              ? "演出プレビュー"
+              ? moving ? "変形中 · プレビュー" : "待機モーション · プレビュー"
               : "静止画表示"}
       </span>
     </div>

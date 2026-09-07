@@ -28,7 +28,7 @@ Suggested animation sequence: casing opens → a brief visual pause → rings an
 
 ## Selected rendering stack
 
-On 2026-09-07 the maintainer selected **PixiJS** for the first GUI and explicitly accepted the additional dependencies. Use its scene graph, sprites, asset loading, masks and filters for the equipment and release effects. The first [local fixture GUI](gui.md) connects scene-frame playback and optional effects to a smaller diagnostic flow. It uses [bundled state portraits](gui-artwork.md); individually moving armor parts, comparison views and the full appearance system remain future work.
+On 2026-09-07 the maintainer selected **PixiJS** for the first GUI and explicitly accepted the additional dependencies. The [local fixture GUI](gui.md) now uses a layered background, complementary armor halves and an inner lattice entity, with continuous idle motion and directional release transitions. The [bundled artwork](gui-artwork.md) is local; comparison views and the full appearance/collection system remain future work.
 
 | Responsibility | Selected approach |
 | --- | --- |
@@ -45,6 +45,20 @@ Keep a consistent pixel grid, nearest-neighbor texture sampling and aligned spri
 Bundle the renderer and default assets for local use; normal playback and candidate assembly must not depend on a CDN or model service. PixiJS belongs to the browser presentation layer, while configuration, recovery and assessment remain in the shared core. The first GUI uses React/TypeScript and Vite. Pinned dependencies are in [package.json](../package.json); setup is documented in [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 Technical references: [PixiJS introduction](https://pixijs.com/8.x/guides/getting-started/intro) and [adding PixiJS to an existing project](https://pixijs.com/8.x/guides/getting-started/quick-start).
+
+## Continuous motion and directional transitions
+
+The maintainer clarified that the scene should feel alive continuously, and that changing modes should animate from the previous displayed form. The idle scene floats the same body, pulses its light, moves charge along the equipment links and drifts particles through the hangar. Exposed states add a breathing core and slowly rotating halos.
+
+Use one visual release path: closed shell → open shell with core inside → core lifted above the lowered shell. Reverse travel lowers the core before closing the shell. Direct first-to-last transitions follow this same path. Retargeting mid-transition starts from the displayed intermediate pose, and reselecting the same target does not restart it. Timing is about 1.7 seconds per full adjacent stage, up to 3.4 seconds for a direct full release/return.
+
+The renderer uses active visual time, paused when hidden, and caps its ticker at 30 fps. Effects off and reduced motion settle immediately on the selected static pose. Initial loading starts at the selected condition without pretending a new configuration switch occurred. Selection drives a labelled preview; a confirmed checkpoint restore returns that preview to the restored condition. An animation callback never changes preparation, application or verification state.
+
+## Everyday controls and development details
+
+The visible lower interface centers on favorites and returning to a recorded pre-change setting, with short explanations of what each operation does. Older recovery points remain available in an expandable history. Task UUIDs, project paths, manual recording checks and CLI recovery coordinates belong in a closed development-details section. Record/plan identifiers remain available when their details are expanded.
+
+This improves readability in the fixture GUI; the eventual product centers on selecting a mode, using it for work, reviewing evidence and keeping a useful setup. Routine users should not have to interpret hashes or manually associate raw task IDs. The verified desktop/AI integration must provide that simpler path. Current diagnostic access remains available until those integrations exist.
 
 ## Effects and product state
 
@@ -87,7 +101,7 @@ In implementation, render tables and proportional charts from actual data rather
 
 The maintainer prefers a random discovery over a taste-optimized appearance. The proposed default selects from prepared entities and compatible variations with weighted probabilities, without using personal memories to infer taste. Keep the selected body recognizable across release states and app restarts; sample another appearance only when creating an entity or explicitly requested. The user can keep/name a discovery and associate it with a build card.
 
-Prepared sprites, code-drawn pixel grids, and optional image-model generation are distinct creation routes. Pixel art does not require an image model. The [appearance and memory proposal](personalization.md) defines these routes, reproducible local selection, optional creation skills, and benchmark separation. Random visual rarity is independent of measured performance. The first GUI plays fixed bundled state portraits; random assembly, the collection runtime and distribution skill remain unimplemented.
+Prepared sprites, code-drawn pixel grids, and optional image-model generation are distinct creation routes. Pixel art does not require an image model. The [appearance and memory proposal](personalization.md) defines these routes, reproducible local selection, optional creation skills, and benchmark separation. Random visual rarity is independent of measured performance. The GUI animates a fixed bundled layered entity; random assembly, the collection runtime and distribution skill remain unimplemented.
 
 ## A comparison can unlock an original form
 

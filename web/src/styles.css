@@ -619,21 +619,102 @@ footer > span {
 footer .muted {
   font-size: 11px;
 }
-footer details {
-  max-width: 560px;
-}
 summary {
   cursor: pointer;
 }
-footer dl {
-  font-size: 11px;
+.recovery-help dl {
+  font-size: 12px;
 }
-footer dd {
+.recovery-help dd {
   margin: 3px 0 10px;
   overflow-wrap: anywhere;
 }
-footer p {
+.recovery-help p {
   margin-top: 12px;
+}
+.fixture-note {
+  padding: 18px 36px;
+  color: var(--muted);
+  font-size: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.records-section > .muted {
+  margin-top: 14px;
+}
+.undo-button {
+  margin-top: 20px;
+}
+.history-details {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.history-details > summary {
+  color: #d7dfe3;
+  font-size: 13px;
+}
+.history-details > p {
+  margin-top: 12px;
+}
+.identity-details {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.identity-details p {
+  margin-top: 8px;
+  overflow-wrap: anywhere;
+}
+.identity-details code {
+  font-size: 10px;
+}
+.developer-details {
+  border-bottom: 1px solid var(--line);
+}
+.developer-details > summary {
+  padding: 25px 36px;
+  color: #d7dfe3;
+  font-size: 15px;
+}
+.developer-details > summary small {
+  margin-left: 18px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.developer-details[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+.developer-intro {
+  padding: 23px 36px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.recovery-help {
+  padding: 30px 36px;
+  max-width: 900px;
+}
+.recovery-help h3 {
+  font-size: 15px;
+}
+.recovery-help p {
+  color: var(--muted);
+  font-size: 13px;
+}
+@media (max-width: 700px) {
+  .fixture-note,
+  .developer-details > summary,
+  .recovery-help {
+    padding-left: 23px;
+    padding-right: 23px;
+  }
+  .developer-details > summary small {
+    display: block;
+    margin: 8px 0 0 16px;
+  }
+  .developer-intro {
+    padding-left: 23px;
+    padding-right: 23px;
+  }
 }
 @media (min-width: 1450px) {
   .hangar-layout {

@@ -107,12 +107,29 @@ export function App() {
             )}
           </div>
         )}
+        <p className="fixture-note">
+          ここにある保存版は、操作を確かめるための検証用データです。
+        </p>
         <div className="records-grid">
           <FavoritesSection controller={controller} />
           <RecoverySection controller={controller} />
         </div>
-        <ObservationSection controller={controller} />
-        <RecoveryDetails controller={controller} />
+        <details className="developer-details">
+          <summary>
+            <span>開発用の確認</span>
+            <small>タスク記録との照合・保存場所・手動の復旧</small>
+          </summary>
+          <p className="developer-intro">
+            以下はCodexのタスク記録と照合するための検証項目です。
+            お気に入りの保存や呼び出しには、入力する必要はありません。
+          </p>
+          <ObservationSection controller={controller} />
+          <RecoveryDetails controller={controller} />
+        </details>
+        <footer>
+          <span>UNHARNESS</span>
+          <span className="muted">ローカルの検証用プレビュー</span>
+        </footer>
       </main>
     </div>
   );
