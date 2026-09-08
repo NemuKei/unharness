@@ -103,7 +103,9 @@ The UI should show run count, shared comparison conditions, collection coverage,
 
 The primary interaction is a single selected mode used for ordinary work. This comparison view reviews saved observations or explicitly requested later replays. The three-column illustration does not imply simultaneous dispatch, and untried modes remain unmeasured. Distinguish matched comparisons from different everyday tasks before displaying a GOOD/BAD interpretation.
 
-In implementation, render tables and proportional charts from actual data rather than reusing the chart bitmap. Align the loadout headers and table columns, keep failed/unknown data distinguishable, and allow users to open the underlying outputs. The image is a visual concept; interactive comparison and measurement are not implemented yet. Generation input is preserved in [design-comparison-prompt.md](design-comparison-prompt.md).
+The implemented comparison uses actual saved values rather than the chart bitmap: compact crops from the bundled three-state art, aligned semantic table columns and directly labelled horizontal root-response token bars from a common zero baseline. A real zero stays at zero width; missing values say **不明**, and partial values retain their partial label. Unknown source association gets a separate unknown portrait instead of inferred Normal art. The static table/text remains usable if artwork fails, at narrow widths it scrolls within its own bounded region, and no evidence depends on hover.
+
+The view keeps ordinary records neutral, shows attributed checks/ratings/notes on demand, and opens the bounded answer only by explicit plain-text inspection. Mode identity, portrait art and shorter bars never imply GOOD/BAD. The existing Pixi equipment scene and effects preference are unchanged; comparison portraits are static and do not mount extra renderers. Generation input for the concept is preserved in [design-comparison-prompt.md](design-comparison-prompt.md).
 
 ## Discovering an original appearance
 

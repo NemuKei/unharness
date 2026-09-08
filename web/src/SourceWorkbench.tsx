@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Hangar } from "./Hangar";
+import { ComparisonWorkbench } from "./ComparisonWorkbench";
 import {
   RestoreAdaptationNotice,
   RetainedReview,
 } from "./components/RetainedReview";
 import { useSourceController } from "./useSourceController";
+import { comparisonContextKey } from "./useComparisonController";
 import {
   canObserveTask,
   currentTaskObservation,
@@ -32,8 +34,16 @@ function displayPreference() {
 export function SourceWorkbench() {
   const c = useSourceController();
   const [effects, setEffects] = useState(displayPreference);
+  const [activeTab, setActiveTab] = useState<"equipment" | "comparison">(
+    "equipment",
+  );
+  const [comparisonTask, setComparisonTask] = useState<{
+    taskId: string;
+    contextKey: string;
+  } | null>(null);
   const presentation = modePresentation[c.selected];
   const source = c.view?.source;
+  const comparisonKey = comparisonContextKey(c.view);
   const usable =
     !!source &&
     c.confirmed &&
@@ -68,7 +78,37 @@ export function SourceWorkbench() {
           </label>
         </div>
       </header>
+      <nav className="workbench-tabs" aria-label="ワークベンチ">
+        <button
+          aria-current={activeTab === "equipment" ? "page" : undefined}
+          onClick={() => setActiveTab("equipment")}
+        >
+          装備
+        </button>
+        <button
+          aria-current={activeTab === "comparison" ? "page" : undefined}
+          onClick={() => setActiveTab("comparison")}
+        >
+          比較
+        </button>
+      </nav>
       <main id="main">
+        <div hidden={activeTab !== "comparison"}>
+          <ComparisonWorkbench
+            key={comparisonKey}
+            sourceController={c}
+            initialTaskId={
+              comparisonTask?.contextKey === comparisonKey
+                ? comparisonTask.taskId
+                : undefined
+            }
+          />
+          <footer>
+            <span>UNHARNESS</span>
+            <span className="muted">通常利用の観測記録をローカルで比較</span>
+          </footer>
+        </div>
+        <div hidden={activeTab !== "equipment"}>
         <div className="hangar-layout">
           <section className="visual-column" aria-label="選択したモード">
             <div className="scene-heading">
@@ -79,7 +119,10 @@ export function SourceWorkbench() {
               <p className="scene-subtitle">{presentation.label}</p>
               <p className="scene-description">{presentation.description}</p>
             </div>
-            <Hangar condition={presentation.scene} effects={effects} />
+            <Hangar
+              condition={presentation.scene}
+              effects={effects && activeTab === "equipment"}
+            />
             <p className="scene-caption">
               姿は選択プレビューです。実行中のタスクの状態を表すものではありません。
             </p>
@@ -166,7 +209,14 @@ export function SourceWorkbench() {
                   </div>
                 ))}
               {source && (
-                <TaskObservationSection controller={c} usable={usable} />
+                <TaskObservationSection
+                  controller={c}
+                  usable={usable}
+                  onCompareTask={(taskId) => {
+                    setComparisonTask({ taskId, contextKey: comparisonKey });
+                    setActiveTab("comparison");
+                  }}
+                />
               )}
             </section>
             {!source ? (
@@ -291,7 +341,10 @@ export function SourceWorkbench() {
                     }
                   >
                     {f.name} · {modePresentation[f.preparedMode].title}
-                    {f.needsAdaptation ? " · 現在の共通設定を維持" : ""}
+                    {source &&
+                    f.normalId !== source.registration.activeNormalId
+                      ? " · 現在の共通設定を維持"
+                      : ""}
                   </button>
                 </li>
               ))}
@@ -378,6 +431,7 @@ export function SourceWorkbench() {
           <span>UNHARNESS</span>
           <span className="muted">次のタスク用の設定をローカルで準備</span>
         </footer>
+        </div>
       </main>
     </div>
   );
@@ -409,9 +463,11 @@ const sourceStatusLabels: Record<TaskObservation["sources"][number]["status"], s
 function TaskObservationSection({
   controller: c,
   usable,
+  onCompareTask,
 }: {
   controller: Controller;
   usable: boolean;
+  onCompareTask: (taskId: string) => void;
 }) {
   const [taskId, setTaskId] = useState("");
   const source = c.view?.source ?? null;
@@ -501,6 +557,12 @@ function TaskObservationSection({
             <p className="muted">
               選んだソースの最初の記録だけを確認します。実行中の状態、モード切替、すべてのソースの読み込みは未検証です。
             </p>
+            <button
+              className="text-button"
+              onClick={() => onCompareTask(observation.taskId)}
+            >
+              このUUIDを比較で使う
+            </button>
           </div>
         )}
       </details>

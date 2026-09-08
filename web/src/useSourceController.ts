@@ -22,6 +22,11 @@ import type {
   TaskObservation,
 } from "./sources";
 
+export type AuxiliarySourceOperationResult<T> =
+  | { status: "completed"; result: T; state: SourceView }
+  | { status: "context-updated"; state: SourceView }
+  | { status: "failed"; error: unknown };
+
 export function useSourceController() {
   const api = useRef(new Api()).current;
   const lock = useRef(false);
@@ -283,6 +288,35 @@ export function useSourceController() {
       },
     );
   }
+  async function executeComparison<T>(
+    action: string,
+    input: object,
+  ): Promise<AuxiliarySourceOperationResult<T>> {
+    if (lock.current || !view)
+      return { status: "failed", error: new Error("source-busy") };
+    lock.current = true;
+    setBusy(true);
+    try {
+      const response = await sourceOperation<T>(api, view.metadata, action, input);
+      if (response.status === "context-updated") {
+        accept(response.state);
+        setSelected(response.state.source?.preparedMode ?? "normal");
+        dispatch({
+          type: "set-notice",
+          notice:
+            "接続先が変わりました。比較記録をクリアしたため、対象を確認してください。",
+        });
+        return response;
+      }
+      accept(response.state);
+      return response;
+    } catch (error) {
+      return { status: "failed", error };
+    } finally {
+      lock.current = false;
+      setBusy(false);
+    }
+  }
   return {
     recoveryResult,
     view,
@@ -302,6 +336,7 @@ export function useSourceController() {
     run,
     choose,
     loadFavorites,
+    executeComparison,
     setDiscovery,
     setReview,
     setRetainedPlan: (next: RetainedPlan) =>

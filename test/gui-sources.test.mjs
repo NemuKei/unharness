@@ -244,6 +244,39 @@ test(
 );
 
 test(
+  "comparison HTTP accepts a valid multibyte assessment within its service limits",
+  { skip: process.platform !== "darwin" },
+  async (t) => {
+    const s = await setup(t);
+    await registerAllSources(s);
+    const taskId = await writeTaskRecording(s);
+    const review = await s.post("review-run", { taskId });
+    assert.equal(review.status, 200, JSON.stringify(review));
+    const assessment = {
+      outcome: "unknown",
+      provenance: "user",
+      requirements: [],
+      ratings: Array.from({ length: 8 }, (_, index) => ({
+        id: `criterion-${index}`,
+        label: "基".repeat(160),
+        score: 3,
+        lowAnchor: "低".repeat(160),
+        highAnchor: "高".repeat(160),
+        reason: "理".repeat(500),
+      })),
+      note: "注".repeat(2000),
+    };
+    const saved = await s.post("save-run", {
+      reviewId: review.data.result.reviewId,
+      assessment,
+    });
+    assert.equal(saved.status, 200, JSON.stringify(saved));
+    assert.equal(saved.data.result.assessment.ratings.length, 8);
+    assert.equal(saved.data.result.assessment.note.length, 2000);
+  },
+);
+
+test(
   "source management launch is isolated and binds registration to reviewed discovery and context",
   { skip: process.platform !== "darwin" },
   async (t) => {

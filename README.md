@@ -8,7 +8,7 @@ Try different combinations of skills and instructions on your own work. Find wha
 
 [日本語](README.ja.md)
 
-> **Draft for the intended public release.** Codex inventory, isolated source-control fixtures, and local desktop-record diagnostics are available for feasibility testing. Registered optional-source preparation and recovery are implemented for macOS; desktop-loaded mode switching, comparison runs, and complete production support remain unverified. Delivery now prioritizes the Mac version: Codex core, Claude Code integration, then Mac product finish. Windows remains a later target, with Codex before Claude Code.
+> **Draft for the intended public release.** Codex inventory, isolated source-control fixtures, local desktop-record diagnostics, and private ordinary-run comparison records are available for feasibility testing. Registered optional-source preparation and recovery are implemented for macOS; predeclared replay, the AI/MCP entry point, complete desktop-loaded mode switching, and production support remain unfinished. Delivery now prioritizes the Mac version: Codex core, Claude Code integration, then Mac product finish. Windows remains a later target, with Codex before Claude Code.
 
 **Free, with no required paid API or hosted backend.** Unharness is designed to run locally with no recurring operator service expense. Your existing AI subscription and usage are separate. Artwork, including three-candidate original forms, and card export have a local route without model calls. See [feasibility and limitations](docs/feasibility.md).
 
@@ -61,6 +61,8 @@ A [selected real-source Mac check](docs/evidence/2026-09-08-real-source-desktop-
 
 If a later independent Codex setting edit affects only retained configuration, the workbench can now show a value-free **review changes** summary and explicitly record the current settings as a new Normal version. This record-only acceptance does not rewrite managed files. Restoring an older favorite or checkpoint states that it will keep the current common settings and use the saved selected-source state; saving afterward creates a new favorite version. [Native owned-profile and built-browser checks](docs/evidence/2026-09-08-retained-settings-macos.md) cover source preservation, older saved versions and interruption recovery. They do not qualify complete desktop loading or Mac support. See the [workbench runbook](docs/user-source-gui.md) and [retained-settings contract](docs/spec-retained-settings.md).
 
+The same workbench now has **Equipment** and **Comparison** tabs. Comparison reviews one explicit Codex task UUID, defaults to its first recorded turn, can include a selected later cutoff, and saves an immutable measurement plus an attributed retrospective assessment. Up to three private records can be displayed in an aligned table and zero-based token chart. Raw output appears only after an explicit plain-text request. These ordinary-use records stay neutral and cannot unlock original creation; predeclared input/criteria capture, sequential replay and MCP remain later work. The implementation has synthetic automated coverage and a production build; native owned-profile and browser qualification for this slice are recorded separately when completed. See the [runbook](docs/user-source-gui.md) and [ordinary-run contract](docs/spec-comparison-records.md).
+
 ## Make “what if I removed this?” easy to try
 
 You have added skills, instructions, and workflows to help your AI work the way you want. Now you want to know which parts fit the model and the work in front of you.
@@ -83,7 +85,7 @@ The useful result is a choice you can explain for your work. Fewer instructions 
 
 The initial experience runs one selected mode at a time; it does not automatically send your instruction to all three modes. A later matched replay is optional. Different everyday tasks provide observations, not by themselves proof that a mode improved or worsened performance.
 
-Numerical comparisons should show the tokens and attempts needed to reach task-defined quality, alongside your preference. Functional checks and explicit scorecards provide different kinds of evidence. See [the measurement contract](docs/comparison-metrics.md); live usage collection and grading are planned work.
+Numerical comparisons show the recorded root-response tokens and duration beside attributed checks, ratings and notes. Missing or partial usage remains explicit, and different everyday tasks remain neutral observations. See [the measurement contract](docs/comparison-metrics.md); predeclared replay and any optional grader integration remain planned work.
 
 ## Three starting modes
 

@@ -33,6 +33,13 @@ const fields = {
   checkpoint: [["checkpointId"], []],
   recover: [[], []],
   observe: [["taskId"], []],
+  "review-run": [["taskId"], ["throughTurnId"]],
+  "save-run": [["reviewId", "assessment"], ["title", "previousRunId"]],
+  runs: [[], ["after"]],
+  run: [["runId"], []],
+  "run-output": [["runId"], []],
+  "compare-runs": [["runIds"], []],
+  "run-favorite": [["runId"], ["name"]],
 };
 export function sourceRequestShape(body, action) {
   const schema = Object.hasOwn(fields, action) ? fields[action] : null;
@@ -58,6 +65,9 @@ export function sourceRequestShape(body, action) {
     "favoriteId",
     "checkpointId",
     "after",
+    "reviewId",
+    "previousRunId",
+    "runId",
   ])
     if (Object.hasOwn(input, key) && !id(input[key]))
       fail("gui-invalid-request");
@@ -68,6 +78,28 @@ export function sourceRequestShape(body, action) {
   )
     fail("gui-invalid-request");
   if (Object.hasOwn(input, "sourceId") && !sourceId(input.sourceId))
+    fail("gui-invalid-request");
+  if (
+    Object.hasOwn(input, "throughTurnId") &&
+    (typeof input.throughTurnId !== "string" ||
+      !/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/.test(input.throughTurnId))
+  )
+    fail("gui-invalid-request");
+  if (
+    Object.hasOwn(input, "runIds") &&
+    (!Array.isArray(input.runIds) ||
+      input.runIds.length < 1 ||
+      input.runIds.length > 3 ||
+      input.runIds.some((value) => !id(value)) ||
+      new Set(input.runIds).size !== input.runIds.length)
+  )
+    fail("gui-invalid-request");
+  if (
+    Object.hasOwn(input, "assessment") &&
+    (!input.assessment ||
+      typeof input.assessment !== "object" ||
+      Array.isArray(input.assessment))
+  )
     fail("gui-invalid-request");
   for (const key of ["selectedSkillIds", "selectedIds"])
     if (
@@ -86,6 +118,14 @@ export function sourceRequestShape(body, action) {
     (typeof input.name !== "string" ||
       input.name.length > 120 ||
       /[\u0000-\u001f]/.test(input.name))
+  )
+    fail("gui-invalid-request");
+  if (
+    Object.hasOwn(input, "title") &&
+    (typeof input.title !== "string" ||
+      !input.title.trim() ||
+      input.title.length > 120 ||
+      /[\u0000-\u001f\u007f-\u009f]/.test(input.title))
   )
     fail("gui-invalid-request");
   if (
@@ -184,6 +224,20 @@ export async function createSourceController(context) {
         return service.recoverUserSources({ workspace });
       if (action === "observe")
         return service.observeUserTask({ workspace, taskId: input.taskId });
+      if (action === "review-run")
+        return service.reviewUserRun({ workspace, ...input });
+      if (action === "save-run")
+        return service.saveUserRun({ workspace, ...input });
+      if (action === "runs")
+        return service.listUserRuns({ workspace, ...input });
+      if (action === "run")
+        return service.readUserRun({ workspace, ...input });
+      if (action === "run-output")
+        return service.readUserRunOutput({ workspace, ...input });
+      if (action === "compare-runs")
+        return service.compareUserRuns({ workspace, ...input });
+      if (action === "run-favorite")
+        return service.saveUserRunFavorite({ workspace, ...input });
       fail("gui-invalid-request");
     },
   };

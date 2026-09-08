@@ -4,6 +4,7 @@ import { createServer } from 'node:http';
 import { extname, relative, resolve, sep } from 'node:path';
 
 import { LOCAL_STORE_ERROR_KINDS } from '../core/local-store.mjs';
+import { parseStrictJson } from '../core/strict-json.mjs';
 import { createGuiController } from './controller.mjs';
 import { createGuiInventory } from './inventory.mjs';
 import { createSourceController, sourceRequestShape } from './sources.mjs';
@@ -12,6 +13,10 @@ import { USER_SOURCE_ERROR_KINDS } from '../sources/service.mjs';
 const MAX_BODY_BYTES = 16 * 1024;
 const MAX_REQUESTS = 1000;
 const UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
+const COMPARISON_ACTIONS = new Set([
+  'review-run', 'save-run', 'runs', 'run', 'run-output', 'compare-runs',
+  'run-favorite',
+]);
 const CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'";
 const SAFE_ERRORS = new Set([
   ...LOCAL_STORE_ERROR_KINDS, ...USER_SOURCE_ERROR_KINDS, 'gui-source-context-changed',
@@ -116,23 +121,25 @@ function requestShape(body, action) {
   return { requestId, input };
 }
 
-async function readJson(request) {
+async function readJson(request, strict = false) {
+  const maxBodyBytes = strict ? 64 * 1024 : MAX_BODY_BYTES;
   if (request.headers['content-type']?.split(';', 1)[0].trim().toLowerCase() !== 'application/json') {
     throw Object.assign(new Error('gui-invalid-request'), { kind: 'gui-invalid-request' });
   }
   const declared = request.headers['content-length'];
-  if (declared !== undefined && (!/^\d+$/.test(declared) || Number(declared) > MAX_BODY_BYTES)) {
+  if (declared !== undefined && (!/^\d+$/.test(declared) || Number(declared) > maxBodyBytes)) {
     throw Object.assign(new Error('gui-request-too-large'), { kind: 'gui-request-too-large' });
   }
   const chunks = [];
   let size = 0;
   for await (const chunk of request) {
     size += chunk.length;
-    if (size > MAX_BODY_BYTES) throw Object.assign(new Error('gui-request-too-large'), { kind: 'gui-request-too-large' });
+    if (size > maxBodyBytes) throw Object.assign(new Error('gui-request-too-large'), { kind: 'gui-request-too-large' });
     chunks.push(chunk);
   }
   try {
-    const value = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    const text = Buffer.concat(chunks).toString('utf8');
+    const value = strict ? parseStrictJson(text) : JSON.parse(text);
     if (value === null || typeof value !== 'object' || Array.isArray(value)) throw new Error();
     return value;
   } catch {
@@ -216,7 +223,10 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
         sendJson(response, 404, { error: { kind: 'gui-route-not-found' } }); return;
       }
       const action = parsed.pathname.slice(sourceRoute ? '/api/sources/'.length : '/api/'.length);
-      const parsedBody = (sourceRoute ? sourceRequestShape : requestShape)(await readJson(request), action);
+      const parsedBody = (sourceRoute ? sourceRequestShape : requestShape)(
+        await readJson(request, sourceRoute && COMPARISON_ACTIONS.has(action)),
+        action,
+      );
       const fingerprint = canonical({ action, input: parsedBody.input });
       const existing = requests.get(parsedBody.requestId);
       if (existing) {

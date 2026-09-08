@@ -1,6 +1,6 @@
 # Numerical comparison and quality
 
-The maintainer requested numerical comparison of token efficiency and output quality alongside personal judgment. This is a requirement for the comparison feature. The current read-only inventory probe does not collect model-run usage or grade outputs.
+The maintainer requested numerical comparison of token efficiency and output quality alongside personal judgment. The ordinary-use slice now projects bounded Codex 0.153.4 desktop records, stores private immutable reviews and attributed retrospective assessments, and displays one to three saved records. The read-only inventory probe remains separate and does not collect these totals or grade outputs.
 
 ## The useful question
 
@@ -42,9 +42,9 @@ Show this with acceptance rate, task count, budget, and which cases passed. With
 
 ## Codex usage evidence
 
-The installed 0.153.4 protocol schema includes `ThreadTokenUsageUpdatedNotification` with `threadId`, `turnId`, and a `tokenUsage` object containing `last` and `total`. Its breakdown fields include `totalTokens`, `inputTokens`, `cachedInputTokens`, `cacheWriteInputTokens`, `outputTokens`, and `reasoningOutputTokens`.
+The installed 0.153.4 protocol schema includes `ThreadTokenUsageUpdatedNotification` with `threadId`, `turnId`, and a `tokenUsage` object containing `last` and `total`. Its breakdown fields include `totalTokens`, `inputTokens`, `cachedInputTokens`, `cacheWriteInputTokens`, `outputTokens`, and `reasoningOutputTokens`. The implemented native adapter recognizes the corresponding persisted top-level `token_usage_record` stream for one explicit task UUID and selected turn prefix.
 
-The [App Server documentation](https://learn.chatgpt.com/docs/app-server) also describes `thread/tokenUsage/updated`. The field presence is verified; receiving complete usage for the intended desktop experiment still needs a live integration test. Account/thread estimates from a different billing endpoint must be labelled as estimates and not silently substituted for the event source.
+The [App Server documentation](https://learn.chatgpt.com/docs/app-server) also describes `thread/tokenUsage/updated`. Persisted root-response values are now collected with explicit availability and reason codes. This does not establish complete billing, child-task usage or live notification capture. Account/thread estimates from a different billing endpoint are not substituted for the persisted event source.
 
 Collection must define whether each field is a cumulative snapshot or a delta before aggregation. Do not add every `total` update together. Keep reset/reconnect behavior, duplicate updates, missing final events, and parent/child task coverage explicit. Do not double-count subagent usage if an upstream total already includes it, and do not claim complete totals if child usage is not observable.
 
@@ -58,7 +58,7 @@ For coding tasks, start with explicit acceptance checks: requested behavior, rel
 
 For writing or design, define the criteria for that task: factual accuracy, completeness, clarity, audience fit, visual hierarchy, or other requested qualities. Scores need anchors and reasons. Do not treat length, changed-line count, or number of questions as a stand-in for quality.
 
-Optional AI judging can compare outputs labelled A/B without their mode names. Use the same judge, criteria, reference material, and scoring version across the comparison; vary presentation order and check agreement against human assessments. Preserve disagreement and uncertainty. Store a concise justification tied to the criteria, not a hidden reasoning transcript.
+Optional AI judging can later compare outputs labelled A/B without their mode names. The current ordinary-use UI records only explicitly attributed user/agent assessments supplied to the form; it starts no grader task. A later judge integration must use the same judge, criteria, reference material, and scoring version across the comparison, vary presentation order and check agreement against human assessments. Preserve disagreement and uncertainty. Store a concise justification tied to the criteria, not a hidden reasoning transcript.
 
 This follows [OpenAI's evaluation guidance](https://developers.openai.com/api/docs/guides/evaluation-best-practices): use task-specific criteria, pairwise or pass/fail decisions when suitable, and calibrate automated ratings with human judgments. An AI-produced score is an assessment, not objective ground truth. Judge-generation usage is a separate evaluation cost and must not be hidden inside the candidate loadout's usage.
 
@@ -76,7 +76,9 @@ The product should let a user inspect tradeoffs such as similar quality with few
 
 ## Display in the pixel-art interface
 
-Use a Comparison tab in the same hangar GUI. Show selected saved results with accepted-task counts, token totals, tokens per accepted task, and the personal scorecard. Up to three mode columns can appear when relevant results exist; an untried mode stays unmeasured, not failed. Let the user inspect outputs and save a configuration. Display collection coverage, sample size, measurement kind, and whether the records are matched trials or different everyday work. The [sample-data visual concept](design.md#comparison-inside-the-same-gui) establishes the presentation; its columns do not imply simultaneous execution and the final charts must use recorded values.
+The Comparison tab in the same hangar GUI shows selected saved results with accepted-version counts, token totals, tokens per accepted version, requirement checks, ratings and notes. Up to three record columns use compact historical loadout portraits; an unknown association stays unknown and does not borrow Normal art. The table is the accessible source of exact values. Horizontal token bars use the same zero baseline and common maximum, keep exact labels visible, render a real zero at zero width, and distinguish partial or missing values. Output is fetched only through an explicit plain-text action. The [sample-data visual concept](design.md#comparison-inside-the-same-gui) establishes the composition, but its values and winner treatment are not production data.
+
+The implemented aggregate preserves the service meanings: `recordCount` counts selected saved versions, `distinctTaskCount` counts task UUIDs and `acceptedCount` counts versions that pass the derived acceptance rule. Failed and abandoned spending remains in a calculable numerator. Overlapping task versions, partial/unavailable totals and overflow make the total/ratio null with fixed reasons; zero accepted versions keep a known total but have no ratio. The UI never recomputes a more favorable denominator.
 
 The maintainer also wants helpful harnesses to be expressible as supportive or resonating equipment. Derive such an optional visual assessment from the stated comparison and user priorities, retaining a neutral appearance for unmeasured or inconclusive setups. It is presentation metadata, not evidence on its own and not a configuration change.
 
@@ -86,8 +88,8 @@ A qualifying result can unlock an optional original-appearance creation action. 
 
 ## Delivery order
 
-1. Preserve per-run comparison conditions and human notes in the comparison record.
-2. Add verified usage/time collection and task-specific acceptance checks once desktop task execution can be observed.
-3. Add optional scorecards and blind pairwise judging, with separate judge usage.
+1. Implemented: preserve per-run recorded conditions, root-response usage/time, attributed retrospective checks/ratings/notes and private output in immutable comparison records.
+2. Next: capture the request, starting files and declared criteria before use, then provide an explicitly requested sequential replay from that frozen start.
+3. Later: expose the same deterministic operations through AI/MCP and, if chosen, add blind pairwise judging with separate judge usage.
 
-No live benchmark or grader request was run while defining this document. These capabilities belong to the comparison implementation after the read-only feasibility slice.
+No grader request or automatic multi-mode task was run for this ordinary-use slice. Its records are retrospective observations; they do not replace the predeclared replay needed for a performance verdict or original-form eligibility.

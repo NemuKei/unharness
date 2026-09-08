@@ -1,6 +1,6 @@
 # Architecture boundaries
 
-This page separates the code present on 2026-09-08 from the intended product architecture. The Node.js 24+ runtime includes inventory, source-control fixtures, desktop-record observations, local versioned records, and registered optional-source preparation and recovery. The loopback GUI connects the fixture and registered-source services to React/TypeScript and PixiJS; diagnostic/core modules do not import browser dependencies. MCP endpoints, comparison records and cross-application migration remain future work.
+This page separates the code present on 2026-09-08 from the intended product architecture. The Node.js 24+ runtime includes inventory, source-control fixtures, desktop-record observations, local versioned records, registered optional-source preparation/recovery and private ordinary-run comparison records. The loopback GUI connects the fixture and registered-source services to React/TypeScript and PixiJS; diagnostic/core modules do not import browser dependencies. MCP endpoints, predeclared replay and cross-application migration remain future work.
 
 ## Current runnable architecture
 
@@ -84,6 +84,16 @@ The [registered-source observer](spec-user-source-observations.md) binds one sel
 The [retained-settings extension](spec-retained-settings.md) versions the saved Normal when an independent configuration edit can be proven to affect retained settings only. Planning uses a private native read plus bounded three-way composition; the browser receives fixed categories, identities and false verification flags rather than configuration keys or values. Acceptance publishes only private state and immutable snapshots, uses a distinct recovery journal and leaves every managed source untouched. The active Normal identity is separate from the immutable registration baseline.
 
 Old favorite and checkpoint records remain immutable. A restore from an older Normal composes its frozen selected-source state with the active Normal's retained settings and returns an explicit adaptation summary. The resulting plan has a new snapshot identity; application does not create or replace a favorite. The HTTP workbench routes these operations through the same accepted launch/context, duplicate-request and uncertain-outcome boundary as existing source actions.
+
+## Ordinary-run comparison records
+
+[run-metrics.mjs](../src/codex/run-metrics.mjs) is the version-specific pure Codex 0.153.4 projector. It consumes records already read by the bounded desktop reader and produces a normalized measurement plus one bounded final answer. Native field names and route/version decisions stay in this adapter. [measurement.mjs](../src/comparisons/measurement.mjs) validates the app-neutral shape and safe nullable counters.
+
+[The comparison service](../src/comparisons/service.mjs) uses the registered workspace lock to collect a review, freeze its historical source context, save immutable assessment versions, page history, compare one to three versions, return output explicitly and save a favorite from a frozen matched association. Reviews live in the application bucket and saved runs in the observation bucket; output text stays in the private review and is absent from ordinary summaries. Reads and private saves do not update source state, managed files or recovery journals.
+
+The registered-source CLI and loopback server expose the same seven operations. Browser requests contain only accepted launch/context identities and bounded task/turn/record selectors; the server supplies the workspace. Strict JSON parsing rejects duplicate decoded keys for comparison bodies. `review-run`, `save-run` and `run-favorite` are treated as private publications: the controller never automatically repeats an uncertain request. A confirmed save remains confirmed when a later history read fails.
+
+React keeps one source controller, API client and operation lock across Equipment and Comparison. Comparison state is scoped to launch, context, workspace and registered scope; a historical review survives mode, revision or active-Normal changes within that scope. A scope/context change clears draft, history, selection and explicit output, and old auxiliary responses cannot install data. React/CSS render the aligned table and proportional bars; the existing Pixi scene/effects and deterministic recovery remain separate.
 
 ## Intended product architecture
 
