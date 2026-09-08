@@ -14,14 +14,31 @@ const initial = await readFile(file, 'utf8');
 await appendFile(record, JSON.stringify({ profile: process.env.CODEX_HOME, cwd: process.cwd(), pid: process.pid, initial }) + '\n');
 function parseFixtureToml(text) {
   const out = {}; let target = out;
-  for (const line of text.split('\n')) {
-    if (!line || line.startsWith('#')) continue;
-    const array = line.match(/^\[\[skills.config\]\]$/);
+  const withoutComment = line => {
+    let quoted = false; let escaped = false;
+    for (let index = 0; index < line.length; index += 1) {
+      const char = line[index];
+      if (escaped) { escaped = false; continue; }
+      if (quoted && char === '\\') { escaped = true; continue; }
+      if (char === '"') { quoted = !quoted; continue; }
+      if (!quoted && char === '#') return line.slice(0, index).trimEnd();
+    }
+    return line;
+  };
+  const tableAt = path => path.split('.').reduce((parent, key) => {
+    if (Object.hasOwn(parent, key) && (parent[key] === null || typeof parent[key] !== 'object' || Array.isArray(parent[key]))) throw Error('duplicate fixture table');
+    return parent[key] ??= {};
+  }, out);
+  for (const rawLine of text.split(/\r\n|\r|\n/)) {
+    const line = withoutComment(rawLine).trim();
+    if (!line) continue;
+    const array = line.match(/^\[\[skills\.config\]\]$/);
     if (array) { out.skills ??= {}; out.skills.config ??= []; target = {}; out.skills.config.push(target); continue; }
-    const table = line.match(/^\[([a-z_]+)\]$/);
-    if (table) { target = out[table[1]] ??= {}; continue; }
-    const assignment = line.match(/^([a-z_]+) = (.+)$/);
+    const table = line.match(/^\[([a-zA-Z0-9_.-]+)\]$/);
+    if (table) { target = tableAt(table[1]); continue; }
+    const assignment = line.match(/^([a-zA-Z0-9_-]+)\s*=\s*(.+)$/);
     if (!assignment) throw Error('unsupported fixture syntax');
+    if (Object.hasOwn(target, assignment[1])) throw Error('duplicate fixture key');
     target[assignment[1]] = JSON.parse(assignment[2]);
   }
   return out;
@@ -37,10 +54,22 @@ else for await (const line of createInterface({ input: process.stdin })) {
   if (msg.error) continue;
   if (msg.method === 'initialize') {
     if (scenario === 'rpc-error') { send({ id: msg.id, error: { code: -32000, message: 'SECRET_MARKER', data: { path: '/private/SECRET_MARKER' } } }); continue; }
-    respond(msg.id, { userAgent: 'Codex Desktop/0.153.4 (fixture)', codexHome: process.env.CODEX_HOME });
+    const fixtureVersion = scenario === 'version-disagreement' && config.model === 'current' ? '0.154.0' : '0.153.4';
+    respond(msg.id, {
+      userAgent: scenario === 'missing-version' ? 'Codex Desktop/PRIVATE' : `Codex Desktop/${fixtureVersion} (fixture)`,
+      codexHome: scenario === 'wrong-home' ? '/private/SECRET_MARKER' : process.env.CODEX_HOME,
+    });
     send({ id: 'inbound', method: 'item/commandExecution/requestApproval', params: { command: 'SECRET_MARKER' } });
   } else if (msg.method === 'config/read') {
-    respond(msg.id, { config, layers: scenario === 'missing-user' ? [] : [{ name: { type: 'user', file }, version, config }] });
+    const layer = {
+      name: { type: 'user', file: scenario === 'wrong-file' ? `${file}.other` : file },
+      version: scenario === 'missing-layer-version' ? null : version,
+      config,
+    };
+    respond(msg.id, {
+      config,
+      layers: scenario === 'missing-user' ? [] : scenario === 'duplicate-user' ? [layer, structuredClone(layer)] : [layer],
+    });
   } else if (['skills/config/write', 'config/batchWrite'].includes(msg.method)) {
     if (scenario === 'write-error') { send({ id: msg.id, error: { code: -32000, message: 'SECRET_MARKER write failed' } }); continue; }
     config.skills ??= {};
