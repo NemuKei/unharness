@@ -30,6 +30,20 @@ export function sameSourceContext(a: SourceMetadata, b: SourceMetadata) {
     a.context.executable === b.context.executable
   );
 }
+export function sameSourcePlanContext(
+  previous: Pick<SourceView, "metadata" | "source">,
+  next: Pick<SourceView, "metadata" | "source">,
+) {
+  if (!sameSourceContext(previous.metadata, next.metadata)) return false;
+  if (!previous.source || !next.source) return previous.source === next.source;
+  return (
+    previous.source.registration.scopeId ===
+      next.source.registration.scopeId &&
+    previous.source.registration.activeNormalId ===
+      next.source.registration.activeNormalId &&
+    previous.source.revision === next.source.revision
+  );
+}
 export async function readSourceState(api: Api): Promise<SourceView> {
   await api.connect();
   const view = await api.get<SourceView>("/sources/state");

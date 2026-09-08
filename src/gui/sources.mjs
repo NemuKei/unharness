@@ -24,6 +24,8 @@ const fields = {
     [],
   ],
   plan: [["mode"], ["selectedIds"]],
+  "plan-retained": [[], []],
+  "accept-retained": [["planId"], []],
   apply: [["planId"], []],
   save: [[], ["name"]],
   favorites: [[], ["after"]],
@@ -157,6 +159,10 @@ export async function createSourceController(context) {
       }
       if (action === "plan")
         return service.planUserMode({ workspace, ...input });
+      if (action === "plan-retained")
+        return service.planUserRetainedSettings({ workspace });
+      if (action === "accept-retained")
+        return service.acceptUserRetainedSettings({ workspace, ...input });
       if (action === "apply")
         return service.applyUserPlan({ workspace, ...input });
       if (action === "save") {

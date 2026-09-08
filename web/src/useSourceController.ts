@@ -4,6 +4,7 @@ import { modePresentation, taskObservationResponseNotice } from "./sources";
 import {
   readSourceState,
   sameSourceContext,
+  sameSourcePlanContext,
   sourceOperation,
 } from "./source-operations";
 import type {
@@ -13,6 +14,7 @@ import type {
   SourceMode,
   SourcePlan,
   SourceView,
+  RetainedPlan,
   TaskObservation,
 } from "./sources";
 
@@ -23,6 +25,7 @@ export function useSourceController() {
   const [discovery, setDiscovery] = useState<Discovery | null>(null);
   const [selected, setSelected] = useState<SourceMode>("normal");
   const [plan, setPlan] = useState<SourcePlan | null>(null);
+  const [retainedPlan, setRetainedPlan] = useState<RetainedPlan | null>(null);
   const [favorites, setFavorites] = useState<SourceFavorite[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [review, setReview] = useState<{
@@ -39,14 +42,19 @@ export function useSourceController() {
     setRecoveryResult(null);
     setDiscovery(null);
     setPlan(null);
+    setRetainedPlan(null);
     setReview(null);
     setFavorites([]);
     setCursor(null);
     setSelectionKey((key) => key + 1);
   }
   function accept(next: SourceView) {
-    if (!view || !sameSourceContext(view.metadata, next.metadata))
+    if (!view || !sameSourceContext(view.metadata, next.metadata)) {
       resetContext();
+    } else if (!sameSourcePlanContext(view, next)) {
+      setPlan(null);
+      setRetainedPlan(null);
+    }
     setView(next);
     setConfirmed(true);
   }
@@ -69,6 +77,7 @@ export function useSourceController() {
       accept(next);
       setSelected(next.source?.preparedMode ?? "normal");
       setPlan(null);
+      setRetainedPlan(null);
       setNotice("状態を再取得しました。実行中のタスクは未検証です。");
     } catch (e) {
       failed(e);
@@ -121,7 +130,29 @@ export function useSourceController() {
           );
         }
       }
-      if (action === "save") {
+      if (action === "accept-retained") {
+        setRetainedPlan(null);
+        setSelected(response.state.source?.preparedMode ?? "normal");
+        setNotice(
+          "現在のCodex設定を新しいNormal版として記録しました。管理対象ファイルは変更していません。",
+        );
+        try {
+          const favoritesResponse = await sourceOperation<SourceFavoritePage>(
+            api,
+            response.state.metadata,
+            "favorites",
+            {},
+          );
+          if (favoritesResponse.status === "completed") {
+            setFavorites(favoritesResponse.result.favorites);
+            setCursor(favoritesResponse.result.nextCursor);
+          }
+        } catch {
+          setError(
+            "現在の設定は記録済みです。お気に入り一覧だけを再取得できませんでした。状態を再取得して確認してください。",
+          );
+        }
+      } else if (action === "save") {
         const saved = response.result as Pick<
           SourceFavorite,
           "favoriteId" | "name" | "preparedMode"
@@ -130,7 +161,12 @@ export function useSourceController() {
           `「${saved.name}」（${modePresentation[saved.preparedMode].title}）をお気に入りに保存しました。`,
         );
         setFavorites((previous) => [
-          { ...saved, revision: response.state.source!.revision },
+          {
+            ...saved,
+            normalId: response.state.source!.registration.activeNormalId,
+            needsAdaptation: false,
+            revision: response.state.source!.revision,
+          },
           ...previous.filter((item) => item.favoriteId !== saved.favoriteId),
         ]);
       } else if (action === "observe") {
@@ -139,6 +175,14 @@ export function useSourceController() {
             response.state.source,
             response.result as TaskObservation,
           ),
+        );
+      } else if (
+        action === "recover" &&
+        (response.result as { status?: string }).status ===
+          "retained-recording-cancelled"
+      ) {
+        setNotice(
+          "中断した設定の記録を取り消しました。管理対象ファイルは復元していません。現在の競合を確認してください。",
         );
       } else
         setNotice(
@@ -153,6 +197,7 @@ export function useSourceController() {
       if (action === "apply" || action === "recover") {
         setSelected(response.state.source?.preparedMode ?? "normal");
         setPlan(null);
+        setRetainedPlan(null);
       }
     } catch (e) {
       failed(e);
@@ -198,6 +243,7 @@ export function useSourceController() {
     discovery,
     selected,
     plan,
+    retainedPlan,
     favorites,
     cursor,
     review,
@@ -212,6 +258,7 @@ export function useSourceController() {
     loadFavorites,
     setDiscovery,
     setReview,
+    setRetainedPlan,
     setPlan: (next: SourcePlan) => {
       setPlan(next);
       setSelected(next.preparedMode);

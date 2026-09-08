@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Hangar } from "./Hangar";
+import {
+  RestoreAdaptationNotice,
+  RetainedReview,
+} from "./components/RetainedReview";
 import { useSourceController } from "./useSourceController";
 import {
   canObserveTask,
@@ -135,9 +139,31 @@ export function SourceWorkbench() {
                     </p>
                   </details>
                 ) : (
-                  <p role="alert">
-                    外部の変更を確認してください（{source.conflict.kind}）。
-                  </p>
+                  <div className="retained-conflict">
+                    <p role="alert">
+                      外部の変更を確認してください（{source.conflict.kind}）。
+                    </p>
+                    <button
+                      className="secondary"
+                      disabled={c.busy || !c.confirmed}
+                      onClick={() =>
+                        void c.run("plan-retained", {}, c.setRetainedPlan)
+                      }
+                    >
+                      変更を確認
+                    </button>
+                    {c.retainedPlan && (
+                      <RetainedReview
+                        plan={c.retainedPlan}
+                        disabled={c.busy || !c.confirmed}
+                        onAccept={() =>
+                          void c.run("accept-retained", {
+                            planId: c.retainedPlan!.planId,
+                          })
+                        }
+                      />
+                    )}
+                  </div>
                 ))}
               {source && (
                 <TaskObservationSection controller={c} usable={usable} />
@@ -158,6 +184,11 @@ export function SourceWorkbench() {
                         {modePresentation[c.plan.preparedMode].title}{" "}
                         を次のタスク用に準備
                       </p>
+                      {c.plan.adaptation && (
+                        <RestoreAdaptationNotice
+                          adaptation={c.plan.adaptation}
+                        />
+                      )}
                       <ul className="source-changes">
                         {c.plan.changedFiles.map((file) => (
                           <li key={file.id}>{file.label}</li>
@@ -260,6 +291,7 @@ export function SourceWorkbench() {
                     }
                   >
                     {f.name} · {modePresentation[f.preparedMode].title}
+                    {f.needsAdaptation ? " · 現在の共通設定を維持" : ""}
                   </button>
                 </li>
               ))}

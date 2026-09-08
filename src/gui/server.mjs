@@ -50,7 +50,7 @@ function statusFor(kind) {
   if (kind === 'gui-request-too-large') return 413;
   if (kind === 'gui-request-id-reused' || kind === 'gui-request-capacity'
     || kind.includes('stale') || kind.includes('conflict') || kind.includes('locked')) return 409;
-  if (kind === 'gui-operation-error' || kind.endsWith('-error')) return 500;
+  if (kind === 'gui-operation-error' || kind === 'operation-failed' || kind.endsWith('-error')) return 500;
   return 400;
 }
 

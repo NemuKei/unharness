@@ -93,7 +93,12 @@ export type TaskObservation = {
 };
 export type SourceState = {
   context: SourceMetadata["context"];
-  registration: { scopeId: string; normalId: string; sources: SourceRow[] };
+  registration: {
+    scopeId: string;
+    normalId: string;
+    activeNormalId: string;
+    sources: SourceRow[];
+  };
   preparedMode: SourceMode;
   revision: number;
   preparation: { id: string; preparedAt: string } | null;
@@ -207,11 +212,42 @@ export type SourcePlan = {
   changedFiles: { id: string; label: string }[];
   skillStates: { id: string; enabled: boolean; manualOnly: boolean }[];
   guide: Omit<Guide, "text"> | null;
+  adaptation: SourcePlanAdaptation | null;
   retained: string[];
+  verification: SourceVerification;
+};
+export type SourcePlanAdaptation = {
+  kind: "retained-settings";
+  sourceType: "favorite" | "checkpoint";
+  sourceId: string;
+  previousNormalId: string;
+  normalId: string;
+};
+export type RetainedPlan = {
+  planId: string;
+  scopeId: string;
+  revision: number;
+  preparedMode: SourceMode;
+  previousNormalId: string;
+  normalId: string;
+  managedFilesChanged: 0;
+  changedCategories: string[];
+  retained: string[];
+  verification: SourceVerification;
+};
+export type RetainedAcceptance = {
+  planId: string;
+  normalId: string;
+  revision: number;
+  preparedMode: SourceMode;
+  recorded: true;
+  duplicate: boolean;
   verification: SourceVerification;
 };
 export type SourceFavorite = {
   favoriteId: string;
+  normalId: string;
+  needsAdaptation: boolean;
   name: string;
   preparedMode: SourceMode;
   revision: number;

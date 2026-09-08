@@ -100,6 +100,20 @@
   padding-top: 12px;
   border-top: 1px solid var(--line);
 }
+.retained-review,
+.restore-adaptation {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  background: rgba(8, 15, 19, 0.72);
+}
+.retained-review h3,
+.restore-adaptation p {
+  margin-top: 0;
+}
+.restore-adaptation strong {
+  color: var(--amber);
+}
 .task-observation {
   margin-top: 15px;
   padding-top: 13px;

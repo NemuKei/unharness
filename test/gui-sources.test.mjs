@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import {
   mkdtemp,
   realpath,
+  readFile,
   rm,
   mkdir,
   writeFile,
@@ -20,6 +21,7 @@ import {
   createOwnedSourceProfile,
   readSourceProfileFiles,
 } from "../src/sources/owned-profile.mjs";
+import { setSourceTransactionTestHook } from "../src/sources/transaction.mjs";
 
 async function setup(t, fixture = false) {
   const parent = await realpath(
@@ -482,3 +484,142 @@ test("replaced source context directory is rejected before management", async (t
     "gui-source-context-changed",
   );
 });
+
+test(
+  "retained settings HTTP review records the exact safe plan without changing managed files",
+  { skip: process.platform !== "darwin" },
+  async (t) => {
+    const s = await setup(t);
+    const registered = await registerAllSources(s);
+    const configPath = join(s.profile.context.codexHome, "config.toml");
+    const original = await readFile(configPath, "utf8");
+    await writeFile(
+      configPath,
+      original.replace(/^model = .*$/m, 'model = "HTTP_PRIVATE_MODEL"'),
+    );
+    const before = await readSourceProfileFiles(s.profile.context);
+    const conflicted = await s.request("/sources/state");
+    assert.equal(conflicted.data.source.conflict.kind, "source-conflict");
+
+    const reviewRequestId = randomUUID();
+    const review = await s.post("plan-retained", {}, reviewRequestId);
+    assert.equal(review.status, 200, JSON.stringify(review));
+    assert.equal(review.data.result.managedFilesChanged, 0);
+    assert.deepEqual(review.data.result.changedCategories, ["Codex settings"]);
+    assert.equal(review.data.result.preparedMode, "normal");
+    assert.ok(!JSON.stringify(review.data.result).includes("HTTP_PRIVATE_MODEL"));
+    assert.deepEqual(
+      await s.post("plan-retained", {}, reviewRequestId),
+      review,
+      "an identical request identity returns the original review",
+    );
+    assert.equal(
+      (await s.post("plan-retained", { planId: review.data.result.planId }))
+        .data.error.kind,
+      "gui-invalid-request",
+    );
+
+    const acceptedRequestId = randomUUID();
+    const accepted = await s.post(
+      "accept-retained",
+      { planId: review.data.result.planId },
+      acceptedRequestId,
+    );
+    assert.equal(accepted.status, 200, JSON.stringify(accepted));
+    assert.equal(accepted.data.state.source.conflict, null);
+    assert.equal(
+      accepted.data.state.source.registration.activeNormalId,
+      accepted.data.result.normalId,
+    );
+    assert.equal(
+      accepted.data.state.source.registration.normalId,
+      registered.registration.normalId,
+    );
+    assert.deepEqual(await readSourceProfileFiles(s.profile.context), before);
+    assert.deepEqual(
+      await s.post(
+        "accept-retained",
+        { planId: review.data.result.planId },
+        acceptedRequestId,
+      ),
+      accepted,
+      "an identical acceptance request is returned without a second mutation",
+    );
+    assert.equal(
+      (
+        await s.post(
+          "accept-retained",
+          { planId: "f".repeat(64) },
+          acceptedRequestId,
+        )
+      ).data.error.kind,
+      "gui-request-id-reused",
+    );
+  },
+);
+
+test(
+  "retained HTTP actions reject changed launch identity and post-review external edits",
+  { skip: process.platform !== "darwin" },
+  async (t) => {
+    const s = await setup(t);
+    await registerAllSources(s);
+    const configPath = join(s.profile.context.codexHome, "config.toml");
+    const original = await readFile(configPath, "utf8");
+    await writeFile(
+      configPath,
+      original.replace(/^model = .*$/m, 'model = "FIRST_HTTP_MODEL"'),
+    );
+    const launchId = s.metadata.launchId;
+    s.metadata.launchId = randomUUID();
+    assert.equal(
+      (await s.post("plan-retained")).data.error.kind,
+      "gui-source-context-changed",
+    );
+    s.metadata.launchId = launchId;
+
+    const review = (await s.post("plan-retained")).data.result;
+    await writeFile(
+      configPath,
+      original.replace(/^model = .*$/m, 'model = "SECOND_HTTP_MODEL"'),
+    );
+    const staleResponse = await s.post("accept-retained", {
+      planId: review.planId,
+    });
+    assert.equal(staleResponse.status, 409);
+    assert.equal(staleResponse.data.error.kind, "source-conflict");
+  },
+);
+
+test(
+  "pending retained recording blocks HTTP review and recovery cancels only the private recording",
+  { skip: process.platform !== "darwin" },
+  async (t) => {
+    const s = await setup(t);
+    t.after(() => setSourceTransactionTestHook(null));
+    await registerAllSources(s);
+    const configPath = join(s.profile.context.codexHome, "config.toml");
+    const original = await readFile(configPath, "utf8");
+    await writeFile(
+      configPath,
+      original.replace(/^model = .*$/m, 'model = "PENDING_HTTP_MODEL"'),
+    );
+    const review = (await s.post("plan-retained")).data.result;
+    setSourceTransactionTestHook((phase) => {
+      if (phase === "retained-state") throw new Error("interrupted");
+    });
+    const interrupted = await s.post("accept-retained", {
+      planId: review.planId,
+    });
+    assert.equal(interrupted.status, 500);
+    assert.equal(interrupted.data.error.kind, "operation-failed");
+    setSourceTransactionTestHook(null);
+    const blocked = await s.post("plan-retained");
+    assert.equal(blocked.status, 400);
+    assert.equal(blocked.data.error.kind, "recovery-required");
+    const recovered = await s.post("recover");
+    assert.equal(recovered.data.result.status, "retained-recording-cancelled");
+    assert.equal(recovered.data.state.source.conflict.kind, "source-conflict");
+    assert.match(await readFile(configPath, "utf8"), /PENDING_HTTP_MODEL/);
+  },
+);
