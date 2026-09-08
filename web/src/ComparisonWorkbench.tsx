@@ -24,6 +24,7 @@ import { modePresentation, validTaskId } from "./sources";
 import type { SourceMode } from "./sources";
 import { useComparisonController } from "./useComparisonController";
 import type { useSourceController } from "./useSourceController";
+import { StartingConditions } from "./StartingConditions";
 
 type SourceController = ReturnType<typeof useSourceController>;
 
@@ -289,6 +290,7 @@ export function ComparisonWorkbench({
       </section>
       {!sourceReady && <section className="comparison-panel"><h2>通常装備の登録が必要です</h2><p className="muted">「装備」タブで対象を登録すると、このローカル履歴を利用できます。</p></section>}
       {sourceReady && <>
+        <StartingConditions sourceController={sourceController} />
         <section className="comparison-panel" aria-labelledby="run-review-heading">
           <div className="comparison-heading"><div><p className="eyebrow">記録を読む</p><h2 id="run-review-heading">Codexタスクを確認</h2></div><span>タスクを開始・再開しません</span></div>
           <div className="review-form">

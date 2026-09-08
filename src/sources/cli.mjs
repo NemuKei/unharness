@@ -1,7 +1,13 @@
 import * as service from './service.mjs';
 import { parseStrictJson } from '../core/strict-json.mjs';
 export const SOURCES_USAGE =
-  '  node bin/unharness.mjs sources <discover|locate|register|status|plan|plan-retained|accept-retained|apply|save|list|favorite|checkpoint|recover|observe|review|review-discovered|review-run|save-run|runs|run|run-output|compare-runs|run-favorite> --json <object>\n';
+  '  node bin/unharness.mjs sources <discover|locate|register|status|plan|plan-retained|accept-retained|apply|save|list|favorite|checkpoint|recover|observe|review|review-discovered|review-run|save-run|runs|run|run-output|compare-runs|run-favorite|review-start|save-start|start|starts> --json <object>\n';
+const startingOperations = {
+  'review-start': service.reviewUserStart,
+  'save-start': service.saveUserStart,
+  start: service.readUserStart,
+  starts: service.listUserStarts
+};
 const comparisonOperations = {
   'review-run': service.reviewUserRun,
   'save-run': service.saveUserRun,
@@ -13,6 +19,7 @@ const comparisonOperations = {
 };
 const operations = {
   ...comparisonOperations,
+  ...startingOperations,
   discover: service.discoverUserSources,
   locate: service.locateUserSources,
   register: service.registerUserSources,
@@ -42,13 +49,13 @@ export async function sourcesMain(
     argv.length !== 4 ||
     !Object.hasOwn(operations, argv[1]) ||
     argv[2] !== '--json' ||
-    Buffer.byteLength(argv[3]) > 65536
+    Buffer.byteLength(argv[3]) > (Object.hasOwn(startingOperations, argv[1]) ? 128 * 1024 : 65536)
   ) {
     stderr.write('{"error":{"kind":"invalid-request"}}\n');
     return 2;
   }
   try {
-    const args = Object.hasOwn(comparisonOperations, argv[1]) ? parseStrictJson(argv[3]) : JSON.parse(argv[3]);
+    const args = Object.hasOwn(comparisonOperations, argv[1]) || Object.hasOwn(startingOperations, argv[1]) ? parseStrictJson(argv[3]) : JSON.parse(argv[3]);
     if (!args || typeof args !== 'object' || Array.isArray(args)) throw Error();
     const result = await operations[argv[1]](args);
     stdout.write(JSON.stringify(result) + '\n');

@@ -17,6 +17,7 @@ const COMPARISON_ACTIONS = new Set([
   'review-run', 'save-run', 'runs', 'run', 'run-output', 'compare-runs',
   'run-favorite',
 ]);
+const STARTING_ACTIONS = new Set(['review-start', 'save-start', 'start', 'starts']);
 const CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'";
 const SAFE_ERRORS = new Set([
   ...LOCAL_STORE_ERROR_KINDS, ...USER_SOURCE_ERROR_KINDS, 'gui-source-context-changed',
@@ -51,6 +52,8 @@ function safeError(error) {
 }
 
 function statusFor(kind) {
+  if (kind === 'starting-publication-uncertain') return 500;
+  if (kind === 'starting-files-changed') return 409;
   if (kind === 'gui-request-forbidden') return 403;
   if (kind === 'gui-request-too-large') return 413;
   if (kind === 'gui-request-id-reused' || kind === 'gui-request-capacity'
@@ -121,8 +124,7 @@ function requestShape(body, action) {
   return { requestId, input };
 }
 
-async function readJson(request, strict = false) {
-  const maxBodyBytes = strict ? 64 * 1024 : MAX_BODY_BYTES;
+async function readJson(request, strict = false, maxBodyBytes = strict ? 64 * 1024 : MAX_BODY_BYTES) {
   if (request.headers['content-type']?.split(';', 1)[0].trim().toLowerCase() !== 'application/json') {
     throw Object.assign(new Error('gui-invalid-request'), { kind: 'gui-invalid-request' });
   }
@@ -138,7 +140,8 @@ async function readJson(request, strict = false) {
     chunks.push(chunk);
   }
   try {
-    const text = Buffer.concat(chunks).toString('utf8');
+    const bytes = Buffer.concat(chunks), text = bytes.toString('utf8');
+    if (strict && !Buffer.from(text, 'utf8').equals(bytes)) throw new Error();
     const value = strict ? parseStrictJson(text) : JSON.parse(text);
     if (value === null || typeof value !== 'object' || Array.isArray(value)) throw new Error();
     return value;
@@ -223,8 +226,9 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
         sendJson(response, 404, { error: { kind: 'gui-route-not-found' } }); return;
       }
       const action = parsed.pathname.slice(sourceRoute ? '/api/sources/'.length : '/api/'.length);
+      const starting = sourceRoute && STARTING_ACTIONS.has(action);
       const parsedBody = (sourceRoute ? sourceRequestShape : requestShape)(
-        await readJson(request, sourceRoute && COMPARISON_ACTIONS.has(action)),
+        await readJson(request, sourceRoute && (COMPARISON_ACTIONS.has(action) || starting), starting ? 128 * 1024 : undefined),
         action,
       );
       const fingerprint = canonical({ action, input: parsedBody.input });

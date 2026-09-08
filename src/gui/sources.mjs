@@ -40,6 +40,10 @@ const fields = {
   "run-output": [["runId"], []],
   "compare-runs": [["runIds"], []],
   "run-favorite": [["runId"], ["name"]],
+  "review-start": [["declaration"], ["additionalPaths"]],
+  "save-start": [["reviewId"], []],
+  start: [["startId"], []],
+  starts: [[], ["after"]],
 };
 export function sourceRequestShape(body, action) {
   const schema = Object.hasOwn(fields, action) ? fields[action] : null;
@@ -68,6 +72,7 @@ export function sourceRequestShape(body, action) {
     "reviewId",
     "previousRunId",
     "runId",
+    "startId",
   ])
     if (Object.hasOwn(input, key) && !id(input[key]))
       fail("gui-invalid-request");
@@ -100,6 +105,11 @@ export function sourceRequestShape(body, action) {
       typeof input.assessment !== "object" ||
       Array.isArray(input.assessment))
   )
+    fail("gui-invalid-request");
+  if (Object.hasOwn(input, "declaration") && (!input.declaration || typeof input.declaration !== "object" || Array.isArray(input.declaration)))
+    fail("gui-invalid-request");
+  if (Object.hasOwn(input, "additionalPaths") && (!Array.isArray(input.additionalPaths) || input.additionalPaths.length > 2048
+    || input.additionalPaths.some(path => typeof path !== "string" || Buffer.byteLength(path) > 1024)))
     fail("gui-invalid-request");
   for (const key of ["selectedSkillIds", "selectedIds"])
     if (
@@ -238,6 +248,10 @@ export async function createSourceController(context) {
         return service.compareUserRuns({ workspace, ...input });
       if (action === "run-favorite")
         return service.saveUserRunFavorite({ workspace, ...input });
+      if (action === "review-start") return service.reviewUserStart({ workspace, ...input });
+      if (action === "save-start") return service.saveUserStart({ workspace, ...input });
+      if (action === "start") return service.readUserStart({ workspace, ...input });
+      if (action === "starts") return service.listUserStarts({ workspace, ...input });
       fail("gui-invalid-request");
     },
   };

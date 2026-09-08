@@ -53,7 +53,7 @@ export class Api {
           ...(body ? { "Content-Type": "application/json" } : {}),
         },
         body: body ? JSON.stringify(body) : undefined,
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.timeout(["/sources/review-start", "/sources/save-start", "/sources/start"].includes(route) ? 120000 : 30000),
       });
     } catch {
       throw new ApiError("connection-lost", undefined, "uncertain");
