@@ -12,7 +12,8 @@ const MAX_RECORD_BYTES = 1024 * 1024;
 const MAX_METADATA_BYTES = 64 * 1024;
 const MAX_RECORDS = 1000;
 const RECORD_ID = /^[0-9a-f]{64}$/;
-const RECORD_TYPES = new Set(['scope', 'favorite', 'checkpoint', 'application', 'observation']);
+const OPTIONAL_RECORD_TYPES = new Set(['input', 'experiment']);
+const RECORD_TYPES = new Set(['scope', 'favorite', 'checkpoint', 'application', 'observation', ...OPTIONAL_RECORD_TYPES]);
 
 export const LOCAL_STORE_ERROR_KINDS = Object.freeze([
   'invalid-record-type',
@@ -177,7 +178,7 @@ async function readRegularFile(path, { missingKind, corruptKind, maxBytes }) {
   }
 }
 
-async function validateStore(store, type) {
+async function validateStore(store, type, createBucket = false) {
   if (typeof store !== 'string' || !isAbsolute(store) || resolve(store) !== store) fail('store-invalid');
   try {
     await assertDirectory(store);
@@ -205,7 +206,15 @@ async function validateStore(store, type) {
     const bucket = join(records, type);
     await assertDirectory(records);
     await assertDirectory(stages);
-    await assertDirectory(bucket);
+    try { await assertDirectory(bucket, 'record-bucket-missing'); }
+    catch (error) {
+      if (error.kind !== 'record-bucket-missing') throw error;
+      if (!OPTIONAL_RECORD_TYPES.has(type)) fail('store-invalid');
+      if (!createBucket) return { bucket: null, stages };
+      try { await mkdir(bucket, { mode: 0o700 }); }
+      catch (e) { if (e.code !== 'EEXIST') throw e; }
+      await assertDirectory(bucket);
+    }
     return { bucket, stages };
   } catch (error) {
     rethrow(error, 'store-invalid');
@@ -327,7 +336,7 @@ export async function putRecord({ store, type, payload } = {}) {
   const record = buildRecord(type, payload);
   let stage;
   try {
-    const { bucket, stages } = await validateStore(store, type);
+    const { bucket, stages } = await validateStore(store, type, true);
     stage = await writePrivateStage(stages, type, record.id, record.json);
     const target = join(bucket, `${record.id}.json`);
     let created = false;
@@ -357,6 +366,7 @@ export async function readRecord({ store, type, id } = {}) {
   validateId(id);
   try {
     const { bucket } = await validateStore(store, type);
+    if (bucket === null) fail('record-not-found');
     return await readFromBucket(bucket, type, id);
   } catch (error) {
     rethrow(error, 'record-read-error');
@@ -367,6 +377,7 @@ export async function listRecords({ store, type } = {}) {
   validateType(type);
   try {
     const { bucket } = await validateStore(store, type);
+    if (bucket === null) return [];
     const entries = await readdir(bucket, { withFileTypes: true });
     if (entries.length > MAX_RECORDS) fail('record-limit-exceeded');
 
@@ -393,6 +404,7 @@ export async function listRecordPage({ store, type, after } = {}) {
   if (after !== undefined) validateId(after);
   try {
     const { bucket } = await validateStore(store, type);
+    if (bucket === null) return { records: [], nextCursor: null };
     const ids = [];
     // Directory order is not stable. Keep only the smallest page plus one
     // lookahead ID, without materializing the bucket's filenames or payloads.

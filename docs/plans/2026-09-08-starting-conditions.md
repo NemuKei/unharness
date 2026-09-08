@@ -20,11 +20,11 @@
 
 ## Task 1: declarations and immutable input files
 
-**Files:** create `src/experiments/declaration.mjs`, `src/experiments/files.mjs`, `src/experiments/records.mjs`, `test/starting-files.test.mjs`; extend only the shared byte reader in `src/sources/platform.mjs`.
+**Files:** create `src/experiments/declaration.mjs`, `src/experiments/files.mjs`, `src/experiments/records.mjs`, `test/starting-files.test.mjs`; extend the shared byte reader in `src/sources/platform.mjs` and add optional `input`/`experiment` buckets to `src/core/local-store.mjs` so ordinary history never scans binary chunks.
 
 **Interfaces:** `validateDeclaration(value)` returns a normalized validated copy while preserving request bytes; `captureStartingFiles({project, paths})` returns bounded file entries and identity guards; `writeStartingManifest({store, capture})` publishes chunks/manifest and returns its ID; `readStartingManifest({store, manifestId, withBytes?})` validates the manifest and chunks, optionally returning bytes for the later replay materializer.
 
-- [ ] Write real filesystem tests that fail if later file edits leak into stored inputs, binary bytes are altered, invalid criteria are accepted or a corrupt chunk is used. The initial red check is a missing callable export, asserted explicitly through optional import.
+- [x] Write real filesystem tests that fail if later file edits leak into stored inputs, binary bytes are altered, invalid criteria are accepted or a corrupt chunk is used. The initial red check is a missing callable export, asserted explicitly through optional import.
 
 ```js
 assert.equal(typeof api?.captureStartingFiles, 'function');
@@ -36,10 +36,10 @@ assert.equal(saved.files.find(f => f.path === 'task.txt').bytes.toString(), 'ori
 assert.deepEqual(saved.files.find(f => f.path === 'image.bin').bytes, Buffer.from([0, 255, 128]));
 ```
 
-- [ ] Run `node --test test/starting-files.test.mjs` and verify the expected failure.
-- [ ] Implement declaration constraints and exact-key validation, guarded binary reading, normalized relative paths, private chunk/manifest publication and strict re-read validation. Reuse current metadata checking without changing the existing `captureFile` contract.
-- [ ] Add boundary cases before implementing their branches: absent/zero files, mode preservation, duplicate/path limits, project and ancestor replacement, symlink/hard link, unsupported bytes/size, corrupt/missing chunks, hostile manifests and record-role/scope mismatch.
-- [ ] Run the focused suite and the existing source metadata suite; directly review the implementation and commit.
+- [x] Run `node --test test/starting-files.test.mjs` and verify the expected failure.
+- [x] Implement declaration constraints and exact-key validation, guarded binary reading, normalized relative paths, private chunk/manifest publication and strict re-read validation. Reuse current metadata checking without changing the existing `captureFile` contract.
+- [x] Add boundary cases before implementing their branches: absent/zero files, mode preservation, duplicate/path limits, project and ancestor replacement, symlink/hard link, unsupported bytes/size, corrupt/missing chunks, hostile manifests and record-role mismatch. Scope binding is checked in Task 2.
+- [x] Run the focused suite and the existing source metadata suite; directly review the implementation and commit. Starting-files/store: 30 passed. Source and first eight capture cases: 67 passed, one existing platform skip. Input buckets are separate from ordinary history and lazy-created only for an explicit write to an older store.
 
 ## Task 2: registered capture review and save
 

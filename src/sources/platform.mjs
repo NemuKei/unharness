@@ -119,7 +119,9 @@ async function metadata(path, s) {
   }
   return m;
 }
-export async function captureFile(path) {
+export async function captureFileBytes(path, maxBytes = 128 * 1024) {
+  if (!Number.isSafeInteger(maxBytes) || maxBytes < 0 || maxBytes > 8 * 1024 * 1024)
+    fail('source-too-large');
   await parentBinding(path);
   let s;
   try {
@@ -128,20 +130,33 @@ export async function captureFile(path) {
     if (e.code === 'ENOENT') return null;
     throw e;
   }
-  if (s.size > 128 * 1024) fail('source-too-large');
+  if (s.size > maxBytes) fail('source-too-large');
   const meta = await metadata(path, s);
   const h = await open(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
   try {
     const hs = await h.stat();
     if (hs.ino !== s.ino || hs.dev !== s.dev) fail('source-redirection');
-    const b = await h.readFile();
-    if (b.length > 128 * 1024) fail('source-too-large');
-    if (!b.equals(Buffer.from(b.toString('utf8'), 'utf8')))
-      fail('unsupported-source');
-    return { text: b.toString('utf8'), meta };
+    const chunks = [];
+    let size = 0;
+    while (size <= maxBytes) {
+      const chunk = Buffer.alloc(Math.min(64 * 1024, maxBytes + 1 - size));
+      const { bytesRead } = await h.read(chunk, 0, chunk.length, null);
+      if (!bytesRead) break;
+      size += bytesRead;
+      if (size > maxBytes) fail('source-too-large');
+      chunks.push(chunk.subarray(0, bytesRead));
+    }
+    return { bytes: Buffer.concat(chunks, size), meta };
   } finally {
     await h.close();
   }
+}
+export async function captureFile(path) {
+  const file = await captureFileBytes(path);
+  if (file === null) return null;
+  if (!file.bytes.equals(Buffer.from(file.bytes.toString('utf8'), 'utf8')))
+    fail('unsupported-source');
+  return { text: file.bytes.toString('utf8'), meta: file.meta };
 }
 export async function defaultMetadata(parent) {
   const dir = await realpath(
