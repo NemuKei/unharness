@@ -44,6 +44,8 @@ Read the catalog only from `host_skills.body` with `includeInstructions: true`. 
 
 A catalog omission only confirms omission from this recorded automatic list. It does not prove native picker availability, manual execution behavior, inaccessible files, or absence of all possible Skill inputs. The explicit manual-read pilot remains separate evidence.
 
+Condition metadata is separate from source matching. Hash recognized first-turn execution-policy fields without returning their prose or paths. `memoryGuidanceRecorded` may reuse the existing observer's detection in initial developer input (`## Memory` and `MEMORY_SUMMARY`), before assistant/tool activity. It never contributes to match status; false means not detected, not memory disabled. The pilot's first full world state did not contain that memory guidance.
+
 ## Shared service and records
 
 Expose `observeUserTask({ workspace, taskId })` from `src/sources/service.mjs` and `sources observe --json` from the CLI. Validate and canonicalize the UUID before reading a recording. Do not accept a session path, expected text, mode, marker or caller-provided timestamp.

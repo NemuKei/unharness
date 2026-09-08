@@ -29,7 +29,7 @@
 - `src/sources/observation-record.mjs`: pure validation/projection of persisted observations; no native editor or YAML imports.
 - `src/sources/service.mjs`, `cli.mjs`, `errors.mjs`: public source operation, nullable state fields, command and fixed error routing.
 - `src/gui/sources.mjs`: scoped HTTP action and UUID-only input.
-- `web/src/sources.ts`, `useSourceController.ts`, `SourceWorkbench.tsx`, `sources.css`: types, dated result, request action and compact UI.
+- `web/src/sources.ts`, `useSourceController.ts`, `SourceWorkbench.tsx`, `sources.css`: types, dated result, request action and compact UI. A focused `web/src/components/SourceTaskObservation.tsx` and a shared pure view/notice helper may keep the long workbench focused.
 
 ## Task 1: Core observation and preparation boundary
 
@@ -99,7 +99,8 @@ return service.observeUserTask({ workspace, taskId: input.taskId });
 
 ```ts
 const isCurrent = result.preparationId === state.source?.preparation?.id
-  && result.snapshotId === state.source?.observation?.snapshotId;
+  && result.snapshotId === state.source?.observation?.snapshotId
+  && result.observationId === state.source?.observation?.observationId;
 ```
 
 - [ ] Add a compact result under the current preparation and a closed task-confirmation disclosure with UUID input and one action. Render the spec's four labels, observation time, prepared mode and source details. For legacy state, explain reviewed re-preparation without automatically applying it. Keep the visual preview, configuration plan and recovery controls separate.
