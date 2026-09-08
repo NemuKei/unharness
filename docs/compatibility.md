@@ -23,6 +23,8 @@ The subsequent [selected real-source desktop sequence](evidence/2026-09-08-real-
 
 The [retained-setting qualification](evidence/2026-09-08-retained-settings-macos.md) adds native owned-profile and built-browser evidence for recording retained edits as a new Normal without managed writes, old-favorite/checkpoint adaptation, older-writer rejection and private-state-only interruption recovery. It covers all three starting modes, narrow views and second-client/reconnection cases. After final review, the existing real registration accepted its exact reviewed retained-only plan; all managed bytes/metadata and three original favorites were preserved. It is at conflict-free prepared Normal, revision 4, with a new preparation boundary and no new task observation. These checks do not add desktop task-loading, Claude Code or Windows support claims.
 
+The [ordinary-comparison pass](evidence/2026-09-08-comparison-records-macos.md) adds bounded usage/time projection for four already recorded Mac tasks and owned-profile service/HTTP/GUI qualification. It covers immutable attributed history, nullable metrics, initial/changed/unknown conditions, delayed-result guards, historical favorites, restoration and display/transport failures. No new model task was started and no old operator record was retrofitted. The known 0.153.4 recording format and recorded root responses are the measurement boundary; this adds no complete-runtime, full-mode, Claude Code or Windows claim.
+
 ## What to record for a real test
 
 - Tested source revision and local changes, if any.

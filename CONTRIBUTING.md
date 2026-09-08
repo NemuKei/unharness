@@ -15,6 +15,8 @@ npm run gui
 
 Open the printed loopback URL. `gui --demo` creates a fresh owned fixture/store; use the printed store/scope or structured resumeArgv to keep working with that environment. Existing diagnostics remain independent of frontend imports; the full test suite includes the locked YAML transform checks. Keep PixiJS imports in the browser presentation layer and commit lockfile changes when updating dependencies. See [GUI usage](docs/gui.md) and [the rendering decision](docs/design.md#selected-rendering-stack). `npm run check` covers TypeScript and Pixi's static shader/geometry helpers with dynamic code generation disabled. For GUI changes, run this check, the production build and real browser interaction checks in addition to affected Node tests; keep screenshots containing private paths/IDs outside Git.
 
+The GUI keeps the asset bundle read at startup. Stop and restart it after rebuilding, then reopen the printed URL to verify the new build.
+
 After building on macOS, an optional browser regression checks repeated task-UUID handoffs through the actual workbench. Point it at an existing Playwright installation; no browser dependency is added to the application:
 
 ```sh
