@@ -97,9 +97,9 @@ export function SourceWorkbench() {
           <ComparisonWorkbench
             key={comparisonKey}
             sourceController={c}
-            initialTaskId={
+            taskHandoff={
               comparisonTask?.contextKey === comparisonKey
-                ? comparisonTask.taskId
+                ? comparisonTask
                 : undefined
             }
           />

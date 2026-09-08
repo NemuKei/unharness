@@ -13,6 +13,7 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 import { startGuiServer } from "../src/gui/server.mjs";
 import * as service from "../src/sources/service.mjs";
@@ -37,7 +38,7 @@ const assessment = {
   note: "後から記録した評価",
 };
 
-async function setupHttp(t) {
+async function setupHttp(t, builtAssets) {
   const parent = await realpath(
     await mkdtemp(join(tmpdir(), "unharness-comparison-http-")),
   );
@@ -54,9 +55,11 @@ async function setupHttp(t) {
     selectedSkillIds: [],
     userAddedOptional: true,
   });
-  const assetsDirectory = join(parent, "dist");
-  await mkdir(assetsDirectory);
-  await writeFile(join(assetsDirectory, "index.html"), "<!doctype html>");
+  const assetsDirectory = builtAssets ?? join(parent, "dist");
+  if (!builtAssets) {
+    await mkdir(assetsDirectory);
+    await writeFile(join(assetsDirectory, "index.html"), "<!doctype html>");
+  }
   const running = await startGuiServer({
     manageSources: profile.context,
     assetsDirectory,
@@ -85,7 +88,7 @@ async function setupHttp(t) {
       contextId: metadata.contextId,
       ...input,
     });
-  return { profile, registered, request, post, metadata };
+  return { profile, registered, request, post, metadata, url: running.url };
 }
 
 async function writeRecording(s) {
@@ -660,4 +663,46 @@ test("comparison chart starts at zero and unknown associations stay unknown", as
     ].filter(isComparisonMutation),
     ["review-run", "save-run", "run-favorite"],
   );
+});
+
+// Run after npm run build, using an explicitly selected Playwright installation.
+test("built comparison workbench accepts repeated observation handoffs", {
+  skip: process.platform !== "darwin"
+    ? "This check uses the Mac owned-source fixture"
+    : !process.env.UNHARNESS_PLAYWRIGHT_MODULE &&
+      "Set UNHARNESS_PLAYWRIGHT_MODULE to run the built-browser regression",
+}, async (t) => {
+  const { chromium } = await import(pathToFileURL(resolve(process.env.UNHARNESS_PLAYWRIGHT_MODULE)).href);
+  const s = await setupHttp(t, resolve("dist"));
+  const taskId = await writeRecording(s);
+  const browser = await chromium.launch({
+    headless: true,
+    ...(process.env.UNHARNESS_BROWSER_EXECUTABLE
+      ? { executablePath: process.env.UNHARNESS_BROWSER_EXECUTABLE }
+      : {}),
+  });
+  try {
+    const context = await browser.newContext({ reducedMotion: "reduce" });
+    await context.addInitScript(() => localStorage.setItem("unharness.effects.v1", "off"));
+    const page = await context.newPage();
+    await page.goto(s.url);
+    await page.locator(".task-observation summary").click();
+    await page.locator("#source-task-id").fill(taskId);
+    await page.getByRole("button", { name: "このタスクの記録を確認", exact: true }).click();
+    const handoff = () => page.getByRole("button", { name: "このUUIDを比較で使う", exact: true }).click();
+    const waitForTask = () => page.waitForFunction(expected =>
+      document.querySelector(".comparison-workbench .review-form input")?.value === expected,
+    taskId, { timeout: 5000 });
+    await handoff();
+    await waitForTask();
+    const input = page.locator(".comparison-workbench").getByLabel("タスクUUID", { exact: true });
+    await input.fill(randomUUID());
+    await page.getByRole("navigation", { name: "ワークベンチ" })
+      .getByRole("button", { name: "装備", exact: true }).click();
+    await handoff();
+    await waitForTask();
+    assert.equal(await input.inputValue(), taskId);
+  } finally {
+    await browser.close();
+  }
 });

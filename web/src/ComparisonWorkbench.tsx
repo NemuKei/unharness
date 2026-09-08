@@ -251,29 +251,31 @@ function TokenBars({ runs }: { runs: SavedRun[] }) {
 
 export function ComparisonWorkbench({
   sourceController,
-  initialTaskId,
+  taskHandoff,
 }: {
   sourceController: SourceController;
-  initialTaskId?: string;
+  taskHandoff?: Readonly<{ taskId: string }>;
 }) {
   const comparison = useComparisonController(sourceController);
   const { state } = comparison;
-  const [taskId, setTaskId] = useState(initialTaskId ?? "");
+  const [taskId, setTaskId] = useState(taskHandoff?.taskId ?? "");
   const [throughTurnId, setThroughTurnId] = useState("");
   const [favoriteNames, setFavoriteNames] = useState<Record<string, string>>({});
   useEffect(() => {
-    if (initialTaskId) {
+    if (taskHandoff) {
+      const requestedTask = taskHandoff.taskId.toLowerCase();
       if (
-        state.review &&
-        state.review.measurement.taskId.toLowerCase() !==
-          initialTaskId.toLowerCase()
+        taskId.trim().toLowerCase() !== requestedTask ||
+        (state.review &&
+          state.review.measurement.taskId.toLowerCase() !== requestedTask)
       ) {
         comparison.clearReview();
         setThroughTurnId("");
       }
-      setTaskId(initialTaskId);
+      setTaskId(taskHandoff.taskId);
     }
-  }, [initialTaskId]);
+    // Each handoff is an explicit action, including repeated UUIDs.
+  }, [taskHandoff]);
   useEffect(() => {
     setThroughTurnId(state.review?.measurement.throughTurnId ?? "");
   }, [state.review?.reviewId]);

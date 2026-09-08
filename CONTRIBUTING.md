@@ -15,6 +15,16 @@ npm run gui
 
 Open the printed loopback URL. `gui --demo` creates a fresh owned fixture/store; use the printed store/scope or structured resumeArgv to keep working with that environment. Existing diagnostics remain independent of frontend imports; the full test suite includes the locked YAML transform checks. Keep PixiJS imports in the browser presentation layer and commit lockfile changes when updating dependencies. See [GUI usage](docs/gui.md) and [the rendering decision](docs/design.md#selected-rendering-stack). `npm run check` covers TypeScript and Pixi's static shader/geometry helpers with dynamic code generation disabled. For GUI changes, run this check, the production build and real browser interaction checks in addition to affected Node tests; keep screenshots containing private paths/IDs outside Git.
 
+After building on macOS, an optional browser regression checks repeated task-UUID handoffs through the actual workbench. Point it at an existing Playwright installation; no browser dependency is added to the application:
+
+```sh
+UNHARNESS_PLAYWRIGHT_MODULE="/absolute/path/to/playwright/index.mjs" \
+UNHARNESS_BROWSER_EXECUTABLE="/absolute/path/to/browser-executable" \
+node --test test/web-comparisons.test.mjs
+```
+
+The executable override is optional when Playwright already has a browser installed. Without the module path, this browser case is explicitly skipped while the HTTP/controller tests still run. It uses a temporary synthetic source profile and local GUI server.
+
 ## Work that is useful now
 
 - Investigate actual Codex desktop loading and control behavior on macOS and Windows.
