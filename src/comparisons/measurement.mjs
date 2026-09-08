@@ -110,7 +110,7 @@ function totalsCopy(value) {
 }
 
 export function sumCounters(values) {
-  if (!values.length || !values.every(validCounter)) return null;
+  if (!Array.isArray(values) || !values.length || !values.every(validCounter)) return null;
   let sum = 0;
   for (const value of values) {
     sum += value;
@@ -131,6 +131,8 @@ function turnCopy(value, index) {
     || !nullableCounter(value.durationMs)
     || !validCounter(value.responseCount)) fail();
   if (!value.completed && (value.completedAt !== null || value.durationMs !== null)) fail();
+  const totals = totalsCopy(value.totals);
+  if (value.responseCount === 0 && USAGE_FIELDS.some(field => totals[field] !== null)) fail();
   return {
     turnId: value.turnId,
     ordinal: value.ordinal,
@@ -139,7 +141,7 @@ function turnCopy(value, index) {
     completedAt: value.completedAt,
     durationMs: value.durationMs,
     responseCount: value.responseCount,
-    totals: totalsCopy(value.totals),
+    totals,
   };
 }
 
@@ -165,13 +167,17 @@ export function validateMeasurement(value) {
     || new Set(value.selectedTurnIds).size !== value.selectedTurnIds.length
     || value.selectedTurnIds.some(turnId => !boundedId(turnId))) fail();
 
+  const issues = fixedArray(value.issues, new Set(MEASUREMENT_REASONS), MEASUREMENT_REASONS.length);
+  const unavailableIssue = issues.some(issue => UNAVAILABLE_ISSUES.has(issue));
   const availableTurns = value.availableTurns.map(turnCopy);
   if (new Set(availableTurns.map(turn => turn.turnId)).size !== availableTurns.length) fail();
   const prefix = availableTurns.slice(0, value.selectedTurnIds.length).map(turn => turn.turnId);
   if (prefix.some((turnId, index) => turnId !== value.selectedTurnIds[index])) fail();
   if ((value.selectedTurnIds.at(-1) ?? null) !== value.throughTurnId) fail();
   const selectedTurns = availableTurns.slice(0, value.selectedTurnIds.length);
-  if (selectedTurns.length ? value.runtimeVersion !== '0.153.4' : value.runtimeVersion !== null) fail();
+  if (selectedTurns.length) {
+    if (value.runtimeVersion !== '0.153.4' || unavailableIssue) fail();
+  } else if (value.runtimeVersion !== null || !unavailableIssue || availableTurns.length) fail();
 
   exactKeys(value.usage, [
     'availability', 'totals', 'responseCount', 'duplicateCount', 'excludedCount',
@@ -217,6 +223,11 @@ export function validateMeasurement(value) {
   const expectedDuration = selectedTurns.length && selectedTurns.every(turn => turn.completed)
     ? sumCounters(selectedTurns.map(turn => turn.durationMs)) : null;
   if (value.time.recordedTurnDurationMs !== expectedDuration) fail();
+  const terminalConflict = issues.includes('terminal-conflict');
+  const selectedDurationMissing = selectedTurns.some(turn => turn.completed && turn.durationMs === null);
+  if (selectedDurationMissing && !terminalConflict && !issues.includes('turn-duration-unavailable')) fail();
+  if (value.time.firstResponseMs === null && selectedTurns[0]?.completed
+    && !terminalConflict && !issues.includes('first-response-time-unavailable')) fail();
 
   exactKeys(value.conditions, [
     'model', 'reasoningEffort', 'executionPolicyDigest', 'changes', 'unknown',
@@ -248,9 +259,6 @@ export function validateMeasurement(value) {
       || value.output.reason !== null || !selectedTurns.at(-1)?.completed) fail();
   } else if (value.output.bytes !== null || !OUTPUT_REASONS.has(value.output.reason)) fail();
 
-  const issues = fixedArray(value.issues, new Set(MEASUREMENT_REASONS), MEASUREMENT_REASONS.length);
-  const unavailableIssue = issues.some(issue => UNAVAILABLE_ISSUES.has(issue));
-  if (selectedTurns.length ? unavailableIssue : !unavailableIssue) fail();
   return {
     schemaVersion: 1,
     app: 'codex-desktop',

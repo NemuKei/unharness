@@ -136,6 +136,9 @@ test('counter sums preserve zero and reject absent, invalid and overflowing inpu
   assert.equal(sumCounters([0, 2, 3]), 5);
   for (const values of [[], [1, null], [1, undefined], [1, -1], [1, 1.5], [1, Number.MAX_SAFE_INTEGER + 1],
     [Number.MAX_SAFE_INTEGER, 1]]) assert.equal(sumCounters(values), null);
+  for (const value of [undefined, null, 7, '1,2', { length: 2 }]) {
+    assert.doesNotThrow(() => assert.equal(sumCounters(value), null));
+  }
 });
 
 test('rejects invalid task, project and cutoff references with fixed private errors', () => {
@@ -221,6 +224,46 @@ test('builds a timeline from recognized events, deduplicates identical events an
   const outOfOrder = project(interleaved);
   assert.deepEqual(outOfOrder.measurement.selectedTurnIds, []);
   assert.ok(outOfOrder.measurement.issues.includes('timeline-conflict'));
+});
+
+test('enforces lifecycle phase order after deduplicating identical event replays', () => {
+  const completedBeforeStart = cloneRecords();
+  const earlyTerminal = completedBeforeStart.splice(completedBeforeStart.indexOf(
+    findComplete(completedBeforeStart, firstTurnId)), 1)[0];
+  completedBeforeStart.splice(1, 0, earlyTerminal);
+  const first = project(completedBeforeStart);
+  assert.deepEqual(first.measurement.availableTurns, []);
+  assert.ok(first.measurement.issues.includes('timeline-conflict'));
+
+  const contextAfterTerminal = cloneRecords();
+  const changedContext = structuredClone(contextAfterTerminal.find(item => item.type === 'turn_context'
+    && item.payload.turn_id === firstTurnId));
+  changedContext.payload.model = 'synthetic-model-after-terminal';
+  contextAfterTerminal.splice(contextAfterTerminal.indexOf(findComplete(contextAfterTerminal, firstTurnId)) + 1, 0, changedContext);
+  const second = project(contextAfterTerminal);
+  assert.deepEqual(second.measurement.availableTurns, []);
+  assert.ok(second.measurement.issues.includes('timeline-conflict'));
+
+  const identicalReplays = cloneRecords();
+  const startReplay = structuredClone(identicalReplays.find(item => item.type === 'event_msg'
+    && item.payload.type === 'task_started' && item.payload.turn_id === firstTurnId));
+  const contextReplay = structuredClone(identicalReplays.find(item => item.type === 'turn_context'
+    && item.payload.turn_id === firstTurnId));
+  identicalReplays.splice(identicalReplays.indexOf(findComplete(identicalReplays, firstTurnId)) + 1, 0,
+    startReplay, contextReplay);
+  const valid = project(identicalReplays);
+  assert.equal(valid.measurement.usage.totals.totalTokens, 100);
+  assert.equal(valid.outputText, 'First answer');
+
+  const laterContextReplay = cloneRecords();
+  const laterContext = structuredClone(laterContextReplay.find(item => item.type === 'turn_context'
+    && item.payload.turn_id === firstTurnId));
+  laterContext.timestamp = '2026-09-08T00:00:09Z';
+  laterContextReplay.splice(laterContextReplay.indexOf(findComplete(laterContextReplay, firstTurnId)) + 1, 0,
+    laterContext);
+  const notIdentical = project(laterContextReplay);
+  assert.deepEqual(notIdentical.measurement.availableTurns, []);
+  assert.ok(notIdentical.measurement.issues.includes('timeline-conflict'));
 });
 
 test('refuses timelines over 200 turns instead of truncating them into a result', () => {
@@ -418,6 +461,35 @@ test('selected context observations expose bounded condition changes and unknown
   assert.ok(!JSON.stringify(unknown.measurement).includes('PRIVATE'));
 });
 
+test('malformed native execution policy values remain unknown instead of receiving a digest', () => {
+  const validRecords = cloneRecords();
+  const validContext = validRecords.find(item => item.type === 'turn_context' && item.payload.turn_id === firstTurnId);
+  validContext.payload.approval_policy = 'never';
+  validContext.payload.sandbox_policy = { type: 'danger-full-access' };
+  validContext.payload.permission_profile = { type: 'disabled' };
+  validContext.payload.active_permission_profile = { id: ':danger-full-access' };
+  const valid = project(validRecords);
+  assert.match(valid.measurement.conditions.executionPolicyDigest, /^[0-9a-f]{64}$/);
+  assert.ok(!valid.measurement.conditions.unknown.includes('executionPolicy'));
+
+  const malformedValues = [
+    context => { context.approval_policy = 7; },
+    context => { context.approvals_reviewer = { private: true }; },
+    context => { context.sandbox_policy = { type: 'PRIVATE' }; },
+    context => { context.permission_profile = { type: 'disabled', private: true }; },
+    context => { context.active_permission_profile = { id: 7 }; },
+  ];
+  for (const mutate of malformedValues) {
+    const records = cloneRecords();
+    const context = records.find(item => item.type === 'turn_context' && item.payload.turn_id === firstTurnId);
+    mutate(context.payload);
+    const result = project(records);
+    assert.equal(result.measurement.conditions.executionPolicyDigest, null);
+    assert.ok(result.measurement.conditions.unknown.includes('executionPolicy'));
+    assert.ok(!JSON.stringify(result.measurement).includes('PRIVATE'));
+  }
+});
+
 test('duration and first-response timing remain available independently of token usage', () => {
   const records = cloneRecords().filter(item => item.type !== 'token_usage_record');
   const result = project(records, { throughTurnId: secondTurnId });
@@ -512,6 +584,23 @@ test('normalized validation returns a detached bounded copy and rejects extra or
   const noSelection = project(unsupported).measurement;
   noSelection.issues = [];
   assert.throws(() => validateMeasurement(noSelection), { kind: 'comparison-measurement-invalid' });
+
+  const zeroUnselected = structuredClone(measurement);
+  zeroUnselected.availableTurns[1].responseCount = 0;
+  assert.throws(() => validateMeasurement(zeroUnselected), { kind: 'comparison-measurement-invalid' });
+
+  const missingDurationIssue = structuredClone(measurement);
+  missingDurationIssue.availableTurns[0].durationMs = null;
+  missingDurationIssue.time.recordedTurnDurationMs = null;
+  assert.throws(() => validateMeasurement(missingDurationIssue), { kind: 'comparison-measurement-invalid' });
+
+  const missingFirstResponseIssue = structuredClone(measurement);
+  missingFirstResponseIssue.time.firstResponseMs = null;
+  assert.throws(() => validateMeasurement(missingFirstResponseIssue), { kind: 'comparison-measurement-invalid' });
+
+  const unsupportedWithTurns = project(unsupported).measurement;
+  unsupportedWithTurns.availableTurns = structuredClone(measurement.availableTurns);
+  assert.throws(() => validateMeasurement(unsupportedWithTurns), { kind: 'comparison-measurement-invalid' });
   assert.ok(RUN_METRIC_REASONS.includes('response-id-missing'));
   assert.ok(RUN_METRIC_REASONS.includes('output-too-large'));
 });

@@ -92,10 +92,52 @@ function canonical(value) {
   return value;
 }
 
+const APPROVAL_POLICIES = new Set(['untrusted', 'on-request', 'never']);
+const APPROVAL_REVIEWERS = new Set(['user', 'auto_review', 'guardian_subagent']);
+const SANDBOX_TYPES = new Set([
+  'danger-full-access', 'read-only', 'external-sandbox', 'workspace-write',
+]);
+
+function exactObject(value, keys) {
+  return object(value) && Object.keys(value).every(key => keys.includes(key));
+}
+
+function validSandboxPolicy(value) {
+  if (!exactObject(value, [
+    'type', 'network_access', 'exclude_slash_tmp', 'exclude_tmpdir_env_var', 'writable_roots',
+  ]) || !SANDBOX_TYPES.has(value.type)) return false;
+  if (value.type === 'danger-full-access') return Object.keys(value).length === 1;
+  if (value.type === 'read-only') {
+    return Object.keys(value).every(key => ['type', 'network_access'].includes(key))
+      && (value.network_access === undefined || typeof value.network_access === 'boolean');
+  }
+  if (value.type === 'external-sandbox') {
+    return Object.keys(value).every(key => ['type', 'network_access'].includes(key))
+      && (value.network_access === undefined || ['restricted', 'enabled'].includes(value.network_access));
+  }
+  return (value.network_access === undefined || typeof value.network_access === 'boolean')
+    && (value.exclude_slash_tmp === undefined || typeof value.exclude_slash_tmp === 'boolean')
+    && (value.exclude_tmpdir_env_var === undefined || typeof value.exclude_tmpdir_env_var === 'boolean')
+    && (value.writable_roots === undefined || (Array.isArray(value.writable_roots)
+      && value.writable_roots.length <= 64 && value.writable_roots.every(absolutePath)));
+}
+
+function validPolicyValue(key, value) {
+  if (key === 'approval_policy') return APPROVAL_POLICIES.has(value);
+  if (key === 'approvals_reviewer') return APPROVAL_REVIEWERS.has(value);
+  if (key === 'sandbox_policy') return validSandboxPolicy(value);
+  if (key === 'permission_profile') {
+    return exactObject(value, ['type']) && Object.keys(value).length === 1 && value.type === 'disabled';
+  }
+  return exactObject(value, ['id', 'extends'])
+    && typeof value.id === 'string' && /^:[A-Za-z0-9][A-Za-z0-9._:/-]{0,126}$/.test(value.id)
+    && (value.extends === undefined || value.extends === null || boundedId(value.extends));
+}
+
 function policyDigest(context) {
   if (!object(context)) return null;
   const entries = POLICY_FIELDS.filter(key => Object.hasOwn(context, key)).map(key => [key, context[key]]);
-  if (!entries.length) return null;
+  if (!entries.length || entries.some(([key, value]) => !validPolicyValue(key, value))) return null;
   return createHash('sha256').update(JSON.stringify(canonical(Object.fromEntries(entries)))).digest('hex');
 }
 
@@ -136,19 +178,24 @@ function timeline(records) {
     const turn = ensure(payload.turn_id);
     if (record.type === 'turn_context') {
       const projected = {
+        observedAt: recordedTimestamp(record),
         cwd: payload.cwd,
         model: conditionId(payload.model),
         reasoningEffort: REASONING_EFFORTS.has(payload.effort) ? payload.effort : null,
         executionPolicyDigest: policyDigest(payload),
       };
-      if (!turn.contexts.some(context => isDeepStrictEqual(context, projected))) turn.contexts.push(projected);
+      const replay = turn.contexts.some(context => isDeepStrictEqual(context, projected));
+      if (turn.terminal !== null && !replay) conflict = true;
+      if (!replay) turn.contexts.push(projected);
       if (!turn.startSeen && turn.startedAt === null) turn.startedAt = recordedTimestamp(record);
       continue;
     }
     if (payload.type === 'task_started') {
-      turn.startSeen = true;
       const start = { startedAt: recordedTimestamp(record) };
-      if (!turn.starts.some(value => isDeepStrictEqual(value, start))) turn.starts.push(start);
+      const replay = turn.starts.some(value => isDeepStrictEqual(value, start));
+      if (turn.terminal !== null && !replay) conflict = true;
+      turn.startSeen = true;
+      if (!replay) turn.starts.push(start);
       if (turn.starts.length > 1) conflict = true;
       turn.startedAt = start.startedAt;
       continue;
