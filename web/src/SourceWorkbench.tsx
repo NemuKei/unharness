@@ -434,13 +434,9 @@ function TaskObservationSection({
             spellCheck={false}
             value={taskId}
             aria-invalid={taskId.length > 0 && !taskIdValid}
-            aria-describedby="source-task-id-help"
             onChange={(event) => setTaskId(event.target.value)}
           />
         </label>
-        <p id="source-task-id-help" className="muted">
-          録画ファイルのパス、期待する内容、モード、準備日時は入力しません。
-        </p>
         <button
           className="secondary"
           disabled={!usable || !taskIdValid}
