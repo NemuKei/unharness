@@ -93,3 +93,12 @@ export async function readStartingManifest({ store, manifestId, withBytes = fals
     return { manifestId, files, totalBytes: manifest.totalBytes };
   } catch { invalid(); }
 }
+// History can inspect the bounded manifest without loading every input blob.
+// This is metadata only; any consumer of file bytes uses readStartingManifest.
+export async function readStartingManifestIndex({ store, manifestId }) {
+  try {
+    if (!hash(manifestId)) invalid();
+    const manifest = validateManifest(await readRecord({ store, type: 'input', id: manifestId }));
+    return { manifestId, files: manifest.files, totalBytes: manifest.totalBytes };
+  } catch { invalid(); }
+}

@@ -463,3 +463,8 @@ export const readUserRunOutput = wrap(async args => (await import('../comparison
 export const listUserRuns = wrap(async args => (await import('../comparisons/service.mjs')).listUserRuns(args));
 export const compareUserRuns = wrap(async args => (await import('../comparisons/service.mjs')).compareUserRuns(args));
 export const saveUserRunFavorite = wrap(async args => (await import('../comparisons/service.mjs')).saveUserRunFavorite(args));
+
+export const reviewUserStart = wrap(async args => (await import('../experiments/service.mjs')).reviewUserStart(args));
+export const saveUserStart = wrap(async args => (await import('../experiments/service.mjs')).saveUserStart(args));
+export const readUserStart = wrap(async args => (await import('../experiments/service.mjs')).readUserStart(args));
+export const listUserStarts = wrap(async args => (await import('../experiments/service.mjs')).listUserStarts(args));

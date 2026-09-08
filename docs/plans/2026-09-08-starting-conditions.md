@@ -43,11 +43,11 @@ assert.deepEqual(saved.files.find(f => f.path === 'image.bin').bytes, Buffer.fro
 
 ## Task 2: registered capture review and save
 
-**Files:** create `src/experiments/inventory.mjs`, `src/experiments/service.mjs`, `test/starting-conditions.test.mjs`; export operations/error kinds through `src/sources/service.mjs` and `src/sources/errors.mjs`.
+**Files:** create `src/experiments/inventory.mjs`, `src/experiments/start-records.mjs`, `src/experiments/service.mjs`, `test/starting-conditions.test.mjs`; export operations/error kinds through `src/sources/service.mjs` and `src/sources/errors.mjs`.
 
 **Interfaces:** `inventoryStartingFiles({project, additionalPaths?})` supplies validated relative paths and declared coverage. Implement the four service operations in the spec. Capture guards and source scope are private record fields, supplied by the service rather than the caller.
 
-- [ ] Write a registered synthetic-profile test for review → modify file → rejected save, followed by a new review → save → duplicate save → original detail read. Assert the literal source bytes and source-state JSON remain unchanged.
+- [x] Write a registered synthetic-profile test for review → modify file → rejected save, followed by a new review → save → duplicate save → original detail read. Assert the literal source bytes and source-state JSON remain unchanged.
 
 ```js
 const review = await service.reviewUserStart({workspace, declaration});
@@ -58,9 +58,9 @@ const first = await service.saveUserStart({workspace, reviewId: next.reviewId});
 assert.deepEqual(await service.saveUserStart({workspace, reviewId: next.reviewId}), first);
 ```
 
-- [ ] Run `node --test test/starting-conditions.test.mjs`; verify red, then implement bounded Git/non-Git inventory, mandatory project-input inclusion, review capture, exact revalidation before save, private projections and paged history.
-- [ ] Cover new/missing/untracked files, ignored supplemental files, changing declarations, project/ancestor replacement, conflicting IDs, cross-scope records, failed publication and missing/corrupt optional history. Do not execute file contents or Git hooks.
-- [ ] Run both new suites plus comparison/source regression tests, directly review all public and private fields, then commit.
+- [x] Run `node --test test/starting-conditions.test.mjs`; verify red, then implement bounded Git/non-Git inventory, mandatory project-input inclusion, review capture, exact revalidation before save, private projections and paged history.
+- [x] Cover new/missing/untracked files, ignored supplemental files, changing declarations, project/ancestor replacement, conflicting IDs, cross-scope records, failed publication and missing/corrupt optional history. Do not execute file contents or Git hooks.
+- [x] Run both new suites plus comparison/source regression tests, directly review all public and private fields, then commit. The related 125-test run passed; the subsequent eight service cases passed after adding an explicit refusal for a project containing its own private store.
 
 ## Task 3: CLI and Comparison form
 

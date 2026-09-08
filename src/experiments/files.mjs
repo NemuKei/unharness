@@ -72,6 +72,11 @@ function mapCaptureError(e) {
   if (['ENOENT', 'ENOTDIR'].includes(e.code)) fail('starting-files-changed');
   fail('starting-files-unsupported');
 }
+export async function inspectStartingFileIdentities({ project, paths }) {
+  paths = validateStartingPaths(paths);
+  try { return await currentGuards(project, paths); }
+  catch (e) { mapCaptureError(e); }
+}
 export async function captureStartingFiles({ project, paths }) {
   paths = validateStartingPaths(paths);
   try {
