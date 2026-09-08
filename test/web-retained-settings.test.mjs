@@ -72,7 +72,11 @@ test("adapted favorite and checkpoint reviews name current common settings and a
     );
     assert.ok(rendered.includes("現在の共通設定を維持して準備"));
     assert.ok(rendered.includes(label));
-    assert.ok(rendered.includes("保存すると新しいお気に入り版になります"));
+    assert.ok(
+      rendered.includes(
+        "この計画で準備したあとに保存すると新しいお気に入り版になります",
+      ),
+    );
   }
 });
 
@@ -122,9 +126,9 @@ test("an uncertain retained acceptance is sent once with only the accepted conte
   ]);
 });
 
-test("cached plans are stale after context, scope, revision, or active Normal changes", async () => {
-  const { sameSourcePlanContext } = await import(
-    "../web/src/source-operations.ts"
+test("controller clears both cached plans after context, scope, revision, or active Normal changes", async () => {
+  const { sourceControllerReducer } = await import(
+    "../web/src/source-controller-state.ts"
   );
   const metadata = {
     kind: "user-sources",
@@ -133,7 +137,7 @@ test("cached plans are stale after context, scope, revision, or active Normal ch
     context: { codexHome: "/codex", project: "/project", executable: "/codex/bin" },
     workspace: "/workspace",
   };
-  const state = {
+  const view = {
     metadata,
     source: {
       registration: {
@@ -145,15 +149,138 @@ test("cached plans are stale after context, scope, revision, or active Normal ch
       revision: 2,
     },
   };
-  assert.equal(sameSourcePlanContext(state, structuredClone(state)), true);
+  const cached = {
+    view,
+    confirmed: true,
+    plan: { planId: "plan" },
+    retainedPlan: { planId: "retained-plan" },
+    favorites: [{ favoriteId: "favorite" }],
+    cursor: "cursor",
+    error: "",
+    notice: "変更内容を確認しました。",
+  };
+  const unchanged = sourceControllerReducer(cached, {
+    type: "accept-view",
+    view: structuredClone(view),
+  });
+  assert.equal(unchanged.plan, cached.plan);
+  assert.equal(unchanged.retainedPlan, cached.retainedPlan);
   for (const mutate of [
     (next) => (next.metadata.launchId = "next-launch"),
     (next) => (next.source.registration.scopeId = "e".repeat(64)),
     (next) => (next.source.revision += 1),
     (next) => (next.source.registration.activeNormalId = "f".repeat(64)),
   ]) {
-    const next = structuredClone(state);
+    const next = structuredClone(view);
     mutate(next);
-    assert.equal(sameSourcePlanContext(state, next), false);
+    const accepted = sourceControllerReducer(cached, {
+      type: "accept-view",
+      view: next,
+    });
+    assert.equal(accepted.view, next);
+    assert.equal(accepted.confirmed, true);
+    assert.equal(accepted.plan, null);
+    assert.equal(accepted.retainedPlan, null);
+  }
+});
+
+test("post-accept favorites adopts completed and context-updated state before list handling", async () => {
+  const { sourceControllerReducer } = await import(
+    "../web/src/source-controller-state.ts"
+  );
+  const metadata = {
+    kind: "user-sources",
+    launchId: "launch",
+    contextId: "a".repeat(64),
+    context: {
+      codexHome: "/codex",
+      project: "/project",
+      executable: "/codex/bin",
+    },
+    workspace: "/workspace",
+  };
+  const view = {
+    metadata,
+    source: {
+      registration: {
+        scopeId: "b".repeat(64),
+        normalId: "c".repeat(64),
+        activeNormalId: "d".repeat(64),
+        sources: [],
+      },
+      revision: 3,
+    },
+  };
+  const cached = {
+    view,
+    confirmed: true,
+    plan: { planId: "plan" },
+    retainedPlan: { planId: "retained-plan" },
+    favorites: [{ favoriteId: "old" }],
+    cursor: "old-cursor",
+    error: "",
+    notice: "現在のCodex設定を記録しました。",
+  };
+  const completedView = structuredClone(view);
+  completedView.source.revision += 1;
+  const favorite = { favoriteId: "new" };
+  const completed = sourceControllerReducer(cached, {
+    type: "favorites-followup",
+    response: {
+      status: "completed",
+      state: completedView,
+      result: { favorites: [favorite], nextCursor: "next" },
+    },
+  });
+  assert.equal(completed.view, completedView);
+  assert.equal(completed.plan, null);
+  assert.equal(completed.retainedPlan, null);
+  assert.deepEqual(completed.favorites, [favorite]);
+  assert.equal(completed.cursor, "next");
+
+  const changedView = structuredClone(view);
+  changedView.metadata.launchId = "new-launch";
+  changedView.metadata.contextId = "e".repeat(64);
+  changedView.source.registration.activeNormalId = "f".repeat(64);
+  const changed = sourceControllerReducer(cached, {
+    type: "favorites-followup",
+    response: { status: "context-updated", state: changedView },
+  });
+  assert.equal(changed.view, changedView);
+  assert.equal(changed.confirmed, true);
+  assert.equal(changed.plan, null);
+  assert.equal(changed.retainedPlan, null);
+  assert.deepEqual(changed.favorites, []);
+  assert.equal(changed.cursor, null);
+  assert.match(changed.notice, /接続先が変わりました/);
+});
+
+test("a later rejected or uncertain action replaces the previous success notice", async () => {
+  const { ApiError } = await import("../web/src/api.ts");
+  const { sourceControllerReducer } = await import(
+    "../web/src/source-controller-state.ts"
+  );
+  const reviewed = {
+    view: null,
+    confirmed: true,
+    plan: null,
+    retainedPlan: { planId: "retained-plan" },
+    favorites: [],
+    cursor: null,
+    error: "",
+    notice: "変更内容を確認しました。まだ設定は記録していません。",
+  };
+  for (const error of [
+    new ApiError("source-conflict"),
+    new ApiError("connection-lost", undefined, "uncertain"),
+  ]) {
+    const failed = sourceControllerReducer(reviewed, {
+      type: "failed",
+      error,
+    });
+    assert.equal(failed.confirmed, false);
+    assert.notEqual(failed.notice, reviewed.notice);
+    assert.equal(failed.notice, failed.error);
+    assert.match(failed.notice, /完了できませんでした|結果は未確認/);
   }
 });

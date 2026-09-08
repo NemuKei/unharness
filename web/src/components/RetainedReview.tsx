@@ -42,7 +42,7 @@ export function RestoreAdaptationNotice({
       <strong>現在の共通設定を維持して準備</strong>
       <p>
         {sourceLabel}
-        に保存された指示・Skillと、現在の共通設定を組み合わせます。保存すると新しいお気に入り版になります。
+        に保存された指示・Skillと、現在の共通設定を組み合わせます。この計画で準備したあとに保存すると新しいお気に入り版になります。
       </p>
     </div>
   );
