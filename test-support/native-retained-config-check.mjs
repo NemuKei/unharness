@@ -27,5 +27,11 @@ try {
   const removed = await mergeRetainedConfig({ ...args, baseText: inserted.text, targetText: absentNormal, currentText: prefix + inserted.text });
   assert.equal(removed.text, prefix + absentNormal);
   await assert.rejects(mergeRetainedConfig({ ...args, baseText: normal, targetText: normal, currentText: disabled.text }), { kind: 'config-transform-failed' });
-  console.log(JSON.stringify({ status: 'passed', codexVersion: reconciled.codexVersion, trueformToNormalComposition: true, originallyAbsentSelectors: true, oldTrueformAdaptation: true, instructionOnlyScope: true, selectedEditRejected: true, literalCommentsPreserved: true, ownedCopiesOnly: true, modelCalls: false, runtimeStateVerified: false }));
+  const selectedNan = normal.replace(`path = ${JSON.stringify(selected)}\nenabled = true`, `path = ${JSON.stringify(selected)}\nenabled = true\nextra = nan`);
+  const selectedInf = selectedNan.replace('extra = nan', 'extra = inf');
+  await assert.rejects(mergeRetainedConfig({ ...args, baseText: selectedNan, targetText: selectedInf, currentText: selectedNan }), { kind: 'config-transform-failed' });
+  const retainedNan = `native_numeric = nan\n${normal}`;
+  const retainedInf = retainedNan.replace('native_numeric = nan', 'native_numeric = inf');
+  await assert.rejects(mergeRetainedConfig({ ...args, baseText: retainedNan, targetText: retainedInf, currentText: retainedNan }), { kind: 'config-transform-failed' });
+  console.log(JSON.stringify({ status: 'passed', codexVersion: reconciled.codexVersion, trueformToNormalComposition: true, originallyAbsentSelectors: true, oldTrueformAdaptation: true, instructionOnlyScope: true, selectedEditRejected: true, unprovableNativeNumbersRejected: true, literalCommentsPreserved: true, ownedCopiesOnly: true, modelCalls: false, runtimeStateVerified: false }));
 } finally { await rm(root, { recursive: true, force: true }); }

@@ -14,6 +14,10 @@ import type {
 export type SourceOperationResponse<T> =
   | { status: "context-updated"; state: SourceView }
   | { status: "completed"; result: T; state: SourceView };
+type CompletedSourceOperationResponse<T> = Extract<
+  SourceOperationResponse<T>,
+  { status: "completed" }
+>;
 
 export type SourceControllerState = {
   view: SourceView | null;
@@ -47,6 +51,14 @@ export type SourceControllerAction =
   | { type: "clear-error" }
   | { type: "set-error"; error: string }
   | { type: "set-notice"; notice: string }
+  | {
+      type: "plan-response";
+      response: CompletedSourceOperationResponse<SourcePlan>;
+    }
+  | {
+      type: "retained-plan-response";
+      response: CompletedSourceOperationResponse<RetainedPlan>;
+    }
   | { type: "set-plan"; plan: SourcePlan }
   | { type: "set-retained-plan"; plan: RetainedPlan }
   | { type: "clear-plan" }
@@ -83,6 +95,71 @@ function failureFeedback(error: unknown) {
   return { message };
 }
 
+type PlanKind = "source" | "retained";
+
+function planApplies(
+  state: Pick<SourceControllerState, "view" | "confirmed">,
+  plan: SourcePlan | RetainedPlan,
+  kind: PlanKind,
+) {
+  const source = state.view?.source;
+  if (
+    !state.confirmed ||
+    !source ||
+    source.recovery.pending ||
+    plan.scopeId !== source.registration.scopeId ||
+    plan.revision !== source.revision
+  )
+    return false;
+  if (kind === "source") return source.conflict === null;
+  const retained = plan as RetainedPlan;
+  return (
+    source.conflict?.kind === "source-conflict" &&
+    retained.previousNormalId === source.registration.activeNormalId &&
+    retained.normalId !== source.registration.activeNormalId
+  );
+}
+
+export function planResponseApplies(
+  state: SourceControllerState,
+  response:
+    | CompletedSourceOperationResponse<SourcePlan>
+    | CompletedSourceOperationResponse<RetainedPlan>,
+  kind: PlanKind,
+) {
+  return (
+    state.view !== null &&
+    sameSourcePlanContext(state.view, response.state) &&
+    planApplies(
+      { view: response.state, confirmed: state.confirmed },
+      response.result,
+      kind,
+    )
+  );
+}
+
+function acceptPlanResponse(
+  state: SourceControllerState,
+  response:
+    | CompletedSourceOperationResponse<SourcePlan>
+    | CompletedSourceOperationResponse<RetainedPlan>,
+  kind: PlanKind,
+) {
+  const admitted = planResponseApplies(state, response, kind);
+  const accepted = acceptView(state, response.state);
+  return {
+    ...accepted,
+    ...(kind === "source"
+      ? { plan: admitted ? (response.result as SourcePlan) : null }
+      : { retainedPlan: admitted ? (response.result as RetainedPlan) : null }),
+    notice: admitted
+      ? kind === "retained"
+        ? "変更内容を確認しました。まだ設定は記録していません。"
+        : "変更計画を確認しました。準備前に内容を確認してください。"
+      : "確認結果を現在の操作対象として受理できませんでした。表示を更新したため、もう一度確認してください。",
+  };
+}
+
 export function sourceControllerReducer(
   state: SourceControllerState,
   action: SourceControllerAction,
@@ -110,9 +187,22 @@ export function sourceControllerReducer(
   if (action.type === "set-error") return { ...state, error: action.error };
   if (action.type === "set-notice")
     return { ...state, notice: action.notice };
-  if (action.type === "set-plan") return { ...state, plan: action.plan };
+  if (action.type === "plan-response")
+    return acceptPlanResponse(state, action.response, "source");
+  if (action.type === "retained-plan-response")
+    return acceptPlanResponse(state, action.response, "retained");
+  if (action.type === "set-plan")
+    return {
+      ...state,
+      plan: planApplies(state, action.plan, "source") ? action.plan : null,
+    };
   if (action.type === "set-retained-plan")
-    return { ...state, retainedPlan: action.plan };
+    return {
+      ...state,
+      retainedPlan: planApplies(state, action.plan, "retained")
+        ? action.plan
+        : null,
+    };
   if (action.type === "clear-plan") return { ...state, plan: null };
   if (action.type === "clear-retained-plan")
     return { ...state, retainedPlan: null };

@@ -4,6 +4,109 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createServer } from "vite";
 
+function controllerView({
+  revision = 3,
+  launchId = "launch",
+  scopeId = "b".repeat(64),
+  activeNormalId = "d".repeat(64),
+  conflict = null,
+  pending = false,
+} = {}) {
+  return {
+    metadata: {
+      kind: "user-sources",
+      launchId,
+      contextId: "a".repeat(64),
+      context: {
+        codexHome: "/codex",
+        project: "/project",
+        executable: "/codex/bin",
+      },
+      workspace: "/workspace",
+    },
+    source: {
+      context: {
+        codexHome: "/codex",
+        project: "/project",
+        executable: "/codex/bin",
+      },
+      registration: {
+        scopeId,
+        normalId: "c".repeat(64),
+        activeNormalId,
+        sources: [],
+      },
+      preparedMode: "normal",
+      revision,
+      preparation: null,
+      observation: null,
+      observationIssue: null,
+      conflict,
+      recovery: { pending, lastCheckpointId: null, argv: [] },
+      verification: {
+        runtimeStateVerified: false,
+        modeSwitchingVerified: false,
+        sourceCoverage: "unknown",
+        nextTaskRequired: true,
+      },
+    },
+    guide: {
+      id: "guide",
+      text: "guide",
+      digest: "e".repeat(64),
+      reviewedOn: "2026-09-08",
+      references: [],
+    },
+  };
+}
+
+function controllerState(view, { confirmed = true } = {}) {
+  return {
+    view,
+    confirmed,
+    plan: null,
+    retainedPlan: null,
+    favorites: [],
+    cursor: null,
+    error: "",
+    notice: "状態を確認しました。",
+  };
+}
+
+function sourcePlan(view, overrides = {}) {
+  return {
+    planId: "1".repeat(64),
+    scopeId: view.source.registration.scopeId,
+    mode: "unseal",
+    preparedMode: "unseal",
+    revision: view.source.revision,
+    selectedIds: [],
+    changedFiles: [],
+    skillStates: [],
+    guide: null,
+    adaptation: null,
+    retained: [],
+    verification: view.source.verification,
+    ...overrides,
+  };
+}
+
+function retainedPlan(view, overrides = {}) {
+  return {
+    planId: "2".repeat(64),
+    scopeId: view.source.registration.scopeId,
+    revision: view.source.revision,
+    preparedMode: view.source.preparedMode,
+    previousNormalId: view.source.registration.activeNormalId,
+    normalId: "f".repeat(64),
+    managedFilesChanged: 0,
+    changedCategories: ["Codex settings"],
+    retained: [],
+    verification: view.source.verification,
+    ...overrides,
+  };
+}
+
 test("retained review renders private-record-only disclosure and explicit acceptance", async (t) => {
   const vite = await createServer({
     appType: "custom",
@@ -181,6 +284,141 @@ test("controller clears both cached plans after context, scope, revision, or act
     assert.equal(accepted.confirmed, true);
     assert.equal(accepted.plan, null);
     assert.equal(accepted.retainedPlan, null);
+  }
+});
+
+test("controller atomically admits source and retained plans only in their valid response context", async () => {
+  const { sourceControllerReducer } = await import(
+    "../web/src/source-controller-state.ts"
+  );
+  const normalView = controllerView();
+  const planned = sourcePlan(normalView);
+  const sourceAccepted = sourceControllerReducer(controllerState(normalView), {
+    type: "plan-response",
+    response: { status: "completed", state: structuredClone(normalView), result: planned },
+  });
+  assert.equal(sourceAccepted.plan, planned);
+  assert.equal(sourceAccepted.retainedPlan, null);
+  assert.equal(sourceAccepted.confirmed, true);
+
+  const conflictView = controllerView({ conflict: { kind: "source-conflict" } });
+  const retained = retainedPlan(conflictView);
+  const retainedAccepted = sourceControllerReducer(controllerState(conflictView), {
+    type: "retained-plan-response",
+    response: { status: "completed", state: structuredClone(conflictView), result: retained },
+  });
+  assert.equal(retainedAccepted.plan, null);
+  assert.equal(retainedAccepted.retainedPlan, retained);
+  assert.notEqual(
+    retained.previousNormalId,
+    retained.normalId,
+    "the applicable Normal is the previous ID; the target ID is new",
+  );
+});
+
+test("controller rejects plan results when the returned state is newer, foreign, pending, or no longer confirmed", async (t) => {
+  const { sourceControllerReducer } = await import(
+    "../web/src/source-controller-state.ts"
+  );
+  const definitions = [
+    {
+      name: "source plan",
+      action: "plan-response",
+      view: controllerView(),
+      makePlan: sourcePlan,
+      key: "plan",
+    },
+    {
+      name: "retained plan",
+      action: "retained-plan-response",
+      view: controllerView({ conflict: { kind: "source-conflict" } }),
+      makePlan: retainedPlan,
+      key: "retainedPlan",
+    },
+  ];
+  for (const definition of definitions) {
+    await t.test(definition.name, () => {
+      const stalePlan = definition.makePlan(definition.view);
+      const newer = structuredClone(definition.view);
+      newer.source.revision += 1;
+      newer.source.registration.activeNormalId = "9".repeat(64);
+      const stale = sourceControllerReducer(controllerState(definition.view), {
+        type: definition.action,
+        response: { status: "completed", state: newer, result: stalePlan },
+      });
+      assert.equal(stale.view, newer);
+      assert.equal(stale.confirmed, true);
+      assert.equal(stale[definition.key], null);
+      assert.match(stale.notice, /状態が変わりました|もう一度確認/);
+
+      const nextLaunch = controllerView({
+        launchId: "next-launch",
+        conflict: definition.view.source.conflict,
+      });
+      const launchChanged = sourceControllerReducer(controllerState(definition.view), {
+        type: definition.action,
+        response: {
+          status: "completed",
+          state: nextLaunch,
+          result: definition.makePlan(nextLaunch),
+        },
+      });
+      assert.equal(launchChanged[definition.key], null);
+
+      const nextNormal = controllerView({
+        activeNormalId: "7".repeat(64),
+        conflict: definition.view.source.conflict,
+      });
+      const normalChanged = sourceControllerReducer(controllerState(definition.view), {
+        type: definition.action,
+        response: {
+          status: "completed",
+          state: nextNormal,
+          result: definition.makePlan(nextNormal),
+        },
+      });
+      assert.equal(normalChanged[definition.key], null);
+
+      const pending = controllerView({
+        conflict: definition.view.source.conflict,
+        pending: true,
+      });
+      const pendingResult = sourceControllerReducer(controllerState(pending), {
+        type: definition.action,
+        response: {
+          status: "completed",
+          state: structuredClone(pending),
+          result: definition.makePlan(pending),
+        },
+      });
+      assert.equal(pendingResult[definition.key], null);
+
+      const foreign = definition.makePlan(definition.view, {
+        scopeId: "8".repeat(64),
+      });
+      const foreignResult = sourceControllerReducer(controllerState(definition.view), {
+        type: definition.action,
+        response: {
+          status: "completed",
+          state: structuredClone(definition.view),
+          result: foreign,
+        },
+      });
+      assert.equal(foreignResult[definition.key], null);
+
+      const unconfirmed = sourceControllerReducer(
+        controllerState(definition.view, { confirmed: false }),
+        {
+          type: definition.action,
+          response: {
+            status: "completed",
+            state: structuredClone(definition.view),
+            result: definition.makePlan(definition.view),
+          },
+        },
+      );
+      assert.equal(unconfirmed[definition.key], null);
+    });
   }
 });
 

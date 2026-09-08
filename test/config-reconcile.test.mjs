@@ -204,6 +204,45 @@ enabled = true
   }), { kind: 'config-transform-failed' });
 });
 
+test('rejects null in selected metadata and nested retained configuration without exposing values', async t => {
+  const cases = [
+    {
+      name: 'selected metadata',
+      baseText: `[[skills.config]]
+path = "${selectedPath}"
+enabled = true
+extra = null # private_marker
+`,
+      target(text) { return text.replace('enabled = true', 'enabled = false'); },
+    },
+    {
+      name: 'nested retained configuration',
+      baseText: `[retained.nested]
+private_marker = null
+[[skills.config]]
+path = "${selectedPath}"
+enabled = true
+`,
+      target(text) { return text.replace('enabled = true', 'enabled = false'); },
+    },
+  ];
+  for (const fixture of cases) {
+    await t.test(fixture.name, async t => {
+      const ctx = await reconcileSetup(t);
+      await assert.rejects(ctx.run({
+        baseText: fixture.baseText,
+        targetText: fixture.target(fixture.baseText),
+        currentText: fixture.baseText,
+        skillPaths: [selectedPath],
+      }), error => {
+        assert.equal(error.kind, 'config-transform-failed');
+        assert.equal(String(error).includes('private_marker'), false);
+        return true;
+      });
+    });
+  }
+});
+
 test('rejects invalid selector shapes without exposing configuration values', async t => {
   for (const invalidText of [
     'skills = false\n',

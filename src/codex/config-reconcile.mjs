@@ -17,13 +17,14 @@ function lineBuffer(text) {
   return lines;
 }
 
-function validateNumbers(value) {
+function validateProvableValues(value) {
+  if (value === null) throw failed();
   if (typeof value === 'number' && (!Number.isFinite(value) || (Number.isInteger(value) && !Number.isSafeInteger(value)))) throw failed();
-  if (value && typeof value === 'object') for (const child of Object.values(value)) validateNumbers(child);
+  if (typeof value === 'object') for (const child of Object.values(value)) validateProvableValues(child);
 }
 
 function partition(config, skillPaths) {
-  validateNumbers(config);
+  validateProvableValues(config);
   if (Object.hasOwn(config, 'skills') && !object(config.skills)) throw failed();
   if (config.skills && Object.hasOwn(config.skills, 'config') && !Array.isArray(config.skills.config)) throw failed();
   const entries = config.skills?.config ?? [];

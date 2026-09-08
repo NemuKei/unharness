@@ -2,6 +2,7 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import { Api } from "./api";
 import {
   initialSourceControllerState,
+  planResponseApplies,
   sourceControllerReducer,
 } from "./source-controller-state";
 import { modePresentation, taskObservationResponseNotice } from "./sources";
@@ -102,8 +103,8 @@ export function useSourceController() {
         action,
         input,
       );
-      accept(response.state);
       if (response.status === "context-updated") {
+        accept(response.state);
         setSelected(response.state.source?.preparedMode ?? "normal");
         dispatch({
           type: "set-notice",
@@ -112,6 +113,41 @@ export function useSourceController() {
         });
         return;
       }
+      const planKind =
+        action === "plan" || action === "favorite" || action === "checkpoint"
+          ? "source"
+          : action === "plan-retained"
+            ? "retained"
+            : null;
+      if (planKind) {
+        if (!sameSourceContext(view.metadata, response.state.metadata)) {
+          resetContext();
+        }
+        if (planKind === "source") {
+          const planResponse = response as {
+            status: "completed";
+            result: SourcePlan;
+            state: SourceView;
+          };
+          const admitted = planResponseApplies(state, planResponse, "source");
+          dispatch({ type: "plan-response", response: planResponse });
+          setSelected(
+            admitted
+              ? planResponse.result.preparedMode
+              : response.state.source?.preparedMode ?? "normal",
+          );
+        } else {
+          const planResponse = response as {
+            status: "completed";
+            result: RetainedPlan;
+            state: SourceView;
+          };
+          dispatch({ type: "retained-plan-response", response: planResponse });
+          setSelected(response.state.source?.preparedMode ?? "normal");
+        }
+        return;
+      }
+      accept(response.state);
       onResult?.(response.result);
       if (action === "recover") {
         setRecoveryResult(response.result as object);
