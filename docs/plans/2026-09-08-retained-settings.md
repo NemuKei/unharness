@@ -117,5 +117,9 @@ assert.ok(rendered.includes('現在の共通設定を維持して準備'));
 - [x] Review each task's implementation and spec compliance before starting the next.
 - [x] Use a native owned Mac profile to exercise retained edits in all three modes, old favorite/checkpoint adaptation, interruption cancellation and exact source preservation. Do not use personal files as fixtures.
 - [x] Verify the built GUI at normal and narrow widths, second-client changes, recovery access and adoption/restore notices. Record sanitized evidence.
-- [ ] Run the final whole-change review, resolve findings, check Markdown links and diff whitespace, then integrate the reviewed branch within existing authorization.
-- [ ] Present the real retained-settings review plan before any real acceptance. Continue comparison/MCP and the remaining full Mac goal after this slice; this slice alone is not Mac completion.
+- [x] Run the final whole-change review, resolve findings, check Markdown links and diff whitespace, then integrate the reviewed branch within existing authorization.
+- [x] Present the real retained-settings review plan before any real acceptance.
+
+Final implementation `9d6fb6b` passed its whole-change review after two focused fixes and their scoped re-review. It passed 393 tests with one platform skip, type/CSP/build checks, native numerical-proof regressions and the affected normal/narrow browser flows. The tested code was fast-forwarded into `main`. The existing real registration then recorded its exact reviewed plan without managed-file changes; it is at prepared Normal revision 4, with its original Normal and three favorites intact. See [the qualification evidence](../evidence/2026-09-08-retained-settings-macos.md).
+
+Continue comparison/MCP and the remaining full Mac goal after this slice; this slice alone is not Mac completion.
