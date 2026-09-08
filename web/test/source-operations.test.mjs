@@ -4,9 +4,12 @@ import { createServer } from "node:http";
 
 test("task observations render only for the current prepared snapshot", async () => {
   const {
+    canObserveTask,
     currentTaskObservation,
+    observationIssueText,
     taskObservationLabel,
     taskObservationNotice,
+    taskObservationResponseNotice,
     validTaskId,
   } = await import("../src/sources.ts");
   const observation = {
@@ -85,6 +88,60 @@ test("task observations render only for the current prepared snapshot", async ()
   ]) {
     assert.equal(taskObservationNotice(status), taskObservationLabel(status));
   }
+  assert.equal(canObserveTask(source), true);
+  const legacyObservation = {
+    ...observation,
+    preparationId: null,
+    status: "unknown-record",
+    reasons: ["preparation-boundary-unavailable"],
+  };
+  for (const issue of [
+    "preparation-boundary-unavailable",
+    "preparation-metadata-invalid",
+  ]) {
+    const legacyState = {
+      preparation: null,
+      observation: legacyObservation,
+      observationIssue: issue,
+    };
+    assert.equal(canObserveTask(legacyState), false, issue);
+    assert.equal(
+      taskObservationResponseNotice(legacyState, legacyObservation),
+      observationIssueText(issue),
+      issue,
+    );
+    assert.doesNotMatch(
+      taskObservationResponseNotice(legacyState, legacyObservation),
+      /確認後に準備状態が変わりました/,
+      issue,
+    );
+  }
+  for (const issue of [
+    "source-conflict",
+    "recovery-required",
+    "observation-record-invalid",
+  ]) {
+    assert.equal(
+      taskObservationResponseNotice(
+        { ...source, observation: null, observationIssue: issue },
+        observation,
+      ),
+      observationIssueText(issue),
+      issue,
+    );
+  }
+  assert.equal(
+    taskObservationResponseNotice(
+      {
+        preparation: { id: "e".repeat(32), preparedAt: "2026-09-08T00:01:00Z" },
+        observation: null,
+        observationIssue: null,
+      },
+      observation,
+    ),
+    "確認後に準備状態が変わりました。現在の準備について、別の新しいタスクを確認してください。",
+    "a real preparation change keeps the stale-response notice",
+  );
 });
 
 test("source actions retain the UI accepted metadata after failed reads and never retry uncertain writes", async (t) => {

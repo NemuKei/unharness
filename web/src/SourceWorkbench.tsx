@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { Hangar } from "./Hangar";
 import { useSourceController } from "./useSourceController";
 import {
+  canObserveTask,
   currentTaskObservation,
   modePresentation,
+  observationIssueText,
   sourceModes,
   taskObservationLabel,
   validTaskId,
@@ -372,21 +374,6 @@ const sourceStatusLabels: Record<TaskObservation["sources"][number]["status"], s
   unknown: "不明",
 };
 
-function observationIssueText(issue: string | null) {
-  if (
-    issue === "preparation-boundary-unavailable" ||
-    issue === "preparation-metadata-invalid"
-  )
-    return "従来の保存状態には確認用の準備日時がありません。内容を確認して同じモードを準備し直してください。自動では変更しません。";
-  if (issue === "source-conflict")
-    return "ソースに独立した変更があるため、現在のタスク記録は表示できません。";
-  if (issue === "recovery-required")
-    return "変更が中断しているため、復旧後に新しいタスクで確認してください。";
-  if (issue)
-    return `保存した確認記録を表示できません（${issue}）。新しいタスクで確認し直せます。`;
-  return "タスクの記録はまだ確認していません。";
-}
-
 function TaskObservationSection({
   controller: c,
   usable,
@@ -439,7 +426,7 @@ function TaskObservationSection({
         </label>
         <button
           className="secondary"
-          disabled={!usable || !taskIdValid}
+          disabled={!usable || !canObserveTask(source) || !taskIdValid}
           onClick={() =>
             void c.run<TaskObservation>("observe", { taskId: taskId.trim() })
           }

@@ -130,6 +130,30 @@ export function taskObservationNotice(status: TaskObservationStatus) {
     : label;
 }
 
+type TaskObservationState = Pick<
+  SourceState,
+  "preparation" | "observation" | "observationIssue"
+>;
+
+export function observationIssueText(issue: string | null) {
+  if (
+    issue === "preparation-boundary-unavailable" ||
+    issue === "preparation-metadata-invalid"
+  )
+    return "従来の保存状態には確認用の準備日時がありません。内容を確認して同じモードを準備し直してください。自動では変更しません。";
+  if (issue === "source-conflict")
+    return "ソースに独立した変更があるため、現在のタスク記録は表示できません。";
+  if (issue === "recovery-required")
+    return "変更が中断しているため、復旧後に新しいタスクで確認してください。";
+  if (issue)
+    return `保存した確認記録を表示できません（${issue}）。新しいタスクで確認し直せます。`;
+  return "タスクの記録はまだ確認していません。";
+}
+
+export function canObserveTask(state: Pick<SourceState, "preparation"> | null) {
+  return !!state?.preparation;
+}
+
 export function currentTaskObservation(
   state: Pick<SourceState, "preparation" | "observation"> | null,
   result: TaskObservation | null = state?.observation ?? null,
@@ -140,6 +164,17 @@ export function currentTaskObservation(
     result.snapshotId === state.observation.snapshotId &&
     result.observationId === state.observation.observationId;
   return isCurrent ? result : null;
+}
+
+export function taskObservationResponseNotice(
+  state: TaskObservationState | null,
+  result: TaskObservation,
+) {
+  const current = currentTaskObservation(state, result);
+  if (current) return taskObservationNotice(current.status);
+  if (state?.observationIssue)
+    return observationIssueText(state.observationIssue);
+  return "確認後に準備状態が変わりました。現在の準備について、別の新しいタスクを確認してください。";
 }
 export type Guide = {
   id: string;

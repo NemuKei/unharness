@@ -1,10 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Api, ApiError } from "./api";
-import {
-  currentTaskObservation,
-  modePresentation,
-  taskObservationNotice,
-} from "./sources";
+import { modePresentation, taskObservationResponseNotice } from "./sources";
 import {
   readSourceState,
   sameSourceContext,
@@ -138,14 +134,11 @@ export function useSourceController() {
           ...previous.filter((item) => item.favoriteId !== saved.favoriteId),
         ]);
       } else if (action === "observe") {
-        const observation = currentTaskObservation(
-          response.state.source,
-          response.result as TaskObservation,
-        );
         setNotice(
-          observation
-            ? taskObservationNotice(observation.status)
-            : "確認後に準備状態が変わりました。現在の準備について、別の新しいタスクを確認してください。",
+          taskObservationResponseNotice(
+            response.state.source,
+            response.result as TaskObservation,
+          ),
         );
       } else
         setNotice(
