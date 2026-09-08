@@ -145,10 +145,14 @@ function projection(w, taskId, expected, records, observedAt, readIssue) {
     if (conditions.codexVersion !== '0.153.4' || s.expected === 'unknown') { if (s.expected === 'unknown') add('skill-state-unavailable'); return result; }
     if (s.category === 'instructions') {
       if (!object(state?.agents_md) || !samePath(state.agents_md.directory, w.reg.context.project) || typeof state.agents_md.text !== 'string') { add('instruction-field-unavailable'); return result; }
-      const text = normalize(state.agents_md.text), delimiter = '\n\n--- project-doc ---\n\n', index = text.indexOf(delimiter);
-      const prefix = index === -1 ? text : text.slice(0, index);
-      if (index !== -1) conditions.projectInstructionsDigest = digest(text.slice(index + delimiter.length));
-      const match = prefix === s.text;
+      const text = normalize(state.agents_md.text);
+      const projectPrefix = s.text + '\n\n--- project-doc ---\n\n';
+      // The delimiter may itself be literal global instruction text. Locate
+      // project content only after the entire known global text has matched.
+      const exact = text === s.text;
+      const hasProject = !exact && text.startsWith(projectPrefix);
+      if (hasProject) conditions.projectInstructionsDigest = digest(text.slice(projectPrefix.length));
+      const match = exact || hasProject;
       result.recorded = match ? 'matching-prefix' : 'different-prefix';
       result.status = match ? 'matched' : 'not-matched';
       if (!match) add('instruction-prefix-mismatch');

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, realpath, rm, writeFile, readFile, chmod } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import * as service from '../src/sources/service.mjs';
 import { createOwnedSourceProfile } from '../src/sources/owned-profile.mjs';
 
@@ -347,4 +347,20 @@ test('an unknown source identity cannot substitute for a registered source in pe
   const path = join(s.workspace, 'state.json'), state = JSON.parse(await readFile(path, 'utf8'));
   await writeFile(path, JSON.stringify({ ...state, lastObservationId: id }));
   assert.equal((await service.userSourceState({ workspace: s.workspace })).observation, null);
+});
+
+
+test('saved global instructions may contain the native project delimiter as literal text', { skip: process.platform !== 'darwin' }, async t => {
+  const global = '# Saved global guide\n\n--- project-doc ---\n\nThis literal separator belongs to the global guide.';
+  const project = '# Required project instructions\n\n--- project-doc ---\n\nKeep this project remainder intact.';
+  const s = await setup(t, async owned => {
+    await writeFile(join(owned.context.codexHome, 'AGENTS.md'), global + '\n');
+  });
+  for (const [label, remainder] of [['global only', null], ['global plus project', project]]) await t.test(label, async () => {
+    const recorded = remainder === null ? global : global + '\n\n--- project-doc ---\n\n' + remainder;
+    const observed = await observePrepared(s, recorded);
+    assert.equal(observed.status, 'matched-record');
+    assert.equal(observed.sources.find(source => source.category === 'instructions').recorded, 'matching-prefix');
+    assert.equal(observed.conditions.projectInstructionsDigest, remainder === null ? null : createHash('sha256').update(remainder).digest('hex'));
+  });
 });
