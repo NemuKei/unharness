@@ -97,7 +97,7 @@ assert.equal((await userSourceState({ workspace })).conflict, null);
 - Adds accepted-context source actions `plan-retained` and `accept-retained`; accept body carries only `planId` plus existing operation/context identifiers.
 - UI shows **変更を確認**, then a specific private-record-only review and **現在の設定を引き継ぐ**. Cross-Normal restore review states **現在の共通設定を維持して準備** and tells the user that Save makes a new favorite version.
 
-- [ ] Write red HTTP/UI contract tests for review with conflict, accept with an exact plan, pending recovery blocking review, changed launch identity, duplicate request identities, changed payload rejection and after-plan external edits.
+- [x] Write red HTTP/UI contract tests for review with conflict, accept with an exact plan, pending recovery blocking review, changed launch identity, duplicate request identities, changed payload rejection and after-plan external edits.
 
 ```js
 assert.equal(review.data.result.managedFilesChanged, 0);
@@ -107,15 +107,15 @@ assert.equal(staleResponse.ok, false);
 assert.ok(rendered.includes('現在の共通設定を維持して準備'));
 ```
 
-- [ ] Confirm failures, implement shared service routing with existing context/Host/origin/token protections, and keep raw source/config fields out of replies.
-- [ ] Add the review disclosure and explicit accept action in the current control area. Invalidate cached plans on revision/activeNormal/context change, preserve unknown-mutation-outcome behavior, never auto-retry acceptance, and keep recovery available after failures.
-- [ ] Test adapted favorite/checkpoint notices and scope/normal/revision changes with stale in-memory plans. Run relevant HTTP/web tests, `npm run check` and `npm run build`.
-- [ ] Update paired README/runbook/spec/status to distinguish current implementation from remaining desktop/Mac qualification. Commit and report test evidence for controller browser QA and broad final review.
+- [x] Confirm failures, implement shared service routing with existing context/Host/origin/token protections, and keep raw source/config fields out of replies.
+- [x] Add the review disclosure and explicit accept action in the current control area. Invalidate cached plans on revision/activeNormal/context change, preserve unknown-mutation-outcome behavior, never auto-retry acceptance, and keep recovery available after failures.
+- [x] Test adapted favorite/checkpoint notices and scope/normal/revision changes with stale in-memory plans. Run relevant HTTP/web tests, `npm run check` and `npm run build`.
+- [x] Update paired README/runbook/spec/status to distinguish current implementation from remaining desktop/Mac qualification. Commit and report test evidence for controller browser QA and broad final review.
 
 ## Controller finish
 
-- [ ] Review each task's implementation and spec compliance before starting the next.
-- [ ] Use a native owned Mac profile to exercise retained edits in all three modes, old favorite/checkpoint adaptation, interruption cancellation and exact source preservation. Do not use personal files as fixtures.
-- [ ] Verify the built GUI at normal and narrow widths, second-client changes, recovery access and adoption/restore notices. Record sanitized evidence.
+- [x] Review each task's implementation and spec compliance before starting the next.
+- [x] Use a native owned Mac profile to exercise retained edits in all three modes, old favorite/checkpoint adaptation, interruption cancellation and exact source preservation. Do not use personal files as fixtures.
+- [x] Verify the built GUI at normal and narrow widths, second-client changes, recovery access and adoption/restore notices. Record sanitized evidence.
 - [ ] Run the final whole-change review, resolve findings, check Markdown links and diff whitespace, then integrate the reviewed branch within existing authorization.
 - [ ] Present the real retained-settings review plan before any real acceptance. Continue comparison/MCP and the remaining full Mac goal after this slice; this slice alone is not Mac completion.
