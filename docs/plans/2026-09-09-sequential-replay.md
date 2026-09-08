@@ -42,10 +42,10 @@
 
 **Files:** version-specific Codex replay projector, experiment result/assessment records and registered service tests; reuse `run-metrics.mjs` without changing ordinary-history semantics.
 
-- [ ] Add route-specific first-request fixtures and negative cases before implementing projection. Corroborate actual native field shapes from selected synthetic tasks.
-- [ ] Require attempt identity, derived cwd, real readiness boundary, completed fresh task, exact request and matching selected/retained conditions.
-- [ ] Save separate outcomes and attributed frozen-criteria assessments; keep unknown coverage, failed attempts and budget exhaustion visible.
-- [ ] Verify old/forked/wrong/changed input and source cases, corruption, duplicate publication and outcome-file preservation. Review and commit.
+- [x] Add route-specific first-request fixtures and negative cases before implementing projection. Both supported routes were corroborated against selected existing native synthetic task recordings; user message/event IDs differ and are bound by task, turn, text and input time.
+- [x] Require attempt identity, derived cwd, real readiness boundary, completed fresh task, exact request and matching selected/retained conditions. All recorded turns are selected. Unsupported permission mappings and unavailable initial file-at-task-start evidence remain explicit.
+- [x] Save separate binary outcomes and attributed frozen-criteria assessments; keep unknown coverage, failed/abandoned attempts and recorded-budget exhaustion visible. Repeated saves preserve result identity; amendments retain their prior result.
+- [x] Verify old/forked/wrong/changed input and source cases, corruption, duplicate publication and outcome-file preservation. Direct review fixed recording-append/source-reversion cases and a missing-turn-usage regression. The full suite passed 551 with seven skips; the six optional built-browser skips then passed explicitly, leaving one existing platform skip. Type/CSP and final targeted checks passed. Code is committed at `d9d55ad`; see [evidence](../evidence/2026-09-09-replay-results-macos.md). Actual new desktop replay remains Task 4.
 
 ## Task 4: CLI, Comparison and Mac qualification
 
