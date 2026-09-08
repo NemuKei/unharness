@@ -266,6 +266,49 @@ test('enforces lifecycle phase order after deduplicating identical event replays
   assert.ok(notIdentical.measurement.issues.includes('timeline-conflict'));
 });
 
+test('does not collapse distinct malformed context timestamps into a replay after completion', () => {
+  const records = cloneRecords();
+  const context = records.find(item => item.type === 'turn_context' && item.payload.turn_id === firstTurnId);
+  context.timestamp = 'PRIVATE malformed before';
+  const later = structuredClone(context);
+  later.timestamp = 'PRIVATE malformed after';
+  records.splice(records.indexOf(findComplete(records, firstTurnId)) + 1, 0, later);
+  const result = project(records);
+  assert.deepEqual(result.measurement.availableTurns, []);
+  assert.ok(result.measurement.issues.includes('timeline-conflict'));
+  assert.ok(!JSON.stringify(result).includes('PRIVATE'));
+});
+
+test('does not collapse distinct malformed context fields into one lossy projection', () => {
+  const records = cloneRecords();
+  const context = records.find(item => item.type === 'turn_context' && item.payload.turn_id === firstTurnId);
+  context.timestamp = 'PRIVATE malformed time';
+  context.payload.model = 'PRIVATE malformed model one';
+  context.payload.approval_policy = 7;
+  const later = structuredClone(context);
+  later.payload.model = 'PRIVATE malformed model two';
+  later.payload.approval_policy = 8;
+  records.splice(records.indexOf(findComplete(records, firstTurnId)) + 1, 0, later);
+  const result = project(records);
+  assert.deepEqual(result.measurement.availableTurns, []);
+  assert.ok(result.measurement.issues.includes('timeline-conflict'));
+  assert.ok(!JSON.stringify(result).includes('PRIVATE'));
+});
+
+test('allows an exactly identical malformed context replay without exporting its raw values', () => {
+  const records = cloneRecords();
+  const context = records.find(item => item.type === 'turn_context' && item.payload.turn_id === firstTurnId);
+  context.timestamp = 'PRIVATE malformed time';
+  context.payload.model = 'PRIVATE malformed model';
+  context.payload.approval_policy = 7;
+  const replay = structuredClone(context);
+  records.splice(records.indexOf(findComplete(records, firstTurnId)) + 1, 0, replay);
+  const result = project(records);
+  assert.equal(result.measurement.usage.totals.totalTokens, 100);
+  assert.equal(result.outputText, 'First answer');
+  assert.ok(!JSON.stringify(result).includes('PRIVATE'));
+});
+
 test('refuses timelines over 200 turns instead of truncating them into a result', () => {
   const records = cloneRecords().slice(0, 1);
   for (let index = 0; index < 201; index += 1) {

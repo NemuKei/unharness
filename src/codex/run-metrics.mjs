@@ -163,7 +163,17 @@ function timeline(records) {
     let turn = byId.get(turnId);
     if (!turn) {
       if (turns.length && turns.at(-1).terminal === null) conflict = true;
-      turn = { turnId, startedAt: null, startSeen: false, starts: [], contexts: [], terminal: null, terminalConflict: false };
+      turn = {
+        turnId,
+        startedAt: null,
+        startSeen: false,
+        starts: [],
+        contextRecords: [],
+        contexts: [],
+        terminalRecord: null,
+        terminal: null,
+        terminalConflict: false,
+      };
       byId.set(turnId, turn);
       turns.push(turn);
     }
@@ -184,25 +194,30 @@ function timeline(records) {
         reasoningEffort: REASONING_EFFORTS.has(payload.effort) ? payload.effort : null,
         executionPolicyDigest: policyDigest(payload),
       };
-      const replay = turn.contexts.some(context => isDeepStrictEqual(context, projected));
+      const replay = turn.contextRecords.some(value => isDeepStrictEqual(value, record));
       if (turn.terminal !== null && !replay) conflict = true;
-      if (!replay) turn.contexts.push(projected);
+      if (!replay) {
+        turn.contextRecords.push(record);
+        turn.contexts.push(projected);
+      }
       if (!turn.startSeen && turn.startedAt === null) turn.startedAt = recordedTimestamp(record);
       continue;
     }
     if (payload.type === 'task_started') {
       const start = { startedAt: recordedTimestamp(record) };
-      const replay = turn.starts.some(value => isDeepStrictEqual(value, start));
+      const replay = turn.starts.some(value => isDeepStrictEqual(value, record));
       if (turn.terminal !== null && !replay) conflict = true;
       turn.startSeen = true;
-      if (!replay) turn.starts.push(start);
+      if (!replay) turn.starts.push(record);
       if (turn.starts.length > 1) conflict = true;
       turn.startedAt = start.startedAt;
       continue;
     }
     const terminal = terminalProjection(record);
-    if (turn.terminal === null) turn.terminal = terminal;
-    else if (!isDeepStrictEqual(turn.terminal, terminal)) turn.terminalConflict = true;
+    if (turn.terminal === null) {
+      turn.terminalRecord = record;
+      turn.terminal = terminal;
+    } else if (!isDeepStrictEqual(turn.terminalRecord, record)) turn.terminalConflict = true;
   }
   if (turns.length > MAX_TURNS) return { turns: [], issue: 'timeline-too-large' };
   if (!turns.length) return { turns: [], issue: 'timeline-unavailable' };
