@@ -1,3 +1,4 @@
+import { currentObservation } from './observation-record.mjs';
 import { join } from 'node:path';
 import { lstat } from 'node:fs/promises';
 import { listRecordPage } from '../core/local-store.mjs';
@@ -106,7 +107,10 @@ export const userSourceState = wrap(async ({ workspace }) => {
   } catch (e) {
     conflict = { kind: e.kind ?? 'source-conflict' };
   }
+  const recoveryPending = await pending(workspace);
+  const observed = await currentObservation(w, loadRecord, { conflict, pending: recoveryPending });
   return {
+    ...observed,
     context: w.reg.context,
     registration: {
       scopeId: w.scopeId,
@@ -117,7 +121,7 @@ export const userSourceState = wrap(async ({ workspace }) => {
     revision: w.state.revision,
     conflict,
     recovery: {
-      pending: await pending(workspace),
+      pending: recoveryPending,
       lastCheckpointId: w.state.lastCheckpointId,
       argv: recoveryArgv(workspace)
     },
@@ -418,4 +422,9 @@ export const locateUserSources = wrap(async ({ context }) => {
   } catch {
     fail('workspace-invalid');
   }
+});
+
+export const observeUserTask = wrap(async args => {
+  const { observe } = await import('./observation.mjs');
+  return observe(args);
 });

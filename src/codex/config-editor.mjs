@@ -42,12 +42,12 @@ function disabledConfig(config, paths) {
 // Stages native TOML edits in a new private profile. This API never accepts a
 // destination path, a generic write operation, or a browser-controlled command.
 // executableArgs is an internal synthetic-executable seam, not a GUI input.
-export async function disableSkillConfig({ configText, skillPaths, executable, executableArgs = [], timeoutMs = 10000 }) {
+async function selectedConfig({ configText, skillPaths, executable, executableArgs = [], timeoutMs = 10000 }, editing) {
   let root;
   let client;
   try {
     if (typeof configText !== 'string' || Buffer.byteLength(configText, 'utf8') > MAX_BYTES || !Array.isArray(skillPaths) || skillPaths.length > 32 || new Set(skillPaths).size !== skillPaths.length || skillPaths.some(path => typeof path !== 'string' || path.includes('\0') || path.length > 32768 || !(isAbsolute(path) || win32.isAbsolute(path)))) throw failed();
-    if (skillPaths.length === 0) return { text: configText, changed: false, codexVersion: null };
+    if (skillPaths.length === 0) return editing ? { text: configText, changed: false, codexVersion: null } : { selectors: [], codexVersion: null };
     if (typeof executable !== 'string' || !executable || !Array.isArray(executableArgs) || executableArgs.some(arg => typeof arg !== 'string') || !Number.isFinite(timeoutMs) || timeoutMs < 1 || timeoutMs > 120000) throw failed();
     root = await mkdtemp(join(tmpdir(), 'unharness-config-edit-'));
     root = await realpath(root);
@@ -58,7 +58,7 @@ export async function disableSkillConfig({ configText, skillPaths, executable, e
     await mkdir(join(project, '.git'), { mode: 0o700 });
     const file = join(profile, 'config.toml');
     await writeFile(file, configText, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
-    client = createRpcTransport({ command: executable, args: [...executableArgs, 'app-server', '--stdio'], cwd: project, env: { ...process.env, CODEX_HOME: profile }, timeoutMs, maxResponseBytes: 8 * 1024 * 1024, allowedMethods: ['initialize', 'config/read', 'skills/config/write', 'config/batchWrite'] });
+    client = createRpcTransport({ command: executable, args: [...executableArgs, 'app-server', '--stdio'], cwd: project, env: { ...process.env, CODEX_HOME: profile }, timeoutMs, maxResponseBytes: 8 * 1024 * 1024, allowedMethods: editing ? ['initialize', 'config/read', 'skills/config/write', 'config/batchWrite'] : ['initialize', 'config/read'] });
     const initialization = await client.request('initialize', { clientInfo: { name: 'unharness_config_editor', version: '0.0.1' }, capabilities: { experimentalApi: true } });
     const codexVersion = typeof initialization?.userAgent === 'string'
       ? initialization.userAgent.match(/^[^/\r\n]{1,80}\/(\d{1,8}\.\d{1,8}\.\d{1,8})(?=[ (]|$)/)?.[1]
@@ -67,6 +67,11 @@ export async function disableSkillConfig({ configText, skillPaths, executable, e
     client.initialized();
     const read = async () => userLayer(await client.request('config/read', { cwd: project, includeLayers: true }), file);
     const before = await read();
+    if (!editing) {
+      // Validate shape without returning unrelated native configuration.
+      disabledConfig(before.config, skillPaths);
+      return { selectors: skillPaths.map(path => (before.config.skills?.config ?? []).filter(entry => entry.path === path).map(entry => entry.enabled)), codexVersion };
+    }
     const expected = disabledConfig(before.config, skillPaths);
     if (isDeepStrictEqual(expected, before.config)) return { text: configText, changed: false, codexVersion };
     if (containsNumber(before.config.skills?.config)) throw failed();
@@ -103,3 +108,7 @@ export async function disableSkillConfig({ configText, skillPaths, executable, e
     }
   }
 }
+
+export const disableSkillConfig = args => selectedConfig(args, true);
+// Only initialize/config-read are allowed, including for duplicated selectors.
+export const readSkillSelectors = args => selectedConfig(args, false);

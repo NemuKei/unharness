@@ -199,3 +199,33 @@ test('native editor rejects numeric extra Skill metadata before any rewrite but 
  const disabled=original.replace('enabled = true','enabled = false');
  assert.equal((await ctx.run({configText:disabled,skillPaths:['/skills/selected/SKILL.md']})).text,disabled);
 });
+
+test('read-only private selector projection preserves duplicate order and absent selections without writes', async t => {
+  const ctx = await editorSetup(t);
+  const { readSkillSelectors } = await import('../src/codex/config-editor.mjs');
+  assert.equal(typeof readSkillSelectors, 'function');
+  const input = configText + '[[skills.config]]\npath = "/skills/selected/SKILL.md"\nenabled = false\n';
+  const root = await mkdtemp(join(tmpdir(), 'unharness selectors '));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const log = join(root, 'read.jsonl');
+  const result = await readSkillSelectors({ configText: input, skillPaths: ['/skills/selected/SKILL.md', '/skills/absent/SKILL.md'], executable: process.execPath, executableArgs: [editorFixture, 'ok', log] });
+  assert.deepEqual(result, { selectors: [[true, false], []], codexVersion: '0.153.4' });
+  const [launch, ...events] = (await readFile(log, 'utf8')).trim().split('\n').map(JSON.parse);
+  assert.deepEqual(events.filter(e => e.method).map(e => e.method), ['initialize', 'initialized', 'config/read']);
+  await assert.rejects(stat(launch.profile), { code: 'ENOENT' });
+  await assert.rejects(readSkillSelectors({ configText: 'PRIVATE', skillPaths: ['PRIVATE'] }), e => e.kind === 'config-transform-failed' && !String(e).includes('PRIVATE'));
+});
+
+test('read-only native selector errors stay private and await owned process/profile cleanup', async t => {
+  const { readSkillSelectors } = await import('../src/codex/config-editor.mjs');
+  for (const scenario of ['rpc-error', 'missing-user', 'timeout']) await t.test(scenario, async t => {
+    const root = await mkdtemp(join(tmpdir(), 'unharness read failure '));
+    t.after(() => rm(root, { recursive: true, force: true }));
+    const log = join(root, 'read.jsonl');
+    await assert.rejects(readSkillSelectors({ configText, skillPaths: ['/skills/selected/SKILL.md'], executable: process.execPath, executableArgs: [editorFixture, scenario, log], timeoutMs: scenario === 'timeout' ? 300 : SUBPROCESS_TIMEOUT_MS }), e => e.kind === 'config-transform-failed' && !String(e).includes('SECRET_MARKER'));
+    const [launch, ...events] = (await readFile(log, 'utf8')).trim().split('\n').map(JSON.parse);
+    assert.equal(events.some(e => e.method && !['initialize', 'initialized', 'config/read'].includes(e.method)), false);
+    assert.throws(() => process.kill(launch.pid, 0), { code: 'ESRCH' });
+    await assert.rejects(stat(launch.profile), { code: 'ENOENT' });
+  });
+});

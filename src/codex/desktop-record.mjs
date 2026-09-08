@@ -141,10 +141,9 @@ export function summarizeDesktopRecords(records, { expectedCwd, expectedSessionI
   };
 }
 
-export async function collectDesktopRecord({ session, fixture, expectedSessionId, notBefore } = {}) {
+export async function readDesktopRecords(session) {
   let handle;
   try {
-    if (notBefore !== undefined && !validDate(notBefore)) fail('invalid-desktop-record');
     // Open once and read a bounded prefix of this inode. A concurrently appended
     // partial trailing record is ignored and explicitly reported.
     const selected = await lstat(session);
@@ -175,6 +174,17 @@ export async function collectDesktopRecord({ session, fixture, expectedSessionId
       try { const value = JSON.parse(line); if (!object(value)) fail('invalid-desktop-record'); return value; }
       catch { fail('invalid-desktop-record'); }
     });
+    return { records, recordRead: { incompleteTrailingLine, snapshotBytes: info.size } };
+  } catch (error) {
+    const allowed = ['invalid-desktop-record', 'desktop-record-too-large', 'desktop-record-changed'];
+    fail(allowed.includes(error?.kind) ? error.kind : 'desktop-record-read-error');
+  } finally { await handle?.close(); }
+}
+
+export async function collectDesktopRecord({ session, fixture, expectedSessionId, notBefore } = {}) {
+  try {
+    if (notBefore !== undefined && !validDate(notBefore)) fail('invalid-desktop-record');
+    const { records, recordRead } = await readDesktopRecords(session);
     let options = { expectedSessionId, preparedAt: notBefore };
     if (fixture !== undefined) {
       const owned = await snapshotDesktopFixture(fixture);
@@ -184,11 +194,11 @@ export async function collectDesktopRecord({ session, fixture, expectedSessionId
       options = { ...options, expectedCwd: owned.project, preparedAt, markers: fixtureMarkers(owned.state.seed) };
     }
     const report = summarizeDesktopRecords(records, options);
-    report.recordRead = { incompleteTrailingLine, snapshotBytes: info.size };
+    report.recordRead = recordRead;
     return report;
   } catch (error) {
     const allowed = new Set(['invalid-desktop-record', 'desktop-record-too-large', 'desktop-record-changed', 'desktop-record-identity-mismatch',
       'fixture-conflict', 'fixture-changed', 'fixture-link-or-type', 'invalid-fixture', 'fixture-recovery-required']);
     fail(allowed.has(error?.kind) ? error.kind : 'desktop-record-read-error');
-  } finally { await handle?.close(); }
+  }
 }

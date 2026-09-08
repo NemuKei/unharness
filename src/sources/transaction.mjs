@@ -18,6 +18,7 @@ import {
 import {
   readJson,
   writeJson,
+  newPreparation,
   record,
   loadRecord,
   loadSnapshot,
@@ -242,6 +243,8 @@ export async function transact(w, plan, planId) {
   await assertCurrent(active, after);
   await hook('before-completion');
   const newState = {
+    preparation: newPreparation(),
+    lastObservationId: null,
     ownedDirs: dirs,
     revision: w.state.revision + 1,
     preparedMode: plan.preparedMode,
@@ -405,7 +408,7 @@ export async function recoverTransaction(w) {
   // directory retained for foreign contents still needs its verified identity.
   // Rebuild only from registered journal directories that remain intact;
   // directories removed by cleanup must not leave stale ownership in state.
-  const recoveredState = { ...j.beforeState, ownedDirs: [] };
+  const recoveredState = { ...j.beforeState, ownedDirs: [], preparation: newPreparation(), lastObservationId: null };
   for (const d of j.dirs) {
     const current = await exists(d.path);
     if (!current) continue;

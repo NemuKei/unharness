@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import {
   open,
   readFile,
@@ -18,6 +19,7 @@ import {
   assertRegistrationOwnership
 } from './capture.mjs';
 import { fail } from './errors.mjs';
+export const newPreparation = () => ({ id: randomBytes(16).toString('hex'), preparedAt: new Date().toISOString() });
 export const ownerPath = (home) => join(home, '.unharness-user-sources');
 export async function readJson(path) {
   const s = await lstat(path);
@@ -230,6 +232,8 @@ export async function initializeWorkspace(d, selected, instructionsOptional) {
   await writeJson(
     join(workspace, 'state.json'),
     {
+      preparation: newPreparation(),
+      lastObservationId: null,
       revision: 0,
       preparedMode: 'normal',
       snapshotId: reg.normalId,
