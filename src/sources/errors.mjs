@@ -14,6 +14,7 @@ export const USER_SOURCE_ERROR_KINDS = Object.freeze([
   'record-invalid',
   'source-conflict',
   'stale-plan',
+  'no-retained-change',
   'profile-busy',
   'recovery-required',
   'journal-invalid',

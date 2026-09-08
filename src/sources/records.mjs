@@ -57,14 +57,31 @@ export async function loadRecord(workspace, type, id) {
   if (r?.kind !== 'unharness-user-source') fail('record-invalid');
   return r;
 }
-export async function saveSnapshot(workspace, reg, files) {
+export async function saveSnapshot(workspace, reg, files, version = 1) {
   validateFiles(reg, files);
-  return record(workspace, 'observation', { role: 'snapshot', files });
+  if (![1, 2].includes(version)) fail('record-invalid');
+  return record(workspace, 'observation', { role: version === 2 ? 'snapshot-v2' : 'snapshot', files });
 }
-export async function loadSnapshot(workspace, reg, id) {
+export async function loadSnapshot(workspace, reg, id, version) {
   const p = await loadRecord(workspace, 'observation', id);
-  if (p.role !== 'snapshot') fail('record-invalid');
+  if (!['snapshot', 'snapshot-v2'].includes(p.role) ||
+      (version !== undefined && p.role !== (version === 2 ? 'snapshot-v2' : 'snapshot'))) fail('record-invalid');
   return validateFiles(reg, p.files);
+}
+export const activeNormalId = (w) => w.state.normalId ?? w.reg.normalId;
+export async function loadNormal(workspace, reg, id = reg.normalId) {
+  const normal = await loadSnapshot(workspace, reg, id);
+  if (id !== reg.normalId) {
+    const baseline = await loadSnapshot(workspace, reg, reg.normalId);
+    for (const key of Object.keys(baseline))
+      if (key !== 'config' && !equal(normal[key], baseline[key])) fail('record-invalid');
+  }
+  return normal;
+}
+export async function validateStateSnapshots(workspace, reg, state) {
+  validateState(reg, state);
+  await loadNormal(workspace, reg, state.normalId ?? reg.normalId);
+  await loadSnapshot(workspace, reg, state.snapshotId, state.snapshotVersion ?? 1);
 }
 export function validateState(reg, state) {
   if (
@@ -78,6 +95,11 @@ export function validateState(reg, state) {
     !Array.isArray(state.ownedDirs)
   )
     fail('workspace-invalid');
+  if ((state.normalId !== undefined && state.normalId !== reg.normalId && state.snapshotVersion !== 2) ||
+      (state.snapshotVersion !== undefined && state.snapshotVersion !== 2) ||
+      (state.snapshotVersion === 2 && !/^[0-9a-f]{64}$/.test(state.normalId)) ||
+      (state.normalId !== undefined && !/^[0-9a-f]{64}$/.test(state.normalId)) ||
+      (state.lastRetainedPlanId != null && !/^[0-9a-f]{64}$/.test(state.lastRetainedPlanId))) fail('workspace-invalid');
   for (const key of ['lastCheckpointId', 'lastPlanId'])
     if (state[key] !== null && !/^[0-9a-f]{64}$/.test(state[key]))
       fail('workspace-invalid');
@@ -160,7 +182,7 @@ export async function openWorkspace(workspace) {
     }
   }
   const state = await readJson(join(workspace, 'state.json'));
-  validateState(reg, state);
+  await validateStateSnapshots(workspace, reg, state);
   const normal = await loadSnapshot(workspace, reg, reg.normalId);
   for (const s of reg.skills)
     if (

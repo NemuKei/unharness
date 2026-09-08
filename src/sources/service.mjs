@@ -13,6 +13,8 @@ import {
 import {
   initializeWorkspace,
   openWorkspace,
+  activeNormalId,
+  loadNormal,
   saveSnapshot,
   loadSnapshot,
   loadRecord,
@@ -115,6 +117,7 @@ export const userSourceState = wrap(async ({ workspace }) => {
     registration: {
       scopeId: w.scopeId,
       normalId: w.reg.normalId,
+      activeNormalId: activeNormalId(w),
       sources: targets(w.reg)
     },
     preparedMode: w.state.preparedMode,
@@ -139,6 +142,7 @@ function planSummary(plan, planId) {
     changedFiles: plan.changedFiles,
     skillStates: plan.skillStates,
     guide: plan.guide,
+    adaptation: plan.adaptation ?? null,
     retained,
     verification
   };
@@ -151,7 +155,8 @@ async function buildPlan(
     selectedIds,
     after,
     guide = null,
-    skillStates = []
+    skillStates = [],
+    adaptation = null
   }
 ) {
   if (await pending(w.workspace)) fail('recovery-required');
@@ -159,9 +164,12 @@ async function buildPlan(
   const before = await loadSnapshot(w.workspace, w.reg, w.state.snapshotId);
   await assertCurrent(w, before);
   assertPlanOwnershipChanges(before, after);
-  const afterId = await saveSnapshot(w.workspace, w.reg, after);
+  const afterId = await saveSnapshot(w.workspace, w.reg, after, w.state.snapshotVersion ?? 1);
   const plan = {
     role: 'plan',
+    normalId: activeNormalId(w),
+    snapshotVersion: w.state.snapshotVersion ?? 1,
+    adaptation,
     scopeId: w.scopeId,
     revision: w.state.revision,
     mode,
@@ -203,7 +211,7 @@ export const planUserMode = wrap(async ({ workspace, mode, selectedIds }) => {
   if (mode === 'normal' && selection.length) fail('invalid-request');
   if (selection.some((id) => !all.find((t) => t.id === id).availability[mode]))
     fail('unsupported-source');
-  const normal = await loadSnapshot(workspace, w.reg, w.reg.normalId),
+  const normal = await loadNormal(workspace, w.reg, activeNormalId(w)),
     after = structuredClone(normal);
   let guide = null;
   const skillStates = [];
@@ -300,15 +308,17 @@ export const saveUserFavorite = wrap(async ({ workspace, name }) => {
     /[\u0000-\u001f]/.test(name)
   )
     fail('invalid-request');
-  const w = await openWorkspace(workspace),
-    release = await acquire(w);
+  let w = await openWorkspace(workspace);
+  const release = await acquire(w);
   try {
+    w = await openWorkspace(workspace);
     if (await pending(workspace)) fail('recovery-required');
 
     const files = await loadSnapshot(workspace, w.reg, w.state.snapshotId);
     await assertCurrent(w, files);
     const favoriteId = await record(workspace, 'favorite', {
       role: 'favorite',
+      normalId: activeNormalId(w),
       scopeId: w.scopeId,
       name,
       snapshotId: w.state.snapshotId,
@@ -337,8 +347,11 @@ export const listUserFavorites = wrap(async ({ workspace, after }) => {
     )
       fail('record-invalid');
     await loadSnapshot(workspace, w.reg, p.snapshotId);
+    await loadNormal(workspace, w.reg, p.normalId ?? w.reg.normalId);
     favorites.push({
       favoriteId: id,
+      normalId: p.normalId ?? w.reg.normalId,
+      needsAdaptation: (p.normalId ?? w.reg.normalId) !== activeNormalId(w),
       name: p.name,
       preparedMode: p.preparedMode,
       revision: p.revision
@@ -350,11 +363,14 @@ async function restorePlan({ workspace, id, type }) {
   const w = await openWorkspace(workspace),
     r = await loadRecord(workspace, type, id);
   if (r.role !== type || r.scopeId !== w.scopeId) fail('record-invalid');
+  const { adaptRetainedSnapshot } = await import('./retained-settings.mjs');
+  const { after, adaptation } = await adaptRetainedSnapshot(w, r, id, type);
   return buildPlan(w, {
     mode: type,
+    adaptation,
     preparedMode: r.preparedMode,
     selectedIds: targets(w.reg).map((s) => s.id),
-    after: await loadSnapshot(workspace, w.reg, r.snapshotId)
+    after
   });
 }
 export const planUserFavorite = wrap(({ workspace, favoriteId }) =>
@@ -367,7 +383,7 @@ export const recoverUserSources = wrap(async ({ workspace }) => {
   const w = await openWorkspace(workspace),
     release = await acquire(w, true);
   try {
-    return await recoverTransaction(w);
+    return await recoverTransaction(await openWorkspace(workspace));
   } finally {
     await release();
   }
@@ -427,4 +443,13 @@ export const locateUserSources = wrap(async ({ context }) => {
 export const observeUserTask = wrap(async args => {
   const { observe } = await import('./observation.mjs');
   return observe(args);
+});
+
+export const planUserRetainedSettings = wrap(async args => {
+  const { planRetainedSettings } = await import('./retained-settings.mjs');
+  return planRetainedSettings(args);
+});
+export const acceptUserRetainedSettings = wrap(async args => {
+  const { acceptRetainedSettings } = await import('./retained-settings.mjs');
+  return acceptRetainedSettings(args);
 });

@@ -1,12 +1,14 @@
 import * as service from './service.mjs';
 export const SOURCES_USAGE =
-  '  node bin/unharness.mjs sources <discover|locate|register|status|plan|apply|save|list|favorite|checkpoint|recover|observe|review|review-discovered> --json <object>\n';
+  '  node bin/unharness.mjs sources <discover|locate|register|status|plan|plan-retained|accept-retained|apply|save|list|favorite|checkpoint|recover|observe|review|review-discovered> --json <object>\n';
 const operations = {
   discover: service.discoverUserSources,
   locate: service.locateUserSources,
   register: service.registerUserSources,
   status: service.userSourceState,
   plan: service.planUserMode,
+  'plan-retained': service.planUserRetainedSettings,
+  'accept-retained': service.acceptUserRetainedSettings,
   apply: service.applyUserPlan,
   save: service.saveUserFavorite,
   list: service.listUserFavorites,

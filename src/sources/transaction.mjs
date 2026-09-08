@@ -23,7 +23,10 @@ import {
   loadRecord,
   loadSnapshot,
   saveSnapshot,
-  validateState
+  validateState,
+  validateStateSnapshots,
+  activeNormalId,
+  loadNormal
 } from './records.mjs';
 import { pathsFor } from './capture.mjs';
 import { fail, verification } from './errors.mjs';
@@ -32,7 +35,7 @@ let testHook = null;
 export function setSourceTransactionTestHook(hook) {
   testHook = hook;
 }
-const hook = async (phase) => {
+export const sourceTransactionHook = async (phase) => {
   if (testHook) await testHook(phase);
 };
 async function exists(path) {
@@ -152,8 +155,11 @@ export async function loadPlan(w, id) {
     new Set(p.selectedIds).size !== p.selectedIds.length
   )
     fail('record-invalid');
-  await loadSnapshot(w.workspace, w.reg, p.beforeId);
-  await loadSnapshot(w.workspace, w.reg, p.afterId);
+  if ((p.snapshotVersion !== undefined && ![1, 2].includes(p.snapshotVersion)) ||
+      (w.state.snapshotVersion === 2 && (p.snapshotVersion !== 2 || !p.normalId))) fail('record-invalid');
+  await loadNormal(w.workspace, w.reg, p.normalId ?? w.reg.normalId);
+  await loadSnapshot(w.workspace, w.reg, p.beforeId, p.snapshotVersion ?? 1);
+  await loadSnapshot(w.workspace, w.reg, p.afterId, p.snapshotVersion ?? 1);
   return p;
 }
 function controlKeys(reg) {
@@ -175,7 +181,8 @@ export async function transact(w, plan, planId) {
   if (await pending(w.workspace)) fail('recovery-required');
   if (
     plan.revision !== w.state.revision ||
-    plan.beforeId !== w.state.snapshotId
+    plan.beforeId !== w.state.snapshotId ||
+    (plan.normalId ?? w.reg.normalId) !== activeNormalId(w)
   )
     fail('stale-plan');
   const before = await loadSnapshot(w.workspace, w.reg, plan.beforeId),
@@ -186,6 +193,7 @@ export async function transact(w, plan, planId) {
   assertOwnershipChanges(before, after);
   const checkpointId = await record(w.workspace, 'checkpoint', {
     role: 'checkpoint',
+    normalId: activeNormalId(w),
     scopeId: w.scopeId,
     snapshotId: plan.beforeId,
     preparedMode: w.state.preparedMode,
@@ -214,20 +222,20 @@ export async function transact(w, plan, planId) {
     beforeState: w.state
   };
   await writeJson(join(w.workspace, 'pending.json'), journal, true);
-  await hook('journal');
+  await sourceTransactionHook('journal');
   for (const dir of dirs) {
     if (dir.identity) continue;
     await mkdir(dir.path, { mode: 0o700 });
     const s = await lstat(dir.path);
     dir.identity = { dev: s.dev, ino: s.ino };
     await writeJson(join(w.workspace, 'pending.json'), journal);
-    await hook('directory');
+    await sourceTransactionHook('directory');
   }
   for (const k of keys) {
     if (after[k] !== null)
       await writeComplete(paths[k] + '.unharness-' + nonce, after[k]);
   }
-  await hook('staged');
+  await sourceTransactionHook('staged');
   const active = { ...w, state: { ...w.state, ownedDirs: dirs } };
   await assertCurrent(active, before);
   for (let i = 0; i < keys.length; i++) {
@@ -238,11 +246,14 @@ export async function transact(w, plan, planId) {
     if (!equal(await captureFile(paths[k]), before[k])) fail('source-conflict');
     if (after[k] === null) await unlink(paths[k]);
     else await publish(paths[k] + '.unharness-' + nonce, paths[k], before[k]);
-    await hook('write-' + i);
+    await sourceTransactionHook('write-' + i);
   }
   await assertCurrent(active, after);
-  await hook('before-completion');
+  await sourceTransactionHook('before-completion');
   const newState = {
+    ...w.state,
+    normalId: activeNormalId(w),
+    lastRetainedPlanId: null,
     preparation: newPreparation(),
     lastObservationId: null,
     ownedDirs: dirs,
@@ -253,7 +264,7 @@ export async function transact(w, plan, planId) {
     lastPlanId: planId
   };
   await writeJson(join(w.workspace, 'state.json'), newState);
-  await hook('state');
+  await sourceTransactionHook('state');
   // Journal removal is the committed boundary. Empty directory housekeeping
   // follows it so pending recovery never needs to recreate a deleted directory.
   await unlink(join(w.workspace, 'pending.json'));
@@ -283,7 +294,7 @@ async function validateJournal(w, j) {
   )
     fail('journal-invalid');
   try {
-    validateState(w.reg, j.beforeState);
+    await validateStateSnapshots(w.workspace, w.reg, j.beforeState);
   } catch {
     fail('journal-invalid');
   }
@@ -294,7 +305,8 @@ async function validateJournal(w, j) {
   if (
     !equal(j.keys, changes(w, before, after)) ||
     j.beforeState.snapshotId !== plan.beforeId ||
-    j.beforeState.revision !== plan.revision
+    j.beforeState.revision !== plan.revision ||
+    (j.beforeState.normalId ?? w.reg.normalId) !== (plan.normalId ?? w.reg.normalId)
   )
     fail('journal-invalid');
   const cp = await loadRecord(w.workspace, 'checkpoint', j.checkpointId);
@@ -302,7 +314,8 @@ async function validateJournal(w, j) {
     cp.role !== 'checkpoint' ||
     cp.scopeId !== w.scopeId ||
     cp.snapshotId !== plan.beforeId ||
-    cp.revision !== plan.revision
+    cp.revision !== plan.revision ||
+    (cp.normalId ?? w.reg.normalId) !== (plan.normalId ?? w.reg.normalId)
   )
     fail('journal-invalid');
   if (new Set(j.dirs.map((d) => d.path)).size !== j.dirs.length)
@@ -374,6 +387,10 @@ export async function recoverTransaction(w) {
     return { status: 'nothing-pending', verification };
   if (process.platform !== 'darwin') fail('unsupported-platform');
   const j = await readJson(join(w.workspace, 'pending.json'));
+  if (j.kind === 'unharness-user-source-retained-pending') {
+    const { recoverRetainedSettings } = await import('./retained-settings.mjs');
+    return recoverRetainedSettings(w, j);
+  }
   const { before, after, paths } = await validateJournal(w, j);
   await checkParents(w.reg);
   const dependencyConflicts = [];
