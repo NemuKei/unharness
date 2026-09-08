@@ -54,7 +54,7 @@ export function selectedSkillIntent(normalFlags, preparedFlags, registeredEnable
   return null;
 }
 
-async function expectations(w, files) {
+export async function registeredSourceExpectations(w, files) {
   const normal = await loadSnapshot(w.workspace, w.reg, w.reg.normalId);
   const result = [];
   if (w.reg.instructions) {
@@ -174,7 +174,7 @@ function projection(w, taskId, expected, records, observedAt, readIssue) {
 }
 export async function projectRegisteredTaskObservation(w, taskId, records, observedAt, readIssue) {
   const files = await loadSnapshot(w.workspace, w.reg, w.state.snapshotId);
-  return projection(w, taskId, await expectations(w, files), records, observedAt, readIssue);
+  return projection(w, taskId, await registeredSourceExpectations(w, files), records, observedAt, readIssue);
 }
 export async function observe(args) {
   if (!object(args) || Object.keys(args).sort().join(',') !== 'taskId,workspace' || !validUuid(args.taskId)) fail('invalid-request');

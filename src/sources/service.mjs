@@ -468,3 +468,10 @@ export const reviewUserStart = wrap(async args => (await import('../experiments/
 export const saveUserStart = wrap(async args => (await import('../experiments/service.mjs')).saveUserStart(args));
 export const readUserStart = wrap(async args => (await import('../experiments/service.mjs')).readUserStart(args));
 export const listUserStarts = wrap(async args => (await import('../experiments/service.mjs')).listUserStarts(args));
+
+export const reviewUserReplay = wrap(async args => (await import('../experiments/replay-service.mjs')).reviewUserReplay(args));
+export const prepareUserReplay = wrap(async args => (await import('../experiments/replay-service.mjs')).prepareUserReplay(args));
+export const handoffUserReplay = wrap(async args => (await import('../experiments/replay-service.mjs')).handoffUserReplay(args));
+export const readUserReplay = wrap(async args => (await import('../experiments/replay-service.mjs')).readUserReplay(args));
+export const listUserReplays = wrap(async args => (await import('../experiments/replay-service.mjs')).listUserReplays(args));
+export const cancelUserReplay = wrap(async args => (await import('../experiments/replay-service.mjs')).cancelUserReplay(args));

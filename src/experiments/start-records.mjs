@@ -19,7 +19,7 @@ function identity(x) {
   shape(x, ['dev', 'ino']);
   if (![x.dev, x.ino].every(v => Number.isSafeInteger(v) && v >= 0)) invalid();
 }
-function validateGuard(guard, manifest, project) {
+export function validateStartingCaptureGuard(guard, manifest, project) {
   shape(guard, ['project', 'totalBytes', 'guards', 'files']);
   if (guard.project !== project || guard.totalBytes !== manifest.totalBytes
     || !isDeepStrictEqual(guard.files, manifest.files.map(({ chunks, ...f }) => f))) invalid();
@@ -65,7 +65,7 @@ export async function loadStartReview(w, reviewId, checkChunks = true) {
       || p.selection.ignoredFiles !== (p.selection.kind === 'git-working-files' ? 'excluded' : 'not-applicable')
       || !isDeepStrictEqual(p.selection.additionalPaths, validateStartingPaths(p.selection.additionalPaths))) invalid();
     const manifest = await (checkChunks ? readStartingManifest : readStartingManifestIndex)({ store: w.workspace, manifestId: p.manifestId });
-    validateGuard(p.captureGuard, manifest, w.reg.context.project);
+    validateStartingCaptureGuard(p.captureGuard, manifest, w.reg.context.project);
     if (p.selection.additionalPaths.some(path => !manifest.files.some(f => f.path === path))) invalid();
     return { ...p, declaration, reviewId, manifest };
   } catch { invalid(); }

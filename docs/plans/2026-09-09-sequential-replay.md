@@ -32,11 +32,11 @@
 
 **Files:** new focused attempt-record, preflight and service modules under `src/experiments/` and `src/codex/`; existing source service/transaction exports and tests.
 
-- [ ] Write failures for a second active attempt, arbitrary scope/project overrides, source changes, missing controls, stale reviews and duplicate prepare requests.
-- [ ] Implement immutable plan/attempt identities, journaled preparation, restart/uncertainty, cancellation and current-source binding without weakening offline recovery.
-- [ ] Compare effective retained conditions and map repo Skill identities/policies explicitly. Reject a disabled project layer or changed permission condition before ready handoff.
-- [ ] Verify actual file/source bindings immediately before readiness, preserve exact request text, and return only the selected owned desktop location.
-- [ ] Exercise native owned profiles and source preservation, review and commit.
+- [x] Write failures for a second active attempt, arbitrary scope/project overrides, source changes, missing controls, stale reviews and duplicate prepare requests. The three new suites first failed on their missing exports.
+- [x] Implement immutable plan/attempt identities, journaled preparation, restart/uncertainty, cancellation and current-source binding without weakening offline recovery. Readback never resumes a partially written directory. A missing initialized index is unknown history.
+- [x] Compare effective retained conditions and map repo Skill identities/policies explicitly. Reject a disabled project layer or changed permission condition before ready handoff. Native evidence required disabled registered entrypoints to be omitted from the owned copy; a project-layer selector alone did not disable the relocated Skill.
+- [x] Verify actual file/source bindings immediately before readiness, preserve exact request text, and return only the selected owned desktop location. Detached Git HEAD/index and additional files are checked; handoffs retain one actual readiness time and conservatively consume the declared attempt budget.
+- [x] Exercise native owned profiles and source preservation, directly review and commit. The new suites passed 29 tests and the complete suite passed 536 with one existing platform skip. Type/CSP checks and a native Normal/UNSEAL/TRUEFORM service sequence passed. Direct review reproduced and fixed stale cancellation, late source edits, independent Git changes and a missing-index reset. No desktop model task was submitted; Task 3 remains open.
 
 ## Task 3: actual request, task and outcome association
 

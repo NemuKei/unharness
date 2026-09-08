@@ -80,6 +80,10 @@ for await (const line of createInterface({ input: process.stdin })) {
       );
     } catch {}
     result = { data: [{ cwd: msg.params.cwds[0], skills, errors: [] }] };
+  } else if (msg.method === 'hooks/list') {
+    result = { data: [{ cwd: msg.params.cwds[0], hooks: [], warnings: [], errors: [] }] };
+  } else if (msg.method === 'configRequirements/read') {
+    result = { requirements: null };
   } else if (msg.method === 'skills/config/write') {
     if (
       Object.keys(msg.params).sort().join(',') !== 'enabled,path' ||

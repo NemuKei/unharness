@@ -1,6 +1,6 @@
 # Architecture boundaries
 
-This page separates the code present on 2026-09-09 from the intended product architecture. The Node.js 24+ runtime includes inventory, source-control fixtures, desktop-record observations, local versioned records, registered optional-source preparation/recovery, private ordinary-run comparison records and frozen pre-use inputs. The loopback GUI connects the fixture and registered-source services to React/TypeScript and PixiJS; diagnostic/core modules do not import browser dependencies. MCP endpoints, sequential replay and cross-application migration remain future work.
+This page separates the code present on 2026-09-09 from the intended product architecture. The Node.js 24+ runtime includes inventory, source-control fixtures, desktop-record observations, local versioned records, registered optional-source preparation/recovery, private ordinary-run comparison records and frozen pre-use inputs. The loopback GUI connects the fixture and registered-source services to React/TypeScript and PixiJS; diagnostic/core modules do not import browser dependencies. Sequential replay has internal preparation and native preflight operations; actual task/result association and CLI/GUI wiring remain unfinished. MCP endpoints and cross-application migration remain future work.
 
 ## Current runnable architecture
 
@@ -104,6 +104,14 @@ The [starting-conditions service](../src/experiments/service.mjs) freezes an exp
 [Start-record validation](../src/experiments/start-records.mjs) binds immutable declarations, manifests and source guards to the registered scope. List projections omit requests/file bodies and validate metadata without rereading all chunks. Explicit details verify chunks and return the request plus a metadata-only table. The GUI's collapsed [starting-conditions form](../web/src/StartingConditions.tsx) shares the accepted source controller and operation lock. Draft edits invalidate reviews, delayed results cannot replace newer input, and successful or uncertain publication is kept distinct from auxiliary read failure.
 
 These records describe inputs fixed before use. They do not start or associate a task, freeze live memory/tool/service state, classify a mode or unlock original creation. The next replay adapter must authorize each derived work location, retain project requirements, check effective conditions and associate actual task/request evidence; a caller cannot override the ordinary observer's expected project or preparation time. See [the contract](spec-starting-conditions.md) and [Mac evidence](evidence/2026-09-08-starting-conditions-macos.md).
+
+## Sequential replay preparation
+
+The internal [replay service](../src/experiments/replay-service.mjs) uses the same registered-source operation lock and server-owned context. Immutable reviews bind a saved start, one series Git pin, the current source snapshot/preparation, a source variant and native retained-condition evidence. Preparation reserves an attempt before allocating an owned directory or detached worktree. [The index](../src/experiments/replay-index.mjs) and immutable attempt versions are separate from configuration state and recovery journals; optional replay corruption cannot prevent Node-only source recovery.
+
+[Variants](../src/experiments/variant.mjs) preserve base input records and derive only approved repo Skill controls. Enabled entrypoints retain frozen bytes and receive prepared invocation policy; disabled entrypoints are absent in the owned copy. [Native preflight](../src/codex/replay-conditions.mjs) compares read-only settings/layers, source identities, hooks and requirements without normalizing arbitrary config paths or command text. [Input guards](../src/experiments/replay-inputs.mjs) and [Git guards](../src/experiments/replay-git.mjs) check actual files, retained guidance, detached HEAD and index again before returning the frozen request.
+
+A handoff records a real readiness boundary and returns one verified owned path. It does not launch or submit a task. Actual desktop request/turn projection, result collection and shared CLI/GUI routes are subsequent work under [the replay contract](spec-sequential-replay.md). Ordinary observations retain their fixed registered-project boundary.
 
 ## Intended product architecture
 
