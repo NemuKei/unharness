@@ -192,6 +192,7 @@ export type SourceView = {
   metadata: SourceMetadata;
   source: SourceState | null;
   guide: Guide;
+  changeVersion?: string | null;
 };
 export type Discovery = {
   discoveryId: string;

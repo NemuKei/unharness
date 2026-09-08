@@ -1,6 +1,6 @@
 # Local AI commands
 
-The registered-source MCP endpoint uses the same operations as the web workbench. Its stdio protocol and a separate native Codex app-server have [Mac transport evidence](evidence/2026-09-09-ai-transport-macos.md). Actual natural-language desktop qualification and automatic open-screen updates are the next checks; the transport result is not full desktop support.
+The registered-source MCP endpoint uses the same operations as the web workbench. Its stdio protocol and a separate native Codex app-server have [Mac transport evidence](evidence/2026-09-09-ai-transport-macos.md). An open built workbench also receives [MCP changes](evidence/2026-09-09-ai-gui-updates-macos.md) while preserving unrelated drafts. Actual natural-language desktop qualification remains the next check; these results are not full desktop support.
 
 ## Start one registered connection
 
@@ -37,6 +37,8 @@ The equivalent standalone command is `node bin/unharness.mjs mcp --workspace /ab
 Saved starts use `review_start` / `save_start`. Their explicit request, task-defined requirements and per-mode stopping budget are fixed before use. Sequential replay results use `observe_replay` / `save_replay_result`; failed, abandoned and unknown outcomes remain part of the history. The full contract is in [sequential replay](spec-sequential-replay.md).
 
 History tools return bounded cursor pages and summaries. `read_run_output`, `read_start` and `handoff_replay` intentionally return selected private text; ask for them only when that content is needed. Source bodies, raw task recordings, arbitrary filesystem access and registration are not MCP tools.
+
+The open workbench checks local changes while visible. Prepared settings and bounded history update automatically; stale plans are invalidated. An editor draft is preserved within its accepted context. A replaced connection requires explicit state refresh before another action. Background reads do not confirm or repeat a lost foreground mutation.
 
 ## Lost responses and recovery
 

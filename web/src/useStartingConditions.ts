@@ -1,23 +1,34 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ApiError } from "./api";
 import { comparisonContextKey } from "./useComparisonController";
 import type { useSourceController } from "./useSourceController";
 import { isStartingMutation, startingErrorMessage } from "./starting-conditions";
+import { mergeHistoryRows } from "./source-updates";
 import type { StartingDeclaration, StartingReview, SavedStart, StartingDetail, StartingPage } from "./starting-conditions";
 
 type SharedController = ReturnType<typeof useSourceController>;
 type State = {
   review: StartingReview | null; lastSaved: SavedStart | null;
   starts: SavedStart[]; cursor: string | null; detail: StartingDetail | null;
-  error: string; notice: string; uncertain: boolean;
+  error: string; backgroundError: string; notice: string; uncertain: boolean;
 };
 export function useStartingConditions(shared: SharedController) {
-  const [state, setState] = useState<State>({ review: null, lastSaved: null, starts: [], cursor: null, detail: null, error: "", notice: "", uncertain: false });
+  const [state, setState] = useState<State>({ review: null, lastSaved: null, starts: [], cursor: null, detail: null, error: "", backgroundError: "", notice: "", uncertain: false });
   const draftGeneration = useRef(0), detailGeneration = useRef(0);
   const pendingReviewGeneration = useRef<number | null>(null);
   const reviewRef = useRef(state.review), keyRef = useRef("");
   reviewRef.current = state.review;
   keyRef.current = comparisonContextKey(shared.view);
+  const externalSignature = useRef("");
+  useEffect(() => {
+    const update = shared.externalUpdate, page = update?.history?.starts;
+    if (!update || !page || comparisonContextKey(update.view) !== keyRef.current) return;
+    const signature = JSON.stringify([keyRef.current, update.versions.starts, page.error?.kind]);
+    if (signature === externalSignature.current) return;
+    externalSignature.current = signature;
+    setState(s => page.error ? { ...s, backgroundError: "開始条件の履歴を自動更新できません。一覧を読み直してください。" }
+      : { ...s, starts: mergeHistoryRows(s.starts, page.data.starts, "startId"), cursor: page.data.nextCursor, backgroundError: "" });
+  }, [shared.externalUpdate]);
 
   async function execute<T>(operation: string, input: object, isCurrent = () => true, afterSaved = false): Promise<T | null> {
     const key = keyRef.current, scopeId = shared.view?.source?.registration.scopeId;

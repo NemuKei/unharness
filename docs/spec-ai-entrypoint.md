@@ -28,7 +28,7 @@ Core source locks serialize overlapping GUI/AI transactions; stale plans and ind
 
 ## Open GUI and qualification
 
-An open workbench refreshes the same registered state/history after an external operation, without replaying a mutation, installing stale responses or discarding unrelated drafts. Source changes invalidate stale reviewed application state. Effects remain optional and never establish completion.
+An open workbench refreshes the same registered state/history after an external operation, without replaying a mutation, installing stale responses or discarding unrelated drafts. Its authenticated GET update route requires the accepted launch/context and returns metadata-only refresh hints plus bounded summaries only when those hints change. A hint does not establish source integrity or task loading. Hidden tabs pause polling. Malformed optional history remains separate from source usability; a changed context requires explicit reacquisition. Source changes invalidate stale reviewed application state. Effects remain optional and never establish completion.
 
 Qualification requires an official MCP client over stdio, duplicate/restart/interruption and cross-entry-point tests, the built GUI, and actual new Mac Codex tasks using the configured tools for save, all modes, observations/comparison, favorite and restore. CLI protocol success alone is not desktop qualification. Synthetic requests are integration evidence, not a performance-improvement claim. Windows and Claude Code qualification remain separate delivery phases.
 

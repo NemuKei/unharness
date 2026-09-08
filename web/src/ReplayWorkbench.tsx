@@ -86,6 +86,7 @@ export function ReplayWorkbench({ controller: c, shared }: { controller: ReturnT
         && <button className="text-button" disabled={disabled} onClick={() => void c.favorite()}>この試行の設定をお気に入りへ</button>}</>}
     {state.lastSaved && <p className="starting-saved">保存済み：{modePresentation[state.lastSaved.preparedMode].title}の再実行 ／ {date(state.lastSaved.capturedAt)}</p>}
     {state.notice && <p role="status" className="comparison-notice">{state.notice}</p>}
+    {state.backgroundError && <p role="alert" className="comparison-error">{state.backgroundError}</p>}
     {state.error && <div role="alert" className="comparison-error">{state.error}{state.uncertain && <p>同じ操作を自動では繰り返しません。</p>}</div>}
     {state.attempts.length > 0 && <section className="replay-history"><h3>再実行の履歴</h3><ul>{state.attempts.map(item => <li key={item.attemptId}>
       <div>{item.resultId && <label className="inline-check"><input type="checkbox" aria-label={`${modePresentation[item.preparedMode].title}の再実行を比較に追加`} checked={state.selected.includes(item.resultId)}

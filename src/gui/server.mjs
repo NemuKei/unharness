@@ -163,12 +163,15 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
   const controller = sourceController ?? await createGuiController({ store, scopeId, codexHome });
   const kind = sourceController ? 'user-sources' : 'fixture';
   const inventory = await createGuiInventory(sourceController ? undefined : inventoryOptions, { collect: collectInventory });
+  const sockets = new Set();
+  let stopping = false;
   const token = randomBytes(32).toString('hex');
   const requests = new Map();
   let queue = Promise.resolve();
   let origin;
 
   const server = createServer(async (request, response) => {
+    if (stopping) { response.destroy(); return; }
     try {
       const parsed = new URL(request.url, origin);
       const isApi = parsed.pathname.startsWith('/api/');
@@ -205,6 +208,9 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
         else if (sourceController) {
           if (parsed.pathname === '/api/sources/metadata' && params.length === 0) sendJson(response, 200, await sourceController.metadata());
           else if (parsed.pathname === '/api/sources/state' && params.length === 0) sendJson(response, 200, await sourceController.state());
+          else if (parsed.pathname === '/api/sources/updates' && params.length >= 2 && params.length <= 3
+            && new Set(params).size === params.length && params.every(k => ['launchId', 'contextId', 'after'].includes(k)))
+            sendJson(response, 200, await sourceController.updates(Object.fromEntries(parsed.searchParams)));
           else sendJson(response, 404, { error: { kind: 'gui-route-not-found' } });
         }
         else if (parsed.pathname === '/api/state' && params.length === 0) sendJson(response, 200, await controller.state());
@@ -234,6 +240,7 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
         await readJson(request, sourceRoute && (COMPARISON_ACTIONS.has(action) || starting || replay), starting ? 128 * 1024 : replay ? 65536 : undefined),
         action,
       );
+      if (stopping) { response.destroy(); return; }
       const fingerprint = canonical({ action, input: parsedBody.input });
       const existing = requests.get(parsedBody.requestId);
       if (existing) {
@@ -270,6 +277,11 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
       sendJson(response, statusFor(safe.kind), { error: safe });
     }
   });
+  server.on('connection', socket => {
+    if (stopping) { socket.destroy(); return; }
+    sockets.add(socket);
+    socket.once('close', () => sockets.delete(socket));
+  });
 
   await new Promise((resolveListen, reject) => {
     server.once('error', reject);
@@ -280,14 +292,23 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
   });
   const address = server.address();
   origin = `http://127.0.0.1:${address.port}`;
-  let closed = false;
+  let closing;
   return {
     server,
     url: origin,
     async close() {
-      if (closed) return;
-      closed = true;
-      await new Promise((resolveClose, reject) => server.close(error => error ? reject(error) : resolveClose()));
+      if (closing) return closing;
+      stopping = true;
+      closing = (async () => {
+        const stopped = new Promise((resolveClose, reject) => server.close(error => error ? reject(error) : resolveClose()));
+        // Browser preconnects may have no HTTP parser request yet, so Node's
+        // idle-HTTP cleanup alone cannot release them. Closing transport never
+        // cancels accepted writes: the existing operation queue is drained.
+        for (const socket of sockets) socket.destroy();
+        await queue;
+        await stopped;
+      })();
+      return closing;
     },
   };
 }

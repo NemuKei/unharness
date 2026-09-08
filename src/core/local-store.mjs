@@ -31,6 +31,7 @@ export const LOCAL_STORE_ERROR_KINDS = Object.freeze([
   'record-write-error',
   'record-read-error',
   'record-list-error',
+  'invalid-page-limit',
 ]);
 
 class LocalStoreError extends Error {
@@ -399,9 +400,10 @@ export async function listRecords({ store, type } = {}) {
   }
 }
 
-export async function listRecordPage({ store, type, after } = {}) {
+export async function listRecordPage({ store, type, after, limit = MAX_RECORDS } = {}) {
   validateType(type);
   if (after !== undefined) validateId(after);
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > MAX_RECORDS) fail('invalid-page-limit');
   try {
     const { bucket } = await validateStore(store, type);
     if (bucket === null) return { records: [], nextCursor: null };
@@ -414,17 +416,17 @@ export async function listRecordPage({ store, type, after } = {}) {
       const id = entry.name.slice(0, -'.json'.length);
       if (!RECORD_ID.test(id)) fail('record-corrupt');
       if (after !== undefined && id <= after) continue;
-      if (ids.length === MAX_RECORDS + 1 && id >= ids.at(-1)) continue;
+      if (ids.length === limit + 1 && id >= ids.at(-1)) continue;
       let low = 0, high = ids.length;
       while (low < high) {
         const middle = Math.floor((low + high) / 2);
         if (ids[middle] < id) low = middle + 1;
         else high = middle;
       }
-      if (ids.length === MAX_RECORDS + 1) ids.pop();
+      if (ids.length === limit + 1) ids.pop();
       ids.splice(low, 0, id);
     }
-    const hasMore = ids.length > MAX_RECORDS;
+    const hasMore = ids.length > limit;
     if (hasMore) ids.pop();
     const records = [];
     for (const id of ids) {

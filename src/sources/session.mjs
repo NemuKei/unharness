@@ -188,23 +188,36 @@ export async function createSourceController(context, { workspace: selectedWorks
     const workspace = located?.workspace ?? null;
     if (selectedWorkspace !== undefined && (workspace !== selectedWorkspace || located?.scopeId !== selectedScope)) fail("source-session-changed");
     const contextId = createHash("sha256")
-      .update(JSON.stringify({ context, workspace }))
+      .update(JSON.stringify({ context, workspace, scopeId: located?.scopeId ?? null }))
       .digest("hex");
     return { kind: "user-sources", launchId, contextId, context, workspace };
   }
   async function state() {
     const meta = await metadata();
+    const { sourceChangeVersion } = await import("./updates.mjs");
+    const before = await sourceChangeVersion(meta);
+    const source = located ? await service.userSourceState({ workspace: located.workspace }) : null;
+    const after = await sourceChangeVersion(meta);
     return {
       metadata: meta,
-      source: located
-        ? await service.userSourceState({ workspace: located.workspace })
-        : null,
+      source,
+      changeVersion: before === after ? before : null,
       guide: getMinimalGuide(),
     };
   }
   return {
     metadata,
     state,
+    async updates(input) {
+      if (!input || typeof input !== "object" || Array.isArray(input)
+        || Object.keys(input).some(k => !["launchId", "contextId", "after"].includes(k))
+        || typeof input.launchId !== "string" || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(input.launchId)
+        || !id(input.contextId) || input.after !== undefined && !id(input.after)) fail("gui-invalid-request");
+      const meta = await metadata();
+      if (input.launchId !== meta.launchId || input.contextId !== meta.contextId) return { status: "context-changed", metadata: meta };
+      const { readSourceUpdates } = await import("./updates.mjs");
+      return readSourceUpdates({ metadata: meta, readState: state, readMetadata: metadata, after: input.after });
+    },
     async execute(
       action,
       { launchId: acceptedLaunch, contextId: acceptedContext, ...input },

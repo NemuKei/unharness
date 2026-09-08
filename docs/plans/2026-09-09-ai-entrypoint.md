@@ -34,8 +34,8 @@ The official clients and native Codex app-server passed the scoped transport che
 
 **Files:** focused workbench state/refresh code, browser regressions, `docs/ai-commands.md`, setup/recovery documentation and native private evidence helpers.
 
-- [ ] Add failing checks for external AI changes while the GUI is open, stale reviews, uncertain requests and preserved drafts; implement scoped refresh without automatic mutation retries.
-- [ ] Run `npm run check`, `npm run build` and the built GUI with effects off and a narrow screen. Verify the same source identity/state through both entry points.
+- [x] Add failing checks for external AI changes while the GUI is open, stale reviews, uncertain requests and preserved drafts; implement scoped refresh without automatic mutation retries.
+- [x] Run `npm run check`, `npm run build` and the built GUI with effects off and a narrow screen. Verify the same source identity/state through both entry points. All 615 tests completed with 614 passes and one existing platform skip; the final five browser cases and type/build checks passed. See [Mac evidence](../evidence/2026-09-09-ai-gui-updates-macos.md).
 - [ ] Prepare the exact local Codex MCP setup, preserve existing entries/permissions/memory and use the established retained-only Normal workflow for the added connection.
 - [ ] Verify the configured server and a fresh Mac desktop task can discover and use the real tool connection. Keep protocol/CLI evidence distinct from desktop evidence.
 

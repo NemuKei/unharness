@@ -92,6 +92,7 @@ export function SourceWorkbench() {
           比較
         </button>
       </nav>
+      {c.syncNotice && <p className={`source-sync-notice muted${c.syncIssue ? "" : " quiet"}`} role="status">{c.syncNotice}</p>}
       <main id="main">
         <div hidden={activeTab !== "comparison"}>
           <ComparisonWorkbench

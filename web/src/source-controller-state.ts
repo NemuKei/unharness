@@ -1,4 +1,6 @@
 import { ApiError } from "./api.ts";
+import { mergeHistoryRows } from "./source-updates.ts";
+import type { SourceUpdate } from "./source-updates";
 import {
   sameSourceContext,
   sameSourcePlanContext,
@@ -43,6 +45,7 @@ export const initialSourceControllerState: SourceControllerState = {
 
 export type SourceControllerAction =
   | { type: "accept-view"; view: SourceView }
+  | { type: "external-view"; update: SourceUpdate; favoritesChanged?: boolean }
   | {
       type: "favorites-followup";
       response: SourceOperationResponse<SourceFavoritePage>;
@@ -165,6 +168,18 @@ export function sourceControllerReducer(
   action: SourceControllerAction,
 ): SourceControllerState {
   if (action.type === "accept-view") return acceptView(state, action.view);
+  if (action.type === "external-view") {
+    const { view } = action.update;
+    if (!state.view || !sameSourceContext(state.view.metadata, view.metadata)
+      || state.view.source?.registration.scopeId !== view.source?.registration.scopeId) return state;
+    const changed = state.view.changeVersion !== view.changeVersion;
+    const page = action.favoritesChanged === false ? null : action.update.history?.favorites.data;
+    const favorites = page ? mergeHistoryRows(state.favorites, page.favorites, "favoriteId") : state.favorites;
+    return { ...acceptView(state, view), confirmed: state.confirmed,
+      plan: changed ? null : state.plan, retainedPlan: changed ? null : state.retainedPlan,
+      favorites: favorites.map(f => ({ ...f, needsAdaptation: f.normalId !== view.source?.registration.activeNormalId })),
+      cursor: page ? page.nextCursor : state.cursor };
+  }
   if (action.type === "favorites-followup") {
     const accepted = acceptView(state, action.response.state);
     if (action.response.status === "context-updated")

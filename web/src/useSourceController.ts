@@ -6,6 +6,8 @@ import {
   sourceControllerReducer,
 } from "./source-controller-state";
 import { modePresentation, taskObservationResponseNotice } from "./sources";
+import { canAcceptSourceUpdate, readSourceUpdate } from "./source-updates";
+import type { SourceUpdate } from "./source-updates";
 import {
   readSourceState,
   sameSourceContext,
@@ -34,6 +36,13 @@ export function useSourceController() {
     sourceControllerReducer,
     initialSourceControllerState,
   );
+  const latest = useRef(state), foregroundGeneration = useRef(0);
+  latest.current = state;
+  const [externalUpdate, setExternalUpdate] = useState<SourceUpdate | null>(null);
+  const previousUpdate = useRef<SourceUpdate | null>(null), updateToken = useRef<string | undefined>(undefined);
+  const contextBlocked = useRef(false);
+  const [syncError, setSyncError] = useState("");
+  const [syncNotice, setSyncNotice] = useState("");
   const {
     view,
     confirmed,
@@ -54,6 +63,12 @@ export function useSourceController() {
   const [recoveryResult, setRecoveryResult] = useState<object | null>(null);
   const [selectionKey, setSelectionKey] = useState(0);
   function resetContext() {
+    previousUpdate.current = null;
+    updateToken.current = undefined;
+    contextBlocked.current = false;
+    setExternalUpdate(null);
+    setSyncError("");
+    setSyncNotice("");
     setRecoveryResult(null);
     setDiscovery(null);
     setReview(null);
@@ -64,6 +79,7 @@ export function useSourceController() {
       resetContext();
     }
     dispatch({ type: "accept-view", view: next });
+    setSyncError("");
   }
   function failed(e: unknown) {
     dispatch({ type: "failed", error: e });
@@ -71,11 +87,15 @@ export function useSourceController() {
   async function refresh() {
     if (lock.current) return;
     lock.current = true;
+    ++foregroundGeneration.current;
     setBusy(true);
     dispatch({ type: "clear-error" });
     try {
       const next = await readSourceState(api);
       accept(next);
+      contextBlocked.current = false;
+      updateToken.current = undefined;
+      setSyncNotice("");
       setSelected(next.source?.preparedMode ?? "normal");
       dispatch({ type: "clear-plans" });
       dispatch({
@@ -92,6 +112,57 @@ export function useSourceController() {
   useEffect(() => {
     void refresh();
   }, []);
+  useEffect(() => {
+    let stopped = false, polling = false, timer: number | undefined;
+    const schedule = (delay = 2500) => { if (!stopped) timer = window.setTimeout(poll, delay); };
+    async function poll() {
+      if (polling || stopped) return;
+      const before = latest.current.view, generation = foregroundGeneration.current;
+      if (!before || lock.current || contextBlocked.current || document.visibilityState !== "visible") { schedule(); return; }
+      polling = true;
+      let delay = 2500;
+      try {
+        const update = await readSourceUpdate(api, before, updateToken.current);
+        if (stopped || lock.current || document.visibilityState !== "visible"
+          || !canAcceptSourceUpdate(before, latest.current.view, generation, foregroundGeneration.current)) return;
+        if (update.status === "context-changed") {
+          contextBlocked.current = true;
+          setSyncError("接続先が変わりました。「状態を再取得」で対象を確認してください。");
+          return;
+        }
+        if (update.status === "changing") {
+          setSyncError("保存状態が変わっているため、読み直しています。");
+          delay = 500;
+          return;
+        }
+        setSyncError("");
+        if (update.status === "unchanged") return;
+        const previous = previousUpdate.current;
+        const favoritesChanged = !previous || previous.versions.favorites !== update.versions.favorites
+          || previous.history?.favorites.error?.kind !== update.history?.favorites.error?.kind;
+        const sourceChanged = latest.current.view?.changeVersion !== update.view.changeVersion;
+        dispatch({ type: "external-view", update, favoritesChanged });
+        if (sourceChanged && latest.current.confirmed) setSelected(update.view.source?.preparedMode ?? "normal");
+        previousUpdate.current = update;
+        updateToken.current = update.retryRequired ? undefined : update.token;
+        setExternalUpdate(update);
+        setSyncNotice(update.retryRequired ? "一部の履歴を更新できません。各欄で読み直せます。"
+          : previous && previous.token !== update.token ? "保存状態の更新を表示しました。" : "");
+      } catch {
+        if (!stopped && !lock.current && canAcceptSourceUpdate(before, latest.current.view, generation, foregroundGeneration.current))
+          setSyncError("自動更新を確認できません。「状態を再取得」でも確認できます。");
+        delay = 5000;
+      } finally { polling = false; schedule(delay); }
+    }
+    const wake = () => {
+      if (document.visibilityState !== "visible" || polling) return;
+      window.clearTimeout(timer); schedule(0);
+    };
+    document.addEventListener("visibilitychange", wake);
+    window.addEventListener("focus", wake);
+    schedule(500);
+    return () => { stopped = true; window.clearTimeout(timer); document.removeEventListener("visibilitychange", wake); window.removeEventListener("focus", wake); };
+  }, [api]);
   async function run<T>(
     action: string,
     input: object,
@@ -99,6 +170,7 @@ export function useSourceController() {
   ) {
     if (lock.current || !view) return;
     lock.current = true;
+    ++foregroundGeneration.current;
     setBusy(true);
     dispatch({ type: "clear-error" });
     try {
@@ -295,6 +367,7 @@ export function useSourceController() {
     if (lock.current || !view)
       return { status: "failed", error: new Error("source-busy") };
     lock.current = true;
+    ++foregroundGeneration.current;
     setBusy(true);
     try {
       const response = await sourceOperation<T>(api, view.metadata, action, input);
@@ -328,7 +401,10 @@ export function useSourceController() {
     cursor,
     review,
     busy,
-    confirmed,
+    confirmed: confirmed && !syncError,
+    externalUpdate,
+    syncNotice: syncError || syncNotice,
+    syncIssue: !!syncError || !!externalUpdate?.retryRequired,
     error,
     notice,
     selectionKey,

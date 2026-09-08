@@ -328,3 +328,18 @@ test('record pages validate cursors and retain corruption and link boundaries', 
   await symlink(parent, bucket, 'dir');
   await rejectsKind(localStore.listRecordPage({ store, type: 'favorite' }), 'store-link-or-type');
 });
+
+test('small background pages retain every record through bounded cursors', async t => {
+  const { store } = await fixture(t, 'small-pages'), saved = [];
+  for (let index = 0; index < 5; index++) saved.push(await putRecord({ store, type: 'favorite', payload: { index } }));
+  let after, collected = [];
+  do {
+    const page = await localStore.listRecordPage({ store, type: 'favorite', limit: 2, ...(after ? { after } : {}) });
+    assert.ok(page.records.length <= 2);
+    collected.push(...page.records.map(r => r.id));
+    after = page.nextCursor;
+  } while (after);
+  assert.deepEqual(collected, saved.map(r => r.id).sort());
+  for (const limit of [0, 1001, -1, 2.5, '2', null])
+    await rejectsKind(localStore.listRecordPage({ store, type: 'favorite', limit }), 'invalid-page-limit');
+});

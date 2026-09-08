@@ -335,9 +335,9 @@ export const saveUserFavorite = wrap(async ({ workspace, name }) => {
     await release();
   }
 });
-export const listUserFavorites = wrap(async ({ workspace, after }) => {
+export const listUserFavorites = wrap(async ({ workspace, after, limit }) => {
   const w = await openWorkspace(workspace),
-    page = await listRecordPage({ store: workspace, type: 'favorite', after });
+    page = await listRecordPage({ store: workspace, type: 'favorite', after, limit });
   const favorites = [];
   for (const { id, payload: p } of page.records) {
     if (

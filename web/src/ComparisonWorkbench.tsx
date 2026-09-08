@@ -337,6 +337,7 @@ export function ComparisonWorkbench({
         </section>}
         {state.output && <section className="comparison-panel explicit-output" aria-labelledby="output-heading"><div className="comparison-heading"><div><h2 id="output-heading">明示して開いた出力</h2><code>{runReferenceLabel(state.output.runId, state.runs)}</code></div><span>プレーンテキスト</span></div>{state.output.available && state.output.text !== null ? <pre>{state.output.text}</pre> : <p>出力は利用できません（{state.output.reason ?? "理由不明"}）。</p>}</section>}
         {state.notice && <p className="comparison-notice" role="status" aria-live="polite">{state.notice}</p>}
+        {state.backgroundError && <p className="comparison-error" role="alert">{state.backgroundError}</p>}
         {state.error && <div className="comparison-error" role="alert">{state.error}{state.uncertainOperation && <p>同じ保存操作を自動では繰り返しません。</p>}</div>}
       </>}
     </div>

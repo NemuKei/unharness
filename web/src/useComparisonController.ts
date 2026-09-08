@@ -1,4 +1,6 @@
 import { useEffect, useReducer, useRef } from "react";
+import { mergeHistoryRows } from "./source-updates.ts";
+import type { SourceUpdate } from "./source-updates";
 import { ApiError } from "./api.ts";
 import {
   comparisonErrorMessage,
@@ -73,6 +75,7 @@ export type ComparisonControllerState = {
   lastFavorite: ComparisonFavorite | null;
   uncertainOperation: "review-run" | "save-run" | "run-favorite" | null;
   error: string;
+  backgroundError: string;
   notice: string;
   intentGeneration: number;
 };
@@ -90,6 +93,7 @@ export const initialComparisonControllerState: ComparisonControllerState = {
   lastFavorite: null,
   uncertainOperation: null,
   error: "",
+  backgroundError: "",
   notice: "通常利用の記録を選んで比較できます。",
   intentGeneration: 0,
 };
@@ -108,6 +112,7 @@ export type ComparisonControllerAction =
     >
   | ResultAction<"save-completed", { run: SavedRun }>
   | ResultAction<"history-completed", { page: RunPage; append: boolean }>
+  | ResultAction<"external-history", { page: RunPage }>
   | ResultAction<
       "comparison-completed",
       { comparison: RunComparison; intentGeneration: number }
@@ -125,6 +130,7 @@ export type ComparisonControllerAction =
   | { type: "clear-review"; intentGeneration: number }
   | { type: "clear-error" }
   | { type: "history-failed"; message: string }
+  | { type: "background-history-error"; message: string }
   | {
       type: "operation-failed";
       operation: string;
@@ -231,6 +237,7 @@ export function comparisonControllerReducer(
     };
   if (action.type === "history-failed")
     return { ...state, error: action.message };
+  if (action.type === "background-history-error") return { ...state, backgroundError: action.message };
   if (action.type === "operation-failed")
     if (
       action.intentGeneration !== undefined &&
@@ -291,6 +298,9 @@ export function comparisonControllerReducer(
       error: "",
     };
   }
+  if (action.type === "external-history") return {
+    ...state, runs: mergeHistoryRows(state.runs, action.page.runs, "runId"), cursor: action.page.nextCursor, backgroundError: "",
+  };
   if (action.type === "comparison-completed")
     return {
       ...state,
@@ -317,6 +327,7 @@ type AuxiliaryResult<T> =
 
 type SharedSourceController = {
   view: SourceView | null;
+  externalUpdate?: SourceUpdate | null;
   executeComparison<T>(action: string, input: object): Promise<AuxiliaryResult<T>>;
 };
 
@@ -331,6 +342,19 @@ export function useComparisonController(shared: SharedSourceController) {
   useEffect(() => {
     dispatch({ type: "source-view", view: shared.view });
   }, [shared.view]);
+  const externalSignature = useRef("");
+  useEffect(() => {
+    const update = shared.externalUpdate, page = update?.history?.runs;
+    if (!update || !page || comparisonContextKey(update.view) !== comparisonContextKey(shared.view)) return;
+    const signature = JSON.stringify([comparisonContextKey(update.view), update.versions.runs, page.error?.kind]);
+    if (signature === externalSignature.current) return;
+    externalSignature.current = signature;
+    if (page.error) dispatch({ type: "background-history-error", message: "通常利用の履歴を自動更新できません。履歴を読み直してください。" });
+    else {
+      const requestContext = comparisonContextFor(update.view);
+      if (requestContext) dispatch({ type: "external-history", requestContext, view: update.view, page: page.data });
+    }
+  }, [shared.externalUpdate, shared.view]);
 
   async function execute<T>(
     operation: string,

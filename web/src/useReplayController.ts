@@ -3,15 +3,16 @@ import { ApiError } from "./api";
 import { comparisonContextKey } from "./useComparisonController";
 import type { useSourceController } from "./useSourceController";
 import { isReplayMutation, replayError, replayPreparationKey, validReplayResponse } from "./replays";
+import { mergeHistoryRows } from "./source-updates";
 import type { ReplayReview, ReplayAttempt, ReplayPage, ReplayHandoff, ReplayResultReview, ReplayResult, ReplayAssessment, ReplayComparison } from "./replays";
 type Shared = ReturnType<typeof useSourceController>;
 type State = { review: ReplayReview | null; attempt: ReplayAttempt | null; handoff: ReplayHandoff | null;
   attempts: ReplayAttempt[]; activeAttemptId: string | null; cursor: string | null;
   resultReview: ReplayResultReview | null; result: ReplayResult | null; lastSaved: ReplayResult | null;
-  comparison: ReplayComparison | null; selected: string[]; error: string; notice: string; uncertain: string | null };
+  comparison: ReplayComparison | null; selected: string[]; error: string; backgroundError: string; notice: string; uncertain: string | null };
 export function useReplayController(shared: Shared) {
   const [state, setState] = useState<State>({ review: null, attempt: null, handoff: null, attempts: [], activeAttemptId: null, cursor: null,
-    resultReview: null, result: null, lastSaved: null, comparison: null, selected: [], error: "", notice: "", uncertain: null });
+    resultReview: null, result: null, lastSaved: null, comparison: null, selected: [], error: "", backgroundError: "", notice: "", uncertain: null });
   const latest = useRef(state), view = useRef(shared.view), alive = useRef(true), preparationGeneration = useRef(0), resultGeneration = useRef(0);
   latest.current = state; view.current = shared.view;
   const preparationKey = replayPreparationKey(shared.view);
@@ -21,6 +22,28 @@ export function useReplayController(shared: Shared) {
     setState(s => ({ ...s, review: null, handoff: null,
       notice: s.review || s.handoff ? "装備の状態が変わりました。開始状態を確認し直してください。" : s.notice }));
   }, [preparationKey]);
+  const externalSignature = useRef("");
+  useEffect(() => {
+    const update = shared.externalUpdate, page = update?.history?.replays;
+    if (!update || !page || comparisonContextKey(update.view) !== comparisonContextKey(view.current)) return;
+    const signature = JSON.stringify([comparisonContextKey(update.view), update.versions.replays, page.error?.kind]);
+    if (signature === externalSignature.current) return;
+    externalSignature.current = signature;
+    if (page.error) { setState(s => ({ ...s, backgroundError: "再実行の履歴を自動更新できません。履歴を読み直してください。" })); return; }
+    const data = page.data;
+    setState(s => {
+      const attempts = mergeHistoryRows(s.attempts, data.attempts, "attemptId");
+      const attempt = s.attempt ? attempts.find(a => a.attemptId === s.attempt!.attemptId) ?? s.attempt : data.activeAttempt;
+      const selected = s.selected.filter(id => attempts.some(a => a.resultId === id));
+      const resultChanged = s.resultReview && attempts.some(a => a.attemptId === s.resultReview!.attemptId && a.phase === "recorded");
+      return { ...s, attempts, attempt, cursor: data.nextCursor, activeAttemptId: data.activeAttemptId, selected,
+        comparison: selected.length === s.selected.length ? s.comparison : null,
+        review: data.activeAttemptId ? null : s.review,
+        handoff: s.handoff && attempts.some(a => a.attemptId === s.handoff!.attemptId && !a.handoffAvailable) ? null : s.handoff,
+        resultReview: resultChanged ? null : s.resultReview, backgroundError: "",
+        notice: resultChanged ? "この試行の保存状態が変わりました。履歴から保存済みの結果を確認してください。" : s.notice };
+    });
+  }, [shared.externalUpdate]);
   async function execute<T>(op: string, input: object, options: { preparation?: boolean; current?: () => boolean; afterSaved?: boolean } = {}): Promise<T | null> {
     const context = comparisonContextKey(view.current), preparation = replayPreparationKey(view.current), scope = view.current?.source?.registration.scopeId;
     if (!scope) return null;

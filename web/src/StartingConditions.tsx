@@ -71,6 +71,7 @@ export function StartingConditions({ sourceController, onReplay }: { sourceContr
     </section>}
     {state.lastSaved && <p className="starting-saved" role="status">保存済み：{state.lastSaved.title ?? "名称なしの開始条件"}</p>}
     {state.notice && <p className="muted" role="status">{state.notice}</p>}
+    {state.backgroundError && <p className="comparison-error" role="alert">{state.backgroundError}</p>}
     {state.error && <div className="comparison-error" role="alert">{state.error}{state.uncertain && <p>同じ保存操作を自動では繰り返しません。</p>}</div>}
     <section className="starting-history-section" aria-label="保存した開始条件">
       <div className="comparison-heading"><h3>保存した開始条件</h3><button className="text-button" disabled={disabled} onClick={() => void starts.load()}>保存した開始条件を読む</button></div>
