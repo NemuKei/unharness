@@ -81,6 +81,10 @@ The first writable instruction group is the global Codex AGENTS pair. Project re
 
 The [registered-source observer](spec-user-source-observations.md) binds one selected desktop task to the exact prepared snapshot and preparation identity. It shares the bounded recording reader and uses a private read-only native selector projection to derive frozen Skill intent. Only the canonical initial instruction/catalog fields contribute to source matching; condition hashes and unknown coverage remain separate. A pure record reader serves dated observations without loading Codex or YAML, and invalid optional observation metadata cannot disable configuration status or offline recovery.
 
+The [retained-settings extension](spec-retained-settings.md) versions the saved Normal when an independent configuration edit can be proven to affect retained settings only. Planning uses a private native read plus bounded three-way composition; the browser receives fixed categories, identities and false verification flags rather than configuration keys or values. Acceptance publishes only private state and immutable snapshots, uses a distinct recovery journal and leaves every managed source untouched. The active Normal identity is separate from the immutable registration baseline.
+
+Old favorite and checkpoint records remain immutable. A restore from an older Normal composes its frozen selected-source state with the active Normal's retained settings and returns an explicit adaptation summary. The resulting plan has a new snapshot identity; application does not create or replace a favorite. The HTTP workbench routes these operations through the same accepted launch/context, duplicate-request and uncertain-outcome boundary as existing source actions.
+
 ## Intended product architecture
 
 Every dotted connection below is a planned integration. The CLI and Codex integration boxes have existing diagnostic slices; that does not mean they are already connected to the future shared core or can control the desktop. The OS box represents shared responsibilities, not a library already implemented.

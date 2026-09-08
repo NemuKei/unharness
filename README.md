@@ -59,6 +59,8 @@ Skill configuration preparation preserves unrelated settings and comment placeme
 
 A [selected real-source Mac check](docs/evidence/2026-09-08-real-source-desktop-macos.md) observed all three conditions and saved-Normal restoration in fresh desktop tasks. The workbench and CLI now [associate a selected task with its prepared source version](docs/spec-user-source-observations.md), showing a dated match, mismatch, unqualified or unknown result. Older preparations without a recorded boundary need a reviewed re-preparation. A match covers the selected recorded sources; complete desktop support remains unverified.
 
+If a later independent Codex setting edit affects only retained configuration, the workbench can now show a value-free **review changes** summary and explicitly record the current settings as a new Normal version. This record-only acceptance does not rewrite managed files. Restoring an older favorite or checkpoint states that it will keep the current common settings and use the saved selected-source state; saving afterward creates a new favorite version. The HTTP/UI implementation and synthetic checks do not by themselves qualify desktop loading or complete Mac support. See the [workbench runbook](docs/user-source-gui.md) and [retained-settings contract](docs/spec-retained-settings.md).
+
 ## Make “what if I removed this?” easy to try
 
 You have added skills, instructions, and workflows to help your AI work the way you want. Now you want to know which parts fit the model and the work in front of you.
