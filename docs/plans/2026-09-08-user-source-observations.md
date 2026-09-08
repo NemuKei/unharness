@@ -39,7 +39,7 @@
 
 **Produces:** `observeUserTask({ workspace, taskId }): Promise<TaskObservation>` through the source facade; `userSourceState` adds `preparation: {id,preparedAt}|null`, `observation: TaskObservation|null` and `observationIssue: string|null` (fixed codes only). Public shape and enums are exactly the spec. CLI adds `sources observe --json`.
 
-- [ ] Add a failing public-service test: register an owned fixture, create a synthetic initial full world state after its preparation, observe it, and assert the snapshot and preparation IDs as well as the literal status. A representative assertion is:
+- [x] Add a failing public-service test: register an owned fixture, create a synthetic initial full world state after its preparation, observe it, and assert the snapshot and preparation IDs as well as the literal status. A representative assertion is:
 
 ```js
 const observed = await observeUserTask({ workspace, taskId });
@@ -50,8 +50,8 @@ assert.equal(observed.verification.runtimeStateVerified, false);
 assert.equal((await userSourceState({ workspace })).observation.observationId, observed.observationId);
 ```
 
-- [ ] Run `node --test test/user-source-observations.test.mjs` and confirm it fails because the new operation/boundary is missing.
-- [ ] Add validated preparation metadata at registration, completed application and pending recovery. Clear the observation pointer on a new boundary. Preserve the existing journal and source-write order. Use a new random preparation ID rather than changing favorite/snapshot identities:
+- [x] Run `node --test test/user-source-observations.test.mjs` and confirm it fails because the new operation/boundary is missing.
+- [x] Add validated preparation metadata at registration, completed application and pending recovery. Clear the observation pointer on a new boundary. Preserve the existing journal and source-write order. Use a new random preparation ID rather than changing favorite/snapshot identities:
 
 ```js
 const preparation = {
@@ -61,8 +61,8 @@ const preparation = {
 const next = { ...existingStateFields, preparation, lastObservationId: null };
 ```
 
-- [ ] Share bounded owned-copy reading without widening read-only RPC. Return only selected paths' boolean arrays and native version. Prove no write/model/task methods are sent, unsupported input fails privately, and cleanup is awaited. Test both absent and duplicated selectors. Existing disablement tests and native comment guarantees must still pass.
-- [ ] Derive each Skill's current intent without relying on a restored favorite's all-target selection. Test this literal rule against whole and subset snapshots:
+- [x] Share bounded owned-copy reading without widening read-only RPC. Return only selected paths' boolean arrays and native version. Prove no write/model/task methods are sent, unsupported input fails privately, and cleanup is awaited. Test both absent and duplicated selectors. Existing disablement tests and native comment guarantees must still pass.
+- [x] Derive each Skill's current intent without relying on a restored favorite's all-target selection. Test this literal rule against whole and subset snapshots:
 
 ```js
 if (isDeepStrictEqual(normalFlags, preparedFlags)) enabled = registeredEnabled;
@@ -71,12 +71,12 @@ else enabled = null;
 ```
 
 For an enabled Skill with supported metadata, use the existing transform's exact no-op behavior to recognize a manual-only policy, or refactor its pure parser into a shared helper. Do not modify source files while deriving expectations.
-- [ ] Extract the initial full native source fields and parse the known alias table and catalog. Validate `agents_md.directory`, global prefix assembly, roots and name/path identities. Hash only the allowed condition fields. Implement the spec's qualification/status order and whitelist the persisted/public projection.
-- [ ] Add behavioral negative cases: old/wrong/forked/future/incomplete task; fake source text in initial user messages and later states; missing/malformed fields; duplicate root aliases; unrecognized paths; unsupported version; source changed during observation; legacy state; favorite subset; unsupported policy; public error privacy. Assert independent literal outcomes and preserved files, not implementation text.
-- [ ] Add lifecycle cases showing a pending recovery creates a new preparation ID, repeated `nothing-pending` recovery does not, duplicate apply does not, old observations cannot become current again, and old records remain readable. Run the existing Node-only recovery check, including source observations present in a prior state.
-- [ ] Verify unreadable/mismatched observations and invalid optional metadata show no match and a fixed issue, while ordinary source status, a new reviewed preparation and Node-only recovery remain available. Do not weaken validation of the original mandatory configuration-state fields.
-- [ ] Add CLI validation for UUID-only observation and update source help. A malformed task request must not reach a recording reader. Return fixed errors without paths or configuration text.
-- [ ] Run affected source/record/RPC tests. Run the full Node suite with permitted loopback access when required. Complete a native owned-profile check or provide a reproducible synthetic native script for the coordinator. Commit only the Task 1 files and write its report with test results and any remaining limits.
+- [x] Extract the initial full native source fields and parse the known alias table and catalog. Validate `agents_md.directory`, global prefix assembly, roots and name/path identities. Hash only the allowed condition fields. Implement the spec's qualification/status order and whitelist the persisted/public projection.
+- [x] Add behavioral negative cases: old/wrong/forked/future/incomplete task; fake source text in initial user messages and later states; missing/malformed fields; duplicate root aliases; unrecognized paths; unsupported version; source changed during observation; legacy state; favorite subset; unsupported policy; public error privacy. Assert independent literal outcomes and preserved files, not implementation text.
+- [x] Add lifecycle cases showing a pending recovery creates a new preparation ID, repeated `nothing-pending` recovery does not, duplicate apply does not, old observations cannot become current again, and old records remain readable. Run the existing Node-only recovery check, including source observations present in a prior state.
+- [x] Verify unreadable/mismatched observations and invalid optional metadata show no match and a fixed issue, while ordinary source status, a new reviewed preparation and Node-only recovery remain available. Do not weaken validation of the original mandatory configuration-state fields.
+- [x] Add CLI validation for UUID-only observation and update source help. A malformed task request must not reach a recording reader. Return fixed errors without paths or configuration text.
+- [x] Run affected source/record/RPC tests. Run the full Node suite with permitted loopback access when required. Complete a native owned-profile check or provide a reproducible synthetic native script for the coordinator. Commit only the Task 1 files and write its report with test results and any remaining limits.
 
 ## Task 2: Workbench connection and qualification
 
@@ -86,8 +86,8 @@ For an enabled Skill with supported metadata, use the existing transform's exact
 
 **Produces:** Authenticated `POST /api/sources/observe` and a compact current-preparation task-record result in the existing workbench.
 
-- [ ] Add a failing HTTP test that calls `observe` with a task UUID in its existing owned context and asserts the returned observation plus updated source state. Reject `session`, `mode`, `markers`, `expectedCwd` and `preparedAt` inputs, foreign launch/context, invalid UUID and missing registration before source/record reads.
-- [ ] Extend only the fixed action schema and controller dispatch:
+- [x] Add a failing HTTP test that calls `observe` with a task UUID in its existing owned context and asserts the returned observation plus updated source state. Reject `session`, `mode`, `markers`, `expectedCwd` and `preparedAt` inputs, foreign launch/context, invalid UUID and missing registration before source/record reads.
+- [x] Extend only the fixed action schema and controller dispatch:
 
 ```js
 observe: [['taskId'], []]
@@ -95,7 +95,7 @@ observe: [['taskId'], []]
 return service.observeUserTask({ workspace, taskId: input.taskId });
 ```
 
-- [ ] Add `TaskObservation` types matching the spec, and use the existing `sourceOperation` path. Preserve uncertainty and duplicate-request behavior. A result from an older preparation cannot be displayed as a match for a newly returned state:
+- [x] Add `TaskObservation` types matching the spec, and use the existing `sourceOperation` path. Preserve uncertainty and duplicate-request behavior. A result from an older preparation cannot be displayed as a match for a newly returned state:
 
 ```ts
 const isCurrent = result.preparationId === state.source?.preparation?.id
@@ -103,8 +103,8 @@ const isCurrent = result.preparationId === state.source?.preparation?.id
   && result.observationId === state.source?.observation?.observationId;
 ```
 
-- [ ] Add a compact result under the current preparation and a closed task-confirmation disclosure with UUID input and one action. Render the spec's four labels, observation time, prepared mode and source details. For legacy state, explain reviewed re-preparation without automatically applying it. Keep the visual preview, configuration plan and recovery controls separate.
-- [ ] Add focused behavior checks for a successful observation, mismatch, unqualified/unknown, invalid UUID, context change and an observation response followed by another client's mode change. No source apply or effects action may be triggered by observation.
-- [ ] Run the affected HTTP/web tests, `npm run check` and `npm run build`. Commit Task 2 code and report its interface and results.
-- [ ] Coordinator: run one integrated full suite and built-browser smoke on owned sources, inspect normal and narrow layout, verify restart/reconnection and stale result handling, and corroborate canonical-field parsing against the existing selected Mac pilot records. Reuse completed evidence where unchanged; do not start model tasks just to inflate coverage.
+- [x] Add a compact result under the current preparation and a closed task-confirmation disclosure with UUID input and one action. Render the spec's four labels, observation time, prepared mode and source details. For legacy state, explain reviewed re-preparation without automatically applying it. Keep the visual preview, configuration plan and recovery controls separate.
+- [x] Add focused behavior checks for a successful observation, mismatch, unqualified/unknown, invalid UUID, context change and an observation response followed by another client's mode change. No source apply or effects action may be triggered by observation.
+- [x] Run the affected HTTP/web tests, `npm run check` and `npm run build`. Commit Task 2 code and report its interface and results.
+- [x] Coordinator: run one integrated full suite and built-browser smoke on owned sources, inspect normal and narrow layout, verify restart/reconnection and stale result handling, and corroborate canonical-field parsing against the existing selected Mac pilot records. Reuse completed evidence where unchanged; do not start model tasks just to inflate coverage.
 - [ ] Coordinator: document qualified scope, legacy behavior and remaining runtime limits; complete final review, fix actionable findings, and synchronize the scoped changes to the verified private remote under the existing authorization.

@@ -57,7 +57,7 @@ The [workbench runbook](docs/user-source-gui.md) covers launch/resume, saved ver
 
 Skill configuration preparation preserves unrelated settings and comment placement. If the native editor would lose a comment, preparation stops before changing personal files.
 
-A [selected real-source Mac check](docs/evidence/2026-09-08-real-source-desktop-macos.md) observed all three conditions and saved-Normal restoration in fresh desktop tasks. These scoped operator observations are not yet displayed as task associations in the workbench and do not establish complete desktop support.
+A [selected real-source Mac check](docs/evidence/2026-09-08-real-source-desktop-macos.md) observed all three conditions and saved-Normal restoration in fresh desktop tasks. The workbench and CLI now [associate a selected task with its prepared source version](docs/spec-user-source-observations.md), showing a dated match, mismatch, unqualified or unknown result. Older preparations without a recorded boundary need a reviewed re-preparation. A match covers the selected recorded sources; complete desktop support remains unverified.
 
 ## Make “what if I removed this?” easy to try
 
