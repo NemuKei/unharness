@@ -18,6 +18,7 @@
 - Accepting retained settings changes only private records/state, never managed source files.
 - Browser/CLI summaries never expose raw config, values, arbitrary key names, native diagnostics or transcripts.
 - Old favorites/checkpoints/snapshots remain immutable. Cross-Normal restore plans explicitly preserve current retained settings and use a new snapshot ID.
+- After retained acceptance, snapshot-v2 records and state.snapshotVersion = 2 fence older writers; all later plans/current snapshots preserve that format.
 - Runtime and full mode verification flags remain false. Recovery is Node-only and does not need Codex, YAML, diff3 or browser dependencies.
 - Do not write personal settings or start model tasks. Use owned synthetic fixtures for development and tests.
 
@@ -31,7 +32,7 @@
 - Consumes the existing private RPC transport and its bounded process cleanup.
 - Produces `mergeRetainedConfig({baseText,targetText,currentText,skillPaths,executable,executableArgs?,timeoutMs?}) -> {text,changed,codexVersion}`. It throws only `config-transform-failed` and returns no parsed config. Existing `disableSkillConfig` and `readSkillSelectors` contracts remain unchanged.
 
-- [ ] Write a red test using the synthetic executable: base contains a retained model and selected enabled Skill; target only disables the Skill; current changes the model. The result keeps the new model and disabled Skill exactly. Also assert all recorded RPC requests belong to initialization/config-read and every owned child profile is removed.
+- [x] Write a red test using the synthetic executable: base contains a retained model and selected enabled Skill; target only disables the Skill; current changes the model. The result keeps the new model and disabled Skill exactly. Also assert all recorded RPC requests belong to initialization/config-read and every owned child profile is removed.
 
 ```js
 const result = await mergeRetainedConfig({ ...fixtureArgs, baseText, targetText, currentText, skillPaths: [selectedPath] });
@@ -40,8 +41,8 @@ assert.equal(await readFile(originalPath, 'utf8'), originalText);
 assert.ok(requests.every(r => ['initialize', 'initialized', 'config/read'].includes(r.method)));
 ```
 
-- [ ] Run `node --test test/config-reconcile.test.mjs` and confirm the missing implementation failure.
-- [ ] Install the exact dependency with `npm install --save-exact --ignore-scripts node-diff3@3.1.2`. Implement bounded line-buffer composition and native selected/retained partition validation from the spec. Preserve CRLF and EOF exactly; reject conflicts, unsafe numeric representation and selector/version/layer errors. The no-selected-Skills case still validates TOML.
+- [x] Run `node --test test/config-reconcile.test.mjs` and confirm the missing implementation failure.
+- [x] Install the exact dependency with `npm install --save-exact --ignore-scripts node-diff3@3.1.2`. Implement bounded line-buffer composition and native selected/retained partition validation from the spec. Preserve CRLF and EOF exactly; reject conflicts, unsafe numeric representation and selector/version/layer errors. The no-selected-Skills case still validates TOML.
 
 ```js
 const chunks = diff3Merge(lines(targetText), lines(baseText), lines(currentText));
@@ -51,8 +52,8 @@ const text = chunks.flatMap(chunk => chunk.ok).join('');
 // result selected == target selected; result retained == current retained.
 ```
 
-- [ ] Complete the helper cases in the spec, including independent unselected entries, duplicates, comments, numeric precision, overlapping edits, missing arrays and length limits. Run `node --test test/config-reconcile.test.mjs test/source-transforms.test.mjs`.
-- [ ] Commit the helper and tests, self-review, and report the commit and exact test evidence. Do not edit service, UI or unrelated docs.
+- [x] Complete the helper cases in the spec, including independent unselected entries, duplicates, comments, numeric precision, overlapping edits, missing arrays and length limits. Run `node --test test/config-reconcile.test.mjs test/source-transforms.test.mjs`.
+- [x] Commit the helper and tests, self-review, and report the commit and exact test evidence. Do not edit service, UI or unrelated docs.
 
 ### Task 2: Versioned retained-setting acceptance and compatible restoration
 
@@ -81,6 +82,7 @@ assert.equal((await userSourceState({ workspace })).conflict, null);
 
 - [ ] Run the focused test and confirm failure before implementation.
 - [ ] Implement active Normal access/validation, immutable context IDs on new plans/favorites/checkpoints, exact same-context restoration and native-proved explicit cross-context adaptation. Reconciliation rejects all non-config differences and unsupported metadata; supported config existence changes must preserve current presence/metadata. Never infer a new source selection.
+- [ ] Fence baseline clients with the spec's `snapshot-v2` role and `state.snapshotVersion = 2`; new readers support legacy snapshots. All subsequent plan/current snapshots preserve the fence, including exact favorite/Normal restoration and a return to original retained bytes. Reject older-format plans in fenced state. Test the baseline reader's actual rejection boundary, not only a new-reader field assertion.
 - [ ] Implement lock/reopen/plan binding/current capture checks and a distinct pending journal for record-only acceptance. Preserve owned directories and checkpoint access. Accept/recovery invalidate current observations. Duplicate acceptance must verify the resulting current state; further changes/stale revision block it. Node-only recovery cancels only the known interrupted private state change and leaves managed files unchanged, including independent edits.
 - [ ] Add exact tests for old record immutability, repeated contexts, legacy data, derived favorite/checkpoint plans, frozen approved plan apply/offline recovery, non-config/selected edits, stale/conflicting/concurrent callers and interruption before/after state publication. Verify privacy projection and CLI dispatch.
 - [ ] Run relevant source/observation/CLI tests and `node --test`. Commit, self-review and report exact evidence. Do not edit UI/HTTP files.
