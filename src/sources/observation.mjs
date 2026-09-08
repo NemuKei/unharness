@@ -172,6 +172,10 @@ function projection(w, taskId, expected, records, observedAt, readIssue) {
   const status = boundary.issue ? 'unknown-record' : unqualified ? 'unqualified-record' : unknown ? 'unknown-record' : sources.some(s => s.status === 'not-matched') ? 'not-matched-record' : 'matched-record';
   return { role: 'task-observation', schemaVersion: 1, taskId, scopeId: w.scopeId, snapshotId: w.state.snapshotId, preparationId: boundary.preparation?.id ?? null, preparedMode: w.state.preparedMode, observedAt, status, reasons, sources, conditions, verification };
 }
+export async function projectRegisteredTaskObservation(w, taskId, records, observedAt, readIssue) {
+  const files = await loadSnapshot(w.workspace, w.reg, w.state.snapshotId);
+  return projection(w, taskId, await expectations(w, files), records, observedAt, readIssue);
+}
 export async function observe(args) {
   if (!object(args) || Object.keys(args).sort().join(',') !== 'taskId,workspace' || !validUuid(args.taskId)) fail('invalid-request');
   const { workspace } = args, taskId = args.taskId.toLowerCase();
@@ -181,13 +185,12 @@ export async function observe(args) {
     if (await pending(workspace)) fail('recovery-required');
     const files = await loadSnapshot(workspace, w.reg, w.state.snapshotId);
     await assertCurrent(w, files);
-    const expected = await expectations(w, files);
     let records = [], readIssue = null;
     try {
       const session = await findCurrentDesktopSession({ sessionId: taskId, codexHome: w.reg.context.codexHome });
       ({ records } = await readDesktopRecords(session));
     } catch (e) { readIssue = e.kind === 'current-session-unavailable' ? 'task-record-unavailable' : 'task-record-invalid'; }
-    const payload = projection(w, taskId, expected, records, new Date().toISOString(), readIssue);
+    const payload = await projectRegisteredTaskObservation(w, taskId, records, new Date().toISOString(), readIssue);
     const current = await openWorkspace(workspace);
     if (!isDeepStrictEqual(w.state, current.state) || !isDeepStrictEqual(w.reg, current.reg) || await pending(workspace)) fail('source-conflict');
     await assertCurrent(current, files);

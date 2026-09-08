@@ -348,8 +348,10 @@ export const listUserFavorites = wrap(async ({ workspace, after }) => {
       fail('record-invalid');
     await loadSnapshot(workspace, w.reg, p.snapshotId);
     await loadNormal(workspace, w.reg, p.normalId ?? w.reg.normalId);
+    if (p.comparisonRunId !== undefined && (typeof p.comparisonRunId !== 'string' || !/^[0-9a-f]{64}$/.test(p.comparisonRunId))) fail('record-invalid');
     favorites.push({
       favoriteId: id,
+      ...(p.comparisonRunId === undefined ? {} : { comparisonRunId: p.comparisonRunId }),
       normalId: p.normalId ?? w.reg.normalId,
       needsAdaptation: (p.normalId ?? w.reg.normalId) !== activeNormalId(w),
       name: p.name,
@@ -453,3 +455,11 @@ export const acceptUserRetainedSettings = wrap(async args => {
   const { acceptRetainedSettings } = await import('./retained-settings.mjs');
   return acceptRetainedSettings(args);
 });
+
+export const reviewUserRun = wrap(async args => (await import('../comparisons/service.mjs')).reviewUserRun(args));
+export const saveUserRun = wrap(async args => (await import('../comparisons/service.mjs')).saveUserRun(args));
+export const readUserRun = wrap(async args => (await import('../comparisons/service.mjs')).readUserRun(args));
+export const readUserRunOutput = wrap(async args => (await import('../comparisons/service.mjs')).readUserRunOutput(args));
+export const listUserRuns = wrap(async args => (await import('../comparisons/service.mjs')).listUserRuns(args));
+export const compareUserRuns = wrap(async args => (await import('../comparisons/service.mjs')).compareUserRuns(args));
+export const saveUserRunFavorite = wrap(async args => (await import('../comparisons/service.mjs')).saveUserRunFavorite(args));
