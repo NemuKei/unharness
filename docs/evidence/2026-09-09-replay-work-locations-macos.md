@@ -15,6 +15,8 @@ macOS 26.6.2 arm64, Node.js 24.20.0, Apple Git 2.50.1 and the installed Codex 0.
 
 The preceding relocation probe found the same project layer active in the original and its worktree, while plain and independently initialized copies had that layer disabled for lack of trust. The implementation therefore uses a worktree for Git inputs. This observation covers that owned profile/version; native preflight and actual task-loaded evidence remain required for each supported handoff.
 
+A subsequent owned-profile selector probe confirmed a necessary follow-up: disabling the synthetic repo Skill by its original absolute path left its worktree copy enabled. The temporary owned configuration bytes were restored. This is why Task 2 must explicitly map and validate registered optional repo Skill controls; location creation alone does not preserve a released mode.
+
 ## Validation
 
 The materialization/location tests passed 21 cases. The full suite, including the optional built-browser regressions, passed 507 tests with one existing platform skip (508 total). Type and Pixi CSP checks and `git diff --check` passed. The browser tests exercise existing behavior; this step adds no replay UI.
