@@ -14,13 +14,16 @@
     "gui": "node bin/unharness.mjs gui --demo"
   },
   "dependencies": {
+    "@modelcontextprotocol/server": "2.0.0",
     "node-diff3": "3.1.2",
     "pixi.js": "8.20.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "yaml": "2.9.0"
+    "yaml": "2.9.0",
+    "zod": "4.3.6"
   },
   "devDependencies": {
+    "@modelcontextprotocol/client": "2.0.0",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",
     "@vitejs/plugin-react": "6.1.1",

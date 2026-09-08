@@ -165,6 +165,12 @@ export async function defaultMetadata(parent) {
   try {
     const path = join(dir, 'sample');
     await writeFile(path, '', { mode: 0o600 });
+    // macOS inherits the containing directory's group. Without TMPDIR, a
+    // local MCP host uses /tmp (wheel), which the user need not belong to.
+    // Normalize only this freshly owned sample to the effective identity;
+    // selected source metadata and publication admission remain unchanged.
+    if (process.platform === 'darwin' && typeof process.geteuid === 'function' && typeof process.getegid === 'function')
+      await chown(path, process.geteuid(), process.getegid());
     return (await captureFile(path)).meta;
   } finally {
     await rm(dir, { recursive: true, force: true });

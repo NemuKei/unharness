@@ -4,7 +4,7 @@
 
 | OS | Application | Delivery phase | Current evidence |
 | --- | --- | --- | --- |
-| macOS | Codex desktop | 1 | Registered-source preparation/recovery, task associations and sequential replay through CLI/GUI have scoped native evidence; AI/MCP, full runtime coverage and product finish remain open |
+| macOS | Codex desktop | 1 | Registered-source preparation/recovery, task associations and sequential replay through CLI/GUI have scoped native evidence; MCP transport is checked; desktop AI use, full runtime coverage and product finish remain open |
 | macOS | Claude Code desktop, Code tab | 2 | Documentation reviewed; integration not implemented or tested |
 | Windows | Codex desktop | 4, deferred | Native inventory, six-case source controls, current-task projection, fixture/loadout recovery, GUI smoke, and one qualified fresh task completed; baseline recording did not match, so successful saved-version association remains pending |
 | Windows | Claude Code desktop, Code tab | 5, deferred | Test environment available per maintainer; no test result yet |
@@ -28,6 +28,8 @@ The [ordinary-comparison pass](evidence/2026-09-08-comparison-records-macos.md) 
 The [pre-use capture check](evidence/2026-09-08-starting-conditions-macos.md) uses native Codex 0.153.4 on macOS 26.6.2 and a separate owned profile. It verifies immutable working-file bytes, uncommitted/untracked/missing/binary inputs, explicit ignored-file inclusion, unchanged selected configuration, browser saves, delayed-response handling and new launch/project boundaries. No model task is started; it adds no task-loading, replay, performance-verdict, Claude Code or Windows qualification.
 
 The [sequential replay workbench check](evidence/2026-09-09-replay-gui-macos.md) adds shared CLI/HTTP/GUI preparation, native opening, collection, history, comparison and historical favorites. Four new agent-created Mac desktop tasks in separate owned worktrees matched one frozen request and the registered source/runtime conditions for Normal, UNSEAL, TRUEFORM and restored Normal. The profile's managed files returned to the saved Normal bytes/metadata. Browser tests and a same-port real-profile restart covered loss/staleness/context boundaries, effects off, desktop and narrow views; the full suite passed 573 of 574 tests with one existing platform skip. This qualifies the stated registered-source replay workflow on the recorded Mac/app version. It does not prove identical live memory/tool inputs, atomic submission, complete runtime/usage coverage, performance improvement, AI/MCP integration, Claude Code or Windows support.
+
+The [AI transport check](evidence/2026-09-09-ai-transport-macos.md) adds 35 strict registered tools, persisted duplicate/uncertainty receipts, current/legacy MCP protocol tests and native app-server tool calls with exact owned-source restoration. No model task or personal configuration change was made. Actual desktop AI use and automatic open-screen updates remain unqualified.
 
 ## What to record for a real test
 

@@ -23,10 +23,12 @@
 
 **Files:** `src/ai/server.mjs`, `src/ai/tools.mjs`, `src/ai/cli.mjs`, `bin/unharness.mjs`, locked dependencies, `test/ai-*.test.mjs`.
 
-- [ ] Add failing official-client tests for initialize/list/call, truthful status and strict schemas; reject arbitrary paths, unknown keys/tools, duplicate JSON keys and oversized frames before mutation.
-- [ ] Install exact official SDK/runtime dependencies and wire only the MCP CLI route through lazy imports. Expose the agreed registered operations with accurate annotations, safe errors and matching structured/text results.
-- [ ] Test save/modes/favorites/recovery, ordinary comparison and saved-start/replay calls against owned synthetic profiles through stdio. Verify duplicate requests and reconnect-result lookup.
-- [ ] Check bounded streams, EOF/process lifecycle, diagnostic/offline-recovery isolation and protocol compatibility with the installed native runtime.
+- [x] Add failing official-client tests for initialize/list/call, truthful status and strict schemas; reject arbitrary paths, unknown keys/tools, duplicate JSON keys and oversized frames before mutation.
+- [x] Install exact official SDK/runtime dependencies and wire only the MCP CLI route through lazy imports. Expose the agreed registered operations with accurate annotations, safe errors and matching structured/text results.
+- [x] Test save/modes/favorites/recovery, ordinary comparison and saved-start/replay calls against owned synthetic profiles through stdio. Verify duplicate requests and reconnect-result lookup.
+- [x] Check bounded streams, EOF/process lifecycle, diagnostic/offline-recovery isolation and protocol compatibility with the installed native runtime.
+
+The official clients and native Codex app-server passed the scoped transport checks; see [Mac evidence](../evidence/2026-09-09-ai-transport-macos.md). The complete suite passed 582 of 595 with 13 explicit skips; type/CSP checks passed. Actual desktop requests and the built GUI remain Tasks 3–4.
 
 ## Task 3: open GUI updates and native connection setup
 

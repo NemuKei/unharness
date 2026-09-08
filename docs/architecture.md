@@ -1,6 +1,6 @@
 # Architecture boundaries
 
-This page separates the code present on 2026-09-09 from the intended product architecture. The Node.js 24+ runtime includes inventory, source-control fixtures, desktop-record observations, local versioned records, registered optional-source preparation/recovery, private ordinary-run comparison records, frozen pre-use inputs and sequential replay. The loopback GUI connects the fixture and registered-source services to React/TypeScript and PixiJS; diagnostic/core modules do not import browser dependencies. Replay preparation, native preflight, task/result association and historical favorites share CLI/GUI operations with [scoped Mac desktop evidence](evidence/2026-09-09-replay-gui-macos.md). MCP endpoints and cross-application migration remain subsequent work.
+This page separates the code present on 2026-09-09 from the intended product architecture. The Node.js 24+ runtime includes inventory, source-control fixtures, desktop-record observations, local versioned records, registered optional-source preparation/recovery, private ordinary-run comparison records, frozen pre-use inputs and sequential replay. The loopback GUI connects the fixture and registered-source services to React/TypeScript and PixiJS; diagnostic/core modules do not import browser dependencies. Replay preparation, native preflight, task/result association and historical favorites share CLI/GUI operations with [scoped Mac desktop evidence](evidence/2026-09-09-replay-gui-macos.md). A registered-only [local MCP transport](spec-ai-entrypoint.md) now shares these operations; desktop AI qualification and cross-application migration remain subsequent work.
 
 ## Current runnable architecture
 
@@ -57,7 +57,7 @@ The fixture-only `refresh` operation journals a same-case notification before to
 
 [service.mjs](../src/loadouts/service.mjs) registers scope, saves/lists versions, plans/restores configurations, publishes pre-change checkpoints/application receipts and associates a sanitized recording with an explicit version. An application receipt records a new task-time boundary even when restoring the current case without a source rewrite. The observer checks that boundary as well as fixture preparation and rejects stale application state. Matching fixture markers never promote full runtime/mode verification.
 
-[The CLI](../src/loadouts/cli.mjs) and the local GUI call that service directly. The AI/MCP endpoint remains future work. The [contract](spec-loadout-store.md) and [runbook](loadouts.md) define the current scope, raw-data boundary, explicit versions and recovery sequence. The store does not implement cross-machine migration, an exactly-once protocol or general personal-configuration recovery.
+[The CLI](../src/loadouts/cli.mjs) and the local GUI call that service directly. The fixture-only service remains separate from the registered-source MCP endpoint. The [contract](spec-loadout-store.md) and [runbook](loadouts.md) define the current scope, raw-data boundary, explicit versions and recovery sequence. The store does not implement cross-machine migration, an exactly-once protocol or general personal-configuration recovery.
 
 ## Local fixture GUI
 
@@ -84,6 +84,14 @@ The [registered-source observer](spec-user-source-observations.md) binds one sel
 The [retained-settings extension](spec-retained-settings.md) versions the saved Normal when an independent configuration edit can be proven to affect retained settings only. Planning uses a private native read plus bounded three-way composition; the browser receives fixed categories, identities and false verification flags rather than configuration keys or values. Acceptance publishes only private state and immutable snapshots, uses a distinct recovery journal and leaves every managed source untouched. The active Normal identity is separate from the immutable registration baseline.
 
 Old favorite and checkpoint records remain immutable. A restore from an older Normal composes its frozen selected-source state with the active Normal's retained settings and returns an explicit adaptation summary. The resulting plan has a new snapshot identity; application does not create or replace a favorite. The HTTP workbench routes these operations through the same accepted launch/context, duplicate-request and uncertain-outcome boundary as existing source actions.
+
+## Local AI transport
+
+[The registered session](../src/sources/session.mjs) now owns the shared GUI/AI operation dispatcher and context checks. The GUI reexports its original boundary; MCP additionally pins one existing workspace and its root/scope identity. [Typed tools](../src/ai/tools.mjs) expose only registered source, comparison and replay operations. They do not expose registration, arbitrary paths or raw source/recording bodies.
+
+[Request receipts](../src/ai/requests.mjs) publish an exclusive private claim before invoking the service and a hashed result afterward. One process shares simultaneous duplicates; reconnects can retrieve completed results. An unfinished or corrupt claim is unconfirmed and never automatically resumed. Connection identities prevent a missing old receipt from becoming a new write. The existing source lock/journal remains authoritative for actual file changes and offline recovery.
+
+[The stdio server](../src/ai/server.mjs) uses the official SDK factory for current and legacy protocol negotiation, strict bounded input and safe fixed error kinds. The CLI loads the SDK only for this route. [Mac evidence](evidence/2026-09-09-ai-transport-macos.md) covers the official client and a separate native app-server without model turns; natural-language desktop qualification and open-GUI updates remain subsequent work.
 
 ## Ordinary-run comparison records
 
