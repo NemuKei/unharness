@@ -37,6 +37,8 @@ export const USER_SOURCE_ERROR_KINDS = Object.freeze([
   'replay-task-record-invalid',
   'replay-task-record-changed',
   'replay-outcome-files-unavailable',
+  'replay-desktop-open-unavailable',
+  'replay-desktop-open-uncertain',
   'comparison-record-invalid',
   'comparison-assessment-invalid',
   'comparison-source-unavailable',

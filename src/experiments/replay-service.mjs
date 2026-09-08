@@ -71,6 +71,7 @@ async function attemptSummary(w, attempt) {
     createdAt: attempt.createdAt, preparedAt: attempt.preparedAt, readyAt: attempt.readyAt, cancelledAt: attempt.cancelledAt,
     failure: attempt.failure, conditionIssue, locationIssue, project,
     resultId: attempt.resultId ?? null,
+    budget: { ...attempt.review.saved.review.declaration.budget },
     handoffAvailable: ['prepared', 'ready'].includes(attempt.phase) && !conditionIssue && !locationIssue,
     conditions: { ...START_CONDITIONS, gitObjectsAndRefs: attempt.review.series.repository.kind === 'git' ? 'shared' : 'not-applicable' },
     desktopRuntimeVerified: false, desktopTaskStopped: false };
@@ -155,12 +156,15 @@ export async function prepareUserReplay(args) {
 }
 export async function handoffUserReplay(args) {
   request(args, ['attemptId']);
-  return locked(args.workspace, async w => {
+  return locked(args.workspace, w => checkedHandoff(w, args.attemptId));
+}
+async function checkedHandoff(w, attemptId) {
     let index = await loadReplayIndex(w), attempts = await loadReplayAttempts(w, index);
-    let attempt = selected(attempts, args.attemptId);
+    let attempt = selected(attempts, attemptId);
     if (!['prepared', 'ready'].includes(attempt.phase) || index.data.activeAttemptId !== attempt.attemptId) fail('replay-attempt-unavailable');
     const review = attempt.review;
-    const used = attempts.filter(a => a.review.startId === review.startId && a.readyAt !== null).length;
+    const used = attempts.filter(a => a.review.startId === review.startId
+      && a.review.sourceBinding.preparedMode === review.sourceBinding.preparedMode && a.readyAt !== null).length;
     if (attempt.readyAt === null && used >= review.saved.review.declaration.budget.maxAttempts) fail('replay-attempt-budget-exhausted');
     const original = await assertReviewCurrent(w, review);
     const location = await readReplayWorkLocation({ store: w.workspace, locationId: review.locationId });
@@ -178,7 +182,7 @@ export async function handoffUserReplay(args) {
     if (attempt.readyAt === null) {
       const readyAt = now();
       index = await transition(w, index, { ...stripLoaded(attempt), previousStateId: attempt.stateId, phase: 'ready', updatedAt: readyAt, readyAt }, true);
-      attempt = selected(await loadReplayAttempts(w, index), args.attemptId);
+      attempt = selected(await loadReplayAttempts(w, index), attemptId);
     }
     // Publication is another interruption boundary. Do not return a usable
     // request after a source/file edit while its readiness receipt was written.
@@ -188,6 +192,13 @@ export async function handoffUserReplay(args) {
     await assertReplayGitGuard(location, attempt.gitGuard);
     return { ...await attemptSummary(w, attempt), request: review.saved.review.declaration.request,
       project: location.project, submission: 'user-starts-fresh-desktop-task' };
+}
+export async function openUserReplay(args) {
+  request(args, ['attemptId']);
+  return locked(args.workspace, async w => {
+    const handoff = await checkedHandoff(w, args.attemptId);
+    const { openReplayDesktop } = await import('../codex/replay-desktop.mjs');
+    return { ...handoff, ...await openReplayDesktop(w.reg.context, handoff.project) };
   });
 }
 export async function readUserReplay(args) {
@@ -203,7 +214,8 @@ export async function listUserReplays(args) {
   if (args.after !== undefined && offset === 0) fail('invalid-request');
   const page = attempts.slice(offset, offset + 20), summaries = [];
   for (const a of page) summaries.push(await attemptSummary(w, a));
-  return { activeAttemptId: index.data.activeAttemptId, attempts: summaries,
+  const active = attempts.find(a => a.attemptId === index.data.activeAttemptId);
+  return { scopeId: w.scopeId, activeAttemptId: index.data.activeAttemptId, activeAttempt: active ? await attemptSummary(w, active) : null, attempts: summaries,
     nextCursor: offset + page.length < attempts.length ? page.at(-1).attemptId : null };
 }
 export async function cancelUserReplay(args) {

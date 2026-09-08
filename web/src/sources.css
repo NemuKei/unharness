@@ -569,3 +569,29 @@
     margin-left: 0;
   }
 }
+:root { --replay-border: rgba(255, 255, 255, 0.12); }
+.replay-workbench { scroll-margin-top: 24px; min-width: 0; }
+.replay-workbench > article, .replay-result, .replay-assessment, .replay-history, .replay-comparison { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--replay-border); min-width: 0; }
+.replay-workbench h3, .replay-workbench h4 { margin: 0 0 12px; }
+.replay-workbench pre { max-height: 260px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.7; background: #101519; padding: 14px; border-radius: 6px; }
+.replay-actions, .replay-fields { display: flex; flex-wrap: wrap; gap: 12px; margin: 16px 0; }
+.replay-fields > label { flex: 1 1 200px; }
+.replay-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 24px; margin: 18px 0; }
+.replay-summary dt { font-size: 12px; color: #9da9af; }
+.replay-summary dd { margin: 6px 0 0; overflow-wrap: anywhere; }
+.replay-assessment { display: grid; gap: 14px; border-right: 0; border-left: 0; border-bottom: 0; padding-right: 0; padding-left: 0; }
+.replay-assessment legend { padding-top: 16px; font-weight: 600; }
+.replay-workbench label { display: grid; gap: 7px; }
+.replay-workbench label.inline-check { display: inline-flex; align-items: center; margin-right: 12px; }
+.replay-workbench input:not([type="checkbox"]), .replay-workbench textarea, .replay-workbench select { min-width: 0; width: 100%; }
+.replay-rating { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--replay-border); border-radius: 6px; }
+.replay-task { display: grid; gap: 12px; margin-top: 20px; }
+.replay-history ul { list-style: none; padding: 0; }
+.replay-history li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--replay-border); }
+.replay-history small { display: block; color: #9da9af; margin-top: 5px; }
+.replay-table { max-width: 100%; overflow: auto; margin-top: 16px; }
+.replay-table-hint { display: none; }
+@media (max-width: 600px) { .replay-table-hint { display: block; font-size: 12px; } }
+.replay-table table { width: 100%; min-width: 460px; border-collapse: collapse; font-size: 13px; }
+.replay-table th, .replay-table td { padding: 12px; border-bottom: 1px solid var(--replay-border); text-align: left; vertical-align: top; }
+@media (max-width: 620px) { .replay-summary { grid-template-columns: 1fr; } .replay-actions > button { width: 100%; } .replay-history li { align-items: flex-start; flex-direction: column; } }

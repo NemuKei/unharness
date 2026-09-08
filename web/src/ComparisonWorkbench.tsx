@@ -25,6 +25,8 @@ import type { SourceMode } from "./sources";
 import { useComparisonController } from "./useComparisonController";
 import type { useSourceController } from "./useSourceController";
 import { StartingConditions } from "./StartingConditions";
+import { ReplayWorkbench } from "./ReplayWorkbench";
+import { useReplayController } from "./useReplayController";
 
 type SourceController = ReturnType<typeof useSourceController>;
 
@@ -258,6 +260,7 @@ export function ComparisonWorkbench({
   taskHandoff?: Readonly<{ taskId: string }>;
 }) {
   const comparison = useComparisonController(sourceController);
+  const replay = useReplayController(sourceController);
   const { state } = comparison;
   const [taskId, setTaskId] = useState(taskHandoff?.taskId ?? "");
   const [throughTurnId, setThroughTurnId] = useState("");
@@ -285,12 +288,13 @@ export function ComparisonWorkbench({
     <div className="comparison-workbench">
       <section className="comparison-hero">
         <p className="eyebrow">SAME HANGAR ／ 比較</p>
-        <h1>通常利用の記録を、同じ格納庫で見る。</h1>
-        <p>1〜3件の保存記録を並べます。異なる普段のタスクは条件を揃えた試験ではないため、優劣や作成資格を判定しません。</p>
+        <h1>普段の記録と、保存した条件の再実行を見る。</h1>
+        <p>1〜3件の記録を並べます。保存した条件から順番に試すこともできます。性能の優劣と作成資格は自動判定しません。</p>
       </section>
       {!sourceReady && <section className="comparison-panel"><h2>通常装備の登録が必要です</h2><p className="muted">「装備」タブで対象を登録すると、このローカル履歴を利用できます。</p></section>}
       {sourceReady && <>
-        <StartingConditions sourceController={sourceController} />
+        <StartingConditions sourceController={sourceController} onReplay={startId => { void replay.review(startId); document.getElementById("replay-workbench")?.scrollIntoView({ block: "start" }); }} />
+        <ReplayWorkbench controller={replay} shared={sourceController} />
         <section className="comparison-panel" aria-labelledby="run-review-heading">
           <div className="comparison-heading"><div><p className="eyebrow">記録を読む</p><h2 id="run-review-heading">Codexタスクを確認</h2></div><span>タスクを開始・再開しません</span></div>
           <div className="review-form">

@@ -156,6 +156,7 @@ export function replayReviewSummary(review) {
   return { reviewId: review.reviewId, startId: review.startId, scopeId: review.scopeId, phase: 'reviewed',
     preparedMode: review.sourceBinding.preparedMode, snapshotId: review.sourceBinding.snapshotId,
     revision: review.sourceBinding.revision, createdAt: review.createdAt,
+    budget: { ...review.saved.review.declaration.budget },
     repositoryKind: review.series.repository.kind, gitPinnedAt: review.series.pinnedAt,
     gitRevision: review.series.repository.head ?? null, fileCount: review.manifest.files.filter(f => f.present).length,
     totalBytes: review.manifest.totalBytes, sourceMappings: variant.sourceMappings.map(({ sourceId, expected, strategy }) => ({ sourceId, expected, strategy })),

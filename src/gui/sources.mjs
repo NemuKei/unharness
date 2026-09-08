@@ -44,6 +44,18 @@ const fields = {
   "save-start": [["reviewId"], []],
   start: [["startId"], []],
   starts: [[], ["after"]],
+  "review-replay": [["startId"], []],
+  "prepare-replay": [["reviewId"], []],
+  "handoff-replay": [["attemptId"], []],
+  replay: [["attemptId"], []],
+  replays: [[], ["after"]],
+  "cancel-replay": [["attemptId"], []],
+  "observe-replay": [["attemptId", "taskId"], []],
+  "save-replay-result": [["resultReviewId", "assessment"], ["previousResultId"]],
+  "replay-result": [["resultId"], []],
+  "open-replay": [["attemptId"], []],
+  "compare-replays": [["resultIds"], []],
+  "replay-favorite": [["resultId"], ["name"]],
 };
 export function sourceRequestShape(body, action) {
   const schema = Object.hasOwn(fields, action) ? fields[action] : null;
@@ -73,6 +85,10 @@ export function sourceRequestShape(body, action) {
     "previousRunId",
     "runId",
     "startId",
+    "attemptId",
+    "resultReviewId",
+    "resultId",
+    "previousResultId",
   ])
     if (Object.hasOwn(input, key) && !id(input[key]))
       fail("gui-invalid-request");
@@ -99,6 +115,8 @@ export function sourceRequestShape(body, action) {
       new Set(input.runIds).size !== input.runIds.length)
   )
     fail("gui-invalid-request");
+  if (Object.hasOwn(input, "resultIds") && (!Array.isArray(input.resultIds) || input.resultIds.length < 1 || input.resultIds.length > 3
+    || input.resultIds.some(value => !id(value)) || new Set(input.resultIds).size !== input.resultIds.length)) fail("gui-invalid-request");
   if (
     Object.hasOwn(input, "assessment") &&
     (!input.assessment ||
@@ -252,6 +270,18 @@ export async function createSourceController(context) {
       if (action === "save-start") return service.saveUserStart({ workspace, ...input });
       if (action === "start") return service.readUserStart({ workspace, ...input });
       if (action === "starts") return service.listUserStarts({ workspace, ...input });
+      if (action === "review-replay") return service.reviewUserReplay({ workspace, ...input });
+      if (action === "prepare-replay") return service.prepareUserReplay({ workspace, ...input });
+      if (action === "handoff-replay") return service.handoffUserReplay({ workspace, ...input });
+      if (action === "replay") return service.readUserReplay({ workspace, ...input });
+      if (action === "replays") return service.listUserReplays({ workspace, ...input });
+      if (action === "cancel-replay") return service.cancelUserReplay({ workspace, ...input });
+      if (action === "observe-replay") return service.observeUserReplay({ workspace, ...input });
+      if (action === "save-replay-result") return service.saveUserReplayResult({ workspace, ...input });
+      if (action === "replay-result") return service.readUserReplayResult({ workspace, ...input });
+      if (action === "open-replay") return service.openUserReplay({ workspace, ...input });
+      if (action === "compare-replays") return service.compareUserReplayResults({ workspace, ...input });
+      if (action === "replay-favorite") return service.saveUserReplayFavorite({ workspace, ...input });
       fail("gui-invalid-request");
     },
   };

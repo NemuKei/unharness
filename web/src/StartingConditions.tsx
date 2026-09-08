@@ -23,7 +23,7 @@ function FileReview({ files, selection }: { files: StartingFile[]; selection: St
     <div className="starting-file-list"><table><thead><tr><th>ファイル</th><th>状態</th><th>サイズ</th></tr></thead><tbody>{files.map(file => <tr key={file.path}><td>{file.path}</td><td>{file.present ? "保存対象" : "存在しない"}</td><td>{file.present ? size(file.size) : "—"}</td></tr>)}</tbody></table></div>
   </details>;
 }
-export function StartingConditions({ sourceController }: { sourceController: ReturnType<typeof useSourceController> }) {
+export function StartingConditions({ sourceController, onReplay }: { sourceController: ReturnType<typeof useSourceController>; onReplay?: (startId: string) => void }) {
   const [draft, setDraft] = useState(freshDraft);
   const starts = useStartingConditions(sourceController), { state } = starts;
   const declaration = declarationFor(draft);
@@ -81,6 +81,7 @@ export function StartingConditions({ sourceController }: { sourceController: Ret
         <ul>{state.detail.declaration.requirements.map(r => <li key={r.id}>{r.label}{r.critical ? "（必須）" : ""}</li>)}</ul>
         {state.detail.declaration.ratings.map(r => <p key={r.id}>{r.label}：{r.lowAnchor} 〜 {r.highAnchor}</p>)}
         <FileReview files={state.detail.files} selection={state.detail.selection} />
+        {onReplay && <button className="primary" disabled={disabled} onClick={() => onReplay(state.detail!.startId)}>この条件で再実行</button>}
         <button className="text-button" disabled={disabled} onClick={() => {
           const value = state.detail!.declaration;
           const { budget, ...input } = structuredClone(value);

@@ -478,3 +478,6 @@ export const cancelUserReplay = wrap(async args => (await import('../experiments
 export const observeUserReplay = wrap(async args => (await import('../experiments/replay-results.mjs')).observeUserReplay(args));
 export const saveUserReplayResult = wrap(async args => (await import('../experiments/replay-results.mjs')).saveUserReplayResult(args));
 export const readUserReplayResult = wrap(async args => (await import('../experiments/replay-results.mjs')).readUserReplayResult(args));
+export const openUserReplay = wrap(async args => (await import('../experiments/replay-service.mjs')).openUserReplay(args));
+export const compareUserReplayResults = wrap(async args => (await import('../experiments/replay-results.mjs')).compareUserReplayResults(args));
+export const saveUserReplayFavorite = wrap(async args => (await import('../experiments/replay-results.mjs')).saveUserReplayFavorite(args));

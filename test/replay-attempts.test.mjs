@@ -137,6 +137,18 @@ test('cancelled handoffs still consume the declared attempt budget; preparatory 
  const p = await prepare(f);
  await assert.rejects(replay.handoffUserReplay({ workspace: f.workspace, attemptId: p.attemptId }), { kind: 'replay-attempt-budget-exhausted' });
 });
+
+test('each mode has its own declared attempt budget, matching the pre-use form', mac, async t => {
+ const f = await fixture(t);
+ for (let i = 0; i < 2; i++) {
+  const p = await prepare(f); await replay.handoffUserReplay({ workspace: f.workspace, attemptId: p.attemptId });
+  await replay.cancelUserReplay({ workspace: f.workspace, attemptId: p.attemptId });
+ }
+ const mode = await sources.planUserMode({ workspace: f.workspace, mode: 'unseal' });
+ await sources.applyUserPlan({ workspace: f.workspace, planId: mode.planId });
+ const p = await prepare(f), h = await replay.handoffUserReplay({ workspace: f.workspace, attemptId: p.attemptId });
+ assert.equal(h.preparedMode, 'unseal'); assert.equal(h.phase, 'ready');
+});
 test('optional replay index corruption never blocks independent source status or deterministic configuration recovery', mac, async t => {
  const f = await fixture(t); await prepare(f);
  await writeFile(join(f.workspace, 'replay-index.json'), '{corrupt');

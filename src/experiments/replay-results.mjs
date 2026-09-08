@@ -1,9 +1,10 @@
 import { isDeepStrictEqual } from 'node:util';
 import { recordId } from '../core/local-store.mjs';
 import { openWorkspace, record } from '../sources/records.mjs';
-import { exactKeys } from '../comparisons/assessment.mjs';
+import { exactKeys, boundedText } from '../comparisons/assessment.mjs';
+import { sumCounters } from '../comparisons/measurement.mjs';
 import { validUuid } from '../sources/observation-record.mjs';
-import { fail, USER_SOURCE_ERROR_KINDS } from '../sources/errors.mjs';
+import { fail, verification, USER_SOURCE_ERROR_KINDS } from '../sources/errors.mjs';
 import { sourceTransactionHook } from '../sources/transaction.mjs';
 import { findCurrentDesktopSession, readDesktopRecords } from '../codex/desktop-record.mjs';
 import { projectReplayTask } from '../codex/replay-observation.mjs';
@@ -154,4 +155,58 @@ export async function readUserReplayResult(args) {
   request(args, ['resultId']);
   if (!hash(args.resultId)) fail('invalid-request');
   return (await loadReplayResult(await openWorkspace(args.workspace), args.resultId)).summary;
+}
+export async function compareUserReplayResults(args) {
+  request(args, ['resultIds']);
+  if (!Array.isArray(args.resultIds) || args.resultIds.length < 1 || args.resultIds.length > 3 || !args.resultIds.every(hash)
+    || new Set(args.resultIds).size !== args.resultIds.length) fail('invalid-request');
+  const w = await openWorkspace(args.workspace), loaded = [];
+  for (const id of args.resultIds) loaded.push(await loadReplayResult(w, id));
+  const results = loaded.map(({ summary }) => {
+    const { outputText, criteria: { request: text, ...criteria }, ...rest } = summary;
+    return { ...rest, criteria };
+  });
+  const reasons = [], add = r => { if (!reasons.includes(r)) reasons.push(r); };
+  if (new Set(results.map(r => r.attemptId)).size !== results.length) add('overlapping-attempts');
+  if (new Set(results.map(r => r.taskId)).size !== results.length) add('overlapping-task-records');
+  const intervals = results.map(r => {
+    const turns = r.measurement?.availableTurns ?? [];
+    const from = Date.parse(r.measurement?.createdAt), to = Math.max(...turns.map(t => Date.parse(t.completedAt)));
+    return Number.isFinite(from) && Number.isFinite(to) && to >= from ? { from, to } : null;
+  });
+  if (intervals.some(i => i === null)) add('task-timeline-unavailable');
+  for (let i = 0; i < intervals.length; i++) for (let j = i + 1; j < intervals.length; j++) {
+    const a = intervals[i], b = intervals[j];
+    if (a && b && a.from < b.to && b.from < a.to) add('overlapping-task-timelines');
+  }
+  if (new Set(results.map(r => r.startId)).size !== 1) add('different-starts');
+  if (new Set(loaded.map(r => r.review.attempt.review.sourceBinding.normalId)).size !== 1) add('different-normal-versions');
+  for (const field of ['model', 'reasoningEffort', 'executionPolicyDigest']) {
+    const values = results.map(r => r.measurement?.conditions[field] ?? null);
+    if (values.includes(null) || new Set(values).size !== 1) add('recorded-runtime-conditions-differ-or-unknown');
+  }
+  if (results.some(r => r.qualification.status !== 'matched-record' || r.readIssue || r.sourceIssue)) add('unqualified-or-unavailable-records');
+  if (results.some(r => r.budget.status !== 'within-recorded-budget')) add('recorded-budget-not-met');
+  if (results.some(r => r.measurement?.usage.availability !== 'available')) add('usage-unavailable-or-partial');
+  const totalTokens = reasons.length ? null : sumCounters(results.map(r => r.measurement.usage.totals.totalTokens));
+  if (!reasons.length && totalTokens === null) add('usage-total-overflow');
+  const acceptedCount = results.filter(r => r.acceptance.accepted).length;
+  return { scopeId: w.scopeId, results, measurementKind: 'sequential-replay', assessment: 'neutral', creationEligible: false,
+    aggregate: { recordCount: results.length, distinctAttemptCount: new Set(results.map(r => r.attemptId)).size, acceptedCount, totalTokens,
+      tokensPerAcceptedRun: totalTokens !== null && acceptedCount > 0 ? totalTokens / acceptedCount : null, reasons },
+    reasons: ['predeclared-comparison-rule-required'], completeIsolationVerified: false };
+}
+export async function saveUserReplayFavorite(args) {
+  request(args, ['resultId'], ['name']);
+  if (!hash(args.resultId)) fail('invalid-request');
+  const name = args.name === undefined ? `Replay ${args.resultId.slice(0, 12)}` : boundedText(args.name, 120);
+  return withReplayLock(args.workspace, async w => {
+    const { review } = await loadReplayResult(w, args.resultId);
+    if (review.qualification.status !== 'matched-record' || review.readIssue || review.sourceIssue) fail('replay-result-unavailable');
+    const binding = review.attempt.review.sourceBinding;
+    const favoriteId = await record(w.workspace, 'favorite', { role: 'favorite', scopeId: w.scopeId, name,
+      snapshotId: binding.snapshotId, normalId: binding.normalId, preparedMode: binding.preparedMode,
+      revision: binding.revision, replayResultId: args.resultId });
+    return { scopeId: w.scopeId, favoriteId, name, preparedMode: binding.preparedMode, replayResultId: args.resultId, verification: { ...verification } };
+  });
 }

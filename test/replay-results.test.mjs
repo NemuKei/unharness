@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { mkdtemp, realpath, rm, writeFile, readFile, mkdir, appendFile, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -30,12 +31,12 @@ async function fixture(t, budget = declaration.budget) {
   const h = await attempts.handoffUserReplay({ workspace: reg.workspace, attemptId: p.attemptId });
   return { ...f, ...reg, ...h, startId: start.startId };
 }
-async function recording(f, mutate = () => {}) {
-  const r = replayRecording({ project: f.project, request: declaration.request,
+async function recording(f, mutate = () => {}, taskId = replayTaskId) {
+  const r = replayRecording({ taskId, project: f.project, request: declaration.request,
     createdAt: new Date(Date.parse(f.readyAt) + 1).toISOString(),
     instructions: '# PRIVATE_TEST optional user guide\n\n--- project-doc ---\n\n# Required project instructions' });
   mutate(r); await mkdir(join(f.context.codexHome, 'sessions'), { recursive: true });
-  await writeFile(join(f.context.codexHome, 'sessions', `rollout-${replayTaskId}.jsonl`), r.map(x => JSON.stringify(x)).join('\n') + '\n');
+  await writeFile(join(f.context.codexHome, 'sessions', `rollout-${taskId}.jsonl`), r.map(x => JSON.stringify(x)).join('\n') + '\n');
   await new Promise(resolve => setTimeout(resolve, 25));
 }
 async function observe(f, extras = {}) {
@@ -144,4 +145,76 @@ test('corrupt frozen outcome bytes make the result unavailable while configurati
   await assert.rejects(replay.readUserReplayResult({ workspace: f.workspace, resultId: saved.resultId }), { kind: 'replay-record-invalid' });
   assert.equal((await sources.userSourceState({ workspace: f.workspace })).preparedMode, 'normal');
   assert.equal((await sources.recoverUserSources({ workspace: f.workspace })).status, 'nothing-pending');
+});
+
+test('replay comparison omits request/answer bodies and favorites retain the historical configuration after a mode change', mac, async t => {
+  const f = await fixture(t); await recording(f); const r = await observe(f), saved = await save(f, r);
+  assert.equal(typeof replay.compareUserReplayResults, 'function');
+  const comparison = await replay.compareUserReplayResults({ workspace: f.workspace, resultIds: [saved.resultId] });
+  assert.equal(comparison.aggregate.totalTokens, 100); assert.equal(comparison.aggregate.acceptedCount, 1);
+  assert.equal(comparison.creationEligible, false); assert.equal(comparison.assessment, 'neutral');
+  assert.equal(Object.hasOwn(comparison.results[0], 'outputText'), false);
+  assert.equal(Object.hasOwn(comparison.results[0].criteria, 'request'), false);
+  await assert.rejects(replay.compareUserReplayResults({ workspace: f.workspace, resultIds: [saved.resultId, saved.resultId] }), { kind: 'invalid-request' });
+  const mode = await sources.planUserMode({ workspace: f.workspace, mode: 'unseal' }); await sources.applyUserPlan({ workspace: f.workspace, planId: mode.planId });
+  assert.equal(typeof replay.saveUserReplayFavorite, 'function');
+  const favorite = await replay.saveUserReplayFavorite({ workspace: f.workspace, resultId: saved.resultId, name: 'Historical replay' });
+  assert.equal(favorite.preparedMode, 'normal');
+  assert.equal((await sources.userSourceState({ workspace: f.workspace })).preparedMode, 'unseal');
+  const plan = await sources.planUserFavorite({ workspace: f.workspace, favoriteId: favorite.favoriteId });
+  assert.equal(plan.preparedMode, 'normal');
+});
+
+test('replay comparison counts distinct recorded attempts including rejected outcomes but suppresses overlapping or changed conditions', mac, async t => {
+  const f = await fixture(t); await recording(f); const firstReview = await observe(f), first = await save(f, firstReview);
+  const amended = await save(f, firstReview, { ...assessment, provenance: 'agent' }, { previousResultId: first.resultId });
+  const overlap = await replay.compareUserReplayResults({ workspace: f.workspace, resultIds: [first.resultId, amended.resultId] });
+  assert.ok(overlap.aggregate.reasons.includes('overlapping-attempts')); assert.ok(overlap.aggregate.reasons.includes('overlapping-task-records'));
+  assert.equal(overlap.aggregate.totalTokens, null);
+  const r = await attempts.reviewUserReplay({ workspace: f.workspace, startId: f.startId });
+  const p = await attempts.prepareUserReplay({ workspace: f.workspace, reviewId: r.reviewId });
+  const h = await attempts.handoffUserReplay({ workspace: f.workspace, attemptId: p.attemptId });
+  const secondFixture = { ...f, ...h }, taskId = randomUUID();
+  await recording(secondFixture, () => {}, taskId);
+  const secondReview = await observe(secondFixture, { taskId });
+  const second = await save(secondFixture, secondReview, { ...assessment, outcome: 'failed', requirements: [{ id: 'complete', result: 'fail' }] });
+  const comparison = await replay.compareUserReplayResults({ workspace: f.workspace, resultIds: [amended.resultId, second.resultId] });
+  assert.deepEqual(comparison.aggregate.reasons, []); assert.equal(comparison.aggregate.totalTokens, 200);
+  assert.equal(comparison.aggregate.acceptedCount, 1); assert.equal(comparison.aggregate.tokensPerAcceptedRun, 200);
+  assert.equal(comparison.creationEligible, false);
+  // A separately frozen declaration is a different comparison even with the same request.
+  const startReview = await sources.reviewUserStart({ workspace: f.workspace, declaration: { ...declaration, title: 'Different declaration' } });
+  const start = await sources.saveUserStart({ workspace: f.workspace, reviewId: startReview.reviewId });
+  const nextReview = await attempts.reviewUserReplay({ workspace: f.workspace, startId: start.startId });
+  const nextPrepared = await attempts.prepareUserReplay({ workspace: f.workspace, reviewId: nextReview.reviewId });
+  const next = { ...f, ...await attempts.handoffUserReplay({ workspace: f.workspace, attemptId: nextPrepared.attemptId }) };
+  const nextTaskId = randomUUID(); await recording(next, rows => { rows.find(row => row.type === 'turn_context').payload.model = 'different-model'; }, nextTaskId);
+  const nextResult = await save(next, await observe(next, { taskId: nextTaskId }));
+  const different = await replay.compareUserReplayResults({ workspace: f.workspace, resultIds: [amended.resultId, nextResult.resultId] });
+  assert.ok(different.aggregate.reasons.includes('different-starts'));
+  assert.ok(different.aggregate.reasons.includes('recorded-runtime-conditions-differ-or-unknown'));
+  assert.ok(different.aggregate.reasons.includes('unqualified-or-unavailable-records'));
+  assert.equal(different.aggregate.totalTokens, null); assert.equal(different.aggregate.tokensPerAcceptedRun, null);
+});
+
+test('cancelled tasks that continue running cannot be aggregated as sequential when their recorded timelines overlap', mac, async t => {
+  const f = await fixture(t);
+  await attempts.cancelUserReplay({ workspace: f.workspace, attemptId: f.attemptId });
+  const r = await attempts.reviewUserReplay({ workspace: f.workspace, startId: f.startId });
+  const p = await attempts.prepareUserReplay({ workspace: f.workspace, reviewId: r.reviewId });
+  const h = await attempts.handoffUserReplay({ workspace: f.workspace, attemptId: p.attemptId });
+  await recording(f, rows => {
+    const completion = rows.find(row => row.payload?.type === 'task_complete');
+    completion.timestamp = new Date(Date.parse(h.readyAt) + 25).toISOString();
+    completion.payload.duration_ms = Date.parse(completion.timestamp) - Date.parse(f.readyAt) - 1;
+  });
+  const secondFixture = { ...f, ...h }, secondTaskId = randomUUID();
+  await recording(secondFixture, () => {}, secondTaskId);
+  const first = await save(f, await observe(f));
+  assert.equal((await attempts.listUserReplays({ workspace: f.workspace })).activeAttemptId, h.attemptId);
+  const second = await save(secondFixture, await observe(secondFixture, { taskId: secondTaskId }));
+  assert.equal(first.acceptance.accepted, true); assert.equal(second.acceptance.accepted, true);
+  const comparison = await replay.compareUserReplayResults({ workspace: f.workspace, resultIds: [first.resultId, second.resultId] });
+  assert.ok(comparison.aggregate.reasons.includes('overlapping-task-timelines'));
+  assert.equal(comparison.aggregate.totalTokens, null); assert.equal(comparison.aggregate.tokensPerAcceptedRun, null);
 });

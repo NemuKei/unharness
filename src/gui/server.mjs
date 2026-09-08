@@ -18,6 +18,8 @@ const COMPARISON_ACTIONS = new Set([
   'run-favorite',
 ]);
 const STARTING_ACTIONS = new Set(['review-start', 'save-start', 'start', 'starts']);
+const REPLAY_ACTIONS = new Set(['review-replay', 'prepare-replay', 'handoff-replay', 'replay', 'replays', 'cancel-replay',
+  'observe-replay', 'save-replay-result', 'replay-result', 'open-replay', 'compare-replays', 'replay-favorite']);
 const CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'";
 const SAFE_ERRORS = new Set([
   ...LOCAL_STORE_ERROR_KINDS, ...USER_SOURCE_ERROR_KINDS, 'gui-source-context-changed',
@@ -52,7 +54,7 @@ function safeError(error) {
 }
 
 function statusFor(kind) {
-  if (kind === 'starting-publication-uncertain') return 500;
+  if (kind === 'starting-publication-uncertain' || kind === 'replay-publication-uncertain' || kind === 'replay-desktop-open-uncertain') return 500;
   if (kind === 'starting-files-changed') return 409;
   if (kind === 'gui-request-forbidden') return 403;
   if (kind === 'gui-request-too-large') return 413;
@@ -227,8 +229,9 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
       }
       const action = parsed.pathname.slice(sourceRoute ? '/api/sources/'.length : '/api/'.length);
       const starting = sourceRoute && STARTING_ACTIONS.has(action);
+      const replay = sourceRoute && REPLAY_ACTIONS.has(action);
       const parsedBody = (sourceRoute ? sourceRequestShape : requestShape)(
-        await readJson(request, sourceRoute && (COMPARISON_ACTIONS.has(action) || starting), starting ? 128 * 1024 : undefined),
+        await readJson(request, sourceRoute && (COMPARISON_ACTIONS.has(action) || starting || replay), starting ? 128 * 1024 : replay ? 65536 : undefined),
         action,
       );
       const fingerprint = canonical({ action, input: parsedBody.input });
