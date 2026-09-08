@@ -1,6 +1,6 @@
 # Architecture boundaries
 
-This page separates the code present on 2026-09-07 from the intended product architecture. The working runtime contains Node.js 24+ inventory, source-control fixtures, desktop-record observation and a local record store/service. A loopback GUI connects that fixture service to React/TypeScript and PixiJS; diagnostic/core modules do not import browser dependencies. MCP endpoints and real-source control/storage migration remain future work.
+This page separates the code present on 2026-09-08 from the intended product architecture. The Node.js 24+ runtime includes inventory, source-control fixtures, desktop-record observations, local versioned records, and registered optional-source preparation and recovery. The loopback GUI connects the fixture and registered-source services to React/TypeScript and PixiJS; diagnostic/core modules do not import browser dependencies. MCP endpoints, comparison records and cross-application migration remain future work.
 
 ## Current runnable architecture
 
