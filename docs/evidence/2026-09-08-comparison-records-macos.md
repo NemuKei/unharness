@@ -32,6 +32,8 @@ Real-record inspection reused four previously authorized Mac pilot recordings, i
 
 The final owned profile is prepared Normal at revision 12, without conflict or pending recovery. This is a synthetic-profile result, not a new personal-mode or desktop-loading qualification.
 
+The existing real-profile GUI was subsequently restarted on its original port with the current build. Its full returned source state stayed unchanged: prepared Normal revision 4, a source conflict, and no pending recovery. A guarded retained-settings review was available with zero managed-file changes; it was not accepted. The GUI upgrade did not apply configuration or replace that existing Normal.
+
 ## Verification and review
 
 The final full `node --test` run enabled the optional built-browser regression: **459 tests, 458 passed, 0 failed, 1 existing platform skip**. The skipped case checks refusal on unqualified platforms. TypeScript, the Pixi CSP guard, production build and diff checks passed. [CONTRIBUTING](../../CONTRIBUTING.md#presentation-dependencies) documents the optional browser runtime variables; ordinary runs without them explicitly skip that browser case.
