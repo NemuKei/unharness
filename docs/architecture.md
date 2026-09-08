@@ -1,6 +1,6 @@
 # Architecture boundaries
 
-This page separates the code present on 2026-09-08 from the intended product architecture. The Node.js 24+ runtime includes inventory, source-control fixtures, desktop-record observations, local versioned records, registered optional-source preparation/recovery and private ordinary-run comparison records. The loopback GUI connects the fixture and registered-source services to React/TypeScript and PixiJS; diagnostic/core modules do not import browser dependencies. MCP endpoints, predeclared replay and cross-application migration remain future work.
+This page separates the code present on 2026-09-09 from the intended product architecture. The Node.js 24+ runtime includes inventory, source-control fixtures, desktop-record observations, local versioned records, registered optional-source preparation/recovery, private ordinary-run comparison records and frozen pre-use inputs. The loopback GUI connects the fixture and registered-source services to React/TypeScript and PixiJS; diagnostic/core modules do not import browser dependencies. MCP endpoints, sequential replay and cross-application migration remain future work.
 
 ## Current runnable architecture
 
@@ -94,6 +94,16 @@ Old favorite and checkpoint records remain immutable. A restore from an older No
 The registered-source CLI and loopback server expose the same seven operations. Browser requests contain only accepted launch/context identities and bounded task/turn/record selectors; the server supplies the workspace. Strict JSON parsing rejects duplicate decoded keys for comparison bodies. `review-run`, `save-run` and `run-favorite` are treated as private publications: the controller never automatically repeats an uncertain request. A confirmed save remains confirmed when a later history read fails.
 
 React keeps one source controller, API client and operation lock across Equipment and Comparison. Comparison state is scoped to launch, context, workspace and registered scope; a historical review survives mode, revision or active-Normal changes within that scope. A scope/context change clears draft, history, selection and explicit output, and old auxiliary responses cannot install data. React/CSS render the aligned table and proportional bars; the existing Pixi scene/effects and deterministic recovery remain separate.
+
+## Frozen pre-use inputs
+
+The [starting-conditions service](../src/experiments/service.mjs) freezes an explicit request, task-defined criteria and stopping budget with the selected project's working files. [Inventory](../src/experiments/inventory.mjs) reads Git's tracked/non-ignored working paths or a bounded non-Git tree, includes project instruction/configuration inputs, and admits only relative supplemental paths within the fixed project. Git's filesystem-monitor hook is disabled for this read-only enumeration; file contents are never executed. A project containing its own private store is rejected before capture.
+
+[File capture](../src/experiments/files.mjs) reuses the existing supported metadata boundary with bounded binary reading. It records original bytes/absence, source identities and ancestor guards. The service rechecks inventory and file identity/content before publishing. [Input records](../src/experiments/records.mjs) store bounded content-addressed chunks and manifests in an optional `input` bucket. Small saved-start indexes use `experiment`, so configuration and ordinary comparison history do not scan binary data. Older stores read absent optional buckets as empty; only an explicit write creates them.
+
+[Start-record validation](../src/experiments/start-records.mjs) binds immutable declarations, manifests and source guards to the registered scope. List projections omit requests/file bodies and validate metadata without rereading all chunks. Explicit details verify chunks and return the request plus a metadata-only table. The GUI's collapsed [starting-conditions form](../web/src/StartingConditions.tsx) shares the accepted source controller and operation lock. Draft edits invalidate reviews, delayed results cannot replace newer input, and successful or uncertain publication is kept distinct from auxiliary read failure.
+
+These records describe inputs fixed before use. They do not start or associate a task, freeze live memory/tool/service state, classify a mode or unlock original creation. The next replay adapter must authorize each derived work location, retain project requirements, check effective conditions and associate actual task/request evidence; a caller cannot override the ordinary observer's expected project or preparation time. See [the contract](spec-starting-conditions.md) and [Mac evidence](evidence/2026-09-08-starting-conditions-macos.md).
 
 ## Intended product architecture
 

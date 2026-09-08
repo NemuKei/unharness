@@ -64,13 +64,13 @@ assert.deepEqual(await service.saveUserStart({workspace, reviewId: next.reviewId
 
 ## Task 3: CLI and Comparison form
 
-**Files:** update `src/sources/cli.mjs`, `src/gui/sources.mjs`, `src/gui/server.mjs`, `web/src/api.ts`, `web/src/sources.ts`, `web/src/ComparisonWorkbench.tsx`; create `web/src/StartingConditions.tsx`, `web/src/useStartingConditions.ts`, `test/web-starting-conditions.test.mjs`; update paired READMEs and current architecture/status/runbook.
+**Files:** update `src/sources/cli.mjs`, `src/gui/sources.mjs`, `src/gui/server.mjs`, `web/src/api.ts`, `web/src/ComparisonWorkbench.tsx`, `web/src/sources.css`; create `web/src/starting-conditions.ts`, `web/src/StartingConditions.tsx`, `web/src/useStartingConditions.ts`, `test/web-starting-conditions.test.mjs`; update paired READMEs and current architecture/status/runbook.
 
 **Interfaces:** the four source actions use `reviewId`/`startId`/`after` and `declaration`/`additionalPaths` from the accepted launch/context. The component receives the existing source controller's scope and shared operation lock; native file paths and workspace selection stay server-owned.
 
-- [ ] Add failing CLI/HTTP cases for exact actions, unsafe extras, duplicate decoded JSON keys, context changes, immutable saves and list privacy.
-- [ ] Implement the action routes and strict request validation with uncertain-publication classification for `review-start` and `save-start`.
-- [ ] Add the collapsed pre-use form with request, requirement/anchor editing, explicit budget, inventory review, freeze action and saved-start listing/details. Invalidate a reviewed draft on edits; preserve successful saves through list errors.
+- [x] Add failing CLI/HTTP cases for exact actions, unsafe extras, duplicate decoded JSON keys, context changes, immutable saves and list privacy.
+- [x] Implement the action routes and strict request validation with uncertain-publication classification for `review-start` and `save-start`.
+- [x] Add the collapsed pre-use form with request, requirement/anchor editing, explicit budget, inventory review, freeze action and saved-start listing/details. Invalidate a reviewed draft on edits; preserve successful saves through list errors.
 
 ```ts
 const epoch = currentEpoch.current;
@@ -79,6 +79,6 @@ if (epoch !== currentEpoch.current) return;
 setReview(result);
 ```
 
-- [ ] Verify delayed reviews/list/detail reads after context changes and draft edits; uncertain saves have no automatic retry. Existing ordinary review drafts and Equipment/recovery remain usable.
-- [ ] Run `npm run check`, `npm run build`, the full suite and the actual built browser (restart the server after each build). Record synthetic native/file preservation and browser evidence.
+- [x] Verify delayed reviews/list/detail reads after context changes and draft edits; uncertain saves have no automatic retry. Existing ordinary review drafts and Equipment/recovery remain usable.
+- [x] Run `npm run check`, `npm run build`, the full suite and the actual built browser (restart the server after each build). Record synthetic native/file preservation and browser evidence. Final code `6dc056f`: 486 passed, one existing platform skip; 16 focused browser/transport checks passed, native source/state remained unchanged.
 - [ ] Update availability docs together, check relative links and `git diff --check`, directly review and integrate the completed capture step. Keep the full Mac goal active and continue immediately into sequential replay and then AI/MCP.

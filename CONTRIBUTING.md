@@ -17,12 +17,12 @@ Open the printed loopback URL. `gui --demo` creates a fresh owned fixture/store;
 
 The GUI keeps the asset bundle read at startup. Stop and restart it after rebuilding, then reopen the printed URL to verify the new build.
 
-After building on macOS, an optional browser regression checks repeated task-UUID handoffs through the actual workbench. Point it at an existing Playwright installation; no browser dependency is added to the application:
+After building on macOS, optional browser regressions check repeated task-UUID handoffs and pre-use capture through the actual workbench, including delayed/uncertain responses and changed launch/project context. Point them at an existing Playwright installation; no browser dependency is added to the application:
 
 ```sh
 UNHARNESS_PLAYWRIGHT_MODULE="/absolute/path/to/playwright/index.mjs" \
 UNHARNESS_BROWSER_EXECUTABLE="/absolute/path/to/browser-executable" \
-node --test test/web-comparisons.test.mjs
+node --test test/web-comparisons.test.mjs test/web-starting-conditions.test.mjs
 ```
 
 The executable override is optional when Playwright already has a browser installed. Without the module path, this browser case is explicitly skipped while the HTTP/controller tests still run. It uses a temporary synthetic source profile and local GUI server.

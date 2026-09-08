@@ -89,7 +89,8 @@ A qualifying result can unlock an optional original-appearance creation action. 
 ## Delivery order
 
 1. Implemented: preserve per-run recorded conditions, root-response usage/time, attributed retrospective checks/ratings/notes and private output in immutable comparison records.
-2. Next: capture the request, starting files and declared criteria before use, then provide an explicitly requested sequential replay from that frozen start.
-3. Later: expose the same deterministic operations through AI/MCP and, if chosen, add blind pairwise judging with separate judge usage.
+2. Implemented: [freeze the request, working files, declared criteria and stopping budget](spec-starting-conditions.md) before use, through the registered-source CLI and Comparison form. This creates immutable inputs, not a task association or performance verdict.
+3. Next: provide an explicitly requested sequential replay from that frozen start, with derived work locations and observable-condition checks.
+4. Later: expose the same deterministic operations through AI/MCP and, if chosen, add blind pairwise judging with separate judge usage.
 
 No grader request or automatic multi-mode task was run for this ordinary-use slice. Its records are retrospective observations; they do not replace the predeclared replay needed for a performance verdict or original-form eligibility.

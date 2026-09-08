@@ -25,6 +25,8 @@ The [retained-setting qualification](evidence/2026-09-08-retained-settings-macos
 
 The [ordinary-comparison pass](evidence/2026-09-08-comparison-records-macos.md) adds bounded usage/time projection for four already recorded Mac tasks and owned-profile service/HTTP/GUI qualification. It covers immutable attributed history, nullable metrics, initial/changed/unknown conditions, delayed-result guards, historical favorites, restoration and display/transport failures. No new model task was started and no old operator record was retrofitted. The known 0.153.4 recording format and recorded root responses are the measurement boundary; this adds no complete-runtime, full-mode, Claude Code or Windows claim. A later real-profile read found another source conflict. Restarting that GUI preserved its Normal revision 4 and conflict; a retained-only review was prepared without accepting it or applying configuration.
 
+The [pre-use capture check](evidence/2026-09-08-starting-conditions-macos.md) uses native Codex 0.153.4 on macOS 26.6.2 and a separate owned profile. It verifies immutable working-file bytes, uncommitted/untracked/missing/binary inputs, explicit ignored-file inclusion, unchanged selected configuration, browser saves, delayed-response handling and new launch/project boundaries. No model task is started; it adds no task-loading, replay, performance-verdict, Claude Code or Windows qualification.
+
 ## What to record for a real test
 
 - Tested source revision and local changes, if any.

@@ -13,7 +13,7 @@ npm run build
 node bin/unharness.mjs gui --manage-sources --codex-home "<canonical Codex home>" --project "<canonical project>" --codex "<native executable>"
 ```
 
-Select the home/project locally; the browser cannot supply paths or an executable. `--codex` defaults to `codex`; `--port` optionally selects a loopback port. Management cannot be combined with `--demo`, `--store`, `--scope`, `--parent`, or `--inspect-cwd`. Existing fixture launch arguments retain their behavior.
+Select the home/project locally; the browser cannot supply a home, workspace, project or executable. `--codex` defaults to `codex`; `--port` optionally selects a loopback port. Management cannot be combined with `--demo`, `--store`, `--scope`, `--parent`, or `--inspect-cwd`. Existing fixture launch arguments retain their behavior.
 
 The output contains `kind: "user-sources"`, the local URL, context and `resumeArgv`. Pass the argument array directly to Node without joining or evaluating shell text. Repeating the same launch reopens an existing registration through the read-only locator, even when Codex is unavailable. A foreign, corrupt or interrupted reservation is refused; it is never replaced with a new Normal. Closing the browser or stopping the server does not restore settings.
 
@@ -42,13 +42,27 @@ Load paged history and choose one to three unique saved versions. The aligned ta
 
 **出力を明示して読む** is the only comparison operation that returns the bounded saved answer. React renders it as escaped plain text with its record reference. **この記録の設定を保存** is available only for a frozen matched source association and records that exact historical snapshot/Normal/reference without applying it. In Equipment, use **保存版を表示** to load the saved favorites, then select one and review its restoration plan. The Equipment tab and recovery controls stay reachable after comparison errors. Comparison draft, selection, history and opened output survive mode/revision changes in the same launch and scope, but clear when launch, context, workspace or registered scope changes. Delayed responses cannot reinstate superseded review/output/comparison intent; confirmed saves remain recorded.
 
-This slice does not capture the request, starting files or criteria before use, replay a task, start a model, rank modes, call a grader or expose an MCP tool. Those are separate later steps in the Mac delivery.
+Ordinary-run records remain retrospective. The separate pre-use capture below saves inputs for the next replay step; neither operation starts a model, ranks modes, calls a grader or exposes an MCP tool.
 
 The Equipment tab's current task-observation summary is displayed only while its preparation, snapshot and observation IDs agree with the latest returned source state. A later apply, recovery or another client's change makes the earlier result historical. Preparation and retained-setting plans are cleared when the accepted launch/context, scope, revision or active Normal changes. Re-fetching state can display the service's current persisted observation, but an uncertain request is never repeated automatically. A retained-settings acceptance with an uncertain result stays disabled until explicit state reacquisition; the browser does not auto-accept it or save a replacement favorite. A legacy registration without a valid preparation boundary asks for a reviewed re-preparation of the chosen mode; the GUI does not apply one on its own.
 
 Memory, native continuity, permissions, project requirements, managed/provider sources, hooks and unselected sources remain unchanged. Unsupported controls are explanatory text, not fake toggles. The current source writer is gated to macOS; native Windows source writes and desktop-loaded mode verification remain unqualified. See [compatibility](compatibility.md).
 
 Every action reconnects and fetches metadata first. A changed launch/home/project/executable/workspace updates the view and stops before its dependent action. A failed metadata read does not consume this check. Transport failures do not trigger automatic POST retries; retain the visible plan/recovery information and explicitly reacquire state. Normal, favorite/checkpoint restoration and saving use frozen local records and remain available without fresh discovery.
+
+## Save starting conditions before use
+
+In Comparison, expand **実行前に条件を保存**. Enter the request, one or more result requirements with at least one marked **必須**, optional rating criteria with low/high anchors, and explicit attempt/turn/token stopping limits. Entering a token limit does not change the Codex account's usage allowance or impose a native runtime limit. The service preserves the exact submitted request.
+
+**保存内容を確認** captures the selected project's working-file bytes and shows the counts, criteria/budget and expandable file inventory. A Git root includes tracked, untracked non-ignored and missing tracked paths. Root instructions and project-local `.codex`/`.agents` inputs are retained even when ignored. Explicit supplemental paths are relative to this project. Git metadata, ignored dependencies and external service state are not frozen; a non-Git folder uses a bounded file inventory. Unsupported links, metadata, nested roots, a project containing its private store, or exceeded bounds stop capture with a reason. No file contents are executed.
+
+After review, **この開始条件を保存** freezes the start. Editing a field invalidates the reviewed form; changes to the file inventory or captured bytes are checked again by the service. The maximum is 2,048 paths, 8 MiB per file and 64 MiB total. Immutable input chunks live in a separate private store bucket so normal configuration/comparison history does not scan binary payloads.
+
+**保存した開始条件を読む** retrieves summaries, and **詳細を開く** explicitly verifies the saved bytes and displays the request plus a metadata-only file table. File bodies are never returned to the GUI. A detail can be copied into a new draft with **この条件から新しい入力を作る**; the existing record stays immutable. Mode/tab changes preserve the draft, while a new GUI launch/context/workspace/scope clears it. A delayed obsolete review cannot reinstall itself after an edit. Confirmed saves remain visible through list failures; a dropped save response is not automatically retried and an explicit history read can confirm the saved review.
+
+The shared CLI actions are `review-start`, `save-start`, `start` and `starts`; their JSON arguments are in [the starting-conditions contract](spec-starting-conditions.md). All four use strict JSON and accept at most 128 KiB through CLI/HTTP. The web client's capture/save/detail allowance is two minutes; this is a transport timeout, not an execution budget. Start lists validate metadata without rereading every binary chunk and say `inputIntegrity: "not-rechecked"`; explicit details return `"verified"` after checking those chunks.
+
+This is pre-use input storage. Sequential replay, task/request association, retained-condition comparison, performance assessment and MCP are the next Mac delivery steps. Memory/native-continuity settings remain retained and live memory/tool/cache/external inputs remain uncontrolled until observed. See [the native and browser evidence](evidence/2026-09-08-starting-conditions-macos.md).
 
 ## Recovery outside the GUI
 
@@ -100,9 +114,13 @@ Each POST `/api/sources/<action>` contains `{ requestId, launchId, contextId, ..
 | `run-output` | `runId` | explicit bounded plain-text output result |
 | `compare-runs` | one to three unique `runIds` | neutral observational comparison and aggregate reasons |
 | `run-favorite` | `runId`, optional `name` | historical favorite reference; no configuration apply |
+| `review-start` | `declaration`, optional `additionalPaths` | private pre-use review and file inventory |
+| `save-start` | `reviewId` | immutable saved-start summary |
+| `start` | `startId` | explicit declaration and verified metadata-only file inventory |
+| `starts` | optional `after` | up to 20 saved-start summaries and `nextCursor` |
 
 Service-state and result fields follow [the registered-source contract](spec-user-sources.md), [retained-settings contract](spec-retained-settings.md), [task-observation contract](spec-user-source-observations.md) and [comparison-record contract](spec-comparison-records.md). In particular `registration.activeNormalId` names the active Normal version while `registration.normalId` remains the immutable registration baseline. `preparedMode` is Normal/UNSEAL/TRUEFORM even when plan `mode` is `favorite` or `checkpoint`; cross-Normal restore plans carry a bounded `adaptation` summary. `preparation`, `observation` and `observationIssue` are nullable; `conflict` is null or `{ kind }`; `recovery` contains `pending`, `lastCheckpointId` and `argv`. `verification` is nested and always leaves runtime/mode switching false, coverage unknown and nextTaskRequired true. Observation accepts only a UUID; callers cannot provide session paths, expected content, mode, markers, working directory or preparation time.
 
-Default responses contain no source/configuration/hook text or saved task answer. Private text is returned only by the explicitly clicked discovery/registration-bound source review and the explicit `run-output` request. React renders both escaped and bounded, without automatic links, HTML interpretation or execution. Source text, paths, snapshots and personal experiment data must remain local.
+Default responses contain no source/configuration/hook text, saved task answer or frozen request. Private text is returned only by the explicitly clicked discovery/registration-bound source review, `run-output`, and saved-start `start` detail. React renders this text escaped and bounded, without automatic links, HTML interpretation or execution. Source text, paths, snapshots and personal experiment data must remain local. Starting-file bodies have no HTTP read endpoint.
 
 POSTs are serialized. Repeating a request UUID with the identical fingerprint returns the cached result, including failures; a changed body is rejected. Repeating a completed core plan with a new request UUID is also guarded by the core's duplicate/readback handling. Capacity errors require a deliberate reconnection strategy, not silently forgetting old request identities. No action starts a desktop or model task.
