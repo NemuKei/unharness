@@ -17,7 +17,7 @@ A declaration contains:
 - Exact request, up to 16,384 characters with a 64 KiB UTF-8 bound; preserve line endings and whitespace.
 - One to 24 requirements with unique stable IDs, labels and a `critical` boolean. At least one requirement is critical.
 - Zero to eight rating criteria with unique IDs, labels, and distinct low/high anchors. Results, scores and outcome are absent before use.
-- `maxAttempts` (1–20), `maxTurnsPerAttempt` (1–100), and an explicit nullable `maxRecordedTokens` positive safe integer. The last field is a stopping target in terms of available root-response records, not a promise of a runtime quota limit.
+- `maxAttempts` per mode (1–20), `maxTurnsPerAttempt` (1–100), and an explicit nullable `maxRecordedTokens` positive safe integer. The last field is a stopping target in terms of available root-response records, not a promise of a runtime quota limit.
 - Optional title, up to 120 characters. No inferred title, evaluation criterion or budget is silently accepted on the user's behalf.
 
 Fixed declarations say memory/native continuity settings are retained; memory contents, live tools, caches and external state remain uncontrolled until observed. The capture layer never changes those settings. Later replay associations require a fresh task after the saved-start timestamp and exact request evidence; caller timestamps, caller mode labels and retrospective reviews cannot manufacture predeclared evidence.

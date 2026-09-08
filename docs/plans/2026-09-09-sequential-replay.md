@@ -51,8 +51,8 @@
 
 **Files:** source CLI/HTTP dispatcher, GUI API/types and focused replay UI/hooks, built-browser tests, runbook and evidence.
 
-- [ ] Implement exact-key routes and launch/context binding. Add prepare → check → copy/open → task UUID → result/cancel within the existing Comparison flow.
-- [ ] Verify stale replies, restart, uncertain mutation, second-client changes, effects off and narrow screens. Keep Equipment/recovery available.
-- [ ] Run appropriate focused/full checks, `npm run check`, `npm run build` and the built browser; restart the server after a build.
-- [ ] Complete an actual owned Mac desktop sequential replay with source/retained-condition evidence. Do not relabel CLI preparation as desktop success.
+- [x] Implement exact-key routes and launch/context binding. Add prepare → check → copy/open → task UUID → result/cancel within the existing Comparison flow. Twelve shared CLI/HTTP operations include history, comparison and historical favorites.
+- [x] Verify stale replies, restart, uncertain mutation, second-client changes, effects off and narrow screens. Keep Equipment/recovery available. Reproduced and fixed stale editors after uncertain saves, malformed nested responses and overlapping task timelines after cancellation.
+- [x] Run appropriate focused/full checks, `npm run check`, `npm run build` and the built browser; restart the server after a build. The final suite passed 573 of 574 tests with one existing platform skip and all optional browser cases enabled.
+- [x] Complete an actual owned Mac desktop sequential replay with source/retained-condition evidence. Four new tasks in distinct owned worktrees matched Normal, UNSEAL, TRUEFORM and restored Normal; exact managed files were restored, with no conflict/recovery/active attempt. Reopened real history and three-column comparison passed desktop/narrow/keyboard checks. See [the evidence](../evidence/2026-09-09-replay-gui-macos.md). Code is committed at `2adee67`.
 - [ ] Reconcile paired READMEs, architecture/status/compatibility and recovery instructions, check links/diff, directly review and integrate. Continue the active full Mac goal into AI/MCP, Claude Code and product finish.

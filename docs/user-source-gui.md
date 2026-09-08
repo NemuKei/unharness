@@ -62,7 +62,21 @@ After review, **この開始条件を保存** freezes the start. Editing a field
 
 The shared CLI actions are `review-start`, `save-start`, `start` and `starts`; their JSON arguments are in [the starting-conditions contract](spec-starting-conditions.md). All four use strict JSON and accept at most 128 KiB through CLI/HTTP. The web client's capture/save/detail allowance is two minutes; this is a transport timeout, not an execution budget. Start lists validate metadata without rereading every binary chunk and say `inputIntegrity: "not-rechecked"`; explicit details return `"verified"` after checking those chunks.
 
-This is pre-use input storage. Sequential replay, task/request association, retained-condition comparison, performance assessment and MCP are the next Mac delivery steps. Memory/native-continuity settings remain retained and live memory/tool/cache/external inputs remain uncontrolled until observed. See [the native and browser evidence](evidence/2026-09-08-starting-conditions-macos.md).
+This is pre-use input storage. The saved start can feed the sequential replay below. Memory/native-continuity settings remain retained and live memory/tool/cache/external inputs remain outside identical-input verification. See [the capture evidence](evidence/2026-09-08-starting-conditions-macos.md).
+
+## Replay one saved start
+
+In the saved start's details, choose **この条件で再実行**. The review uses the mode already prepared in Equipment and shows its frozen files and per-mode attempt budget. **この内容で再実行を準備** creates one owned work location. **開始状態を確認して依頼を受け取る** rechecks its files, configuration and source mapping before showing the exact saved request.
+
+**再実行の依頼をコピー** and **Codexで作業場所を開く** each repeat that check. Opening is limited to an installed Mac app; it passes the owned workspace to the registered native `codex app` command. It does not submit a task, install an app or prove which Codex home the running app uses. Start a fresh local task directly in the displayed location and send the exact request. The task's recorded working directory and loaded settings are checked afterward. A separate Codex-created worktree is a different location and cannot be substituted for the prepared one.
+
+Enter the completed task's UUID and choose **このタスクの結果を確認**. The result shows the recorded request/source qualification, nullable root-response tokens and duration, declared budget status, and captured outcome-file counts. Expand the answer or evidence details explicitly. Complete the frozen criteria, identify the assessor and save. **評価を訂正する** creates a new assessment version referring to the prior result.
+
+Use **再実行の履歴を読む** after reopening the browser or an uncertain operation. A confirmed result stays saved if the subsequent list refresh fails. No mutation is automatically retried. A stale task response is discarded; changed source state requires another handoff check. **この試行を取り消す** retains files and closes the attempt but does not stop a running Codex task. Equipment and Node-only source recovery remain available when replay data is unavailable.
+
+Select up to three saved results to compare. The table scrolls horizontally on narrow screens. Aggregate usage is withheld for overlapping attempts/tasks or recorded task timelines, different saved starts or Normal versions, incompatible/unknown runtime conditions, unavailable qualification or budget evidence, and partial/missing usage. Cancellation does not prove that a task stopped. Rejected outcomes still contribute their recorded cost when otherwise comparable. Every result remains neutral and does not unlock original creation. **この試行の設定をお気に入りへ** saves the historical configuration from a qualified result; it does not apply the current mode.
+
+See the [sequential replay contract](spec-sequential-replay.md). CLI and HTTP expose the same operations below. The AI/MCP endpoint, performance-verdict rule and full Mac product qualification remain subsequent work.
 
 ## Recovery outside the GUI
 
@@ -118,9 +132,21 @@ Each POST `/api/sources/<action>` contains `{ requestId, launchId, contextId, ..
 | `save-start` | `reviewId` | immutable saved-start summary |
 | `start` | `startId` | explicit declaration and verified metadata-only file inventory |
 | `starts` | optional `after` | up to 20 saved-start summaries and `nextCursor` |
+| `review-replay` | `startId` | current-source replay preparation review |
+| `prepare-replay` | `reviewId` | one immutable attempt and owned working location |
+| `handoff-replay` | `attemptId` | rechecked location, exact frozen request and readiness boundary |
+| `open-replay` | `attemptId` | rechecked handoff and installed Mac app opening request; no task submission |
+| `replay` | `attemptId` | one attempt's saved phase and current source/location availability |
+| `replays` | optional `after` | attempts, active attempt even outside the page, and `nextCursor` |
+| `cancel-replay` | `attemptId` | cancelled attempt with files retained |
+| `observe-replay` | `attemptId`, `taskId` | explicit task qualification, bounded answer and outcome snapshot review |
+| `save-replay-result` | `resultReviewId`, `assessment`, optional `previousResultId` | immutable attributed result and closed active slot |
+| `replay-result` | `resultId` | explicit saved result including its bounded answer |
+| `compare-replays` | one to three unique `resultIds` | neutral comparison without request/answer bodies |
+| `replay-favorite` | `resultId`, optional `name` | that result's historical configuration favorite; no apply |
 
 Service-state and result fields follow [the registered-source contract](spec-user-sources.md), [retained-settings contract](spec-retained-settings.md), [task-observation contract](spec-user-source-observations.md) and [comparison-record contract](spec-comparison-records.md). In particular `registration.activeNormalId` names the active Normal version while `registration.normalId` remains the immutable registration baseline. `preparedMode` is Normal/UNSEAL/TRUEFORM even when plan `mode` is `favorite` or `checkpoint`; cross-Normal restore plans carry a bounded `adaptation` summary. `preparation`, `observation` and `observationIssue` are nullable; `conflict` is null or `{ kind }`; `recovery` contains `pending`, `lastCheckpointId` and `argv`. `verification` is nested and always leaves runtime/mode switching false, coverage unknown and nextTaskRequired true. Observation accepts only a UUID; callers cannot provide session paths, expected content, mode, markers, working directory or preparation time.
 
-Default responses contain no source/configuration/hook text, saved task answer or frozen request. Private text is returned only by the explicitly clicked discovery/registration-bound source review, `run-output`, and saved-start `start` detail. React renders this text escaped and bounded, without automatic links, HTML interpretation or execution. Source text, paths, snapshots and personal experiment data must remain local. Starting-file bodies have no HTTP read endpoint.
+Default lists contain no source/configuration/hook text, saved task answer or frozen request. Private text is returned by explicit source review, `run-output`, saved-start `start` detail, replay handoff/open, and replay result observation/save/detail. React renders this text escaped and bounded, without automatic links, HTML interpretation or execution. Replay JSON requests have a 64 KiB limit and relevant preparation/collection requests allow two minutes for transport. Source text, paths, snapshots and personal experiment data must remain local. Starting/outcome file bodies have no HTTP read endpoint.
 
 POSTs are serialized. Repeating a request UUID with the identical fingerprint returns the cached result, including failures; a changed body is rejected. Repeating a completed core plan with a new request UUID is also guarded by the core's duplicate/readback handling. Capacity errors require a deliberate reconnection strategy, not silently forgetting old request identities. No action starts a desktop or model task.
