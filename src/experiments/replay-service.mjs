@@ -70,6 +70,7 @@ async function attemptSummary(w, attempt) {
     phase: attempt.phase, preparedMode: attempt.review.sourceBinding.preparedMode, snapshotId: attempt.review.sourceBinding.snapshotId,
     createdAt: attempt.createdAt, preparedAt: attempt.preparedAt, readyAt: attempt.readyAt, cancelledAt: attempt.cancelledAt,
     failure: attempt.failure, conditionIssue, locationIssue, project,
+    resultId: attempt.resultId ?? null,
     handoffAvailable: ['prepared', 'ready'].includes(attempt.phase) && !conditionIssue && !locationIssue,
     conditions: { ...START_CONDITIONS, gitObjectsAndRefs: attempt.review.series.repository.kind === 'git' ? 'shared' : 'not-applicable' },
     desktopRuntimeVerified: false, desktopTaskStopped: false };
@@ -211,9 +212,13 @@ export async function cancelUserReplay(args) {
     const index = await loadReplayIndex(w), attempts = await loadReplayAttempts(w, index);
     const attempt = selected(attempts, args.attemptId);
     if (attempt.phase === 'cancelled') return { ...await attemptSummary(w, attempt), duplicate: true };
+    if (attempt.phase === 'recorded') fail('replay-attempt-unavailable');
     const at = now();
     await transition(w, index, { ...stripLoaded(attempt), previousStateId: attempt.stateId, phase: 'cancelled', updatedAt: at, cancelledAt: at }, false);
     const latest = selected(await loadReplayAttempts(w, await loadReplayIndex(w)), args.attemptId);
     return { ...await attemptSummary(w, latest), duplicate: false };
   });
 }
+// Internal coordination for collection. These do not add public request fields.
+export { locked as withReplayLock, assertReviewCurrent as assertReplayReviewCurrent,
+  transition as transitionReplay, stripLoaded as replayStatePayload };

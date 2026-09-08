@@ -360,6 +360,10 @@ function analyzeUsage(records, selectedTurnIds, taskId, { incompleteTrailingLine
     ));
   }
   let totals = aggregateResponseTotals(responses, reasons);
+  if (responses.length && selectedTurnIds.some(turnId => !responses.some(response => response.turn_id === turnId))) {
+    totals = emptyTotals();
+    addReason(reasons, 'selected-turn-usage-unavailable');
+  }
   inspectCumulative(responses, selectedTurnIds, responseTotalsByTurn, reasons);
   if (replayConflict) totals = emptyTotals();
   if (!responses.length) {

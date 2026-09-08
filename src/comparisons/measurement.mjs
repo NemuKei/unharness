@@ -28,6 +28,7 @@ export const MEASUREMENT_REASONS = Object.freeze([
   'turn-incomplete',
   'incomplete-record-read',
   'no-attributable-usage',
+  'selected-turn-usage-unavailable',
   'response-id-missing',
   'response-replay-conflict',
   'response-attribution-unknown',
@@ -49,7 +50,7 @@ export const MEASUREMENT_REASONS = Object.freeze([
 ]);
 
 const USAGE_REASONS = new Set([
-  'turn-incomplete', 'incomplete-record-read', 'no-attributable-usage',
+  'turn-incomplete', 'incomplete-record-read', 'no-attributable-usage', 'selected-turn-usage-unavailable',
   'response-id-missing', 'response-replay-conflict', 'response-attribution-unknown',
   'response-usage-missing', 'response-usage-missing-field', 'response-usage-invalid',
   'response-usage-overflow', 'turn-cumulative-missing', 'turn-cumulative-invalid',

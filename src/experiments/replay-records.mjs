@@ -119,17 +119,17 @@ export async function loadReplayReview(w, reviewId) {
 export async function loadReplayAttempt(w, entry) {
   try {
     const p = await loadRecord(w.workspace, 'experiment', entry.stateId);
-    shape(p, ['attemptId', 'reviewId', 'previousStateId', 'phase', 'createdAt', 'updatedAt', 'preparedAt', 'readyAt', 'cancelledAt', 'failure', 'captureGuard', 'gitGuard', 'nativeId', 'match']);
-    if (p.role !== 'replay-attempt' || p.schemaVersion !== 1 || p.scopeId !== w.scopeId || p.attemptId !== entry.attemptId
+    shape(p, ['attemptId', 'reviewId', 'previousStateId', 'phase', 'createdAt', 'updatedAt', 'preparedAt', 'readyAt', 'cancelledAt', 'failure', 'captureGuard', 'gitGuard', 'nativeId', 'match', ...(p.schemaVersion === 2 ? ['resultId'] : [])]);
+    if (p.role !== 'replay-attempt' || ![1, 2].includes(p.schemaVersion) || p.scopeId !== w.scopeId || p.attemptId !== entry.attemptId
       || p.reviewId !== p.attemptId || !(p.previousStateId === null || hash(p.previousStateId))
-      || !['preparing', 'prepared', 'ready', 'preparation-failed', 'cancelled'].includes(p.phase)
+      || !(p.schemaVersion === 1 ? ['preparing', 'prepared', 'ready', 'preparation-failed', 'cancelled'].includes(p.phase) : p.phase === 'recorded' && hash(p.resultId))
       || !validUtc(p.createdAt) || !validUtc(p.updatedAt) || Date.parse(p.updatedAt) < Date.parse(p.createdAt)
       || [p.preparedAt, p.readyAt, p.cancelledAt].some(x => x !== null && !validUtc(x))
       || !(p.failure === null || USER_SOURCE_ERROR_KINDS.includes(p.failure))) invalid();
     const review = await loadReplayReview(w, p.reviewId);
-    if (['prepared', 'ready'].includes(p.phase) && !p.preparedAt || p.phase === 'ready' && !p.readyAt
+    if (['prepared', 'ready', 'recorded'].includes(p.phase) && !p.preparedAt || ['ready', 'recorded'].includes(p.phase) && !p.readyAt
       || p.phase === 'cancelled' && !p.cancelledAt || p.phase === 'preparation-failed' && !p.failure
-      || p.phase !== 'cancelled' && p.cancelledAt !== null || !p.preparedAt && p.readyAt !== null) invalid();
+      || !['cancelled', 'recorded'].includes(p.phase) && p.cancelledAt !== null || !p.preparedAt && p.readyAt !== null) invalid();
     if (p.preparedAt) {
       validateStartingCaptureGuard(p.captureGuard, review.manifest, review.project);
       validateReplayGitGuard(p.gitGuard, review.series.repository);
@@ -137,6 +137,10 @@ export async function loadReplayAttempt(w, entry) {
       if (!p.match || p.match.status !== 'matched' || p.match.desktopRuntimeVerified !== false
         || !hash(p.match.retainedConditionsDigest)) invalid();
     } else if (p.captureGuard !== null || p.gitGuard !== null || p.nativeId !== null || p.match !== null) invalid();
+    if (p.phase === 'recorded') {
+      const result = await loadRecord(w.workspace, 'application', p.resultId);
+      if (result.role !== 'replay-result' || result.schemaVersion !== 1 || result.scopeId !== w.scopeId || result.attemptId !== p.attemptId) invalid();
+    }
     return { ...p, stateId: entry.stateId, review };
   } catch { invalid(); }
 }

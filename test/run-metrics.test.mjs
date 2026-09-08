@@ -320,6 +320,15 @@ test('refuses timelines over 200 turns instead of truncating them into a result'
   assert.ok(result.measurement.issues.includes('timeline-too-large'));
 });
 
+test('a selected turn with no attributable responses keeps the combined usage unknown instead of throwing', () => {
+  const records = cloneRecords().filter(r => r.type !== 'token_usage_record' || r.payload.turn_id !== secondTurnId);
+  const result = project(records, { throughTurnId: secondTurnId });
+  assert.equal(result.measurement.selectedTurnIds.length, 2);
+  assert.equal(result.measurement.usage.totals.totalTokens, null);
+  assert.equal(result.measurement.usage.availability, 'unavailable');
+  assert.ok(result.measurement.usage.reasons.includes('selected-turn-usage-unavailable'));
+});
+
 test('known zero remains available while missing and invalid usage fields remain partial and null', () => {
   const zeroRecords = cloneRecords();
   const first = findUsage(zeroRecords, 'response-synthetic-one');
