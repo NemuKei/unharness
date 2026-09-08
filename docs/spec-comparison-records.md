@@ -105,6 +105,8 @@ The assessment accepts:
 
 These are attributed assessments, not machine-verified tests or a universal quality score. No AI grader call is made. All criteria in this ordinary-use slice are retrospective; they cannot satisfy a predeclared comparison rule. A declared acceptance with a failed or unknown critical requirement does not count as accepted in summaries. An empty checklist can retain an explicitly reported acceptance, with a `reported-only` basis. Keep subjective ratings separate from critical checks and resource totals.
 
+The derived acceptance summary is `{accepted,basis,fulfilledRequirements,totalRequirements,criticalFailed,criticalUnknown}`. `basis` is `reported-only`, `requirements-and-report` or `not-accepted`. Keep the declared `assessment.outcome` alongside it so a contradicted acceptance is visible.
+
 Titles are optional, at most 120 characters. Labels/anchors are at most 160 characters, rating reasons 500 and notes 2000; reject control characters except ordinary whitespace in multiline notes/reasons. Reject duplicate or unsupported fields and IDs, impossible scores and foreign record references. Do not echo rejected values or native diagnostics.
 
 Saving the same review and assessment twice yields the same record identity. Do not put a fresh server timestamp into an otherwise identical saved payload. Display the review's capture date; do not pretend it is a new measurement date. A correction uses `previousRunId`, which must refer to the same scope, task and review; the old record remains immutable. A separate new measurement review is a new capture, but repeated records of one task are not independent samples.
@@ -132,6 +134,8 @@ CLI names under `sources` are `review-run`, `save-run`, `runs`, `run`, `run-outp
 ## Comparison summaries and favorite references
 
 `compareUserRuns` accepts one to three unique run IDs in caller-selected order. Return each full summary, field availability, task/assessment counts, accepted count, known captured-response token total and tokens per accepted run where calculable. Include failed and abandoned runs in the numerator. With zero accepted runs, any unavailable/partial required total, or overlapping captures of the same task, the ratio is `null` with an explicit reason; do not discard those rows or treat them as zero. Never add two saved versions/cutoffs of one task as two independent samples.
+
+Its `aggregate` shape is `{recordCount,distinctTaskCount,acceptedCount,outcomeCounts,totalTokens,tokensPerAcceptedRun,reasons}`. `outcomeCounts` counts the four declared outcomes; `acceptedCount` uses the derived acceptance rule. Missing/partial totals or overlapping tasks make `totalTokens` null as well. Zero accepted runs alone leaves a known total visible while the ratio is null. Both sums and ratios must remain finite.
 
 Every result remains observational. Return `assessment: "neutral"`, `creationEligible: false`, and a reason that predeclared comparable evidence is required. Missing modes are unmeasured; ordinary token differences do not yield GOOD/BAD, a percentage improvement claim or an original-creation entitlement.
 
