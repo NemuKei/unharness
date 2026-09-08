@@ -275,3 +275,42 @@ export function reviewCutoffForTask(
     ? throughTurnId
     : undefined;
 }
+
+const conditionLabels: Record<string, string> = {
+  model: "モデル",
+  reasoningEffort: "推論設定",
+  executionPolicy: "実行ポリシー",
+};
+
+export function conditionEvidence(
+  conditions: Pick<
+    RunMeasurement["conditions"],
+    | "model"
+    | "reasoningEffort"
+    | "executionPolicyDigest"
+    | "changes"
+    | "unknown"
+  >,
+) {
+  const list = (values: string[]) =>
+    values.length
+      ? values.map((value) => conditionLabels[value] ?? value).join("、")
+      : "なし";
+  return {
+    initialModel: conditions.model ?? "不明",
+    initialReasoningEffort: conditions.reasoningEffort ?? "不明",
+    initialExecutionPolicy: conditions.executionPolicyDigest
+      ? "記録あり"
+      : "不明",
+    changed: list(conditions.changes),
+    unknown: list(conditions.unknown),
+  };
+}
+
+export function runReferenceLabel(
+  runId: string,
+  runs: Array<{ runId: string; title: string | null }>,
+) {
+  const run = runs.find((candidate) => candidate.runId === runId);
+  return `${run?.title ?? "名称なし"} ／ ${runId.slice(0, 12)}`;
+}

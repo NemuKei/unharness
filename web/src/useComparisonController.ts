@@ -74,6 +74,7 @@ export type ComparisonControllerState = {
   uncertainOperation: "review-run" | "save-run" | "run-favorite" | null;
   error: string;
   notice: string;
+  intentGeneration: number;
 };
 
 export const initialComparisonControllerState: ComparisonControllerState = {
@@ -90,6 +91,7 @@ export const initialComparisonControllerState: ComparisonControllerState = {
   uncertainOperation: null,
   error: "",
   notice: "通常利用の記録を選んで比較できます。",
+  intentGeneration: 0,
 };
 
 type ResultAction<T extends string, V> = {
@@ -100,15 +102,27 @@ type ResultAction<T extends string, V> = {
 
 export type ComparisonControllerAction =
   | { type: "source-view"; view: SourceView | null }
-  | ResultAction<"review-completed", { review: RunReview }>
+  | ResultAction<
+      "review-completed",
+      { review: RunReview; intentGeneration: number }
+    >
   | ResultAction<"save-completed", { run: SavedRun }>
   | ResultAction<"history-completed", { page: RunPage; append: boolean }>
-  | ResultAction<"comparison-completed", { comparison: RunComparison }>
-  | ResultAction<"output-completed", { output: RunOutput }>
+  | ResultAction<
+      "comparison-completed",
+      { comparison: RunComparison; intentGeneration: number }
+    >
+  | ResultAction<
+      "output-completed",
+      { output: RunOutput; intentGeneration: number }
+    >
   | ResultAction<"favorite-completed", { favorite: ComparisonFavorite }>
-  | { type: "begin-correction"; run: SavedRun }
-  | { type: "select-runs"; runIds: string[] }
-  | { type: "clear-review" }
+  | { type: "begin-review"; intentGeneration: number }
+  | { type: "begin-comparison"; intentGeneration: number }
+  | { type: "begin-output"; intentGeneration: number }
+  | { type: "begin-correction"; run: SavedRun; intentGeneration: number }
+  | { type: "select-runs"; runIds: string[]; intentGeneration: number }
+  | { type: "clear-review"; intentGeneration: number }
   | { type: "clear-error" }
   | { type: "history-failed"; message: string }
   | {
@@ -116,6 +130,7 @@ export type ComparisonControllerAction =
       operation: string;
       disposition: "rejected" | "uncertain" | "auth-required";
       message: string;
+      intentGeneration?: number;
     };
 
 function resetForContext(context: ComparisonContext | null) {
@@ -163,16 +178,44 @@ export function comparisonControllerReducer(
   if (action.type === "clear-review")
     return {
       ...state,
+      intentGeneration: action.intentGeneration,
       review: null,
       correctionRun: null,
+      comparison: null,
+      output: null,
+      error: "",
+    };
+  if (action.type === "begin-review")
+    return {
+      ...state,
+      intentGeneration: action.intentGeneration,
+      correctionRun: null,
+      comparison: null,
+      output: null,
+      error: "",
+    };
+  if (action.type === "begin-comparison")
+    return {
+      ...state,
+      intentGeneration: action.intentGeneration,
+      comparison: null,
+      output: null,
+      error: "",
+    };
+  if (action.type === "begin-output")
+    return {
+      ...state,
+      intentGeneration: action.intentGeneration,
       output: null,
       error: "",
     };
   if (action.type === "begin-correction")
     return {
       ...state,
+      intentGeneration: action.intentGeneration,
       review: action.run,
       correctionRun: action.run,
+      comparison: null,
       output: null,
       error: "",
       notice: "この保存版と同じ測定記録に、訂正版を追加します。",
@@ -180,6 +223,7 @@ export function comparisonControllerReducer(
   if (action.type === "select-runs")
     return {
       ...state,
+      intentGeneration: action.intentGeneration,
       selectedRunIds: action.runIds.slice(0, 3),
       comparison: null,
       output: null,
@@ -187,6 +231,12 @@ export function comparisonControllerReducer(
     };
   if (action.type === "history-failed")
     return { ...state, error: action.message };
+  if (action.type === "operation-failed")
+    if (
+      action.intentGeneration !== undefined &&
+      action.intentGeneration !== state.intentGeneration
+    )
+      return state;
   if (action.type === "operation-failed")
     return {
       ...state,
@@ -197,6 +247,13 @@ export function comparisonControllerReducer(
           : null,
     };
   if (!admits(state, action.requestContext, action.view)) return state;
+  if (
+    (action.type === "review-completed" ||
+      action.type === "comparison-completed" ||
+      action.type === "output-completed") &&
+    action.intentGeneration !== state.intentGeneration
+  )
+    return state;
   if (action.type === "review-completed")
     return {
       ...state,
@@ -269,6 +326,7 @@ export function useComparisonController(shared: SharedSourceController) {
     initialComparisonControllerState,
   );
   const stateRef = useRef(state);
+  const intentGeneration = useRef(0);
   stateRef.current = state;
   useEffect(() => {
     dispatch({ type: "source-view", view: shared.view });
@@ -279,6 +337,7 @@ export function useComparisonController(shared: SharedSourceController) {
     input: object,
     completed: (result: T, context: ComparisonContext, view: SourceView) => void,
     historyFollowup = false,
+    requestedIntentGeneration?: number,
   ) {
     const context = stateRef.current.context;
     if (!context) return false;
@@ -303,6 +362,9 @@ export function useComparisonController(shared: SharedSourceController) {
               ? response.error.disposition
               : "uncertain",
           message,
+          ...(requestedIntentGeneration === undefined
+            ? {}
+            : { intentGeneration: requestedIntentGeneration }),
         });
       return false;
     }
@@ -311,6 +373,8 @@ export function useComparisonController(shared: SharedSourceController) {
   }
 
   async function reviewRun(taskId: string, throughTurnId?: string) {
+    const generation = ++intentGeneration.current;
+    dispatch({ type: "begin-review", intentGeneration: generation });
     await execute<RunReview>(
       "review-run",
       { taskId, ...(throughTurnId ? { throughTurnId } : {}) },
@@ -320,7 +384,10 @@ export function useComparisonController(shared: SharedSourceController) {
           requestContext,
           view,
           review,
+          intentGeneration: generation,
         }),
+      false,
+      generation,
     );
   }
 
@@ -356,6 +423,8 @@ export function useComparisonController(shared: SharedSourceController) {
   async function compareRuns() {
     const runIds = stateRef.current.selectedRunIds;
     if (runIds.length < 1 || runIds.length > 3) return;
+    const generation = ++intentGeneration.current;
+    dispatch({ type: "begin-comparison", intentGeneration: generation });
     await execute<RunComparison>(
       "compare-runs",
       { runIds },
@@ -365,11 +434,16 @@ export function useComparisonController(shared: SharedSourceController) {
           requestContext,
           view,
           comparison,
+          intentGeneration: generation,
         }),
+      false,
+      generation,
     );
   }
 
   async function readOutput(runId: string) {
+    const generation = ++intentGeneration.current;
+    dispatch({ type: "begin-output", intentGeneration: generation });
     await execute<RunOutput>(
       "run-output",
       { runId },
@@ -379,7 +453,10 @@ export function useComparisonController(shared: SharedSourceController) {
           requestContext,
           view,
           output,
+          intentGeneration: generation,
         }),
+      false,
+      generation,
     );
   }
 
@@ -405,9 +482,17 @@ export function useComparisonController(shared: SharedSourceController) {
     compareRuns,
     readOutput,
     saveFavorite,
-    beginCorrection: (run: SavedRun) =>
-      dispatch({ type: "begin-correction", run }),
-    selectRuns: (runIds: string[]) => dispatch({ type: "select-runs", runIds }),
-    clearReview: () => dispatch({ type: "clear-review" }),
+    beginCorrection: (run: SavedRun) => {
+      const generation = ++intentGeneration.current;
+      dispatch({ type: "begin-correction", run, intentGeneration: generation });
+    },
+    selectRuns: (runIds: string[]) => {
+      const generation = ++intentGeneration.current;
+      dispatch({ type: "select-runs", runIds, intentGeneration: generation });
+    },
+    clearReview: () => {
+      const generation = ++intentGeneration.current;
+      dispatch({ type: "clear-review", intentGeneration: generation });
+    },
   };
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import artwork from "../assets/hangar-states-v1.png";
 import {
   aggregateReasonLabels,
+  conditionEvidence,
   defaultAssessment,
   formatDuration,
   formatNumber,
@@ -10,6 +11,7 @@ import {
   provenanceLabels,
   reviewCutoffForTask,
   requirementLabels,
+  runReferenceLabel,
   tokenBarPercent,
 } from "./comparisons";
 import type {
@@ -70,6 +72,7 @@ function SourcePortrait({ review }: { review: RunReview }) {
 
 function ReviewSummary({ review }: { review: RunReview }) {
   const measurement = review.measurement;
+  const conditions = conditionEvidence(measurement.conditions);
   return (
     <section className="comparison-panel review-summary" aria-labelledby="review-summary-heading">
       <div className="comparison-heading">
@@ -97,9 +100,11 @@ function ReviewSummary({ review }: { review: RunReview }) {
       <details>
         <summary>条件・収集範囲・問題の詳細</summary>
         <dl className="comparison-details">
-          <div><dt>モデル</dt><dd>{measurement.conditions.model ?? "不明"}</dd></div>
-          <div><dt>推論設定</dt><dd>{measurement.conditions.reasoningEffort ?? "不明"}</dd></div>
-          <div><dt>実行ポリシー</dt><dd>{measurement.conditions.executionPolicyDigest ? "記録あり" : "不明"}</dd></div>
+          <div><dt>最初のモデル</dt><dd>{conditions.initialModel}</dd></div>
+          <div><dt>最初の推論設定</dt><dd>{conditions.initialReasoningEffort}</dd></div>
+          <div><dt>最初の実行ポリシー</dt><dd>{conditions.initialExecutionPolicy}</dd></div>
+          <div><dt>途中で変化した条件</dt><dd>{conditions.changed}</dd></div>
+          <div><dt>不明な条件</dt><dd>{conditions.unknown}</dd></div>
           <div><dt>実行環境</dt><dd>不明（収集環境とは別）</dd></div>
           <div><dt>収集環境</dt><dd>{review.collectedOn.platform} / {review.collectedOn.architecture} / Node {review.collectedOn.nodeVersion}</dd></div>
           <div><dt>ソース関連</dt><dd>{review.source.association ? "最初のターンだけ一致" : review.source.issue ?? review.source.observation?.status ?? "不明"}</dd></div>
@@ -210,8 +215,11 @@ function ComparisonTable({ runs }: { runs: SavedRun[] }) {
     ["最初の応答まで", (run) => formatDuration(run.measurement.time.firstResponseMs)],
     ["ルート応答数", (run) => formatNumber(run.measurement.usage.responseCount)],
     ["選択ターン", (run) => String(run.measurement.selectedTurnIds.length)],
-    ["モデル", (run) => run.measurement.conditions.model ?? "不明"],
-    ["推論設定", (run) => run.measurement.conditions.reasoningEffort ?? "不明"],
+    ["最初のモデル", (run) => conditionEvidence(run.measurement.conditions).initialModel],
+    ["最初の推論設定", (run) => conditionEvidence(run.measurement.conditions).initialReasoningEffort],
+    ["最初の実行ポリシー", (run) => conditionEvidence(run.measurement.conditions).initialExecutionPolicy],
+    ["途中で変化した条件", (run) => conditionEvidence(run.measurement.conditions).changed],
+    ["不明な条件", (run) => conditionEvidence(run.measurement.conditions).unknown],
     ["評価者", (run) => provenanceLabels[run.assessment.provenance]],
     ["ソース範囲", (run) => run.source.association ? "最初のターンだけ" : "関連不明"],
   ];
@@ -282,7 +290,7 @@ export function ComparisonWorkbench({
         <section className="comparison-panel" aria-labelledby="run-review-heading">
           <div className="comparison-heading"><div><p className="eyebrow">記録を読む</p><h2 id="run-review-heading">Codexタスクを確認</h2></div><span>タスクを開始・再開しません</span></div>
           <div className="review-form">
-            <label>タスクUUID<input autoComplete="off" spellCheck={false} value={taskId} aria-invalid={taskId.length > 0 && !validTaskId(taskId)} onChange={(event) => {
+            <label>タスクUUID<input autoComplete="off" spellCheck={false} disabled={sourceController.busy} value={taskId} aria-invalid={taskId.length > 0 && !validTaskId(taskId)} onChange={(event) => {
               const next = event.target.value;
               if (state.review && state.review.measurement.taskId.toLowerCase() !== next.trim().toLowerCase()) {
                 comparison.clearReview();
@@ -290,7 +298,7 @@ export function ComparisonWorkbench({
               }
               setTaskId(next);
             }} /></label>
-            {state.review && <label>完了位置<select value={throughTurnId} onChange={(event) => setThroughTurnId(event.target.value)}>{state.review.measurement.availableTurns.map((turn) => <option key={turn.turnId} value={turn.turnId}>{turn.ordinal}ターン目 · {turn.completed ? "完了" : "未完了"}</option>)}</select></label>}
+            {state.review && <label>完了位置<select disabled={sourceController.busy} value={throughTurnId} onChange={(event) => setThroughTurnId(event.target.value)}>{state.review.measurement.availableTurns.map((turn) => <option key={turn.turnId} value={turn.turnId}>{turn.ordinal}ターン目 · {turn.completed ? "完了" : "未完了"}</option>)}</select></label>}
             <button className="secondary" disabled={sourceController.busy || !validTaskId(taskId)} onClick={() => void comparison.reviewRun(taskId.trim(), reviewCutoffForTask(state.review, taskId, throughTurnId))}>{state.review ? "選んだ完了位置まで再確認" : "最初のターンを確認"}</button>
           </div>
           <p className="muted">初回は最初の記録ターンだけです。後の完了位置を選ぶと、それ以前のターンも同じタスクの支出として含みます。</p>
@@ -303,8 +311,8 @@ export function ComparisonWorkbench({
             {state.runs.map((run) => {
               const selected = state.selectedRunIds.includes(run.runId);
               return <li key={run.runId}>
-                <label className="run-select"><input type="checkbox" checked={selected} disabled={!selected && state.selectedRunIds.length >= 3} onChange={(event) => comparison.selectRuns(event.target.checked ? [...state.selectedRunIds, run.runId] : state.selectedRunIds.filter((id) => id !== run.runId))} /><span><strong>{run.title ?? "名称なし"}</strong><small>{capturedLabel(run.capturedAt)} ／ {associationLabel(run)} ／ {outcomeLabels[run.assessment.outcome]} ／ {formatNumber(run.measurement.usage.totals.totalTokens)} tokens{run.measurement.usage.availability === "partial" ? "（一部）" : ""}</small></span></label>
-                <div className="run-actions"><button className="text-button" onClick={() => comparison.beginCorrection(run)}>評価を訂正</button><button className="text-button" onClick={() => void comparison.readOutput(run.runId)}>出力を明示して読む</button>{run.source.association && <><input aria-label={`${run.title ?? "名称なし"}のお気に入り名`} placeholder="お気に入り名（任意）" maxLength={120} value={favoriteNames[run.runId] ?? ""} onChange={(event) => setFavoriteNames((old) => ({ ...old, [run.runId]: event.target.value }))} /><button className="text-button" onClick={() => void comparison.saveFavorite(run.runId, favoriteNames[run.runId]?.trim() || undefined)}>この記録の設定を保存</button></>}</div>
+                <label className="run-select"><input type="checkbox" checked={selected} disabled={sourceController.busy || (!selected && state.selectedRunIds.length >= 3)} onChange={(event) => comparison.selectRuns(event.target.checked ? [...state.selectedRunIds, run.runId] : state.selectedRunIds.filter((id) => id !== run.runId))} /><span><strong>{run.title ?? "名称なし"}</strong><small>{capturedLabel(run.capturedAt)} ／ {associationLabel(run)} ／ {outcomeLabels[run.assessment.outcome]} ／ {formatNumber(run.measurement.usage.totals.totalTokens)} tokens{run.measurement.usage.availability === "partial" ? "（一部）" : ""}</small></span></label>
+                <div className="run-actions"><button className="text-button" disabled={sourceController.busy} onClick={() => comparison.beginCorrection(run)}>評価を訂正</button><button className="text-button" disabled={sourceController.busy} onClick={() => void comparison.readOutput(run.runId)}>出力を明示して読む</button>{run.source.association && <><input disabled={sourceController.busy} aria-label={`${run.title ?? "名称なし"}のお気に入り名`} placeholder="お気に入り名（任意）" maxLength={120} value={favoriteNames[run.runId] ?? ""} onChange={(event) => setFavoriteNames((old) => ({ ...old, [run.runId]: event.target.value }))} /><button className="text-button" disabled={sourceController.busy} onClick={() => void comparison.saveFavorite(run.runId, favoriteNames[run.runId]?.trim() || undefined)}>この記録の設定を保存</button></>}</div>
               </li>;
             })}
           </ul>
@@ -317,9 +325,9 @@ export function ComparisonWorkbench({
           <ComparisonTable runs={state.comparison.runs} />
           <TokenBars runs={state.comparison.runs} />
           {[...state.comparison.aggregate.reasons, ...state.comparison.reasons].map((reason) => <p className="comparison-reason" key={reason}>{aggregateReasonLabels[reason] ?? reason}</p>)}
-          <details><summary>チェック・評価・メモ</summary>{state.comparison.runs.map((run) => <article className="assessment-details" key={run.runId}><h3>{run.title ?? associationLabel(run)}</h3><p>{provenanceLabels[run.assessment.provenance]} ／ {outcomeLabels[run.assessment.outcome]}</p><ul>{run.assessment.requirements.map((item) => <li key={item.id}>{item.label}：{requirementLabels[item.result]}{item.critical ? "（必須）" : ""}</li>)}</ul>{run.assessment.ratings.map((item) => <p key={item.id}><strong>{item.label} {item.score}/5</strong>（{item.lowAnchor}〜{item.highAnchor}）：{item.reason}</p>)}{run.assessment.note && <p className="muted">メモ：{run.assessment.note}</p>}</article>)}</details>
+          <details><summary>条件・チェック・評価・メモ</summary>{state.comparison.runs.map((run) => { const conditions = conditionEvidence(run.measurement.conditions); return <article className="assessment-details" key={run.runId}><h3>{run.title ?? associationLabel(run)}</h3><p>初期条件：モデル {conditions.initialModel} ／ 推論 {conditions.initialReasoningEffort} ／ 実行ポリシー {conditions.initialExecutionPolicy}</p><p>途中で変化：{conditions.changed} ／ 不明：{conditions.unknown}</p><p>{provenanceLabels[run.assessment.provenance]} ／ {outcomeLabels[run.assessment.outcome]}</p><ul>{run.assessment.requirements.map((item) => <li key={item.id}>{item.label}：{requirementLabels[item.result]}{item.critical ? "（必須）" : ""}</li>)}</ul>{run.assessment.ratings.map((item) => <p key={item.id}><strong>{item.label} {item.score}/5</strong>（{item.lowAnchor}〜{item.highAnchor}）：{item.reason}</p>)}{run.assessment.note && <p className="muted">メモ：{run.assessment.note}</p>}</article>; })}</details>
         </section>}
-        {state.output && <section className="comparison-panel explicit-output" aria-labelledby="output-heading"><div className="comparison-heading"><h2 id="output-heading">明示して開いた出力</h2><span>プレーンテキスト</span></div>{state.output.available && state.output.text !== null ? <pre>{state.output.text}</pre> : <p>出力は利用できません（{state.output.reason ?? "理由不明"}）。</p>}</section>}
+        {state.output && <section className="comparison-panel explicit-output" aria-labelledby="output-heading"><div className="comparison-heading"><div><h2 id="output-heading">明示して開いた出力</h2><code>{runReferenceLabel(state.output.runId, state.runs)}</code></div><span>プレーンテキスト</span></div>{state.output.available && state.output.text !== null ? <pre>{state.output.text}</pre> : <p>出力は利用できません（{state.output.reason ?? "理由不明"}）。</p>}</section>}
         {state.notice && <p className="comparison-notice" role="status" aria-live="polite">{state.notice}</p>}
         {state.error && <div className="comparison-error" role="alert">{state.error}{state.uncertainOperation && <p>同じ保存操作を自動では繰り返しません。</p>}</div>}
       </>}

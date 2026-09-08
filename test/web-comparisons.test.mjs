@@ -344,6 +344,7 @@ test("comparison controller preserves history across mode changes and rejects st
     type: "review-completed",
     requestContext: context,
     view: initialView,
+    intentGeneration: 0,
     review,
   });
   state = comparisonControllerReducer(state, {
@@ -377,6 +378,7 @@ test("comparison controller preserves history across mode changes and rejects st
     type: "review-completed",
     requestContext: context,
     view: initialView,
+    intentGeneration: 0,
     review,
   });
   assert.equal(state.review, null, "old launch result is not installed");
@@ -424,6 +426,7 @@ test("comparison controller retains confirmed saves when refresh fails and clear
     type: "review-completed",
     requestContext: context,
     view,
+    intentGeneration: 0,
     review: firstReview,
   });
   state = comparisonControllerReducer(state, {
@@ -442,17 +445,24 @@ test("comparison controller retains confirmed saves when refresh fails and clear
   state = comparisonControllerReducer(state, {
     type: "begin-correction",
     run: saved,
+    intentGeneration: 1,
   });
   state = comparisonControllerReducer(state, {
     type: "output-completed",
     requestContext: context,
     view,
+    intentGeneration: 1,
     output: { runId: saved.runId, available: true, text: "PRIVATE", reason: null },
+  });
+  state = comparisonControllerReducer(state, {
+    type: "begin-review",
+    intentGeneration: 2,
   });
   state = comparisonControllerReducer(state, {
     type: "review-completed",
     requestContext: context,
     view,
+    intentGeneration: 2,
     review: secondReview,
   });
   assert.equal(state.correctionRun, null);
@@ -466,6 +476,138 @@ test("comparison controller retains confirmed saves when refresh fails and clear
   });
   assert.equal(state.uncertainOperation, "save-run");
   assert.equal(state.lastSavedRun, saved);
+});
+
+test("comparison controller rejects delayed output, comparison, and review intent after local selection changes", async () => {
+  const {
+    comparisonContextFor,
+    comparisonControllerReducer,
+    initialComparisonControllerState,
+  } = await import("../web/src/useComparisonController.ts");
+  const view = sourceView();
+  const context = comparisonContextFor(view);
+  const runA = { runId: "4".repeat(64), reviewId: "5".repeat(64) };
+  const runB = { runId: "6".repeat(64), reviewId: "7".repeat(64) };
+  let state = comparisonControllerReducer(initialComparisonControllerState, {
+    type: "source-view",
+    view,
+  });
+  state = comparisonControllerReducer(state, {
+    type: "select-runs",
+    runIds: [runA.runId],
+    intentGeneration: 1,
+  });
+  state = comparisonControllerReducer(state, {
+    type: "begin-output",
+    intentGeneration: 2,
+  });
+  const outputGeneration = 2;
+  state = comparisonControllerReducer(state, {
+    type: "output-completed",
+    requestContext: context,
+    view,
+    intentGeneration: outputGeneration,
+    output: { runId: runA.runId, available: true, text: "CURRENT", reason: null },
+  });
+  assert.equal(state.output?.text, "CURRENT");
+  state = comparisonControllerReducer(state, {
+    type: "select-runs",
+    runIds: [runB.runId],
+    intentGeneration: 3,
+  });
+  state = comparisonControllerReducer(state, {
+    type: "output-completed",
+    requestContext: context,
+    view,
+    intentGeneration: outputGeneration,
+    output: { runId: runA.runId, available: true, text: "OLD", reason: null },
+  });
+  assert.equal(state.output, null);
+
+  state = comparisonControllerReducer(state, {
+    type: "begin-comparison",
+    intentGeneration: 4,
+  });
+  const comparisonGeneration = 4;
+  state = comparisonControllerReducer(state, {
+    type: "comparison-completed",
+    requestContext: context,
+    view,
+    intentGeneration: comparisonGeneration,
+    comparison: { runs: [runB] },
+  });
+  assert.equal(state.comparison?.runs[0], runB);
+  state = comparisonControllerReducer(state, {
+    type: "begin-correction",
+    run: runB,
+    intentGeneration: 5,
+  });
+  state = comparisonControllerReducer(state, {
+    type: "comparison-completed",
+    requestContext: context,
+    view,
+    intentGeneration: comparisonGeneration,
+    comparison: { runs: [runA] },
+  });
+  assert.equal(state.comparison, null);
+
+  state = comparisonControllerReducer(state, {
+    type: "begin-review",
+    intentGeneration: 6,
+  });
+  const reviewGeneration = 6;
+  state = comparisonControllerReducer(state, {
+    type: "select-runs",
+    runIds: [runA.runId],
+    intentGeneration: 7,
+  });
+  state = comparisonControllerReducer(state, {
+    type: "review-completed",
+    requestContext: context,
+    view,
+    intentGeneration: reviewGeneration,
+    review: { reviewId: "8".repeat(64), measurement: { taskId: randomUUID() } },
+  });
+  assert.notEqual(state.review?.reviewId, "8".repeat(64));
+
+  state = comparisonControllerReducer(state, {
+    type: "save-completed",
+    requestContext: context,
+    view,
+    run: runA,
+  });
+  assert.equal(state.lastSavedRun, runA, "confirmed private save survives local intent changes");
+});
+
+test("comparison condition labels expose initial, changed, and unknown evidence per record", async () => {
+  const { conditionEvidence, runReferenceLabel } = await import(
+    "../web/src/comparisons.ts"
+  );
+  assert.deepEqual(
+    conditionEvidence({
+      model: "model-a",
+      reasoningEffort: "high",
+      executionPolicyDigest: null,
+      changes: ["model", "reasoningEffort"],
+      unknown: ["executionPolicy"],
+    }),
+    {
+      initialModel: "model-a",
+      initialReasoningEffort: "high",
+      initialExecutionPolicy: "不明",
+      changed: "モデル、推論設定",
+      unknown: "実行ポリシー",
+    },
+  );
+  const runId = "9".repeat(64);
+  assert.equal(
+    runReferenceLabel(runId, [{ runId, title: "記録A" }]),
+    `記録A ／ ${runId.slice(0, 12)}`,
+  );
+  assert.equal(
+    runReferenceLabel(runId, []),
+    `名称なし ／ ${runId.slice(0, 12)}`,
+  );
 });
 
 test("comparison chart starts at zero and unknown associations stay unknown", async () => {
