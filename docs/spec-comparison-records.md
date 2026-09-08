@@ -98,8 +98,8 @@ For historical source validation, the private review also stores the actual `sou
 The assessment accepts:
 
 - `outcome`: `accepted`, `failed`, `abandoned` or `unknown`;
-- `requirements`: up to 24 entries with a stable ID, label, `critical` boolean and `pass`, `fail` or `unknown` result;
-- `ratings`: up to 8 criterion entries with an ID, label, integer score from 1 to 5, a stated low/high anchor and a short reason;
+- `requirements`: up to 24 entries shaped `{id,label,critical,result}`, with a stable ID, label, `critical` boolean and `pass`, `fail` or `unknown` result;
+- `ratings`: up to 8 criterion entries shaped `{id,label,score,lowAnchor,highAnchor,reason}`, with an ID, label, integer score from 1 to 5, stated low/high anchors and a short reason;
 - `provenance`: `user` or `agent`, explicitly displayed;
 - `note`: optional bounded plain text.
 
