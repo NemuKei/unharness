@@ -147,6 +147,8 @@ Add the seven corresponding actions to the existing accepted-context source rout
 
 The Comparison tab contains result reading, assessment/save and a paged saved history. UUID and completion selection are task inputs; no arbitrary local paths are accepted. Missing values say **不明**; show **記録で確認できたトークン** and the coverage details. Show checklist fulfillment, critical failures, attributed outcome/ratings and sample count without a universal score. Allow one to three records to be selected for comparison, output to be inspected explicitly, a saved assessment to be revised, and a valid historical configuration to be saved as a favorite. Preserve successful private saves when a later auxiliary list request fails; an uncertain write is never repeated automatically.
 
+Follow the [accepted comparison composition](design.md#comparison-inside-the-same-gui): compact static loadout portraits, aligned record columns, a readable table and a proportional chart generated from recorded numbers. Reuse bundled artwork; an unknown source association uses an unknown presentation rather than an inferred mode. Partial or missing metrics remain explicit, and exact values stay accessible at narrow widths. The illustration's sample numbers are never embedded as real data.
+
 The UI uses the shared service's neutral/eligibility decisions. It has no original-creation or automatic replay action in this slice. The equipment tab and recovery remain reachable after record errors, malformed inputs, renderer failures and interrupted/uncertain operations. Update the English and Japanese README together, the workbench runbook, comparison contract, architecture and status to state the implemented scope and the remaining predeclared replay/MCP work.
 
 ## Required evidence

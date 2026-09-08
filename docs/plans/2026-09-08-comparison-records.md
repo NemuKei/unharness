@@ -55,7 +55,7 @@ assert.equal(later.measurement.usage.childCoverage, 'unknown');
 ```js
 const validCounter = value => Number.isSafeInteger(value) && value >= 0;
 export function sumCounters(values) {
-  if (!values.length || !values.every(validCounter)) return null;
+  if (!Array.isArray(values) || !values.length || !values.every(validCounter)) return null;
   let sum = 0;
   for (const value of values) {
     sum += value;
@@ -147,12 +147,13 @@ const ratio = total !== null && acceptedCount > 0 ? total / acceptedCount : null
 **Files:**
 - Create: `web/src/comparisons.ts`, `web/src/ComparisonWorkbench.tsx`, a bounded `web/src/useComparisonController.ts` or equivalent reducer/controller, `test/web-comparisons.test.mjs`.
 - Modify: `src/gui/sources.mjs`, `src/gui/server.mjs`, `web/src/SourceWorkbench.tsx`, relevant existing hook/components/types/styles and `test/gui-sources.test.mjs`.
-- Update: `README.md`, `README.ja.md`, `docs/user-source-gui.md`, `docs/comparison-metrics.md`, `docs/architecture.md`, `docs/status.md`.
+- Update: `README.md`, `README.ja.md`, `docs/user-source-gui.md`, `docs/comparison-metrics.md`, `docs/architecture.md`, `docs/design.md`, `docs/status.md`.
 
 **Interfaces:**
 - Consumes Task 2's seven exact actions and summaries. HTTP bodies add only existing request/launch/context identities; the server supplies the registered workspace.
 - Comparison UI state is scoped to the accepted launch/context and registered scope. A current mode/revision change does not rewrite an explicitly historical review, but a changed launch/scope cannot install stale draft/history/output data.
 - Both source and comparison views keep one accepted source controller. Comparison failures cannot hide the equipment/recovery entry. No raw path/source/metric field is added to browser request schemas.
+- Preserve the accepted comparison composition in `docs/design.md`: reuse the bundled hangar art as compact static portraits over aligned record columns, with a readable table and a proportional chart rendered from actual saved numbers. Unknown association has an explicit unknown portrait/label; do not substitute Normal or mount extra animated scenes. No image generation or new art assets are required.
 
 - [ ] Add red HTTP/UI-state tests for review/save/duplicate bodies, explicit output only, historical favorite save and restored source state. Include changed launch/scope responses and uncertain save handling.
 
@@ -167,7 +168,7 @@ assert.equal(sourceStateAfter.revision, sourceStateBefore.revision);
 
 - [ ] Confirm failure, add exact HTTP allowlists/dispatch and types, and keep all existing Host/origin/token/context/duplicate guards. Add new private-writing actions to uncertain-outcome classification; never retry a mutation automatically. A known successful save remains confirmed if only its follow-up history request fails.
 - [ ] Implement the equipment/comparison tab within the same workbench, the existing-observation UUID handoff, first-turn/default and later-cutoff review, nullable metrics/coverage details, attributed checklist/ratings/notes, optional-title save and immutable correction. Output is an explicit plain-text inspection. Keep creation/replay absent here and label the records observational.
-- [ ] Implement paged history, one-to-three selected rows, aggregate null reasons and historical favorite save. Preserve the accepted art/effects and make equipment/recovery reachable after every record error. Unknown source association displays no inferred loaded mode.
+- [ ] Implement paged history, one-to-three selected rows, aggregate null reasons and historical favorite save. Use compact static portraits with aligned table columns and a proportional token chart from the selected records; represent unknown/partial values explicitly and keep exact numbers readable at narrow widths. Preserve the accepted art/effects and make equipment/recovery reachable after every record error. Unknown source association displays no inferred loaded mode.
 - [ ] Test the production controller transitions for changed context/scope, preserved historical review across mode change, stale auxiliary results, known/uncertain saves, output clearing and correction identity. Run affected HTTP/web tests, `npm run check`, `npm run build` and `node --test` after implementation changes.
 - [ ] Update the paired README and runbook/spec/status with exact operations and limits, including native root-response coverage, retrospective criteria, comparison-data privacy and remaining predeclared replay/MCP. Commit and report the controller handoff; do not claim controller native/browser checks were run.
 
