@@ -72,6 +72,175 @@ async function setup(t, fixture = false) {
   };
 }
 
+async function registerAllSources(s) {
+  const discovery = (await s.post("discover")).data.result;
+  const registered = await s.post("register", {
+    discoveryId: discovery.discoveryId,
+    instructionsOptional: true,
+    selectedSkillIds: discovery.skills
+      .filter((source) => source.eligible)
+      .map((source) => source.id),
+    userAddedOptional: true,
+  });
+  assert.equal(registered.status, 200, JSON.stringify(registered));
+  Object.assign(s.metadata, (await s.request("/sources/metadata")).data);
+  return registered.data.state.source;
+}
+
+async function writeTaskRecording(s, mutate = () => {}) {
+  const taskId = randomUUID();
+  const records = [
+    {
+      type: "session_meta",
+      payload: {
+        id: taskId,
+        timestamp: new Date().toISOString(),
+        cwd: s.profile.context.project,
+        originator: "Codex Desktop",
+        thread_source: "user",
+        cli_version: "0.153.4",
+      },
+    },
+    {
+      type: "turn_context",
+      payload: {
+        cwd: s.profile.context.project,
+        turn_id: "turn-1",
+        model: "gpt-5",
+        effort: "high",
+      },
+    },
+    {
+      type: "world_state",
+      payload: {
+        full: true,
+        state: {
+          agents_md: {
+            directory: s.profile.context.project,
+            text:
+              s.profile.originalFiles.instructions.text.trim() +
+              "\n\n--- project-doc ---\n\n# Synthetic project requirements",
+          },
+          host_skills: {
+            includeInstructions: true,
+            body: `### Skill roots\n- \`r0\` = \`${s.profile.context.codexHome}/skills\`\n### Available skills\n- example: Synthetic optional example (file: r0/example/SKILL.md)`,
+          },
+        },
+      },
+    },
+    {
+      type: "response_item",
+      payload: {
+        type: "message",
+        role: "assistant",
+        content: [{ type: "output_text", text: "synthetic answer" }],
+      },
+    },
+    {
+      type: "event_msg",
+      payload: { type: "task_complete", turn_id: "turn-1" },
+    },
+  ];
+  mutate(records);
+  const directory = join(s.profile.context.codexHome, "sessions");
+  await mkdir(directory, { recursive: true });
+  await writeFile(
+    join(directory, `rollout-${taskId}.jsonl`),
+    records.map((record) => JSON.stringify(record)).join("\n") + "\n",
+  );
+  return taskId;
+}
+
+test(
+  "source observation accepts only a task UUID in the registered HTTP context",
+  { skip: process.platform !== "darwin" },
+  async (t) => {
+    const unregistered = await setup(t);
+    const absentTaskId = randomUUID();
+    assert.equal(
+      (await unregistered.post("observe", { taskId: absentTaskId })).data.error
+        .kind,
+      "workspace-invalid",
+    );
+
+    const s = await setup(t);
+    const before = await registerAllSources(s);
+    const taskId = await writeTaskRecording(s);
+    const preparedFiles = await readSourceProfileFiles(s.profile.context);
+    const observed = await s.post("observe", { taskId: taskId.toUpperCase() });
+    assert.equal(observed.status, 200, JSON.stringify(observed));
+    assert.equal(observed.data.result.status, "matched-record");
+    assert.equal(observed.data.result.taskId, taskId);
+    assert.equal(
+      observed.data.result.preparationId,
+      before.preparation.id,
+    );
+    assert.equal(
+      observed.data.state.source.observation.observationId,
+      observed.data.result.observationId,
+    );
+    assert.equal(
+      observed.data.state.source.observation.snapshotId,
+      observed.data.result.snapshotId,
+    );
+    assert.equal(
+      observed.data.state.source.verification.runtimeStateVerified,
+      false,
+    );
+    for (const [expected, mutate] of [
+      ["not-matched-record", (records) => {
+        records[2].payload.state.agents_md.text = "synthetic mismatch";
+      }],
+      ["unqualified-record", (records) => {
+        records[0].payload.timestamp = "2000-01-01T00:00:00Z";
+      }],
+      ["unknown-record", (records) => {
+        records[0].payload.cli_version = "0.999.0";
+      }],
+    ]) {
+      const variantTaskId = await writeTaskRecording(s, mutate);
+      const variant = await s.post("observe", { taskId: variantTaskId });
+      assert.equal(variant.status, 200, expected);
+      assert.equal(variant.data.result.status, expected);
+      assert.equal(
+        variant.data.state.source.observation.observationId,
+        variant.data.result.observationId,
+      );
+    }
+
+    for (const field of [
+      "session",
+      "mode",
+      "markers",
+      "expectedCwd",
+      "preparedAt",
+    ]) {
+      const rejected = await s.post("observe", {
+        taskId,
+        [field]: "synthetic-forbidden-input",
+      });
+      assert.equal(rejected.status, 400, field);
+      assert.equal(rejected.data.error.kind, "gui-invalid-request", field);
+    }
+    assert.equal(
+      (await s.post("observe", { taskId: "not-a-uuid" })).data.error.kind,
+      "gui-invalid-request",
+    );
+    const oldContext = s.metadata.contextId;
+    s.metadata.contextId = "f".repeat(64);
+    assert.equal(
+      (await s.post("observe", { taskId })).data.error.kind,
+      "gui-source-context-changed",
+    );
+    s.metadata.contextId = oldContext;
+    assert.deepEqual(
+      await readSourceProfileFiles(s.profile.context),
+      preparedFiles,
+      "observation does not apply a source mode or effects action",
+    );
+  },
+);
+
 test(
   "source management launch is isolated and binds registration to reviewed discovery and context",
   { skip: process.platform !== "darwin" },

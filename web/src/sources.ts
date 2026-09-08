@@ -47,11 +47,58 @@ export type SourceVerification = {
   sourceCoverage: "unknown";
   nextTaskRequired: true;
 };
+export type TaskObservationStatus =
+  | "matched-record"
+  | "not-matched-record"
+  | "unqualified-record"
+  | "unknown-record";
+export type TaskObservation = {
+  observationId: string;
+  taskId: string;
+  scopeId: string;
+  snapshotId: string;
+  preparationId: string | null;
+  preparedMode: SourceMode;
+  observedAt: string;
+  status: TaskObservationStatus;
+  reasons: string[];
+  sources: Array<{
+    sourceId: string;
+    category: "instructions" | "skill";
+    expected:
+      | "saved-instructions"
+      | "minimal-guide"
+      | "inert-instructions"
+      | "automatic-catalog"
+      | "manual-only"
+      | "disabled"
+      | "unknown";
+    recorded:
+      | "matching-prefix"
+      | "different-prefix"
+      | "present"
+      | "absent"
+      | "unknown";
+    status: "matched" | "not-matched" | "unknown";
+  }>;
+  conditions: {
+    codexVersion: string | null;
+    model: string | null;
+    reasoningEffort: string | null;
+    executionPolicyDigest: string | null;
+    projectInstructionsDigest: string | null;
+    memoryGuidanceRecorded: boolean;
+  };
+  verification: SourceVerification;
+};
 export type SourceState = {
   context: SourceMetadata["context"];
   registration: { scopeId: string; normalId: string; sources: SourceRow[] };
   preparedMode: SourceMode;
   revision: number;
+  preparation: { id: string; preparedAt: string } | null;
+  observation: TaskObservation | null;
+  observationIssue: string | null;
   conflict: null | { kind: string };
   recovery: {
     pending: boolean;
@@ -60,6 +107,40 @@ export type SourceState = {
   };
   verification: SourceVerification;
 };
+
+export function validTaskId(value: string) {
+  return /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(
+    value.trim(),
+  );
+}
+
+export function taskObservationLabel(status: TaskObservationStatus) {
+  return {
+    "matched-record": "選択範囲の記録が一致",
+    "not-matched-record": "記録が一致しません",
+    "unqualified-record": "この準備の確認に使えないタスク",
+    "unknown-record": "確認できません",
+  }[status];
+}
+
+export function taskObservationNotice(status: TaskObservationStatus) {
+  const label = taskObservationLabel(status);
+  return status === "matched-record"
+    ? `${label}。現在の準備に対応する記録です。`
+    : label;
+}
+
+export function currentTaskObservation(
+  state: Pick<SourceState, "preparation" | "observation"> | null,
+  result: TaskObservation | null = state?.observation ?? null,
+) {
+  if (!result || !state?.observation) return null;
+  const isCurrent =
+    result.preparationId === state.preparation?.id &&
+    result.snapshotId === state.observation.snapshotId &&
+    result.observationId === state.observation.observationId;
+  return isCurrent ? result : null;
+}
 export type Guide = {
   id: string;
   text: string;

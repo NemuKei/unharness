@@ -1,8 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { Hangar } from "./Hangar";
 import { useSourceController } from "./useSourceController";
-import { modePresentation, sourceModes } from "./sources";
-import type { SourceMode, SourceRow, SourcePlan } from "./sources";
+import {
+  currentTaskObservation,
+  modePresentation,
+  sourceModes,
+  taskObservationLabel,
+  validTaskId,
+} from "./sources";
+import type {
+  SourceMode,
+  SourceRow,
+  SourcePlan,
+  TaskObservation,
+} from "./sources";
 import "./sources.css";
 
 function displayPreference() {
@@ -126,6 +137,9 @@ export function SourceWorkbench() {
                     外部の変更を確認してください（{source.conflict.kind}）。
                   </p>
                 ))}
+              {source && (
+                <TaskObservationSection controller={c} usable={usable} />
+              )}
             </section>
             {!source ? (
               <Setup key={c.selectionKey} controller={c} />
@@ -335,6 +349,150 @@ export function SourceWorkbench() {
   );
 }
 type Controller = ReturnType<typeof useSourceController>;
+
+const expectedLabels: Record<TaskObservation["sources"][number]["expected"], string> = {
+  "saved-instructions": "保存した指示",
+  "minimal-guide": "最小ガイド",
+  "inert-instructions": "無効化した指示",
+  "automatic-catalog": "自動選択の一覧に表示",
+  "manual-only": "手動のみ",
+  disabled: "無効",
+  unknown: "不明",
+};
+const recordedLabels: Record<TaskObservation["sources"][number]["recorded"], string> = {
+  "matching-prefix": "指示の先頭が一致",
+  "different-prefix": "指示の先頭が不一致",
+  present: "一覧にあり",
+  absent: "一覧になし",
+  unknown: "不明",
+};
+const sourceStatusLabels: Record<TaskObservation["sources"][number]["status"], string> = {
+  matched: "一致",
+  "not-matched": "不一致",
+  unknown: "不明",
+};
+
+function observationIssueText(issue: string | null) {
+  if (
+    issue === "preparation-boundary-unavailable" ||
+    issue === "preparation-metadata-invalid"
+  )
+    return "従来の保存状態には確認用の準備日時がありません。内容を確認して同じモードを準備し直してください。自動では変更しません。";
+  if (issue === "source-conflict")
+    return "ソースに独立した変更があるため、現在のタスク記録は表示できません。";
+  if (issue === "recovery-required")
+    return "変更が中断しているため、復旧後に新しいタスクで確認してください。";
+  if (issue)
+    return `保存した確認記録を表示できません（${issue}）。新しいタスクで確認し直せます。`;
+  return "タスクの記録はまだ確認していません。";
+}
+
+function TaskObservationSection({
+  controller: c,
+  usable,
+}: {
+  controller: Controller;
+  usable: boolean;
+}) {
+  const [taskId, setTaskId] = useState("");
+  const source = c.view?.source ?? null;
+  const observation = currentTaskObservation(source);
+  const taskIdValid = validTaskId(taskId);
+  return (
+    <div className="task-observation">
+      {observation ? (
+        <div
+          className={`task-observation-result ${observation.status}`}
+          role="status"
+        >
+          <strong>{taskObservationLabel(observation.status)}</strong>
+          <span>
+            {modePresentation[observation.preparedMode].title} ／{" "}
+            <time dateTime={observation.observedAt}>
+              {new Date(observation.observedAt).toLocaleString("ja-JP")}
+            </time>
+          </span>
+        </div>
+      ) : (
+        <p className="task-observation-empty">
+          {observationIssueText(source?.observationIssue ?? null)}
+        </p>
+      )}
+      <details>
+        <summary>タスク記録で確認</summary>
+        <p className="muted">
+          この準備の後に、同じプロジェクトで新しいCodex Desktopタスクを作成してください。そのタスクのUUIDだけを確認します。
+        </p>
+        <label className="source-name" htmlFor="source-task-id">
+          タスクUUID
+          <input
+            id="source-task-id"
+            name="taskId"
+            type="text"
+            inputMode="text"
+            autoComplete="off"
+            spellCheck={false}
+            value={taskId}
+            aria-invalid={taskId.length > 0 && !taskIdValid}
+            aria-describedby="source-task-id-help"
+            onChange={(event) => setTaskId(event.target.value)}
+          />
+        </label>
+        <p id="source-task-id-help" className="muted">
+          録画ファイルのパス、期待する内容、モード、準備日時は入力しません。
+        </p>
+        <button
+          className="secondary"
+          disabled={!usable || !taskIdValid}
+          onClick={() =>
+            void c.run<TaskObservation>("observe", { taskId: taskId.trim() })
+          }
+        >
+          このタスクの記録を確認
+        </button>
+        {observation && (
+          <div className="task-observation-details">
+            <p>
+              準備モード：{modePresentation[observation.preparedMode].title}
+            </p>
+            <p>
+              確認日時：
+              <time dateTime={observation.observedAt}>
+                {new Date(observation.observedAt).toLocaleString("ja-JP")}
+              </time>
+            </p>
+            <ul>
+              {observation.sources.map((recordedSource) => {
+                const registeredSource = source?.registration.sources.find(
+                  (candidate) => candidate.id === recordedSource.sourceId,
+                );
+                return (
+                  <li key={recordedSource.sourceId}>
+                    <strong>
+                      {registeredSource?.label ?? recordedSource.category}
+                    </strong>
+                    ：期待 {expectedLabels[recordedSource.expected]} ／ 記録{" "}
+                    {recordedLabels[recordedSource.recorded]} ／{" "}
+                    {sourceStatusLabels[recordedSource.status]}
+                  </li>
+                );
+              })}
+            </ul>
+            {observation.reasons.length > 0 && (
+              <p className="muted">
+                理由：{observation.reasons.join("、")}
+              </p>
+            )}
+            <p className="muted">
+              選んだソースの最初の記録だけを確認します。実行中の状態、モード切替、すべてのソースの読み込みは未検証です。
+            </p>
+          </div>
+        )}
+      </details>
+    </div>
+  );
+}
+
 function Context({ controller: c }: { controller: Controller }) {
   return (
     c.view && (

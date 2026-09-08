@@ -30,6 +30,7 @@ const fields = {
   favorite: [["favoriteId"], []],
   checkpoint: [["checkpointId"], []],
   recover: [[], []],
+  observe: [["taskId"], []],
 };
 export function sourceRequestShape(body, action) {
   const schema = Object.hasOwn(fields, action) ? fields[action] : null;
@@ -58,6 +59,12 @@ export function sourceRequestShape(body, action) {
   ])
     if (Object.hasOwn(input, key) && !id(input[key]))
       fail("gui-invalid-request");
+  if (
+    Object.hasOwn(input, "taskId") &&
+    (typeof input.taskId !== "string" ||
+      !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(input.taskId))
+  )
+    fail("gui-invalid-request");
   if (Object.hasOwn(input, "sourceId") && !sourceId(input.sourceId))
     fail("gui-invalid-request");
   for (const key of ["selectedSkillIds", "selectedIds"])
@@ -169,6 +176,8 @@ export async function createSourceController(context) {
         return service.planUserCheckpoint({ workspace, ...input });
       if (action === "recover")
         return service.recoverUserSources({ workspace });
+      if (action === "observe")
+        return service.observeUserTask({ workspace, taskId: input.taskId });
       fail("gui-invalid-request");
     },
   };

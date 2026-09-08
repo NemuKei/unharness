@@ -100,6 +100,38 @@
   padding-top: 12px;
   border-top: 1px solid var(--line);
 }
+.task-observation {
+  margin-top: 15px;
+  padding-top: 13px;
+  border-top: 1px solid var(--line);
+}
+.task-observation-result {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  background: rgba(8, 15, 19, 0.72);
+}
+.task-observation-result strong {
+  color: var(--amber);
+}
+.task-observation-result.not-matched-record strong,
+.task-observation-result.unqualified-record strong {
+  color: #ffb198;
+}
+.task-observation-result span,
+.task-observation-empty,
+.task-observation-details {
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.task-observation-details ul {
+  padding-left: 19px;
+}
+.task-observation-details li {
+  margin: 7px 0;
+}
 .source-setup > .primary {
   margin-top: 15px;
 }

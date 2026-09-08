@@ -2,6 +2,91 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 
+test("task observations render only for the current prepared snapshot", async () => {
+  const {
+    currentTaskObservation,
+    taskObservationLabel,
+    taskObservationNotice,
+    validTaskId,
+  } = await import("../src/sources.ts");
+  const observation = {
+    observationId: "a".repeat(64),
+    taskId: "11111111-1111-4111-8111-111111111111",
+    scopeId: "b".repeat(64),
+    snapshotId: "c".repeat(64),
+    preparationId: "d".repeat(32),
+    preparedMode: "normal",
+    observedAt: "2026-09-08T00:00:00Z",
+    status: "matched-record",
+    reasons: [],
+    sources: [],
+    conditions: {
+      codexVersion: "0.153.4",
+      model: "gpt-5",
+      reasoningEffort: "high",
+      executionPolicyDigest: null,
+      projectInstructionsDigest: null,
+      memoryGuidanceRecorded: false,
+    },
+    verification: {
+      runtimeStateVerified: false,
+      modeSwitchingVerified: false,
+      sourceCoverage: "unknown",
+      nextTaskRequired: true,
+    },
+  };
+  const source = {
+    preparation: {
+      id: observation.preparationId,
+      preparedAt: "2026-09-07T23:59:00Z",
+    },
+    observation,
+  };
+  assert.equal(currentTaskObservation(source, observation), observation);
+  for (const changed of ["preparationId", "snapshotId", "observationId"]) {
+    assert.equal(
+      currentTaskObservation(source, { ...observation, [changed]: "f".repeat(changed === "preparationId" ? 32 : 64) }),
+      null,
+      changed,
+    );
+  }
+  assert.equal(
+    currentTaskObservation(
+      { ...source, preparation: { ...source.preparation, id: "e".repeat(32) }, observation: null },
+      observation,
+    ),
+    null,
+    "another client's mode change makes the response historical",
+  );
+  assert.deepEqual(
+    [
+      "matched-record",
+      "not-matched-record",
+      "unqualified-record",
+      "unknown-record",
+    ].map(taskObservationLabel),
+    [
+      "選択範囲の記録が一致",
+      "記録が一致しません",
+      "この準備の確認に使えないタスク",
+      "確認できません",
+    ],
+  );
+  assert.equal(validTaskId(observation.taskId), true);
+  assert.equal(validTaskId("not-a-uuid"), false);
+  assert.equal(
+    taskObservationNotice("matched-record"),
+    "選択範囲の記録が一致。現在の準備に対応する記録です。",
+  );
+  for (const status of [
+    "not-matched-record",
+    "unqualified-record",
+    "unknown-record",
+  ]) {
+    assert.equal(taskObservationNotice(status), taskObservationLabel(status));
+  }
+});
+
 test("source actions retain the UI accepted metadata after failed reads and never retry uncertain writes", async (t) => {
   const { Api } = await import("../src/api.ts");
   const { sourceOperation, readSourceState } = await import(
