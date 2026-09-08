@@ -68,7 +68,7 @@ const text = chunks.flatMap(chunk => chunk.ok).join('');
 - State.registration keeps original `normalId` and adds `activeNormalId`. Normal compilation uses `state.normalId ?? reg.normalId`. Favorite lists add `normalId` and `needsAdaptation`.
 - Ordinary plan summaries add `adaptation: null | {kind:'retained-settings',sourceType:'favorite'|'checkpoint',sourceId,previousNormalId,normalId}`. No raw config or auto-saved replacement favorite.
 
-- [ ] Write a red service test for each starting mode. Capture all managed files, change one retained setting independently, review then accept, and assert exact bytes/metadata remain equal to the post-external-edit capture. Then prepare every mode and Normal, asserting the retained edit persists and Normal is exact to the new saved version.
+- [x] Write a red service test for each starting mode. Capture all managed files, change one retained setting independently, review then accept, and assert exact bytes/metadata remain equal to the post-external-edit capture. Then prepare every mode and Normal, asserting the retained edit persists and Normal is exact to the new saved version.
 
 ```js
 const beforeAccept = await captureRegistered(reg);
@@ -80,12 +80,12 @@ assert.equal(accepted.recorded, true);
 assert.equal((await userSourceState({ workspace })).conflict, null);
 ```
 
-- [ ] Run the focused test and confirm failure before implementation.
-- [ ] Implement active Normal access/validation, immutable context IDs on new plans/favorites/checkpoints, exact same-context restoration and native-proved explicit cross-context adaptation. Reconciliation rejects all non-config differences and unsupported metadata; supported config existence changes must preserve current presence/metadata. Never infer a new source selection.
-- [ ] Fence baseline clients with the spec's `snapshot-v2` role and `state.snapshotVersion = 2`; new readers support legacy snapshots. All subsequent plan/current snapshots preserve the fence, including exact favorite/Normal restoration and a return to original retained bytes. Reject older-format plans in fenced state. Test the baseline reader's actual rejection boundary, not only a new-reader field assertion.
-- [ ] Implement lock/reopen/plan binding/current capture checks and a distinct pending journal for record-only acceptance. Preserve owned directories and checkpoint access. Accept/recovery invalidate current observations. Duplicate acceptance must verify the resulting current state; further changes/stale revision block it. Node-only recovery cancels only the known interrupted private state change and leaves managed files unchanged, including independent edits.
-- [ ] Add exact tests for old record immutability, repeated contexts, legacy data, derived favorite/checkpoint plans, frozen approved plan apply/offline recovery, non-config/selected edits, stale/conflicting/concurrent callers and interruption before/after state publication. Verify privacy projection and CLI dispatch.
-- [ ] Run relevant source/observation/CLI tests and `node --test`. Commit, self-review and report exact evidence. Do not edit UI/HTTP files.
+- [x] Run the focused test and confirm failure before implementation.
+- [x] Implement active Normal access/validation, immutable context IDs on new plans/favorites/checkpoints, exact same-context restoration and native-proved explicit cross-context adaptation. Reconciliation rejects all non-config differences and unsupported metadata; supported config existence changes must preserve current presence/metadata. Never infer a new source selection.
+- [x] Fence baseline clients with the spec's `snapshot-v2` role and `state.snapshotVersion = 2`; new readers support legacy snapshots. All subsequent plan/current snapshots preserve the fence, including exact favorite/Normal restoration and a return to original retained bytes. Reject older-format plans in fenced state. Test the baseline reader's actual rejection boundary, not only a new-reader field assertion.
+- [x] Implement lock/reopen/plan binding/current capture checks and a distinct pending journal for record-only acceptance. Preserve owned directories and checkpoint access. Accept/recovery invalidate current observations. Duplicate acceptance must verify the resulting current state; further changes/stale revision block it. Node-only recovery cancels only the known interrupted private state change and leaves managed files unchanged, including independent edits.
+- [x] Add exact tests for old record immutability, repeated contexts, legacy data, derived favorite/checkpoint plans, frozen approved plan apply/offline recovery, non-config/selected edits, stale/conflicting/concurrent callers and interruption before/after state publication. Verify privacy projection and CLI dispatch.
+- [x] Run relevant source/observation/CLI tests and `node --test`. Commit, self-review and report exact evidence. Do not edit UI/HTTP files.
 
 ### Task 3: Workbench review, adoption and restore clarity
 
