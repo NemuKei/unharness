@@ -1,6 +1,6 @@
 # Local AI commands
 
-The registered-source MCP endpoint uses the same operations as the web workbench. Its stdio protocol and a separate native Codex app-server have [Mac transport evidence](evidence/2026-09-09-ai-transport-macos.md). An open built workbench also receives [MCP changes](evidence/2026-09-09-ai-gui-updates-macos.md) while preserving unrelated drafts. Actual natural-language desktop qualification remains the next check; these results are not full desktop support.
+The registered-source MCP endpoint uses the same operations as the web workbench. Its stdio protocol and a separate native Codex app-server have [Mac transport evidence](evidence/2026-09-09-ai-transport-macos.md). An open built workbench also receives [MCP changes](evidence/2026-09-09-ai-gui-updates-macos.md) while preserving unrelated drafts. An [actual native Mac desktop sequence](evidence/2026-09-09-ai-desktop-macos.md) now also qualifies save, all three modes, selected fresh observations/comparison, historical favorites and restoration through the provided MCP tools. This is the registered-source core scope; complete runtime coverage and the Mac product finish remain open.
 
 ## Start one registered connection
 
