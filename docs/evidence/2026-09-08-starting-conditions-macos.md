@@ -39,6 +39,8 @@ Production-browser regressions also verify:
 
 No uncaught page error or framework overlay was observed. Chrome logged the existing `/favicon.ico` 404, corroborated through the console's resource URL. That asset remains a Mac product-finish item. Deliberately injected transport failures are separate from the normal console check.
 
+After integration, the existing real workbench was restarted on its original loopback port. Its full returned source state and the bytes/metadata of all six registered managed file entries matched the before-upgrade capture. It remained Normal revision 4 with the existing source conflict and no pending recovery; the launch identity changed and the served index matched the main build. No retained-settings plan was accepted and no personal starting condition was created.
+
 ## Validation and limits
 
 The final complete suite at `6dc056f` passed **486 tests**, with no failures and one existing platform skip (**487 total**). All **16** targeted HTTP/controller/browser tests passed, as did TypeScript, Pixi CSP and the production build. The final narrow layout was read from the rebuilt server and visually checked again. Private command logs and screenshots are retained outside tracked source; no file/request bodies or private workspace paths are included here.
