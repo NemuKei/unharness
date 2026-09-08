@@ -170,11 +170,13 @@ export async function defaultMetadata(parent) {
     await rm(dir, { recursive: true, force: true });
   }
 }
-export async function writeComplete(path, file) {
+export async function writeCompleteBytes(path, file, maxBytes = 128 * 1024) {
+  if (!Buffer.isBuffer(file?.bytes) || !Number.isSafeInteger(maxBytes)
+    || maxBytes < 0 || maxBytes > 8 * 1024 * 1024 || file.bytes.length > maxBytes) fail('unsupported-source');
   assertWritableOwnership(file);
   const h = await open(path, 'wx', 0o600);
   try {
-    await h.writeFile(file.text, 'utf8');
+    await h.writeFile(file.bytes);
     await h.sync();
   } finally {
     await h.close();
@@ -194,7 +196,10 @@ export async function writeComplete(path, file) {
     for (const [name, value] of Object.entries(file.meta.xattrs))
       await exec('/usr/bin/xattr', ['-wx', name, value, path]);
   }
-  if (!equal(await captureFile(path), file)) fail('unsupported-metadata');
+  if (!equal(await captureFileBytes(path, Math.max(1, maxBytes)), file)) fail('unsupported-metadata');
+}
+export async function writeComplete(path, file) {
+  await writeCompleteBytes(path, { bytes: Buffer.from(file.text, 'utf8'), meta: file.meta });
 }
 export async function publish(stage, path, before) {
   if (before === null) {

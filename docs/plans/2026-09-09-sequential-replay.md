@@ -20,13 +20,13 @@
 
 ## Task 1: verified materialization and owned working locations
 
-**Files:** `src/experiments/materialize.mjs`, `src/experiments/work-location.mjs`, `src/sources/platform.mjs`, `test/replay-materialize.test.mjs`, `test/replay-work-location.test.mjs`.
+**Files:** `src/experiments/materialize.mjs`, `src/experiments/repository.mjs`, `src/experiments/work-location.mjs`, `src/sources/platform.mjs`, `test/replay-materialize.test.mjs`, `test/replay-work-location.test.mjs`.
 
-- [ ] Add real-file tests for exact binary bytes, zero/absent files, executable mode/xattrs and two independent destinations after source edits. Watch the missing export fail.
-- [ ] Implement bounded materialization from verified manifests into an empty owned destination, with directory/leaf checks and final readback. Share metadata writing with the source platform boundary.
-- [ ] Add refusal tests for occupied locations, links, hostile manifests, unsupported ownership, changed parents and interrupted writes. Retain partial files on failure.
-- [ ] Implement an owned directory/worktree adapter with a pinned Git revision, no checkout, no hooks/templates, validated marker/identity and no reuse after uncertain preparation.
-- [ ] Verify original Git index/branch/work files and unrelated worktrees remain unchanged; run affected source/input regressions, review and commit.
+- [x] Add real-file tests for exact binary bytes, zero/absent files, executable mode/xattrs and two independent destinations after source edits. Both new suites first failed on their missing exports.
+- [x] Implement bounded materialization from verified manifests into an empty owned destination, with directory/leaf checks and final readback. Share metadata writing with the source platform boundary.
+- [x] Add refusal tests for occupied locations, links, hostile manifests, unsupported ownership, changed parents and interrupted writes. Retain partial files on failure. Direct review added final-inventory, pre-write byte-bound and strict-marker cases; all three failures were reproduced and fixed.
+- [x] Implement an owned directory/worktree adapter with a pinned Git revision, no checkout, no hooks/templates, validated marker/identity and no reuse after uncertain preparation. Only the new worktree's index is populated from its pinned base.
+- [x] Verify original Git index/branch/work files and the first outcome remain unchanged while another location is prepared; run affected source/input regressions and review. The full suite passed 507 tests with one existing platform skip, type/CSP checks passed, and an owned native Mac run reproduced two 1,048,753-byte inputs with matching project settings and repo Skill mappings. No model task was started. Task 2 remains open.
 
 ## Task 2: scoped attempts and native retained-condition checks
 
