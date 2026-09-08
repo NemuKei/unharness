@@ -43,6 +43,7 @@ usage: {availability,totals,responseCount,duplicateCount,excludedCount,
         finalReportedThreadTotals,reasons}
 time: {recordedTurnDurationMs,firstResponseMs,activeExecutionMs:null,humanWaitMs:null}
 conditions: {model,reasoningEffort,executionPolicyDigest,changes,unknown,
+             executionPlatform:null,osVersion:null,desktopVersion:null,
              toolState:"unknown",memoryInputs:"unknown",
              request:"unrecorded",startingFiles:"unrecorded",criteriaTiming:"retrospective"}
 output: {available,bytes,reason}
@@ -73,6 +74,8 @@ Use recognized `task_started`, `turn_context` and `task_complete` identities to 
 Store the native `task_complete.duration_ms` for each selected completed turn, and a safe sum when every selected duration is available. Label it **記録された実行時間**, not active compute time. Retain the first turn's `time_to_first_token_ms` separately when valid. Active-execution and human-wait time remain `null`. A span derived from logged event timestamps, if provided, is labeled as a recorded span and is never relabeled as user waiting.
 
 Record observed runtime version, model, reasoning effort and a digest of recognized execution-policy fields, with changes across selected turn contexts visible. Missing model/tool/memory/input conditions remain unknown. Existing memory and native continuity settings are never read for profiling or modified for measurement. Their settings being unchanged is not proof that their input contents are identical.
+
+The known recording does not establish its execution OS/product or desktop bundle version, so those condition fields remain `null`. The service separately records `collectedOn: {platform,kernelRelease,architecture,nodeVersion}` from its actual local process. Label that as the collection environment; do not substitute today's collector version for the historical task's execution version.
 
 The only saved answer is the selected completed turn's bounded `task_complete.last_agent_message`, up to 64 KiB. An oversized, missing, conflicting or unfinished answer stays unavailable with a reason. Never collect other message or tool bodies to manufacture an answer. Store this text privately with the review; omit it from ordinary service/HTTP summaries. An explicit output request returns it as plain text for inspection. Never render it as HTML or execute its contents.
 
@@ -120,7 +123,7 @@ compareUserRuns({workspace,runIds})
 saveUserRunFavorite({workspace,runId,name?})
 ```
 
-Review returns a `reviewId`, captured date, measurement and nullable association, plus `measurementKind: "observational"` and the existing false verification flags. Save/read return a `runId`, review identity, title, assessment summary, measurement and nullable association. List returns bounded summaries and `nextCursor`; pages must advance even when underlying observation pages contain only other roles. Output is returned only by `readUserRunOutput`.
+Review returns a `reviewId`, captured date, collection environment, measurement and nullable association, plus `measurementKind: "observational"` and the existing false verification flags. Save/read return a `runId`, review identity, title, assessment summary, measurement and nullable association. List returns bounded summaries and `nextCursor`; pages must advance even when underlying observation pages contain only other roles. Output is returned only by `readUserRunOutput`.
 
 Use the existing workspace lock for private publications and source association checks. Reopen/revalidate scope and immutable referenced records under that lock. Do not write source state, managed files, journals or arbitrary caller paths. Comparison record reads and private saves can remain usable during a source conflict; new loadout association must then be unknown. Pending recovery prevents a new association, but comparison records must not obstruct configuration recovery.
 

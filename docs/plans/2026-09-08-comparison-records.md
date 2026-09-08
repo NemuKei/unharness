@@ -95,7 +95,7 @@ export function sumCounters(values) {
 | `compareUserRuns` | `compare-runs` | `runIds` |
 | `saveUserRunFavorite` | `run-favorite` | `runId`, optional `name` |
 
-- Review summary: `{reviewId,scopeId,capturedAt,measurementKind:'observational',measurement,source:{association,observation,issue},verification}`. Run summary adds `{runId,title,reviewId,previousRunId,assessment,acceptance}`. `acceptance` contains counted acceptance/basis, fulfilled/total requirements and critical failure/unknown counts, without a global rating.
+- Review summary: `{reviewId,scopeId,capturedAt,collectedOn,measurementKind:'observational',measurement,source:{association,observation,issue},verification}`. `collectedOn` contains actual local `platform,kernelRelease,architecture,nodeVersion`, separate from the normalized measurement's unknown historical execution OS/desktop versions. Run summary adds `{runId,title,reviewId,previousRunId,assessment,acceptance}`. `acceptance` contains counted acceptance/basis, fulfilled/total requirements and critical failure/unknown counts, without a global rating.
 - List: `{runs,nextCursor}`. Output: `{runId,available,text,reason}`. Compare: `{runs,measurementKind:'observational',aggregate,assessment:'neutral',creationEligible:false,reasons}`. Aggregate includes record/distinct-task/accepted counts, nullable captured total and tokens per accepted run, plus fixed unavailable/overlap reasons.
 - Favorite result follows the existing favorite summary and adds `comparisonRunId`. Favorite list optionally returns that reference; restoration remains owned by existing source services.
 
