@@ -177,6 +177,6 @@ assert.equal(sourceStateAfter.revision, sourceStateBefore.revision);
 - [x] Review each task for spec/quality before moving to the next.
 - [x] Corroborate the production parser against the four already authorized real pilot records and the known two-turn case. Store only private projections; do not create model tasks or retrofit mode/preparation associations.
 - [x] Exercise the built GUI on a native owned profile using synthetic task data: review, cutoff, user/agent assessment, save/duplicate/correction, history/comparison/output, historical favorite, context changes and recovery access. Inspect normal and narrow widths, effects off and unchanged managed source captures.
-- [ ] Complete the final whole-change review, resolve findings, verify docs/diff and integrate within the existing private development authorization.
+- [x] Complete the final whole-change review, resolve findings, verify docs/diff and integrate within the existing private development authorization.
 
 After this slice, implement pre-use input/criteria capture and explicit sequential replay, then the AI/MCP entry point and remaining Mac delivery. The active Mac goal remains complete only when its full acceptance criteria are verified.
