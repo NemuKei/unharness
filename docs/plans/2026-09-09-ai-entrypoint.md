@@ -45,5 +45,7 @@ The official clients and native Codex app-server passed the scoped transport che
 
 - [x] Complete actual new native desktop AI requests for save, Normal/UNSEAL/TRUEFORM, selected fresh observations/comparison, favorite and restored Normal using the established explicit source scope. Reuse existing core evidence only where it covers the same behavior.
 - [x] Confirm exact managed-source restoration, retained settings, no unresolved recovery/active trial and truthful readback in the open GUI.
-- [ ] Run relevant/full tests and build/browser checks; review changes directly, validate documentation links and `git diff --check`, integrate into the private repository.
+- [x] Run relevant/full tests and build/browser checks; review changes directly, validate documentation links and `git diff --check`, integrate into the private repository.
 - [x] Audit the Phase 1 acceptance criteria against current evidence, record remaining limits and continue to Claude Code's Mac integration under the full goal.
+
+The actual native loop and Phase 1 audit are recorded in [Mac AI evidence](../evidence/2026-09-09-ai-desktop-macos.md). Commit `1cac327` is integrated into private `origin/main`. Continue with [Claude Code Mac integration](../handoff-claude-macos.md); the full Mac goal remains active.

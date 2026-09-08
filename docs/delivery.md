@@ -13,7 +13,7 @@ On 2026-09-08, the maintainer changed the near-term goal to completing the Mac v
 | 5 | Claude Code | Claude Code desktop on Windows | Its Windows adapter meets the same contract and preserves both Codex baselines |
 | 6 | Codex | Cross-platform review and finish | All four combinations, recovery behavior, UX, and documentation are reconciled |
 
-The maintainer has both operating systems and Claude Code desktop available for verification. Actual machine access, app versions, and test results are established at execution time. The [Mac Codex Phase 1 audit](evidence/2026-09-09-ai-desktop-macos.md) is complete for the registered selected-source scope. Its runtime baseline is `ca4dbcc26261168515724f41b41cdc2c6fff30b5`; the handoff will also include the subsequent MCP recovery test and evidence. No Claude Code implementation task has been dispatched yet.
+The maintainer has both operating systems and Claude Code desktop available for verification. Actual machine access, app versions, and test results are established at execution time. The [Mac Codex Phase 1 audit](evidence/2026-09-09-ai-desktop-macos.md) is complete for the registered selected-source scope. Its runtime baseline is `ca4dbcc26261168515724f41b41cdc2c6fff30b5`; the complete source/test/evidence baseline is `1cac327a0997c349f4d634954de93087db02bcf3`, now integrated into private main. The [Claude Code Mac handoff](handoff-claude-macos.md) defines the next isolated implementation. No Claude Code implementation task has been dispatched yet.
 
 ## Phase 1: complete the Mac Codex core
 
