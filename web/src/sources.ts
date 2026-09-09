@@ -126,6 +126,7 @@ export type SourceState = {
   };
   preparedMode: SourceMode;
   revision: number;
+  setup?: { setupId: string | null; preparedSetupId: string | null };
   preparation: { id: string; preparedAt: string } | null;
   observation: TaskObservation | null;
   observationIssue: string | null;
@@ -246,6 +247,7 @@ export type SourcePlan = {
   mode: SourceMode | "favorite" | "checkpoint";
   preparedMode: SourceMode;
   revision: number;
+  setupId?: string | null;
   selectedIds: string[];
   changedFiles: { id: string; label: string }[];
   skillStates: { id: string; enabled: boolean; manualOnly: boolean }[];
@@ -256,7 +258,7 @@ export type SourcePlan = {
 };
 export type SourcePlanAdaptation = {
   kind: "retained-settings";
-  sourceType: "favorite" | "checkpoint";
+  sourceType: "favorite" | "checkpoint" | "setup";
   sourceId: string;
   previousNormalId: string;
   normalId: string;

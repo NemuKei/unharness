@@ -6,6 +6,8 @@ The active Mac Codex finish now has retained-control guards and persisted releas
 
 The [plugin distribution plan](spec-plugin-distribution.md) bundles the related Skills and local MCP, with WebMCP on the public page. The dedicated `deltahelmlab-unharness` Cloudflare Pages project exists and is separate from the existing landing page. No deployment or custom-domain binding is yet qualified.
 
+The built workbench has setup-consultation and fresh-task prompt handoffs. Copying preserves the source files; conflicts suspend the handoff, clipboard failure leaves a selectable prompt, and adopted MCP presets refresh the open GUI. The three focused browser scenarios and desktop/narrow visual review are complete, together with type/CSP/build checks. The existing five AI-to-open-GUI scenarios also pass. These checks do not establish the installer, actual AI consultation or native task handoff.
+
 ## Established
 
 - Product name: **Unharness**.

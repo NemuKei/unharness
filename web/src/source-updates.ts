@@ -69,6 +69,7 @@ function sourceView(value: unknown, metadata: SourceMetadata): value is SourceVi
     || !s.registration.sources.every(row => object(row) && text(row.id) && text(row.label) && text(row.path)
       && object(row.availability) && [row.availability.normal, row.availability.unseal, row.availability.trueform].every(v => typeof v === "boolean"))
     || !fieldsMatch(s.context, metadata.context)
+    || !(s.setup === undefined || object(s.setup) && maybeHash(s.setup.setupId) && maybeHash(s.setup.preparedSetupId))
     || !(s.conflict === null || object(s.conflict) && text(s.conflict.kind)) || !object(s.recovery)
     || typeof s.recovery.pending !== "boolean" || !maybeHash(s.recovery.lastCheckpointId) || !strings(s.recovery.argv)
     || !(s.preparation === null || object(s.preparation) && text(s.preparation.id) && time(s.preparation.preparedAt))

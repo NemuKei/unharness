@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Hangar } from "./Hangar";
 import { ComparisonWorkbench } from "./ComparisonWorkbench";
+import { SetupHandoff, FreshTaskHandoff } from "./SetupHandoff";
+import { releaseModeDescription } from "./setup";
 import {
   RestoreAdaptationNotice,
   RetainedReview,
@@ -44,8 +46,9 @@ export function SourceWorkbench() {
     taskId: string;
     contextKey: string;
   } | null>(null);
-  const presentation = modePresentation[c.selected];
   const source = c.view?.source;
+  const presentation = { ...modePresentation[c.selected], description:
+    releaseModeDescription(c.selected, c.plan ? c.plan.setupId : source?.setup?.setupId) ?? modePresentation[c.selected].description };
   const comparisonKey = comparisonContextKey(c.view);
   const usable =
     !!source &&
@@ -134,11 +137,13 @@ export function SourceWorkbench() {
               key={
                 c.selectionKey +
                 ":" +
-                (source?.registration.normalId ?? "setup")
+                (source?.registration.normalId ?? "setup") + ":" + (source?.setup?.setupId ?? "legacy")
               }
               controller={c}
               usable={usable}
             />
+            {c.view && <SetupHandoff key={c.view.metadata.contextId + ":" + (source?.setup?.setupId ?? "initial")}
+              view={c.view} confirmed={c.confirmed} busy={c.busy} />}
           </section>
           <aside className="control-column" aria-label="設定と保存">
             <section className="control-section">
@@ -176,6 +181,7 @@ export function SourceWorkbench() {
               >
                 状態を再取得
               </button>
+              {c.view && source && <FreshTaskHandoff view={c.view} disabled={!usable} />}
               {source?.conflict &&
                 (source.recovery.pending ? (
                   <details>
@@ -838,7 +844,7 @@ function ModeChoices({
               <small>{modePresentation[mode].label}</small>
             </span>
           </button>
-          {mode !== "normal" && c.view?.source && (
+          {mode !== "normal" && c.view?.source && !c.view.source.setup?.setupId && (
             <details>
               <summary>対象を調整</summary>
               <p className="muted">

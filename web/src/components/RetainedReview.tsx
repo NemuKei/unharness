@@ -36,7 +36,7 @@ export function RestoreAdaptationNotice({
   adaptation: SourcePlanAdaptation;
 }) {
   const sourceLabel =
-    adaptation.sourceType === "favorite" ? "お気に入り" : "復帰点";
+    adaptation.sourceType === "favorite" ? "お気に入り" : adaptation.sourceType === "setup" ? "解除設定" : "復帰点";
   return (
     <div className="restore-adaptation" role="note">
       <strong>現在の共通設定を維持して準備</strong>
