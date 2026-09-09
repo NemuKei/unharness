@@ -93,6 +93,7 @@ export async function createAiServer({ workspace, binding, era = 'legacy' }) {
       const perform = async () => {
         try {
           if (binding) await binding.read();
+          if (binding && tool.write) await binding.ensureRecovery?.();
           if (['open-workbench', 'workbench-status'].includes(tool.action)) {
             const now = await controller.metadata();
             if (now.contextId !== acceptedMetadata.contextId) return failure({ kind: 'source-session-changed' });

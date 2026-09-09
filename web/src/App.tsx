@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Api, errorMessage } from "./api";
 import { SourceWorkbench } from "./SourceWorkbench";
+import { RecoveryWorkbench } from "./RecoveryWorkbench";
 import { Hangar } from "./Hangar";
 import { caseOrder, conditions, shortId } from "./types";
 import { useFixtureController } from "./useFixtureController";
@@ -142,18 +143,19 @@ function FixtureApp() {
 }
 
 export function App() {
-  const [kind, setKind] = useState<"fixture" | "user-sources" | null>(null);
+  const [kind, setKind] = useState<"fixture" | "user-sources" | "recovery" | null>(null);
   const [error, setError] = useState("");
   async function connect() {
     setError("");
     try {
       const startup = await new Api().connect();
-      if (startup.kind !== "fixture" && startup.kind !== "user-sources") throw new Error("invalid-startup-kind");
+      if (startup.kind !== "fixture" && startup.kind !== "user-sources" && startup.kind !== "recovery") throw new Error("invalid-startup-kind");
       setKind(startup.kind);
     } catch (e) { setError(errorMessage(e)); }
   }
   useEffect(() => { void connect(); }, []);
   if (kind === "user-sources") return <SourceWorkbench />;
+  if (kind === "recovery") return <RecoveryWorkbench />;
   if (kind === "fixture") return <FixtureApp />;
   return <main className="app-shell"><section className="control-section"><h1>UNHARNESS</h1><p role="status">接続先を確認しています。</p>{error && <p role="alert">{error}</p>}<button className="secondary" onClick={() => void connect()}>再接続</button></section></main>;
 }

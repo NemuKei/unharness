@@ -1,0 +1,21 @@
+.recovery-shell { max-width: 1100px; }
+.recovery-main { padding: 48px 24px 0; }
+.recovery-main h1 { font-size: clamp(30px, 4vw, 46px); letter-spacing: .04em; margin: 14px 0 20px; }
+.recovery-intro { max-width: 700px; line-height: 1.85; margin-bottom: 32px; }
+.recovery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.recovery-main .control-section { margin-bottom: 24px; }
+.recovery-main .control-section > p { line-height: 1.8; }
+.recovery-mode { font-size: 30px; font-weight: 650; }
+.recovery-plan { margin-top: 24px; border-top: 1px solid #39414a; padding-top: 16px; }
+.recovery-plan li { margin: 8px 0; }
+.recovery-notice { padding: 16px 0; line-height: 1.8; }
+.recovery-details summary { cursor: pointer; padding: 4px 0; }
+.recovery-details dl { font-size: 13px; }
+.recovery-details dt { color: #a7adbb; margin-top: 16px; }
+.recovery-details dd { margin: 6px 0 0; overflow-wrap: anywhere; }
+.recovery-main footer { display: flex; flex-wrap: wrap; gap: 12px; padding: 24px; }
+@media (max-width: 700px) {
+  .recovery-main { padding: 24px 16px 0; }
+  .recovery-grid { grid-template-columns: 1fr; gap: 0; }
+  .recovery-shell .topbar { align-items: flex-start; gap: 14px; flex-wrap: wrap; }
+}

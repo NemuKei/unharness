@@ -29,7 +29,7 @@ export class Api {
     this.base = base;
   }
   async connect() {
-    const result = await this.request<{ token: string; kind?: "fixture" | "user-sources" }>("/bootstrap");
+    const result = await this.request<{ token: string; kind?: "fixture" | "user-sources" | "recovery" }>("/bootstrap");
     if (typeof result?.token !== "string" || !result.token) throw new ApiError("invalid-response");
     this.token = result.token;
     return result;

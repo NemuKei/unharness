@@ -22,6 +22,7 @@ const REPLAY_ACTIONS = new Set(['review-replay', 'prepare-replay', 'handoff-repl
   'observe-replay', 'save-replay-result', 'replay-result', 'open-replay', 'compare-replays', 'replay-favorite']);
 const CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'";
 const SAFE_ERRORS = new Set([
+  'gui-recovery-operation-forbidden', 'plugin-recovery-invalid', 'distribution-invalid', 'plugin-binding-invalid', 'plugin-binding-changed',
   ...LOCAL_STORE_ERROR_KINDS, ...USER_SOURCE_ERROR_KINDS, 'gui-source-context-changed',
   'loadout-invalid-reference', 'loadout-invalid-name', 'loadout-invalid-snapshot',
   'loadout-invalid-favorite', 'loadout-invalid-checkpoint', 'loadout-invalid-application',
@@ -152,16 +153,20 @@ async function readJson(request, strict = false, maxBodyBytes = strict ? 64 * 10
   }
 }
 
-export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0, codexHome, manageSources, sourceWorkspace, launchId, inventory: inventoryOptions } = {}, {
+export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0, codexHome, manageSources, sourceWorkspace, launchId, recoveryBinding, inventory: inventoryOptions } = {}, {
   collectInventory, handleControlRequest,
 } = {}) {
   if (!Number.isSafeInteger(port) || port < 0 || port > 65535) {
     throw Object.assign(new Error('gui-invalid-port'), { kind: 'gui-invalid-port' });
   }
   const files = await staticFiles(assetsDirectory);
-  const sourceController = manageSources ? await createSourceController(manageSources, { workspace: sourceWorkspace, launchId }) : null;
+  if (recoveryBinding && (manageSources || sourceWorkspace || store || scopeId || inventoryOptions))
+    throw Object.assign(Error('gui-invalid-request'), { kind: 'gui-invalid-request' });
+  const sourceController = recoveryBinding
+    ? await (await import('./recovery.mjs')).createRecoveryController(recoveryBinding, { launchId })
+    : manageSources ? await createSourceController(manageSources, { workspace: sourceWorkspace, launchId }) : null;
   const controller = sourceController ?? await createGuiController({ store, scopeId, codexHome });
-  const kind = sourceController ? 'user-sources' : 'fixture';
+  const kind = recoveryBinding ? 'recovery' : sourceController ? 'user-sources' : 'fixture';
   const inventory = await createGuiInventory(sourceController ? undefined : inventoryOptions, { collect: collectInventory });
   const sockets = new Set();
   let stopping = false;
@@ -240,7 +245,7 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
       const starting = sourceRoute && STARTING_ACTIONS.has(action);
       const replay = sourceRoute && REPLAY_ACTIONS.has(action);
       const parsedBody = (sourceRoute ? sourceRequestShape : requestShape)(
-        await readJson(request, sourceRoute && (COMPARISON_ACTIONS.has(action) || starting || replay || Object.hasOwn(SETUP_OPERATIONS, action) || Object.hasOwn(ENROLLMENT_OPERATIONS, action)), starting ? 128 * 1024 : replay ? 65536 : (Object.hasOwn(SETUP_OPERATIONS, action) || Object.hasOwn(ENROLLMENT_OPERATIONS, action)) ? MAX_BODY_BYTES : undefined),
+        await readJson(request, !!recoveryBinding || sourceRoute && (COMPARISON_ACTIONS.has(action) || starting || replay || Object.hasOwn(SETUP_OPERATIONS, action) || Object.hasOwn(ENROLLMENT_OPERATIONS, action)), starting ? 128 * 1024 : replay ? 65536 : (Object.hasOwn(SETUP_OPERATIONS, action) || Object.hasOwn(ENROLLMENT_OPERATIONS, action)) ? MAX_BODY_BYTES : undefined),
         action,
       );
       if (stopping) { response.destroy(); return; }

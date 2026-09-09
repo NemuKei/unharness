@@ -58,6 +58,23 @@ enabled = true
   for (const launch of launches) await assert.rejects(stat(launch.profile), { code: 'ENOENT' });
 });
 
+test('restoring Normal after plugin removal merges adjacent deletions and verifies both semantic partitions', async t => {
+  const ctx = await reconcileSetup(t);
+  const common = 'model = "base"\n\n';
+  // This small native-protocol fixture supports unquoted table keys. The real
+  // quoted plugin identifier is covered by the Mac uninstall qualification.
+  const plugin = '[plugins.unharness]\nenabled = true\n';
+  const skill = `[[skills.config]]\npath = "${selectedPath}"\nenabled = false\n`;
+  const result = await ctx.run({ baseText: common + plugin + '\n' + skill,
+    targetText: common + plugin, currentText: common + skill, skillPaths: [selectedPath] });
+  assert.equal(result.text, common);
+  assert.equal(result.changed, true);
+  assert.ok((await ctx.events()).filter(event => event.method).every(event => ['initialize', 'initialized', 'config/read'].includes(event.method)));
+  // The same textual deletion merge cannot accept a changed selected flag.
+  await assert.rejects(ctx.run({ baseText: common + plugin + '\n' + skill, targetText: common + plugin,
+    currentText: common + skill.replace('enabled = false', 'enabled = true'), skillPaths: [selectedPath] }), { kind: 'config-transform-failed' });
+});
+
 test('preserves retained speed, memory, continuity, permissions, comments, CRLF, and EOF state', async t => {
   const ctx = await reconcileSetup(t);
   const baseText = '# retained settings\r\nmodel = "base"\r\nservice_tier = "flex"\r\napproval_policy = "on-request"\r\nsandbox_mode = "workspace-write"\r\n[memories]\r\nuse_memories = false\r\n[history]\r\npersistence = "save-all"\r\n\r\n# selected state\r\n[[skills.config]]\r\npath = "/skills/selected/SKILL.md"\r\nenabled = true';

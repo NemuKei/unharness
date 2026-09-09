@@ -1,6 +1,6 @@
 # Mac plugin assembly
 
-The development package combines the built local interface, deterministic core/MCP, management and setup Skills, locked production dependencies and an official Node runtime. It currently targets **macOS arm64**. It is a local distribution candidate; the end-user installer, public download, update/removal recovery and appearance-authoring Skill are still being completed under the [plugin contract](spec-plugin-distribution.md).
+The development package combines the built local interface, deterministic core/MCP, management and setup Skills, locked production dependencies and an official Node runtime. It currently targets **macOS arm64**. Native update/removal/reinstall and [independent recovery](plugin-recovery.md) have scoped evidence. The end-user installer, public download and appearance-authoring Skill remain in progress under the [plugin contract](spec-plugin-distribution.md).
 
 ## Maintainer build
 
@@ -20,8 +20,8 @@ The builder runs type/CSP and production-build checks, installs production depen
 
 `distribution.json` indexes every shipped regular file, including runtime, UI, dependencies, Skills and licenses, by bytes, SHA256 and executable status. Reading the bundle checks its supported manifest/runtime version, matching plugin/package versions, required files, complete file list and all contents. Extra, missing, modified or symlinked files fail; selected private-data root names are refused during assembly. The manifest is an integrity record for a user-selected package, not independent proof of publisher authenticity. Source revision and dirty status remain visible; a dirty candidate is not a reproducible public release.
 
-Native cache installation does not become the home of Normal, setup versions, favorites, comparisons or operation receipts. The [fixed local connection](plugin-connection.md) binds those records outside the cache. The real host's update/remove behavior and an independent recovery copy are separate remaining checks; copying files into an archive is not proof of recovery after uninstall.
+Native cache installation does not become the home of Normal, setup versions, favorites, comparisons or operation receipts. The [fixed local connection](plugin-connection.md) binds those records outside the cache. Packaged configuration and MCP writes verify a separate recovery copy first. [Native removal evidence](evidence/2026-09-09-plugin-recovery-macos.md) confirms cache deletion, worker shutdown, recovery through that copy and preserved records after reinstall. The native host retained its data directory in that test, but independent recovery also works when that directory is absent.
 
 ## Verified so far
 
-The [Mac package evidence](evidence/2026-09-09-plugin-package-macos.md) covers the official runtime hash/signature, package/Skill validators, native marketplace installation, MCP calls, initial saving in the Codex in-app browser, three-mode input catalog checks, exact Normal restoration and unchanged installed-package integrity. A complete natural-language onboarding journey, public-domain pairing, downloaded-package launch and uninstall recovery are not established by this slice.
+The [Mac package evidence](evidence/2026-09-09-plugin-package-macos.md) covers the official runtime hash/signature, package/Skill validators, native marketplace installation, MCP calls, initial saving in the Codex in-app browser, three-mode input catalog checks, exact Normal restoration and unchanged installed-package integrity. [Update and recovery evidence](evidence/2026-09-09-plugin-recovery-macos.md) covers the subsequent native lifecycle. A complete natural-language onboarding journey, public-domain pairing and downloaded-package launch remain unverified.

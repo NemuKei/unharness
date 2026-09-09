@@ -3,11 +3,14 @@ import { resolveWorkbenchTarget } from './launch-target.mjs';
 import { readLaunchReceipt, validateLaunchReceipt } from './launch-records.mjs';
 import { startGuiServer } from './server.mjs';
 import { createLaunchHandler } from './launch-protocol.mjs';
+import { fileURLToPath } from 'node:url';
+import { watchableRuntime } from './runtime-lifetime.mjs';
 
-let running, receipt, bound, stopping = false;
+let running, receipt, bound, lifetimeTimer, stopping = false;
 async function close() {
   if (stopping) return;
   stopping = true;
+  clearInterval(lifetimeTimer);
   try { await running?.close(); } finally { process.exit(0); }
 }
 process.once('SIGTERM', close); process.once('SIGINT', close);
@@ -23,11 +26,23 @@ const timeout = setTimeout(() => { void close(); }, 10000);
 process.once('message', async message => {
   clearTimeout(timeout);
   try {
-    if (message?.kind !== 'start' || Object.keys(message).sort().join() !== 'assetsDirectory,kind,receipt,target') throw new Error();
+    if (message?.kind !== 'start' || Object.keys(message).sort().join() !== 'assetsDirectory,kind,receipt,recovery,target') throw new Error();
     bound = await resolveWorkbenchTarget(message.target);
     receipt = validateLaunchReceipt(message.receipt, bound);
     if (receipt.phase !== 'starting' || receipt.pid !== process.pid) throw new Error();
-    running = await startGuiServer({ manageSources: bound.context, sourceWorkspace: bound.workspace ?? undefined,
+    const intact = await watchableRuntime(fileURLToPath(new URL('../../', import.meta.url)).replace(/\/$/, ''));
+    if (intact) {
+      let checking = false;
+      lifetimeTimer = setInterval(async () => {
+        if (checking) return;
+        checking = true;
+        try { if (!await intact()) await close(); } finally { checking = false; }
+      }, 500);
+    }
+    const recoveryBinding = message.recovery ? await (await import('../setup/plugin-recovery.mjs')).openRecoveryBinding(message.recovery) : null;
+    if (recoveryBinding && (await recoveryBinding.read()).contextKey !== bound.contextKey) throw new Error();
+    running = await startGuiServer({ ...(recoveryBinding ? { recoveryBinding }
+      : { manageSources: bound.context, sourceWorkspace: bound.workspace ?? undefined }),
       launchId: receipt.launchId, assetsDirectory: message.assetsDirectory }, {
       handleControlRequest: createLaunchHandler({ current: () => receipt.loopbackOrigin ? receipt : null, close }),
     });

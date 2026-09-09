@@ -27,9 +27,10 @@ async function withLock(w, perform) {
   }
   try { return await perform(); } finally { await release(); }
 }
-async function runtimeIdentity(assetsDirectory) {
+async function runtimeIdentity(assetsDirectory, recovery) {
   await canonical(assetsDirectory);
   const hash = createHash('sha256').update(root + '\n' + assetsDirectory);
+  if (recovery) hash.update(JSON.stringify(recovery));
   for (const path of [join(root, 'package.json'), worker, fileURLToPath(new URL('./server.mjs', import.meta.url)), join(assetsDirectory, 'index.html')]) hash.update(await readFile(path));
   return hash.digest('hex');
 }
@@ -60,9 +61,13 @@ export async function stopWorkbench(input) {
     return receipt ? stopOwned(w, receipt) : summary(null, 'stopped');
   });
 }
-export async function openWorkbench(input, { assetsDirectory = assets } = {}) {
+export async function openWorkbench(input, { assetsDirectory = assets, recovery = null } = {}) {
   const w = await resolveWorkbenchTarget(input);
-  const runtimeId = await runtimeIdentity(assetsDirectory);
+  if (recovery) {
+    const selected = await (await (await import('../setup/plugin-recovery.mjs')).openRecoveryBinding(recovery)).read();
+    if (selected.contextKey !== w.contextKey) launchFail('gui-launch-target-invalid');
+  }
+  const runtimeId = await runtimeIdentity(assetsDirectory, recovery);
   return withLock(w, async () => {
     const previous = await readLaunchReceipt(w);
     let expected = previous;
@@ -94,7 +99,7 @@ export async function openWorkbench(input, { assetsDirectory = assets } = {}) {
       pid: child.pid, loopbackOrigin: null };
     try {
       await publishLaunchReceipt(w, starting, expected);
-      child.send({ kind: 'start', target: { context: w.context }, assetsDirectory, receipt: starting });
+      child.send({ kind: 'start', target: { context: w.context }, assetsDirectory, receipt: starting, recovery });
       const message = await ready;
       const receipt = await publishLaunchReceipt(w, { ...starting, phase: 'running', loopbackOrigin: message.loopbackOrigin }, starting);
       if (!await probeLaunch(receipt)) launchFail('gui-launch-unconfirmed');

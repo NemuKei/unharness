@@ -42,6 +42,26 @@ async function pinScope(directory, target) {
   await publishConnectionRecord(directory, scopeName, value);
 }
 
+// Independent recovery uses the saved authority, even if the native host has
+// removed PLUGIN_DATA. It still binds the original physical home/project/store.
+export async function openSavedPluginBinding({ directory: path, bindingId }) {
+  if (!HASH.test(bindingId)) bindingFail('plugin-binding-invalid');
+  const directory = await connectionDirectory(path);
+  async function read() {
+    await checkDirectory(directory);
+    const record = await readConnectionRecord(directory, contextName);
+    validateConfiguration(record);
+    if (hash(record) !== bindingId) bindingFail('plugin-binding-invalid');
+    const target = await resolveWorkbenchTarget({ context: record.context });
+    if (target.application !== 'codex' || target.directory !== path || target.contextKey !== record.contextKey
+      || !isDeepStrictEqual(await configuration(target), record)) bindingFail('plugin-binding-changed');
+    await pinScope(directory, target);
+    return { ...target, bindingId };
+  }
+  await read();
+  return { read };
+}
+
 // The native host owns PLUGIN_DATA. Use a private child without chmod of its
 // existing parent, and keep authoritative context/scope/receipts outside cache.
 export async function openPluginBinding({ dataDirectory }) {
@@ -72,18 +92,13 @@ export async function openPluginBinding({ dataDirectory }) {
       || pointer.kind !== 'unharness-plugin-connection' || pointer.schemaVersion !== 1
       || !HASH.test(pointer.contextKey) || !HASH.test(pointer.bindingId)) bindingFail('plugin-binding-invalid');
     if (pinned && !isDeepStrictEqual(pinned, pointer)) bindingFail('plugin-binding-changed');
-    const directory = await connectionDirectory(pointer.directory);
-    const record = await readConnectionRecord(directory, contextName);
-    validateConfiguration(record);
-    if (hash(record) !== pointer.bindingId || record.contextKey !== pointer.contextKey) bindingFail('plugin-binding-invalid');
-    const target = await resolveWorkbenchTarget({ context: record.context });
-    if (target.application !== 'codex' || !isDeepStrictEqual(pointerFor(target, record), pointer)) bindingFail('plugin-binding-changed');
-    if (!isDeepStrictEqual(await configuration(target), record)) bindingFail('plugin-binding-changed');
-    await pinScope(directory, target);
+    const target = await (await openSavedPluginBinding(pointer)).read();
+    if (target.contextKey !== pointer.contextKey) bindingFail('plugin-binding-changed');
     pinned ??= pointer;
     return { ...target, bindingId: pointer.bindingId };
   }
-  return { dataDirectory, read, localDirectory };
+  return { dataDirectory, read, localDirectory,
+    ensureRecovery: async () => (await import('./plugin-recovery.mjs')).prepareInstalledRecovery(dataDirectory) };
 }
 
 export async function configurePlugin({ dataDirectory, ...input }) {
