@@ -21,6 +21,7 @@ export const USER_SOURCE_ERROR_KINDS = Object.freeze([
   'replay-source-unmapped',
   'replay-source-input-mismatch',
   'replay-source-state-unavailable',
+  'replay-application-unsupported',
   'replay-native-conditions-unavailable',
   'replay-retained-conditions-changed',
   'replay-record-invalid',

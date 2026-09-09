@@ -236,7 +236,8 @@ export async function initializeWorkspace(d, selected, instructionsOptional) {
       identity: s.identity,
       pluginId: s.pluginId,
       enabled: s.enabled,
-      availability: s.availability
+      availability: s.availability,
+      ...app.registeredSkillFields(s)
     }));
   const reg = {
     role: 'registration',

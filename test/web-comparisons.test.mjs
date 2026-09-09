@@ -292,6 +292,8 @@ function sourceView({
   return {
     metadata: {
       kind: "user-sources",
+      application: "codex",
+      applicationLabel: "Codex",
       launchId,
       contextId,
       workspace,

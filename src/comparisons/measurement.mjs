@@ -68,6 +68,20 @@ const UNAVAILABLE_ISSUES = new Set([
   'timeline-conflict', 'timeline-too-large',
 ]);
 
+// One entry per application parser whose recorded grammar has been checked.
+// A measurement may only claim the runtime versions its own parser qualifies;
+// adding an application never loosens another one's admission.
+export const MEASUREMENT_PARSERS = Object.freeze({
+  'codex-desktop': Object.freeze({
+    parserVersion: 'codex-desktop-0.153.4/v1',
+    runtimeVersions: Object.freeze(['0.153.4']),
+  }),
+  'claude-desktop': Object.freeze({
+    parserVersion: 'claude-desktop-2.1.260/v1',
+    runtimeVersions: Object.freeze(['2.1.260']),
+  }),
+});
+
 const validCounter = value => Number.isSafeInteger(value) && value >= 0;
 const nullableCounter = value => value === null || validCounter(value);
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -157,8 +171,10 @@ export function validateMeasurement(value) {
     'throughTurnId', 'selectedTurnIds', 'availableTurns', 'usage', 'time',
     'conditions', 'output', 'issues',
   ]);
-  if (value.schemaVersion !== 1 || value.app !== 'codex-desktop'
-    || value.parserVersion !== 'codex-desktop-0.153.4/v1'
+  const parser = Object.hasOwn(MEASUREMENT_PARSERS, value.app)
+    ? MEASUREMENT_PARSERS[value.app] : null;
+  if (value.schemaVersion !== 1 || !parser
+    || value.parserVersion !== parser.parserVersion
     || !uuid(value.taskId)
     || !(value.createdAt === null || utc(value.createdAt))
     || !(value.runtimeVersion === null || identifier(value.runtimeVersion))
@@ -177,7 +193,7 @@ export function validateMeasurement(value) {
   if ((value.selectedTurnIds.at(-1) ?? null) !== value.throughTurnId) fail();
   const selectedTurns = availableTurns.slice(0, value.selectedTurnIds.length);
   if (selectedTurns.length) {
-    if (value.runtimeVersion !== '0.153.4' || unavailableIssue) fail();
+    if (!parser.runtimeVersions.includes(value.runtimeVersion) || unavailableIssue) fail();
   } else if (value.runtimeVersion !== null || !unavailableIssue || availableTurns.length) fail();
 
   exactKeys(value.usage, [
@@ -262,8 +278,8 @@ export function validateMeasurement(value) {
 
   return {
     schemaVersion: 1,
-    app: 'codex-desktop',
-    parserVersion: 'codex-desktop-0.153.4/v1',
+    app: value.app,
+    parserVersion: parser.parserVersion,
     taskId: value.taskId,
     createdAt: value.createdAt,
     runtimeVersion: value.runtimeVersion,

@@ -11,6 +11,7 @@
 import { isDeepStrictEqual } from 'node:util';
 import { parseStrictJson } from '../core/strict-json.mjs';
 import {
+  assertReproducibleNumbers,
   MAX_SETTINGS_BYTES,
   SKILL_OVERRIDE_VALUES,
   validSkillName
@@ -35,6 +36,9 @@ function parse(text) {
   }
   if (!plainObject(value)) throw failed();
   assertProvable(value);
+  // A parsed comparison cannot prove retention of a literal the parser has
+  // already rounded, so the source tokens are checked directly.
+  assertReproducibleNumbers(text);
   return value;
 }
 

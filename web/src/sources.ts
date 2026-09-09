@@ -24,13 +24,38 @@ export const modePresentation: Record<
     scene: "fixed-only",
   },
 };
+export type SourceApplication = "codex" | "claude";
+export type CodexSourceContext = {
+  codexHome: string;
+  project: string;
+  executable: string;
+};
+export type ClaudeSourceContext = {
+  application: "claude";
+  claudeHome: string;
+  project: string;
+  appBundle: string;
+};
+export type SourceContext = CodexSourceContext | ClaudeSourceContext;
 export type SourceMetadata = {
   kind: "user-sources";
+  application: SourceApplication;
+  applicationLabel: string;
   launchId: string;
   contextId: string;
-  context: { codexHome: string; project: string; executable: string };
+  context: SourceContext;
   workspace: string | null;
 };
+export const isClaudeContext = (
+  context: SourceContext,
+): context is ClaudeSourceContext =>
+  (context as ClaudeSourceContext).application === "claude";
+/** The application's own home directory, whatever it calls it. */
+export const sourceHomeOf = (context: SourceContext) =>
+  isClaudeContext(context) ? context.claudeHome : context.codexHome;
+/** The installed application a registration is bound to. */
+export const sourceRuntimeOf = (context: SourceContext) =>
+  isClaudeContext(context) ? context.appBundle : context.executable;
 export type SourceRow = {
   id: string;
   label: string;

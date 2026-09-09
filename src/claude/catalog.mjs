@@ -16,8 +16,8 @@
 //   <home>/plugins/**             plugin Skills (provider-managed)
 //   <project>/.claude/skills/<name>/SKILL.md  project Skills
 import { execFile } from 'node:child_process';
-import { readdir, lstat } from 'node:fs/promises';
-import { basename, dirname, join } from 'node:path';
+import { readdir, lstat, readFile } from 'node:fs/promises';
+import { basename, dirname, join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { captureFile } from '../sources/platform.mjs';
 import { readSkillOverrides, AUTOMATIC_OVERRIDES, validSkillName } from './settings.mjs';
@@ -27,8 +27,20 @@ const exec = promisify(execFile);
 const MAX_ENTRIES = 4096;
 const MAX_FRONTMATTER_BYTES = 64 * 1024;
 
-export const MANAGED_POLICY_INSTRUCTIONS =
-  '/Library/Application Support/ClaudeCode/CLAUDE.md';
+export const MANAGED_SYSTEM_DIRECTORY = '/Library/Application Support/ClaudeCode';
+export const MANAGED_POLICY_INSTRUCTIONS = join(MANAGED_SYSTEM_DIRECTORY, 'CLAUDE.md');
+export const MANAGED_SETTINGS = join(MANAGED_SYSTEM_DIRECTORY, 'managed-settings.json');
+export const MANAGED_SETTINGS_DIRECTORY = join(MANAGED_SYSTEM_DIRECTORY, 'managed-settings.d');
+
+// Settings precedence, highest first (code.claude.com/docs/en/settings). Only
+// the user layer is ever written; the others are read to find out whether a
+// user-layer override could take effect at all.
+export const SETTINGS_LAYERS = Object.freeze([
+  'managed',
+  'project-local',
+  'project',
+  'user'
+]);
 
 export const homePaths = (home) => ({
   instructions: join(home, 'CLAUDE.md'),
@@ -180,6 +192,106 @@ async function collectPluginSkills(home) {
 }
 
 /**
+ * The main checkout root of a git worktree, or null.
+ *
+ * Claude Code reads and writes `.claude/settings.local.json` at the repository
+ * root, and in a worktree it uses the main checkout's root
+ * (code.claude.com/docs/en/settings). A worktree's `.git` is a file naming its
+ * git directory under `<main>/.git/worktrees/<name>`.
+ */
+export async function mainCheckoutRoot(project) {
+  try {
+    const marker = join(project, '.git');
+    const info = await lstat(marker);
+    if (!info.isFile()) return null;
+    const text = await readFile(marker, 'utf8');
+    if (Buffer.byteLength(text, 'utf8') > 4096) return null;
+    const match = text.match(/^gitdir:\s*(.+?)\s*$/m);
+    if (!match) return null;
+    // <main>/.git/worktrees/<name> -> <main>
+    const gitDir = resolve(project, match[1]);
+    const worktrees = dirname(gitDir);
+    if (basename(worktrees) !== 'worktrees') return null;
+    const root = dirname(dirname(worktrees));
+    return root === project ? null : root;
+  } catch {
+    return null;
+  }
+}
+
+async function layerOverrides(path, unreadable, id) {
+  let file;
+  try {
+    file = await captureFile(path);
+  } catch {
+    // A layer we cannot even read could still be shadowing the user layer.
+    unreadable.push({ id, path, reason: 'unsupported-source' });
+    return null;
+  }
+  if (file === null) return {};
+  try {
+    return readSkillOverrides(file.text);
+  } catch (e) {
+    unreadable.push({ id, path, reason: e.kind ?? 'config-transform-failed' });
+    return null;
+  }
+}
+
+/**
+ * Skill overrides from every readable layer above the user layer, highest
+ * precedence first. Writing the user layer cannot change the effective state of
+ * a Skill named in one of these.
+ */
+export async function higherPrecedenceOverrides(context) {
+  const unreadable = [];
+  const layers = [];
+  const add = async (layer, path, id) => {
+    const overrides = await layerOverrides(path, unreadable, id);
+    if (overrides && Object.keys(overrides).length)
+      layers.push({ layer, path, overrides });
+  };
+  await add('managed', MANAGED_SETTINGS, 'managed-settings');
+  let managedParts = [];
+  try {
+    managedParts = (await readdir(MANAGED_SETTINGS_DIRECTORY))
+      .filter((name) => name.endsWith('.json'))
+      .sort()
+      .slice(0, 64);
+  } catch {
+    managedParts = [];
+  }
+  for (const name of managedParts)
+    await add('managed', join(MANAGED_SETTINGS_DIRECTORY, name), 'managed-settings');
+  const worktreeRoot = await mainCheckoutRoot(context.project);
+  let worktreeLocal = null;
+  if (worktreeRoot) {
+    const path = join(worktreeRoot, '.claude', 'settings.local.json');
+    const before = layers.length;
+    await add('project-local', path, 'worktree-local-settings');
+    worktreeLocal = {
+      path,
+      overrideCount:
+        layers.length > before ? Object.keys(layers.at(-1).overrides).length : 0
+    };
+  }
+  await add(
+    'project-local',
+    join(context.project, '.claude', 'settings.local.json'),
+    'project-local-settings'
+  );
+  await add('project', join(context.project, '.claude', 'settings.json'), 'project-settings');
+  return { layers, unreadable, worktreeRoot, worktreeLocal };
+}
+
+/** The highest-precedence layer that names this Skill, or null. */
+export function shadowOf(layers, name) {
+  for (const entry of layers)
+    if (Object.hasOwn(entry.overrides, name))
+      return { layer: entry.layer, path: entry.path, setting: entry.overrides[name] };
+  return null;
+}
+
+/**
  * The catalog Unharness can establish from disk. `enabled` is the recorded
  * automatic-invocation state: the model may select the Skill on its own only
  * when neither the settings override nor the SKILL.md frontmatter withdraws it.
@@ -195,6 +307,7 @@ export async function catalog(context) {
   } catch (e) {
     overridesReason = e.kind ?? 'config-transform-failed';
   }
+  const higher = await higherPrecedenceOverrides(context);
   const discovered = [
     ...(await collectSkills(skillRoot(home), 'user')),
     ...(await collectSkills(projectSkillRoot(context.project), 'repo')),
@@ -206,13 +319,17 @@ export async function catalog(context) {
     counts.set(s.name, (counts.get(s.name) ?? 0) + 1);
   const skills = [];
   for (const s of discovered) {
-    const override = overrides?.[s.name];
+    // A higher-precedence layer wins outright, so it decides both the current
+    // state and whether the user layer could change it at all.
+    const shadow = shadowOf(higher.layers, s.name);
+    const override = shadow ? shadow.setting : overrides?.[s.name];
     skills.push({
       ...s,
       // A name that is not a usable override key, or that two discovered
       // Skills share, cannot be addressed by settings without ambiguity.
       addressable:
         validSkillName(s.name) && counts.get(s.name) === 1 && !overridesReason,
+      shadowedBy: shadow ? shadow.layer : null,
       override: override ?? null,
       enabled:
         override === undefined || override === null
@@ -225,6 +342,14 @@ export async function catalog(context) {
     version,
     identifier,
     overridesReason,
+    higherPrecedenceLayers: higher.layers.map((l) => ({
+      layer: l.layer,
+      path: l.path,
+      names: Object.keys(l.overrides).sort()
+    })),
+    unreadableLayers: higher.unreadable,
+    worktreeRoot: higher.worktreeRoot,
+    worktreeLocal: higher.worktreeLocal,
     // A CLI-visible runtime version is not obtainable without a task record.
     runtimeVersion: null,
     skills

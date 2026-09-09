@@ -164,14 +164,19 @@ export function sourceRequestShape(body, action) {
   return { requestId, input: { launchId, contextId, ...input } };
 }
 
-export async function createSourceController(context, { workspace: selectedWorkspace } = {}) {
+export async function createSourceController(input, { workspace: selectedWorkspace } = {}) {
   // The service locator validates canonical roots without native discovery.
-  context = { ...context, executable: context.executable ?? "codex" };
+  const { applicationFor } = await import("../apps/index.mjs");
+  const app = applicationFor(input);
+  const context =
+    app.id === "codex"
+      ? { ...input, executable: input.executable ?? "codex" }
+      : input;
   let located = await service.locateUserSources({ context });
   if (selectedWorkspace !== undefined && (!located || located.workspace !== selectedWorkspace)) fail("source-session-changed");
   const selectedScope = selectedWorkspace !== undefined ? located.scopeId : null;
   const launchId = randomUUID();
-  const roots = [context.codexHome, context.project, ...(selectedWorkspace === undefined ? [] : [selectedWorkspace])];
+  const roots = [app.home(context), context.project, ...(selectedWorkspace === undefined ? [] : [selectedWorkspace])];
   const identities = await Promise.all(roots.map((path) => lstat(path)));
   async function metadata() {
     for (let index = 0; index < roots.length; index++) {
@@ -190,7 +195,7 @@ export async function createSourceController(context, { workspace: selectedWorks
     const contextId = createHash("sha256")
       .update(JSON.stringify({ context, workspace, scopeId: located?.scopeId ?? null }))
       .digest("hex");
-    return { kind: "user-sources", launchId, contextId, context, workspace };
+    return { kind: "user-sources", application: app.id, applicationLabel: app.label, launchId, contextId, context, workspace };
   }
   async function state() {
     const meta = await metadata();

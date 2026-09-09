@@ -282,6 +282,8 @@ export const application = {
     return { text: result.text, changed: result.changed, version: result.codexVersion };
   },
 
+  registeredSkillFields: () => ({}),
+
   skillFiles: (s) => ({
     [s.id + ':body']: { file: s.body, binding: s.binding },
     [s.id + ':policy']: { file: s.policy, binding: s.policyBinding },
@@ -442,6 +444,37 @@ export const application = {
       });
     }
     return result;
+  },
+
+  // Sequential replay needs a runtime-authoritative conditions report and an
+  // "open this project" desktop command. Codex exposes both locally.
+  sequentialReplay: Object.freeze({ supported: true, reason: null }),
+
+  // Ordinary-run measurement for one recorded task.
+  runParser: 'codex-desktop',
+
+  // Reading a recording for a comparison fails loudly: an unavailable record
+  // must never become an empty measurement.
+  async readRunRecords(w, taskId) {
+    const { findCurrentDesktopSession, readDesktopRecords } = await import(
+      '../codex/desktop-record.mjs'
+    );
+    try {
+      return await readDesktopRecords(
+        await findCurrentDesktopSession({ sessionId: taskId, codexHome: w.reg.context.codexHome })
+      );
+    } catch (e) {
+      fail(
+        e.kind === 'current-session-unavailable'
+          ? 'comparison-task-record-unavailable'
+          : 'comparison-task-record-invalid'
+      );
+    }
+  },
+
+  async projectRun(w, records, options) {
+    const { projectCodexRun } = await import('../codex/run-metrics.mjs');
+    return projectCodexRun(records, options);
   },
 
   async readTaskRecords(w, taskId) {

@@ -58,6 +58,31 @@ function assertSafeKeys(value) {
   }
 }
 
+// Strings first, so digits inside a string value are never read as a number.
+const JSON_TOKENS = /"(?:\\[\s\S]|[^"\\])*"|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g;
+
+/**
+ * Refuse a document containing a number this process cannot reproduce.
+ *
+ * Parsing happens before any comparison, so a literal outside the double range
+ * - 9007199254740993, say - is already rounded by the time a parsed before/after
+ * check runs, and rewriting would silently change a retained value. Comparing
+ * each source token against its own re-serialization catches that, and also the
+ * narrower cases (1e2, 1.0, -0) where the value survives but the bytes do not.
+ */
+export function assertReproducibleNumbers(text) {
+  for (const [token] of text.matchAll(JSON_TOKENS)) {
+    if (token.startsWith('"')) continue;
+    let reproduced;
+    try {
+      reproduced = JSON.stringify(JSON.parse(token));
+    } catch {
+      throw failed();
+    }
+    if (reproduced !== token) throw failed();
+  }
+}
+
 function parseSettings(text) {
   if (typeof text !== 'string') throw failed();
   if (Buffer.byteLength(text, 'utf8') > MAX_SETTINGS_BYTES) throw failed();
@@ -70,6 +95,7 @@ function parseSettings(text) {
   }
   if (!plainObject(value)) throw failed();
   assertSafeKeys(value);
+  assertReproducibleNumbers(text);
   return { value, absent: false };
 }
 

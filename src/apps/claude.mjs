@@ -92,6 +92,9 @@ export const application = {
     'hooks unchanged',
     'user rules and managed policy instructions unchanged',
     'catalog read from the documented on-disk layout, not from the running runtime',
+    // Managed settings can also arrive by MDM profile, the claude.ai console or
+    // the embedding desktop app, none of which is a file this can read.
+    'a managed policy delivered outside a file cannot be read; only a fresh task confirms the effective state',
     'only prepared file state; fresh desktop task required'
   ]),
 
@@ -122,6 +125,10 @@ export const application = {
     }
     if (cat.overridesReason && !unavailableSources.some((u) => u.id === 'settings'))
       unavailableSources.push({ id: 'settings', reason: cat.overridesReason });
+    // A settings layer above the user layer that cannot be read could be
+    // shadowing any override, so the effective state is not established.
+    for (const layer of cat.unreadableLayers)
+      unavailableSources.push({ id: layer.id, reason: layer.reason });
     const globalReason = unavailableSources[0]?.reason ?? null;
 
     const hasInstructions = !!files.instructions?.text.trim();
@@ -153,7 +160,12 @@ export const application = {
     for (const s of cat.skills) {
       const identity = catalogIdentity(s);
       let eligible =
-        !globalReason && ['user', 'repo'].includes(s.scope) && s.addressable;
+        !globalReason &&
+        ['user', 'repo'].includes(s.scope) &&
+        s.addressable &&
+        // Only the user layer is written. A higher-precedence layer naming this
+        // Skill would win, so a user-layer write could not take effect.
+        s.shadowedBy === null;
       if (ownedRoot) {
         const rel = relative(ownedRoot, s.path);
         if (rel.startsWith('..') || isAbsolute(rel)) eligible = false;
@@ -162,14 +174,20 @@ export const application = {
           ? null
           : s.scope === 'plugin'
             ? 'provider-managed-or-outside-owned-profile'
-            : s.addressable
-              ? 'provider-managed-or-outside-owned-profile'
-              : 'skill-name-not-addressable',
+            : !s.addressable
+              ? 'skill-name-not-addressable'
+              : s.shadowedBy !== null
+                ? 'skill-override-shadowed'
+                : 'provider-managed-or-outside-owned-profile',
         body = null,
         binding = null,
         modelInvocable = null,
         userInvocable = true;
-      if (eligible)
+      // The current state is read for every user or project Skill, including
+      // one this cannot control: a shadowed Skill still has a truthful state.
+      const readable =
+        !globalReason && ['user', 'repo'].includes(s.scope) && s.addressable;
+      if (readable)
         try {
           if (
             !isAbsolute(s.path) ||
@@ -197,7 +215,7 @@ export const application = {
           // Skill's own frontmatter to allow it.
           modelInvocable = (s.enabled ?? true) && disableModel !== true;
         } catch (e) {
-          reason = e.kind ?? 'unsupported-source';
+          if (eligible) reason = e.kind ?? 'unsupported-source';
           eligible = false;
         }
       // Both release modes edit only the user settings file. A Skill the model
@@ -219,6 +237,7 @@ export const application = {
         pluginId: s.pluginId,
         enabled: modelInvocable ?? false,
         override: s.override,
+        shadowedBy: s.shadowedBy,
         eligible,
         availability: {
           normal: eligible,
@@ -250,6 +269,28 @@ export const application = {
         detail:
           'UNSEAL and TRUEFORM replace this file, so whatever these @ imports load is also absent until Normal is restored.'
       });
+    for (const layer of cat.higherPrecedenceLayers)
+      notices.push({
+        id: 'higher-precedence-settings',
+        kind: 'higher-precedence-settings',
+        label: `Skill overrides in ${layer.layer} settings`,
+        path: layer.path,
+        count: layer.names.length,
+        detail:
+          'These entries win over the user settings file, so a Skill named here cannot be controlled by any mode.'
+      });
+    if (cat.worktreeLocal)
+      notices.push({
+        id: 'worktree-local-settings',
+        kind: 'higher-precedence-settings',
+        label: 'Main checkout local settings',
+        path: cat.worktreeLocal.path,
+        // The count is the Skill overrides actually found there, so an absent
+        // or empty file does not read as one that shadows something.
+        count: cat.worktreeLocal.overrideCount,
+        detail:
+          'This project is a git worktree, so Claude Code reads its local settings from the main checkout root.'
+      });
     const excluded = cat.skills.filter((s) => s.scope === 'plugin');
     if (excluded.length)
       notices.push({
@@ -279,10 +320,17 @@ export const application = {
     // Every selected Skill is controlled through the one settings file.
     if (selected.length && !canPlanOwnership(d.files.settings))
       fail('unsupported-metadata');
-    for (const skill of d.skills.filter((s) => selected.includes(s.id)))
+    for (const skill of d.skills.filter((s) => selected.includes(s.id))) {
+      if (skill.shadowedBy !== null) fail('unsupported-source');
       if (!skill.availability.unseal && !skill.availability.trueform)
         fail('unsupported-metadata');
+    }
   },
+
+  // A registered Skill remembers that no higher-precedence layer named it, so a
+  // layer added later invalidates its plans instead of preparing a write that
+  // cannot take effect.
+  registeredSkillFields: (s) => ({ shadowedBy: s.shadowedBy ?? null }),
 
   pathsFor(reg) {
     const p = globalPaths(reg.context.claudeHome);
@@ -336,9 +384,15 @@ export const application = {
     const { catalog, catalogIdentity } = await import('../claude/catalog.mjs');
     const current = await catalog(reg.context);
     if (current.version !== reg.version) fail('stale-discovery');
-    for (const s of reg.skills)
-      if (!current.skills.some((c) => equal(catalogIdentity(c), s.identity)))
+    if (current.unreadableLayers.length) fail('stale-discovery');
+    for (const s of reg.skills) {
+      const found = current.skills.find((c) => equal(catalogIdentity(c), s.identity));
+      if (!found) fail('stale-discovery');
+      // A higher-precedence override added since registration would win over
+      // anything this writes, so the plan is no longer preparable.
+      if ((found.shadowedBy ?? null) !== (s.shadowedBy ?? null))
         fail('stale-discovery');
+    }
   },
 
   async compile({ reg, mode, selection, normal, targetFile }) {
@@ -454,6 +508,45 @@ export const application = {
       });
     }
     return result;
+  },
+
+  // Claude Code on macOS ships inside the desktop bundle with no CLI and no
+  // local read-only RPC, so nothing can report the runtime's own resolved
+  // configuration layers, Skill catalog and hooks before a replay attempt, and
+  // nothing can open one specific project as a fresh task. Ordinary recorded
+  // runs and saved starting conditions stay available; a replay is refused
+  // with this reason rather than substituting a weaker comparison.
+  sequentialReplay: Object.freeze({
+    supported: false,
+    reason:
+      'Claude Code on macOS exposes no local runtime conditions report or project-open command for a qualified replay attempt.'
+  }),
+
+  // Ordinary-run measurement for one recorded task.
+  runParser: 'claude-desktop',
+
+  // Reading a recording for a comparison fails loudly: an unavailable record
+  // must never become an empty measurement.
+  async readRunRecords(w, taskId) {
+    const { findCurrentDesktopSession, readDesktopRecords } = await import(
+      '../claude/desktop-record.mjs'
+    );
+    try {
+      return await readDesktopRecords(
+        await findCurrentDesktopSession({ sessionId: taskId, claudeHome: w.reg.context.claudeHome })
+      );
+    } catch (e) {
+      fail(
+        e.kind === 'current-session-unavailable'
+          ? 'comparison-task-record-unavailable'
+          : 'comparison-task-record-invalid'
+      );
+    }
+  },
+
+  async projectRun(w, records, options) {
+    const { projectClaudeRun } = await import('../claude/run-metrics.mjs');
+    return projectClaudeRun(records, options);
   },
 
   async readTaskRecords(w, taskId) {

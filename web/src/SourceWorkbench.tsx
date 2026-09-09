@@ -10,9 +10,12 @@ import { comparisonContextKey } from "./useComparisonController";
 import {
   canObserveTask,
   currentTaskObservation,
+  isClaudeContext,
   modePresentation,
   observationIssueText,
+  sourceHomeOf,
   sourceModes,
+  sourceRuntimeOf,
   taskObservationLabel,
   validTaskId,
 } from "./sources";
@@ -572,27 +575,32 @@ function TaskObservationSection({
 }
 
 function Context({ controller: c }: { controller: Controller }) {
+  if (!c.view) return false;
+  const { application, applicationLabel, context, workspace } = c.view.metadata;
+  const claude = isClaudeContext(context);
   return (
-    c.view && (
-      <dl className="source-context">
-        <div>
-          <dt>Codex home</dt>
-          <dd>{c.view.metadata.context.codexHome}</dd>
-        </div>
-        <div>
-          <dt>プロジェクト</dt>
-          <dd>{c.view.metadata.context.project}</dd>
-        </div>
-        <div>
-          <dt>実行ファイル</dt>
-          <dd>{c.view.metadata.context.executable}</dd>
-        </div>
-        <div>
-          <dt>保存場所</dt>
-          <dd>{c.view.metadata.workspace ?? "未登録"}</dd>
-        </div>
-      </dl>
-    )
+    <dl className="source-context">
+      <div>
+        <dt>アプリ</dt>
+        <dd>{applicationLabel}</dd>
+      </div>
+      <div>
+        <dt>{claude ? "Claude home" : "Codex home"}</dt>
+        <dd>{sourceHomeOf(context)}</dd>
+      </div>
+      <div>
+        <dt>プロジェクト</dt>
+        <dd>{context.project}</dd>
+      </div>
+      <div>
+        <dt>{claude ? "アプリ本体" : "実行ファイル"}</dt>
+        <dd>{sourceRuntimeOf(context)}</dd>
+      </div>
+      <div>
+        <dt>保存場所</dt>
+        <dd>{workspace ?? `未登録（${application}）`}</dd>
+      </div>
+    </dl>
   );
 }
 function SourceDetail({

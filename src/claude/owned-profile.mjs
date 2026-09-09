@@ -29,7 +29,10 @@ export async function createOwnedClaudeProfile({
   settings = '{\n  "autoMemoryEnabled": true,\n  "cleanupPeriodDays": 30\n}\n',
   instructions = '# PRIVATE_TEST optional user guide\n\n- Prefer the synthetic fixture path.\n',
   extraSkills = [],
-  rules = false
+  rules = false,
+  projectSettings = null,
+  projectLocalSettings = null,
+  worktreeOf = null
 } = {}) {
   await canonical(parent);
   const root = await mkdtemp(join(parent, 'unharness-owned-claude-'));
@@ -67,6 +70,28 @@ export async function createOwnedClaudeProfile({
     );
     await mkdir(directory, { recursive: true, mode: 0o700 });
     await writeFile(join(directory, 'SKILL.md'), skill.body, { mode: 0o600 });
+  }
+  for (const [name, content] of [
+    ['settings.json', projectSettings],
+    ['settings.local.json', projectLocalSettings]
+  ]) {
+    if (content === null) continue;
+    await mkdir(join(project, '.claude'), { recursive: true, mode: 0o700 });
+    await writeFile(join(project, '.claude', name), content, { mode: 0o600 });
+  }
+  // A synthetic git worktree: `.git` is a file naming a git directory under the
+  // main checkout's `.git/worktrees/<name>`, which is where Claude Code reads
+  // this project's local settings from.
+  if (worktreeOf !== null) {
+    await mkdir(join(worktreeOf, '.git', 'worktrees', 'owned'), {
+      recursive: true,
+      mode: 0o700
+    });
+    await writeFile(
+      join(project, '.git'),
+      `gitdir: ${join(worktreeOf, '.git', 'worktrees', 'owned')}\n`,
+      { mode: 0o600 }
+    );
   }
   if (rules) {
     await mkdir(join(claudeHome, 'rules'), { recursive: true, mode: 0o700 });
