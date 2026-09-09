@@ -17,6 +17,8 @@ The maintainer has both operating systems and Claude Code desktop available for 
 
 On 2026-09-09, the [Claude Code Mac handoff](handoff-claude-macos.md) was submitted in Claude Desktop 1.49585.0 as a local Code session on `codex/claude-macos`. Claude implemented the adapter and three review corrections through `6767c35`. See the [Phase 2 evidence](evidence/2026-09-09-claude-desktop-macos.md), [adapter design](claude-macos.md) and remaining [operator-assisted native step](claude-native-qualification.md). Codex is reviewing that code together with the [local appearance evidence gate](spec-appearances.md) on an isolated Mac integration branch. Fresh native Claude mode/AI qualification and the remaining Mac product work are still pending; this integration branch is not a completed Mac release.
 
+The maintainer subsequently adopted the [2026-09-09 Mac product experience plan](superpowers/plans/2026-09-09-mac-product-experience.md): a domain-based UI opened through the user's AI, retained Unharness control Skills in TRUEFORM, AI-guided presets, a synthetic demo, connection/fresh-task guidance, offline recovery and free layered original art. This supersedes appearance qualification gates, fixed creative choices and forced BAD treatment as future product requirements. The existing code/evidence remains a historical baseline and must be migrated and reverified. Artwork-pack sharing and public discovery are later design topics, not additional Mac completion gates.
+
 ## Phase 1: complete the Mac Codex core
 
 Start with a read-only probe of desktop configuration sources, supported controls, application scope, and evidence available after a fresh task. Keep the user's real setup unchanged during inventory.

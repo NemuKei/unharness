@@ -1,6 +1,6 @@
-# Local appearance lifecycle
+# Earlier local appearance lifecycle and migration boundary
 
-This implements the accepted [appearance contract](personalization.md) without changing the selected [mechanical scene](design.md). It is Phase 3 work alongside the isolated Claude integration; neither these records nor a renderer test qualifies that integration.
+This page describes the lifecycle implemented before the maintainer's 2026-09-09 revision. Its performance gate, three-candidate/final-choice rule and forced BAD treatment are superseded by the current [free layered appearance contract](personalization.md) and [migration/implementation plan](superpowers/plans/2026-09-09-layered-originals.md). The sections below remain a record of existing behavior and formats, not instructions to keep those restrictions in the new experience. Preserve the historical states and evidence while migrating. Neither these records nor a renderer test qualifies the Claude integration.
 
 ## Stored identity
 

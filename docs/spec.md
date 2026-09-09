@@ -21,7 +21,7 @@ The useful outcome can be adopting the new combination, retaining the previous o
 
 Unharness is free to use and requires no paid API, hosted backend, or recurring operator service expense. The maintainer explicitly excluded the user's existing AI subscription and usage from this requirement. Comparisons and optional AI-assisted authoring can use that separately chosen environment; do not describe those model calls as consuming no quota.
 
-The local web UI, deterministic configuration operations, local records, prepared/procedural artwork, three-candidate original forms, card rendering, and sharing preparation must work without an Unharness-funded model or server. Do not make a free-tier cloud quota, new paid provider account, or paid X integration a dependency of this base flow. User-owned optional AI authoring adds a creation route; the same feature must have a local route.
+Deterministic configuration operations, local records, prepared/procedural artwork, image import/composition, card rendering, and sharing preparation must work without an Unharness-funded model or backend. The user-selected domain serves the public UI and installation/demo pages; retain a bundled local UI and recovery route. Do not make a free-tier model quota, new paid provider account, or paid X integration a dependency. Optional artwork authoring uses the user's chosen AI or existing image files. Dedicated signed native-app distribution is not an initial dependency; its fees and publication require a separate decision.
 
 The [feasibility boundaries](feasibility.md) identify what is established, what needs desktop verification, and which guarantees the product cannot make.
 
@@ -30,14 +30,18 @@ The [feasibility boundaries](feasibility.md) identify what is established, what 
 | Stable meaning | Display label | Managed behavior |
 | --- | --- | --- |
 | Normal | 通常装備 | Use the saved loadout. |
-| Limited release | 限定解除 — UNSEAL | Replace selected optional added instructions with a fixed, versioned minimal comparison guide, and make selected enabled user-added skills manual-only. |
-| Zero | 零式 — TRUEFORM | Stop loading selected user-added optional instructions and skills, plus selected optional steering hooks. Preserve existing memory and native task-continuity settings. |
+| Limited release | 限定解除 — UNSEAL | Use a reviewed saved choice of minimal additional guidance or no selected additional guidance; keep the chosen Skills automatic and make other selected enabled Skills explicitly invocable. |
+| Zero | 零式 — TRUEFORM | Remove selected optional additional guidance; make confirmed self-authored Skills explicitly invocable and review automatic use of user-added external Skills. Preserve required Unharness controls, memory, task continuity and permissions. |
+
+These mode targets were refined on 2026-09-09. [AI-guided setup](spec-guided-setup.md) defines their versioned review and migration. Existing qualified adapters and saved configurations still follow their recorded earlier contract until that migration is implemented and verified; a matching mode label alone cannot reinterpret an old favorite.
 
 The same policy names express the same user intent in both applications. Each integration must declare which controls implement that intent. Unsupported controls are not silently approximated by a weaker mode.
 
 The initial scope includes self-authored and personally added third-party sources, primarily global AGENTS.md / CLAUDE.md and automatic Skill selection. Provider defaults, managed sources and mandatory project requirements remain outside the release set. A user directory or `user` scope is not evidence of authorship or removability. Hooks require an optional-role classification. Memory remains a common comparison condition rather than varied equipment. The maintainer accepted [the three comparison conditions](harness-scope.md) on 2026-09-08. The [registered user-source contract](spec-user-sources.md) defines the fixed guide and the first Codex write boundary: global optional instructions and explicitly registered Skills. Project instructions and hooks remain unchanged in this slice; unavailable controls cannot be selected as working replacements.
 
-Keep the default UI to mode selection, with a collapsed **対象を調整** entry under each release mode. Customization must operate on registered, classified sources and a reviewable change plan; it must not expose unimplemented toggles or put memory/provider protections back into the initial release set.
+Keep ordinary GUI use focused on mode selection, with **設定をAIに相談** near the modes. The user's AI discusses detailed customization and returns a reviewable proposal for registered, classified sources. Preserve memory/provider protections and do not expose unimplemented toggles.
+
+The bundled Unharness management Skill and required launch/status/switch/recovery connections are retained in every mode, including TRUEFORM. Resolve this identity from the registered product installation rather than a Skill name or a declaration inside an untrusted file. Mode plans must reject removal or indirect disabling of this control path. Show the retained exception; it does not relax execution permissions or make unrelated Skills exempt.
 
 Task requirements, managed configuration, and execution permissions remain consistent. Show remaining elements, including the minimal connection used to manage modes. Written instructions and enforced execution controls are different kinds of conditions.
 
@@ -96,15 +100,17 @@ Simultaneous dispatch to different modes is a possible later feature, not an ini
 
 ## Entry points and visuals
 
-The local web interface and the AI connection use the same core. An AI request can update an already open web screen; the screen need not remain open for core operations to work.
+The intended primary web interface is served from the user's domain and opened in Codex / Claude Code Desktop's in-app browser through the bundled management Skill. [The domain-entry contract](spec-domain-entry.md) defines protected pairing with the local runtime, restricted data exposure, installation and demo pages, clear connection identity, author/site attribution and an offline local fallback. The current localhost-only GUI does not qualify this new route. Web and AI operations use the same core; the screen need not remain open for core operations to work.
 
 Retain the chosen pixel-art hangar, progressively opening outer equipment, and the AI entity emerging in Zero. Use the divine reveal as a brief switching effect, then return to a readable idle view. Support effects off and reduced motion. Display preferences are separate from favorite content.
 
-Equipment is neutral before evaluation and can be represented as supportive/resonating when the recorded comparison shows that it fits the user's task and priorities. Keep this visual assessment distinct from the three mode policies and the underlying measured results.
+The default hangar remains the starting template. Original artwork uses three logical parts: AI entity, restraints and background. Templates define shared coordinates, attachment points, layer order and the mode-specific release poses. Users can create one part or a whole set through their own AI, import the images locally, and combine them with versioned prepared parts.
 
-The adopted appearance flow is: qualifying comparison → voluntary original-creation action → three candidates → one final choice → local save → optional build-card/X handoff. Preserve the selected entity across modes and restarts. Technical retries do not consume a creative choice or replace valid candidates; after adoption, the same achievement does not allow another creative draw. A distinct later achievement can yield a new form while preserving the old one. See [appearance rules](personalization.md) and [sharing](build-cards.md). These are agreed product targets that depend on the comparison feature, not claims of implemented runtime behavior.
+The adopted appearance flow is: request creation at any time → discuss the desired image and references with the bundled authoring Skill → create and preview template-compatible layers → load them locally → save/revise/select a collection item. There is no performance unlock, mandatory three-candidate set, final creative choice or forced BAD variant. The same creation and selection policy applies through GUI and AI. See [appearance rules](personalization.md).
 
-Each adopted form joins an always-browsable, reusable appearance collection. Finalizing one of three candidates fixes acquisition for that achievement; it does not prohibit switching between forms already acquired. Actual harness favorites and visual collection items are separate. In a current scope with confirmed adverse performance, the active selection is restricted to BAD-compatible variants; old GOOD variants stay owned and viewable in the collection. Unknown/stale/incomparable evidence uses neutral presentation. A missing BAD variant falls back to prepared BAD artwork. The same restriction applies through GUI and AI selection.
+Performance remains a separate, evidence-backed numerical/text display. Favorable, adverse, unknown or corrected results cannot prevent a user from using an owned image or change that image automatically. Appearance selection never loads a harness favorite or changes its assessment. Preserve previous artwork, candidate sets and historical comparisons during migration. Existing artwork is not proof of performance.
+
+Provide an installation-free demo using synthetic data, a concise connection indicator, fresh-task guidance after switching and a local recovery view available without the site or AI. Include small author/site attribution in the footer. [The product plan](superpowers/plans/2026-09-09-mac-product-experience.md) records the implementation order and later artwork-sharing discussion.
 
 The primary sharing action copies the card PNG to the clipboard and opens X's composer with editable template text and the public OSS repository link. The author pastes the image and posts. Keep the image in the clipboard while passing text through the composer URL; provide image-save and separate open-X fallbacks. Verify the combined gesture in the supported browsers on macOS and Windows before claiming one-click preparation support. The actual public repository URL must be established before adding it to a working template.
 

@@ -1,16 +1,16 @@
 # Feasibility and limits
 
-Assessment recorded on 2026-09-06. The maintainer asked which parts are feasible and which compromises must be understood first. This page distinguishes implementation prospects from observed support. The runtime contains inventory, source-control and desktop-record diagnostics with a persistent synthetic fixture; full desktop mode application remains unverified.
+Initial assessment recorded on 2026-09-06, with product direction updated on 2026-09-09. This page distinguishes feasibility from qualification. The desktop-control chronology below records earlier evidence; consult [current status](status.md) and [compatibility](compatibility.md) for subsequent verified slices. The new domain/AI entry and free layered artwork still require implementation and their own evidence.
 
 The maintainer accepted these limits and selected clipboard-image copy plus an editable X composer with the public OSS link as the initial sharing workflow. This acceptance permits development within the stated boundaries; it does not replace desktop or browser verification.
 
 ## Cost boundary is feasible
 
-The user explicitly confirmed that their existing AI costs are separate. Unharness itself can be free with no required paid API, hosted backend, or recurring operator service expense by running the control/storage/UI/rendering/export components on the user's computer. Prepared/procedural pixel art can produce three candidates locally; optional authoring or judging through the user's own AI consumes that environment's allowance. No Unharness-funded model service is needed.
+The user explicitly confirmed that their existing AI costs are separate. Unharness itself can be free with no required paid API, hosted backend, or recurring operator service expense by running the control/storage/UI/rendering/export components on the user's computer. Prepared/procedural layers, local composition and user-selected images require no model call; optional original authoring or judging through the user's own AI consumes that environment's allowance. No Unharness-funded model service is needed.
 
 Do not rely on a third-party free-tier quota to call this zero recurring cost. A local web interface and CLI avoid requiring a managed cloud runtime. Installer signing, automatic distribution, and other packaging choices must be assessed against the same constraint before becoming dependencies. Maintaining compatibility with app updates still requires development work; zero service fees does not mean no maintenance.
 
-## The central unresolved gate: desktop control and evidence
+## Initial desktop-control assessment (historical)
 
 The [Mac probe](evidence/2026-09-06-codex-macos.md) successfully read configuration/skill/hook inventory from a separately started Codex App Server. It did not attach to the active desktop session, change a setting, start a model task, verify a mode, or collect desktop task usage. Windows has not yet supplied a real probe result. Claude Code integration remains unimplemented.
 
@@ -40,8 +40,8 @@ The maintainer clarified that initial use selects one mode at a time. Simultaneo
 | Zero and UNSEAL | Manage registered optional sources and verify supported states for a fresh task | No promise to erase instructions already loaded into the current conversation, remove provider/managed rules, or unload every host-injected source |
 | Numerical comparison | Observed token/time/attempt data, acceptance checks, and task-specific scorecards | Complete desktop usage still needs a live test; missing fields and child usage remain unknown rather than invented totals |
 | Quality | Fixed task criteria and distinguishable human/AI judgments | No universal objective quality score or guarantee that one loadout is generally superior |
-| Artwork | Local prepared/procedural variety, three candidates and one saved identity, optional user-AI authoring | A finite art system has finite expressive range; random combinations are not proof of worldwide uniqueness |
-| Remake rule | Three candidates and a final choice enforced by normal GUI/AI operations | Local OSS files/code can be changed; the rule is not tamper-proof scarcity |
+| Artwork | Local prepared layers, voluntary user-AI creation and validated image import for entity, restraints and background | Templates constrain compatible placement and movement; image creation still needs visual review |
+| Creative revisions | Freely revise or select earlier local work; technical retries are idempotent | The user's AI allowance, validated file limits and local storage capacity remain practical limits |
 | X sharing | Copy a PNG to the clipboard and open template text plus the public OSS URL; the user pastes and publishes, with image saving as fallback | Clipboard/gesture/popup support needs browser verification; the Web Intent does not attach an image and opening it does not prove publication |
 | Portability | Separate adapters and OS boundaries tested on macOS and Windows | Native Windows, WSL, Codex, and Claude Code are distinct verification cases |
 
@@ -49,6 +49,6 @@ The [Codex skill guide](https://learn.chatgpt.com/docs/build-skills) explicitly 
 
 ## What has been adopted
 
-Random default appearance → sufficiently evidenced performance condition → voluntary original creation → three candidates → one final choice → local save and optional X sharing. Technical retries preserve already valid candidates, and a distinct later achievement may yield a new form. These decisions and the cost boundary are accepted targets; they do not mean the desktop integration or appearance runtime has passed implementation acceptance.
+Prepared/random default appearance → optionally ask the user's AI to create entity/restraint/background layers at any time → preview and import locally → save/revise/select a collection item → optionally prepare a card for sharing. There is no performance unlock or fixed candidate/final-choice rule. The [Mac product plan](superpowers/plans/2026-09-09-mac-product-experience.md) also adopts a domain-based UI opened through the AI app, protected local pairing, installation/demo pages, retained management controls and offline recovery.
 
-Adopted forms become reusable collection items. Confirmed adverse performance restricts their active presentation to BAD variants, with neutral treatment when evidence is unknown. Different ordinary tasks do not by themselves establish a mode regression; that filter still needs applicable evidence. Acquisition is retained even when a current treatment cannot be equipped.
+Appearance selection is independent of performance. Adverse or unknown evidence is reported separately and never forces a BAD image or removes an owned work. Reusable artwork packs and a public gallery are later topics; neither is a prerequisite for the local appearance feature. Static public-UI delivery does not establish safe cross-origin access to a local runtime: qualify the actual browser pairing and retain local recovery.

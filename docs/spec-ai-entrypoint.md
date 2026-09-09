@@ -1,5 +1,7 @@
 # Local AI entry point
 
+The next [domain/AI entry plan](superpowers/plans/2026-09-09-domain-workbench.md) adds fixed-scope workbench startup and pairing through the retained Unharness management Skill. Those tools are not yet part of the implemented endpoint described below. The [free layered appearance contract](personalization.md) supersedes performance-gated authoring as a product requirement; preserve existing operation receipts and data during migration.
+
 This slice completes the registered Codex source loop through local MCP. It uses the same deterministic source/comparison/replay operations as the web workbench. The accepted scope, source classifications and native conditions come from an existing registration; a tool cannot discover/register a new scope or supply a different home, project, executable or recording path.
 
 ## Connection and scope
