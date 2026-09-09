@@ -1,0 +1,7 @@
+interface:
+  display_name: "Unharness Setup"
+  short_description: "Design two saved release modes while keeping Normal"
+  default_prompt: "Use $unharness-setup to review my release configurations."
+
+policy:
+  allow_implicit_invocation: false
