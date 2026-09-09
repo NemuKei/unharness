@@ -13,6 +13,7 @@ import {
 import {
   initializeWorkspace,
   openWorkspace,
+  scopeWorkspace,
   activeNormalId,
   loadNormal,
   saveSnapshot,
@@ -119,6 +120,9 @@ export const userSourceState = wrap(async ({ workspace }) => {
     context: w.reg.context,
     registration: {
       scopeId: w.scopeId,
+      rootScopeId: w.rootScopeId,
+      previousScopeIds: w.registrations.slice(1).map(s => s.scopeId),
+      modeChangeRequired: w.state.scopePreparationRequired === true,
       normalId: w.reg.normalId,
       activeNormalId: activeNormalId(w),
       sources: targets(w.reg)
@@ -288,6 +292,7 @@ export const saveUserFavorite = wrap(async ({ workspace, name }) => {
   try {
     w = await openWorkspace(workspace);
     if (await pending(workspace)) fail('recovery-required');
+    if (w.state.scopePreparationRequired) fail('source-preparation-required');
 
     const files = await loadSnapshot(workspace, w.reg, w.state.snapshotId);
     await assertCurrent(w, files);
@@ -318,18 +323,20 @@ export const listUserFavorites = wrap(async ({ workspace, after, limit }) => {
   for (const { id, payload: p } of page.records) {
     if (
       p.kind !== 'unharness-user-source' ||
-      p.role !== 'favorite' ||
-      p.scopeId !== w.scopeId
+      p.role !== 'favorite'
     )
       fail('record-invalid');
-    await loadSnapshot(workspace, w.reg, p.snapshotId);
-    await loadNormal(workspace, w.reg, p.normalId ?? w.reg.normalId);
+    const historical = scopeWorkspace(w, p.scopeId);
+    await loadSnapshot(workspace, historical.reg, p.snapshotId);
+    await loadNormal(workspace, historical.reg, p.normalId ?? historical.reg.normalId);
     if (p.comparisonRunId !== undefined && (typeof p.comparisonRunId !== 'string' || !/^[0-9a-f]{64}$/.test(p.comparisonRunId))) fail('record-invalid');
     favorites.push({
       favoriteId: id,
       ...(p.comparisonRunId === undefined ? {} : { comparisonRunId: p.comparisonRunId }),
-      normalId: p.normalId ?? w.reg.normalId,
-      needsAdaptation: (p.normalId ?? w.reg.normalId) !== activeNormalId(w),
+      normalId: p.normalId ?? historical.reg.normalId,
+      needsAdaptation: p.scopeId !== w.scopeId || (p.normalId ?? historical.reg.normalId) !== activeNormalId(w),
+      ...(p.scopeId === w.scopeId ? {} : { scopeId: p.scopeId,
+        addedSourceIds: w.reg.skills.filter(s => !historical.reg.skills.some(h => h.id === s.id)).map(s => s.id) }),
       name: p.name,
       preparedMode: p.preparedMode,
       revision: p.revision
@@ -340,7 +347,8 @@ export const listUserFavorites = wrap(async ({ workspace, after, limit }) => {
 async function restorePlan({ workspace, id, type }) {
   const w = await openWorkspace(workspace),
     r = await loadRecord(workspace, type, id);
-  if (r.role !== type || r.scopeId !== w.scopeId) fail('record-invalid');
+  if (r.role !== type) fail('record-invalid');
+  scopeWorkspace(w, r.scopeId);
   const { adaptRetainedSnapshot } = await import('./retained-settings.mjs');
   const { after, adaptation } = await adaptRetainedSnapshot(w, r, id, type);
   return buildPlan(w, {
@@ -410,6 +418,7 @@ export const locateUserSources = wrap(async ({ context }) => {
     return {
       workspace: w.workspace,
       scopeId: w.scopeId,
+      rootScopeId: w.rootScopeId,
       normalId: w.reg.normalId,
       context: w.reg.context,
       recoveryArgv: recoveryArgv(w.workspace)
@@ -463,3 +472,10 @@ export const readUserSetup = wrap(async args => (await import('../setup/service.
 export const reviewUserSetup = wrap(async args => (await import('../setup/service.mjs')).reviewSetup(args));
 export const applyUserSetup = wrap(async args => (await import('../setup/service.mjs')).applySetup(args));
 export const SETUP_OPERATIONS = Object.freeze({ setup: readUserSetup, 'review-setup': reviewUserSetup, 'apply-setup': applyUserSetup });
+
+export const inspectUserEnrollment = wrap(async args => (await import('../setup/enrollment.mjs')).inspectEnrollment(args));
+export const reviewUserEnrollmentCandidate = wrap(async args => (await import('../setup/enrollment.mjs')).reviewEnrollmentCandidate(args));
+export const reviewUserEnrollment = wrap(async args => (await import('../setup/enrollment.mjs')).reviewEnrollment(args));
+export const applyUserEnrollment = wrap(async args => (await import('../setup/enrollment.mjs')).applyEnrollment(args));
+export const ENROLLMENT_OPERATIONS = Object.freeze({ 'enrollment-inventory': inspectUserEnrollment,
+  'review-candidate': reviewUserEnrollmentCandidate, 'review-enrollment': reviewUserEnrollment, 'apply-enrollment': applyUserEnrollment });

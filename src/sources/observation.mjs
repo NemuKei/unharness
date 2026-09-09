@@ -57,6 +57,7 @@ export async function observe(args) {
   try {
     const w = await openWorkspace(workspace);
     if (await pending(workspace)) fail('recovery-required');
+    if (w.state.scopePreparationRequired) fail('source-preparation-required');
     const files = await loadSnapshot(workspace, w.reg, w.state.snapshotId);
     await assertCurrent(w, files);
     const { records, readIssue } = await applicationFor(

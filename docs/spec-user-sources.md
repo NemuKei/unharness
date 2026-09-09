@@ -8,6 +8,8 @@ settings, its settings precedence and the sources it deliberately refuses.
 
 The maintainer approved Normal → minimal guide/manual Skills → selected extras absent on 2026-09-08. This slice implements registered user-source preparation and deterministic recovery. It does not establish desktop-loaded mode verification or change the retained memory/native-continuity policy.
 
+The 2026-09-09 [guided setup extension](spec-guided-setup.md) adds separately saved release presets and reviewed additive Skill enrollment for Codex. Adopted presets determine ordinary release-mode plans; the earlier rules below still describe explicit diagnostic selections and saved historical configurations. Enrollment never rewrites those records. The workbench/API require a separate preparation after a scope expansion and preserve Node-only cancellation and older-writer fencing.
+
 ## Scope
 
 - Node.js 24+, local operation, no model/API-key requirement or hosted service. Existing diagnostic commands remain usable without browser dependencies.

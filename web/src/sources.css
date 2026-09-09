@@ -619,3 +619,10 @@
 .setup-prompt label { display: grid; gap: .5rem; font-size: .85rem; }
 .setup-prompt textarea { display: block; box-sizing: border-box; width: 100%; min-width: 0; resize: vertical; font: inherit; line-height: 1.65; padding: .65rem; margin: .3rem 0 .65rem; }
 .fresh-task-handoff { margin-top: .85rem; }
+.enrollment-panel > summary { cursor: pointer; font-weight: 600; padding-block: .45rem; }
+.enrollment-panel > p, .enrollment-review p { line-height: 1.65; }
+.enrollment-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: .5rem; margin-block: 1rem; max-width: 100%; }
+.enrollment-form select, .enrollment-form textarea { width: 100%; max-width: 100%; min-width: 0; font: inherit; color: inherit; background: var(--surface, #171d28); padding: .7rem; border: 1px solid var(--line, #303849); border-radius: .35rem; }
+.enrollment-form label { margin-top: .4rem; }
+.enrollment-ai, .enrollment-review { margin-top: 1rem; }
+.scope-enrollment-notice, .enrollment-review { border-left: 3px solid var(--accent, #e54f5d); padding-left: 1rem; line-height: 1.7; }

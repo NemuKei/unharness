@@ -91,7 +91,8 @@ export function ReplayWorkbench({ controller: c, shared }: { controller: ReturnT
     {state.attempts.length > 0 && <section className="replay-history"><h3>再実行の履歴</h3><ul>{state.attempts.map(item => <li key={item.attemptId}>
       <div>{item.resultId && <label className="inline-check"><input type="checkbox" aria-label={`${modePresentation[item.preparedMode].title}の再実行を比較に追加`} checked={state.selected.includes(item.resultId)}
         disabled={disabled || state.selected.length >= 3 && !state.selected.includes(item.resultId)} onChange={e => c.select(item.resultId!, e.target.checked)} />比較</label>}
-        <strong>{modePresentation[item.preparedMode].title}</strong><small>{phaseLabels[item.phase]} ／ {date(item.createdAt)}</small></div>
+        <strong>{modePresentation[item.preparedMode].title}</strong><small>{phaseLabels[item.phase]} ／ {date(item.createdAt)}</small>
+        {item.scopeId !== shared.view?.source?.registration.scopeId && <small>Skillの登録範囲を追加する前の記録です。</small>}</div>
       <button className="text-button" disabled={disabled} onClick={() => item.resultId ? void c.readResult(item.resultId) : void c.inspect(item.attemptId)}>{item.resultId ? "再実行の結果を開く" : "試行の状態を開く"}</button></li>)}</ul>
       {state.cursor && <button className="text-button" disabled={disabled} onClick={() => void c.load(state.cursor!)}>再実行の続きを表示</button>}
       {state.selected.length > 0 && <button className="primary" disabled={disabled} onClick={() => void c.compare()}>選んだ{state.selected.length}件の再実行を比較</button>}</section>}

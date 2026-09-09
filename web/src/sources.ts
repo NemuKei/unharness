@@ -120,6 +120,9 @@ export type SourceState = {
   context: SourceMetadata["context"];
   registration: {
     scopeId: string;
+    rootScopeId?: string;
+    previousScopeIds?: string[];
+    modeChangeRequired?: boolean;
     normalId: string;
     activeNormalId: string;
     sources: SourceRow[];
@@ -167,6 +170,8 @@ type TaskObservationState = Pick<
 >;
 
 export function observationIssueText(issue: string | null) {
+  if (issue === "source-preparation-required")
+    return "追加したSkillを含むモードの準備が必要です。使うモードを選んでから、新しいタスクで確認してください。";
   if (
     issue === "preparation-boundary-unavailable" ||
     issue === "preparation-metadata-invalid"
@@ -181,8 +186,8 @@ export function observationIssueText(issue: string | null) {
   return "タスクの記録はまだ確認していません。";
 }
 
-export function canObserveTask(state: Pick<SourceState, "preparation"> | null) {
-  return !!state?.preparation;
+export function canObserveTask(state: (Pick<SourceState, "preparation"> & Partial<Pick<SourceState, "registration">>) | null) {
+  return !!state?.preparation && !state.registration?.modeChangeRequired;
 }
 
 export function currentTaskObservation(
@@ -257,12 +262,12 @@ export type SourcePlan = {
   verification: SourceVerification;
 };
 export type SourcePlanAdaptation = {
-  kind: "retained-settings";
   sourceType: "favorite" | "checkpoint" | "setup";
   sourceId: string;
   previousNormalId: string;
   normalId: string;
-};
+} & ({ kind: "retained-settings" } | { kind: "source-enrollment"; previousScopeId: string; scopeId: string;
+  addedSourceIds: string[]; addedSourceState: "saved-normal" });
 export type RetainedPlan = {
   planId: string;
   scopeId: string;
@@ -288,6 +293,8 @@ export type SourceFavorite = {
   favoriteId: string;
   normalId: string;
   needsAdaptation: boolean;
+  scopeId?: string;
+  addedSourceIds?: string[];
   name: string;
   preparedMode: SourceMode;
   revision: number;

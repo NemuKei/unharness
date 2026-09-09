@@ -1,12 +1,12 @@
 // Immutable private record validation. Never use today's preparation to validate history.
 import { isDeepStrictEqual } from 'node:util';
-import { loadRecord, loadSnapshot, loadNormal } from '../sources/records.mjs';
+import { loadRecord, loadSnapshot, loadNormal, scopeWorkspace } from '../sources/records.mjs';
 import { preparationMetadata, projectObservation, validUtc } from '../sources/observation-record.mjs';
 import { verification, fail } from '../sources/errors.mjs';
 import { validateMeasurement } from './measurement.mjs';
 import { exactKeys, boundedText, validateAssessment, deriveAcceptance } from './assessment.mjs';
 export const hash = value => typeof value === 'string' && /^[0-9a-f]{64}$/.test(value);
-export const SOURCE_ISSUES = Object.freeze(['source-conflict', 'recovery-required', 'preparation-boundary-unavailable', 'preparation-metadata-invalid', 'source-observation-unavailable']);
+export const SOURCE_ISSUES = Object.freeze(['source-conflict', 'recovery-required', 'preparation-boundary-unavailable', 'preparation-metadata-invalid', 'source-observation-unavailable', 'source-preparation-required']);
 export function freezeSourceContext(w) {
   return { snapshotId: w.state.snapshotId, normalId: w.state.normalId ?? w.reg.normalId,
     revision: w.state.revision, preparedMode: w.state.preparedMode,
@@ -27,6 +27,7 @@ export async function loadReview(w, reviewId) {
   try {
     if (!hash(reviewId)) fail('comparison-record-invalid');
     const p = await loadRecord(w.workspace, 'application', reviewId);
+    w = scopeWorkspace(w, p.scopeId);
     exactKeys(p, ['kind', 'role', 'schemaVersion', 'scopeId', 'capturedAt', 'collectedOn', 'measurement', 'outputText', 'source', 'sourceContext']);
     if (p.role !== 'run-review' || p.schemaVersion !== 1 || p.scopeId !== w.scopeId || !validUtc(p.capturedAt)) fail('comparison-record-invalid');
     exactKeys(p.collectedOn, ['platform', 'kernelRelease', 'architecture', 'nodeVersion']);
@@ -61,20 +62,22 @@ async function runPayload(w, runId) {
   if (!hash(runId)) fail('comparison-record-invalid');
   const p = await loadRecord(w.workspace, 'observation', runId);
   exactKeys(p, ['kind', 'role', 'schemaVersion', 'scopeId', 'reviewId', 'title', 'assessment', 'previousRunId']);
-  if (p.role !== 'comparison-run' || p.schemaVersion !== 1 || p.scopeId !== w.scopeId || !hash(p.reviewId) || (p.previousRunId !== null && !hash(p.previousRunId))) fail('comparison-record-invalid');
+  scopeWorkspace(w, p.scopeId);
+  if (p.role !== 'comparison-run' || p.schemaVersion !== 1 || !hash(p.reviewId) || (p.previousRunId !== null && !hash(p.previousRunId))) fail('comparison-record-invalid');
   if (p.title !== null) boundedText(p.title, 120, false, 'comparison-record-invalid');
   return { ...p, assessment: validateAssessment(p.assessment, 'comparison-record-invalid') };
 }
 export async function loadRun(w, runId) {
   try {
     const p = await runPayload(w, runId), review = await loadReview(w, p.reviewId);
+    if (p.scopeId !== review.scopeId) fail('comparison-record-invalid');
     let previousId = p.previousRunId;
     const visited = new Set([runId]);
     while (previousId !== null) {
       if (visited.has(previousId) || visited.size >= 1000) fail('comparison-record-invalid');
       visited.add(previousId);
       const previous = await runPayload(w, previousId);
-      if (previous.reviewId !== p.reviewId) fail('comparison-record-invalid');
+      if (previous.reviewId !== p.reviewId || previous.scopeId !== p.scopeId) fail('comparison-record-invalid');
       previousId = previous.previousRunId;
     }
     return { payload: p, review, summary: { ...reviewSummary(review), runId, title: p.title,

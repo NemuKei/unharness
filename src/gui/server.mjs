@@ -8,7 +8,7 @@ import { parseStrictJson } from '../core/strict-json.mjs';
 import { createGuiController } from './controller.mjs';
 import { createGuiInventory } from './inventory.mjs';
 import { createSourceController, sourceRequestShape } from './sources.mjs';
-import { USER_SOURCE_ERROR_KINDS, SETUP_OPERATIONS } from '../sources/service.mjs';
+import { USER_SOURCE_ERROR_KINDS, SETUP_OPERATIONS, ENROLLMENT_OPERATIONS } from '../sources/service.mjs';
 
 const MAX_BODY_BYTES = 16 * 1024;
 const MAX_REQUESTS = 1000;
@@ -237,7 +237,7 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
       const starting = sourceRoute && STARTING_ACTIONS.has(action);
       const replay = sourceRoute && REPLAY_ACTIONS.has(action);
       const parsedBody = (sourceRoute ? sourceRequestShape : requestShape)(
-        await readJson(request, sourceRoute && (COMPARISON_ACTIONS.has(action) || starting || replay || Object.hasOwn(SETUP_OPERATIONS, action)), starting ? 128 * 1024 : replay ? 65536 : Object.hasOwn(SETUP_OPERATIONS, action) ? MAX_BODY_BYTES : undefined),
+        await readJson(request, sourceRoute && (COMPARISON_ACTIONS.has(action) || starting || replay || Object.hasOwn(SETUP_OPERATIONS, action) || Object.hasOwn(ENROLLMENT_OPERATIONS, action)), starting ? 128 * 1024 : replay ? 65536 : (Object.hasOwn(SETUP_OPERATIONS, action) || Object.hasOwn(ENROLLMENT_OPERATIONS, action)) ? MAX_BODY_BYTES : undefined),
         action,
       );
       if (stopping) { response.destroy(); return; }

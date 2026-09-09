@@ -29,6 +29,10 @@ const fields = {
   setup: [[], []],
   "review-setup": [["proposal"], []],
   "apply-setup": [["reviewId"], []],
+  "enrollment-inventory": [[], []],
+  "review-candidate": [["discoveryId", "sourceId"], []],
+  "review-enrollment": [["discoveryId", "additions"], []],
+  "apply-enrollment": [["reviewId"], []],
   apply: [["planId"], []],
   save: [[], ["name"]],
   favorites: [[], ["after"]],
@@ -131,6 +135,8 @@ export function sourceRequestShape(body, action) {
     fail("gui-invalid-request");
   if (Object.hasOwn(input, "proposal") && (!input.proposal || typeof input.proposal !== "object" || Array.isArray(input.proposal)))
     fail("gui-invalid-request");
+  if (Object.hasOwn(input, "additions") && (!Array.isArray(input.additions) || !input.additions.length || input.additions.length > 32))
+    fail("gui-invalid-request");
   if (Object.hasOwn(input, "additionalPaths") && (!Array.isArray(input.additionalPaths) || input.additionalPaths.length > 2048
     || input.additionalPaths.some(path => typeof path !== "string" || Buffer.byteLength(path) > 1024)))
     fail("gui-invalid-request");
@@ -179,7 +185,7 @@ export async function createSourceController(input, { workspace: selectedWorkspa
       : input;
   let located = await service.locateUserSources({ context });
   if (selectedWorkspace !== undefined && (!located || located.workspace !== selectedWorkspace)) fail("source-session-changed");
-  const selectedScope = selectedWorkspace !== undefined ? located.scopeId : null;
+  const selectedScope = selectedWorkspace !== undefined ? located.rootScopeId : null;
   const launchId = randomUUID();
   const roots = [app.home(context), context.project, ...(selectedWorkspace === undefined ? [] : [selectedWorkspace])];
   const identities = await Promise.all(roots.map((path) => lstat(path)));
@@ -196,7 +202,7 @@ export async function createSourceController(input, { workspace: selectedWorkspa
     }
     located = await service.locateUserSources({ context });
     const workspace = located?.workspace ?? null;
-    if (selectedWorkspace !== undefined && (workspace !== selectedWorkspace || located?.scopeId !== selectedScope)) fail("source-session-changed");
+    if (selectedWorkspace !== undefined && (workspace !== selectedWorkspace || located?.rootScopeId !== selectedScope)) fail("source-session-changed");
     const contextId = createHash("sha256")
       .update(JSON.stringify({ context, workspace, scopeId: located?.scopeId ?? null }))
       .digest("hex");
@@ -250,6 +256,8 @@ export async function createSourceController(input, { workspace: selectedWorkspa
       const workspace = located.workspace;
       if (Object.hasOwn(service.SETUP_OPERATIONS, action))
         return service.SETUP_OPERATIONS[action]({ workspace, ...input });
+      if (Object.hasOwn(service.ENROLLMENT_OPERATIONS, action))
+        return service.ENROLLMENT_OPERATIONS[action]({ workspace, ...input });
       if (action === "review") {
         if (input.discoveryId !== undefined) fail("gui-invalid-request");
         return service.reviewUserSource({ workspace, ...input });

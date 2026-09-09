@@ -2,13 +2,13 @@
 
 The next [domain/AI entry plan](superpowers/plans/2026-09-09-domain-workbench.md) adds fixed-scope workbench startup and pairing through the retained Unharness management Skill. Those tools are not yet part of the implemented endpoint described below. The [free layered appearance contract](personalization.md) supersedes performance-gated authoring as a product requirement; preserve existing operation receipts and data during migration.
 
-This slice completes the registered Codex source loop through local MCP. It uses the same deterministic source/comparison/replay operations as the web workbench. The accepted scope, source classifications and native conditions come from an existing registration; a tool cannot discover/register a new scope or supply a different home, project, executable or recording path.
+This slice completes the registered Codex source loop through local MCP. It uses the same deterministic source/comparison/replay operations as the web workbench. The home, project, executable and recording paths come from an existing registration and cannot be supplied by a tool. The [guided setup extension](spec-guided-setup.md#additive-skill-enrollment) adds bounded inventory and reviewed additive enrollment within that fixed context. New source roles and invocation choices require an explicit user decision; a review ID does not prove approval. Initial registration remains outside MCP.
 
 ## Connection and scope
 
 `node bin/unharness.mjs mcp --workspace <registered-workspace>` starts a stdio server. The workspace is supplied by the local operator, validated at startup and bound to its existing canonical context and scope. No listener, hosted service, model call or API key is needed. Runtime dependencies are installed from the lockfile. The command imports the official MCP SDK only on this route, leaving diagnostics and offline recovery independent of it.
 
-The shared registered controller moves below the GUI boundary. GUI discovery/registration remain available through their existing reviewed flow. MCP supplies only the registered operation allowlist. Every call rechecks workspace, scope and root identity. Paths in returned recovery/handoff metadata are local data, never commands to execute implicitly.
+The shared registered controller moves below the GUI boundary. GUI discovery/registration remain available through their existing reviewed flow. MCP supplies the registered operation allowlist and the bounded enrollment operations. Every call rechecks workspace, active scope and root identity. The request ledger keeps the original root identity so enrollment receipts survive a scope change; `status` accepts the successor context before later writes. Paths in returned recovery/handoff metadata are local data, never commands to execute implicitly.
 
 The chosen connection is retained across modes. Installing it is an explicit local setup step, separate from optional-source selection. It must not change execution permissions, memory, native task continuity or other server entries. A retained-only configuration change is reconciled through the existing versioned Normal workflow.
 

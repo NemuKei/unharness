@@ -107,8 +107,9 @@ export function validateState(reg, state) {
   for (const key of ['lastCheckpointId', 'lastPlanId'])
     if (state[key] !== null && !/^[0-9a-f]{64}$/.test(state[key]))
       fail('workspace-invalid');
-  for (const key of ['setupId', 'preparedSetupId'])
+  for (const key of ['setupId', 'preparedSetupId', 'scopeId', 'lastEnrollmentReviewId'])
     if (state[key] != null && (typeof state[key] !== 'string' || !/^[0-9a-f]{64}$/.test(state[key]))) fail('workspace-invalid');
+  if (state.scopePreparationRequired !== undefined && typeof state.scopePreparationRequired !== 'boolean') fail('workspace-invalid');
   const paths = pathsFor(reg);
   if (
     new Set(state.ownedDirs.map((d) => d.path)).size !== state.ownedDirs.length
@@ -124,30 +125,14 @@ export function validateState(reg, state) {
     )
       fail('workspace-invalid');
 }
-export async function openWorkspace(workspace) {
-  await canonical(workspace);
-  const manifest = await readJson(join(workspace, 'registration.json'));
-  const reg = await loadRecord(workspace, 'scope', manifest.scopeId);
+async function loadRegistration(workspace, scopeId) {
+  const reg = await loadRecord(workspace, 'scope', scopeId);
   if (
     reg.role !== 'registration' ||
     reg.workspace !== workspace ||
     !reg.context ||
     !Array.isArray(reg.skills) ||
     reg.skills.length > 32
-  )
-    fail('workspace-invalid');
-  const home = applicationFor(reg.context).home(reg.context);
-  await canonical(home);
-  await canonical(reg.context.project);
-  const owner = ownerPath(home);
-  await canonical(owner);
-  const reservation = await readJson(join(owner, 'reservation.json'));
-  if (
-    reservation.workspace !== workspace ||
-    reservation.scopeId !== manifest.scopeId ||
-    // Codex reservations written before the application seam carry only
-    // codexHome; both spellings must resolve to the registered home.
-    (reservation.home ?? reservation.codexHome) !== home
   )
     fail('workspace-invalid');
   const app = applicationFor(reg.context);
@@ -163,7 +148,8 @@ export async function openWorkspace(workspace) {
     )
   )
     fail('workspace-invalid');
-  if (new Set(reg.skills.map((s) => s.id)).size !== reg.skills.length)
+  if (new Set(reg.skills.map((s) => s.id)).size !== reg.skills.length ||
+      new Set(reg.skills.map((s) => s.path)).size !== reg.skills.length)
     fail('workspace-invalid');
   const expected = Object.keys(pathsFor(reg)).sort();
   if (!equal(Object.keys(reg.bindings ?? {}).sort(), expected))
@@ -191,13 +177,73 @@ export async function openWorkspace(workspace) {
       if (rel.startsWith('..') || isAbsolute(rel)) fail('workspace-invalid');
     }
   }
-  const state = await readJson(join(workspace, 'state.json'));
-  await validateStateSnapshots(workspace, reg, state);
   const normal = await loadSnapshot(workspace, reg, reg.normalId);
   for (const s of reg.skills)
     if (s.sourceDigest !== app.skillSourceDigest(normal, s))
       fail('workspace-invalid');
-  return { workspace, scopeId: manifest.scopeId, reg, state, owner };
+  return reg;
+}
+
+// The original reservation anchors the workspace for its whole lifetime. An
+// additive registration is selected by the same atomic state publication as
+// its snapshots; no multi-file reservation/manifest move is needed.
+export async function loadScopeLineage(workspace, rootScopeId, scopeId) {
+  const registrations = [];
+  let id = scopeId;
+  while (true) {
+    if (!/^[a-f0-9]{64}$/.test(id) || registrations.some(s => s.scopeId === id) || registrations.length > 32) fail('workspace-invalid');
+    const reg = await loadRegistration(workspace, id);
+    registrations.push({ scopeId: id, reg });
+    if (id === rootScopeId) {
+      if (reg.parentScopeId !== undefined || reg.parentNormalId !== undefined) fail('workspace-invalid');
+      break;
+    }
+    if (!/^[a-f0-9]{64}$/.test(reg.parentScopeId) || !/^[a-f0-9]{64}$/.test(reg.parentNormalId)) fail('workspace-invalid');
+    id = reg.parentScopeId;
+  }
+  for (let i = 0; i < registrations.length - 1; i++) {
+    const child = registrations[i].reg, parent = registrations[i + 1].reg;
+    if (!equal(child.context, parent.context) || child.ownedRoot !== parent.ownedRoot || child.version !== parent.version ||
+        !equal(child.instructions, parent.instructions) || child.skills.length <= parent.skills.length ||
+        !equal(child.skills.slice(0, parent.skills.length), parent.skills)) fail('workspace-invalid');
+    const before = await loadNormal(workspace, parent, child.parentNormalId);
+    const after = await loadNormal(workspace, child);
+    for (const key of Object.keys(before))
+      if (!equal(before[key], after[key]) || !equal(parent.bindings[key], child.bindings[key])) fail('workspace-invalid');
+  }
+  return registrations;
+}
+export function scopeWorkspace(w, scopeId) {
+  if (scopeId === w.scopeId) return w;
+  const index = w.registrations?.findIndex(s => s.scopeId === scopeId) ?? -1;
+  const activeIndex = w.registrations?.findIndex(s => s.scopeId === w.scopeId) ?? -1;
+  const historic = w.registrations?.[index];
+  if (!historic || index < activeIndex) fail('record-invalid');
+  return { ...w, ...historic };
+}
+export async function openWorkspace(workspace) {
+  await canonical(workspace);
+  const manifest = await readJson(join(workspace, 'registration.json'));
+  const state = await readJson(join(workspace, 'state.json'));
+  const scopeId = state.scopeId ?? manifest.scopeId;
+  const registrations = await loadScopeLineage(workspace, manifest.scopeId, scopeId);
+  const reg = registrations[0].reg;
+  const home = applicationFor(reg.context).home(reg.context);
+  await canonical(home);
+  await canonical(reg.context.project);
+  const owner = ownerPath(home);
+  await canonical(owner);
+  const reservation = await readJson(join(owner, 'reservation.json'));
+  if (reservation.workspace !== workspace || reservation.scopeId !== manifest.scopeId ||
+      (reservation.home ?? reservation.codexHome) !== home) fail('workspace-invalid');
+  await validateStateSnapshots(workspace, reg, state);
+  return { workspace, scopeId, rootScopeId: manifest.scopeId, registrations, reg, state, owner };
+}
+
+export function registeredSkill(app, s) {
+  return { id: s.id, sourceDigest: s.sourceDigest, path: s.path, label: s.label,
+    identity: s.identity, pluginId: s.pluginId, enabled: s.enabled, availability: s.availability,
+    ...app.registeredSkillFields(s) };
 }
 export async function initializeWorkspace(d, selected, instructionsOptional) {
   assertRegistrationOwnership(d, selected, instructionsOptional);
@@ -230,17 +276,7 @@ export async function initializeWorkspace(d, selected, instructionsOptional) {
   const { store: workspace } = await createStore({ parent: owner });
   const skills = d.skills
     .filter((s) => selected.includes(s.id))
-    .map((s) => ({
-      id: s.id,
-      sourceDigest: s.sourceDigest,
-      path: s.path,
-      label: s.label,
-      identity: s.identity,
-      pluginId: s.pluginId,
-      enabled: s.enabled,
-      availability: s.availability,
-      ...app.registeredSkillFields(s)
-    }));
+    .map(s => registeredSkill(app, s));
   const reg = {
     role: 'registration',
     workspace,

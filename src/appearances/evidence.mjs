@@ -35,6 +35,7 @@ export async function resolveAppearanceEvidence(w, startId) {
     context: null, resultIds: [], baseline: null, candidate: null,
     reasons: ['predeclared-comparison-rule-required'], completeIsolationVerified: false,
     coverage: 'recorded-root-responses', childCoverage: 'unknown', memoryInputs: 'uncontrolled' };
+  if (saved.review.scopeId !== w.scopeId) return { ...empty, reasons: ['source-scope-changed'] };
   if (!rule) return empty;
   const index = await loadReplayIndex(w), all = await loadReplayAttempts(w, index);
   const attempts = all.filter(a => a.review.startId === startId

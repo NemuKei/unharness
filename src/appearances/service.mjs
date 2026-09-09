@@ -32,7 +32,7 @@ export async function discoverUserAppearance(args) {
     if (args.expectedStateId === undefined && before.state) return appearanceStoreSummary(w, before);
     if (args.expectedStateId !== undefined && args.expectedStateId !== before.stateId) fail('appearance-state-conflict');
     const seed = randomBytes(32).toString('hex');
-    const next = before.state ? discoverPrepared(before.state, seed) : initializeAppearance(w.scopeId, seed);
+    const next = before.state ? discoverPrepared(before.state, seed) : initializeAppearance(w.rootScopeId ?? w.scopeId, seed);
     return appearanceStoreSummary(w, await publishAppearanceState(w, before, next));
   });
 }

@@ -4,7 +4,7 @@ import { lstat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { captureRegistered, retained, targetFile, freshCatalog } from './capture.mjs';
 import { equal, assertWritableOwnership } from './platform.mjs';
-import { openWorkspace, activeNormalId, loadNormal, loadSnapshot, saveSnapshot,
+import { openWorkspace, scopeWorkspace, activeNormalId, loadNormal, loadSnapshot, saveSnapshot,
   loadRecord, record, writeJson, readJson, unlink, newPreparation, validateStateSnapshots } from './records.mjs';
 import { acquire, pending, assertCurrent, sourceTransactionHook } from './transaction.mjs';
 import { applicationFor } from '../apps/index.mjs';
@@ -127,6 +127,24 @@ export async function acceptRetainedSettings({ workspace, planId }) {
   } finally { await release(); }
 }
 export async function adaptRetainedSnapshot(w, r, id, type) {
+  if (r.scopeId !== undefined && r.scopeId !== w.scopeId) {
+    const historical = scopeWorkspace(w, r.scopeId);
+    const previousNormalId = r.normalId ?? historical.reg.normalId;
+    const base = await loadNormal(w.workspace, historical.reg, previousNormalId);
+    const saved = await loadSnapshot(w.workspace, historical.reg, r.snapshotId);
+    const normalId = activeNormalId(w), current = await loadNormal(w.workspace, w.reg, normalId);
+    const key = retainedKey(w.reg);
+    // Expansion alone needs no native editor. When retained settings also
+    // changed, use the already qualified application-specific reconciliation.
+    if (!equal(base[key], current[key])) {
+      const merged = await compose(historical, base, saved, current);
+      saved[key] = current[key] === null && merged.text === '' ? null : await targetFile(w.reg, key, merged.text, current);
+    }
+    const addedSourceIds = w.reg.skills.filter(s => !historical.reg.skills.some(h => h.id === s.id)).map(s => s.id);
+    return { after: { ...current, ...saved }, adaptation: { kind: 'source-enrollment', sourceType: type, sourceId: id,
+      previousScopeId: r.scopeId, scopeId: w.scopeId, previousNormalId, normalId, addedSourceIds,
+      addedSourceState: 'saved-normal' } };
+  }
   const previousNormalId = r.normalId ?? w.reg.normalId;
   const base = await loadNormal(w.workspace, w.reg, previousNormalId);
   const after = await loadSnapshot(w.workspace, w.reg, r.snapshotId);

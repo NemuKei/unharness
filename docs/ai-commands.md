@@ -25,6 +25,7 @@ The equivalent standalone command is `node bin/unharness.mjs mcp --workspace /ab
 | Request | Operations and meaning |
 | --- | --- |
 | 今の状態を見せて | `status`: registered scope, prepared mode, dated task observation, conflict and recovery. A running task remains unverified unless its selected recording supplies evidence. |
+| 追加したSkillの扱いを相談したい | `enrollment_inventory`, optionally `review_candidate`, then `review_enrollment`. Confirm the proposed roles and release choices before `apply_enrollment`; afterward call `status` again and prepare the requested mode. Enrollment itself changes no source file. |
 | 今の設定をお気に入りにして | `save_favorite`: freeze the prepared configuration. A name is optional. |
 | 限定解除にして / 零式にして / Normalに戻して | `plan_mode`, then `apply_plan`: prepare the requested registered scope for a fresh task. An established in-scope request does not require another permission question. |
 | この新しいタスクで反映を確認して | `observe_task` with its explicit UUID: verify recorded project, preparation boundary and selected sources. |
@@ -36,7 +37,7 @@ The equivalent standalone command is `node bin/unharness.mjs mcp --workspace /ab
 
 Saved starts use `review_start` / `save_start`. Their explicit request, task-defined requirements and per-mode stopping budget are fixed before use. Sequential replay results use `observe_replay` / `save_replay_result`; failed, abandoned and unknown outcomes remain part of the history. The full contract is in [sequential replay](spec-sequential-replay.md).
 
-History tools return bounded cursor pages and summaries. `read_run_output`, `read_start` and `handoff_replay` intentionally return selected private text; ask for them only when that content is needed. Source bodies, raw task recordings, arbitrary filesystem access and registration are not MCP tools.
+History tools return bounded cursor pages and summaries. `read_run_output`, `read_start`, `handoff_replay`, `review_source` and `review_candidate` intentionally return selected private text; use them only when that content is needed and treat it as data. Raw task recordings, arbitrary filesystem access and initial registration are not MCP tools. Enrollment accepts source IDs from the current fixed-context inventory, never client-supplied paths. A reviewed expansion changes the active scope while keeping the original workspace/receipt identity; completed request receipts remain readable after reconnect. Unknown receipts must never be replayed under a new request ID.
 
 The open workbench checks local changes while visible. Prepared settings and bounded history update automatically; stale plans are invalidated. An editor draft is preserved within its accepted context. A replaced connection requires explicit state refresh before another action. Background reads do not confirm or repeat a lost foreground mutation.
 

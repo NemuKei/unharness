@@ -37,6 +37,7 @@ async function nativeRecord(w, value) {
   return record(w.workspace, 'observation', { role: 'replay-native', schemaVersion: 1, scopeId: w.scopeId, value });
 }
 async function assertReviewCurrent(w, review) {
+  if (review.scopeId !== w.scopeId) fail('replay-preparation-stale');
   await ensureSources(w, review.sourceBinding);
   await assertReplayRepository(review.series.repository);
   await assertReplayRetainedInputs(w, review.retainedGuard);
@@ -67,7 +68,7 @@ async function attemptSummary(w, attempt) {
     if (location.phase === 'created') project = location.project;
     else locationIssue = 'replay-location-incomplete';
   } catch { locationIssue = 'replay-location-invalid'; }
-  return { attemptId: attempt.attemptId, reviewId: attempt.reviewId, startId: attempt.review.startId, scopeId: w.scopeId,
+  return { attemptId: attempt.attemptId, reviewId: attempt.reviewId, startId: attempt.review.startId, scopeId: attempt.scopeId,
     phase: attempt.phase, preparedMode: attempt.review.sourceBinding.preparedMode, snapshotId: attempt.review.sourceBinding.snapshotId,
     createdAt: attempt.createdAt, preparedAt: attempt.preparedAt, readyAt: attempt.readyAt, cancelledAt: attempt.cancelledAt,
     failure: attempt.failure, conditionIssue, locationIssue, project,
@@ -100,6 +101,7 @@ export async function reviewUserReplay(args) {
     assertReplaySupported(w);
     await ensureSources(w);
     const saved = await loadSavedStart(w, args.startId);
+    if (saved.review.scopeId !== w.scopeId) fail('replay-preparation-stale');
     let index = await loadReplayIndex(w);
     await loadReplayAttempts(w, index);
     let seriesId = index.data.series.find(s => s.startId === args.startId)?.seriesId;

@@ -12,6 +12,7 @@ const LIMIT = 1024 * 1024;
 const shape = (value, keys) => exactKeys(value, keys, [], 'appearance-record-invalid');
 const invalid = () => fail('appearance-record-invalid');
 const hash = value => typeof value === 'string' && /^[0-9a-f]{64}$/.test(value);
+const collectionWorkspace = w => ({ ...w, scopeId: w.rootScopeId ?? w.scopeId });
 const indexPath = w => join(w.workspace, 'appearance-index.json');
 const journalPath = w => join(w.workspace, 'appearance-pending.json');
 const markerPath = w => join(w.workspace, 'appearance-initialized.json');
@@ -72,6 +73,7 @@ async function assertMarker(w, required, create = false) {
   else if (required) invalid();
 }
 export async function readAppearanceStore(w) {
+  w = collectionWorkspace(w);
   try {
     await canonical(w.workspace);
     const file = await captureFileBytes(indexPath(w), LIMIT);
@@ -114,6 +116,7 @@ async function finishJournal(w, journal) {
 }
 // Internal publication; the caller holds the registered source-operation lock.
 export async function publishAppearanceState(w, before, value) {
+  w = collectionWorkspace(w);
   const state = validateAppearanceState(value);
   if (state.scopeId !== w.scopeId || state.revision !== (before.state?.revision ?? 0) + 1) invalid();
   if (before.journal) fail('appearance-recovery-required');
@@ -133,6 +136,7 @@ export async function publishAppearanceState(w, before, value) {
   } catch { fail('appearance-publication-uncertain'); }
 }
 export async function recoverAppearanceStore(w) {
+  w = collectionWorkspace(w);
   const journal = await loadJournal(w, await captureFileBytes(journalPath(w), LIMIT));
   if (!journal) return readAppearanceStore(w);
   try { return await finishJournal(w, journal); }

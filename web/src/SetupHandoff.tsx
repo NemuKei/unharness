@@ -3,7 +3,7 @@ import type { SourceView } from './sources';
 import { setupHandoffPrompt, freshTaskHandoffPrompt } from './setup';
 import type { SetupRoute } from './setup';
 
-function PromptCopy({ prompt, label }: { prompt: string; label: string }) {
+export function PromptCopy({ prompt, label }: { prompt: string; label: string }) {
   const fieldId = useId();
   const textarea = useRef<HTMLTextAreaElement>(null);
   const [copied, setCopied] = useState('');

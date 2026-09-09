@@ -1,4 +1,4 @@
-import { loadRecord } from '../sources/records.mjs';
+import { loadRecord, scopeWorkspace } from '../sources/records.mjs';
 import { validUuid, validUtc } from '../sources/observation-record.mjs';
 import { fail, USER_SOURCE_ERROR_KINDS } from '../sources/errors.mjs';
 import { exactKeys } from '../comparisons/assessment.mjs';
@@ -58,6 +58,7 @@ function qualification(q, attempt, measurement) {
 export async function loadReplayResultReview(w, resultReviewId) {
   try {
     const p = await loadRecord(w.workspace, 'application', resultReviewId);
+    w = scopeWorkspace(w, p.scopeId);
     shape(p, ['kind', 'role', 'schemaVersion', 'scopeId', 'attemptId', 'attemptStateId', 'taskId', 'capturedAt', 'recordRead', 'recordingDigest',
       'readIssue', 'sourceIssue', 'measurement', 'outputText', 'qualification', 'files']);
     if (p.role !== 'replay-result-review' || p.schemaVersion !== 1 || p.scopeId !== w.scopeId || !hash(p.attemptId) || !hash(p.attemptStateId)
@@ -67,6 +68,7 @@ export async function loadReplayResultReview(w, resultReviewId) {
     shape(p.recordRead, ['incompleteTrailingLine', 'snapshotBytes']);
     if (typeof p.recordRead.incompleteTrailingLine !== 'boolean' || !Number.isSafeInteger(p.recordRead.snapshotBytes) || p.recordRead.snapshotBytes < 0) invalid();
     const attempt = await loadReplayAttempt(w, { attemptId: p.attemptId, stateId: p.attemptStateId });
+    if (attempt.scopeId !== p.scopeId) invalid();
     if (!['ready', 'cancelled'].includes(attempt.phase) || !attempt.readyAt || Date.parse(p.capturedAt) < Date.parse(attempt.readyAt)) invalid();
     const measurement = p.measurement === null ? null : validateMeasurement(p.measurement);
     if (measurement && measurement.taskId !== p.taskId
@@ -103,11 +105,12 @@ export function replayResultReviewSummary(review) {
 export async function loadReplayResult(w, resultId) {
   try {
     const p = await loadRecord(w.workspace, 'application', resultId);
+    w = scopeWorkspace(w, p.scopeId);
     shape(p, ['kind', 'role', 'schemaVersion', 'scopeId', 'attemptId', 'resultReviewId', 'assessment', 'previousResultId']);
     if (p.role !== 'replay-result' || p.schemaVersion !== 1 || p.scopeId !== w.scopeId || !hash(p.attemptId)
       || !hash(p.resultReviewId) || !(p.previousResultId === null || hash(p.previousResultId))) invalid();
     const review = await loadReplayResultReview(w, p.resultReviewId);
-    if (review.attemptId !== p.attemptId) invalid();
+    if (review.attemptId !== p.attemptId || review.scopeId !== p.scopeId) invalid();
     const assessment = assessReplay(p.assessment, review.attempt.review.saved.review.declaration);
     const seen = new Set([resultId]); let previousId = p.previousResultId;
     while (previousId !== null) {

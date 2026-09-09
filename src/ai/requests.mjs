@@ -57,6 +57,7 @@ async function publish(path, value) {
 export async function createRequestLedger({ workspace, connectionId }) {
   if (!validUuid(connectionId)) fail('invalid-request');
   const registered = await openWorkspace(workspace);
+  const scopeId = registered.rootScopeId;
   const root = await directory(workspace);
   const parent = join(workspace, 'ai-requests');
   const inFlight = new Map(), seen = new Set();
@@ -64,12 +65,12 @@ export async function createRequestLedger({ workspace, connectionId }) {
   async function check() {
     await directory(workspace, root);
     const current = await openWorkspace(workspace);
-    if (current.scopeId !== registered.scopeId) fail('ai-request-store-invalid');
+    if (current.rootScopeId !== scopeId) fail('ai-request-store-invalid');
     if (parentIdentity) await directory(parent, parentIdentity);
   }
   function claim(value, requestId) {
     exact(value, ['kind', 'schemaVersion', 'scopeId', 'requestId', 'connectionId', 'action', 'inputHash']);
-    if (value.kind !== 'unharness-ai-request' || value.schemaVersion !== 1 || value.scopeId !== registered.scopeId
+    if (value.kind !== 'unharness-ai-request' || value.schemaVersion !== 1 || value.scopeId !== scopeId
       || value.requestId !== requestId || !validUuid(value.connectionId) || !HASH.test(value.inputHash)
       || typeof value.action !== 'string' || !/^[a-z][a-z-]{0,63}$/.test(value.action)) fail('ai-request-store-invalid');
     return value;
@@ -90,7 +91,7 @@ export async function createRequestLedger({ workspace, connectionId }) {
       const receipt = await read(join(path, 'result.json'));
       if (!receipt) return { exists: true, claim: c, response: envelope(requestId, c, 'unconfirmed') };
       exact(receipt, ['kind', 'schemaVersion', 'scopeId', 'requestId', 'requestHash', 'resultHash', 'result']);
-      if (receipt.kind !== 'unharness-ai-result' || receipt.schemaVersion !== 1 || receipt.scopeId !== registered.scopeId
+      if (receipt.kind !== 'unharness-ai-result' || receipt.schemaVersion !== 1 || receipt.scopeId !== scopeId
         || receipt.requestId !== requestId || receipt.requestHash !== recordId('application', c)
         || receipt.resultHash !== recordId('application', { result: receipt.result })) fail('ai-request-store-invalid');
       return { exists: true, claim: c, response: envelope(requestId, c, 'completed', receipt.result) };
@@ -101,7 +102,7 @@ export async function createRequestLedger({ workspace, connectionId }) {
     if (!validUuid(value.connectionId) || !validUuid(value.requestId)
       || typeof value.action !== 'string' || !/^[a-z][a-z-]{0,63}$/.test(value.action)) fail('invalid-request');
     const inputHash = recordId('application', { action: value.action, input: value.input });
-    return { kind: 'unharness-ai-request', schemaVersion: 1, scopeId: registered.scopeId,
+    return { kind: 'unharness-ai-request', schemaVersion: 1, scopeId,
       requestId: value.requestId, connectionId: value.connectionId, action: value.action, inputHash };
   }
   async function run(value, c, perform) {
@@ -135,7 +136,7 @@ export async function createRequestLedger({ workspace, connectionId }) {
       await check();
       await directory(path, requestDirectory);
       await publish(join(path, 'result.json'), { kind: 'unharness-ai-result', schemaVersion: 1,
-        scopeId: registered.scopeId, requestId: value.requestId, requestHash: recordId('application', c), resultHash, result });
+        scopeId, requestId: value.requestId, requestHash: recordId('application', c), resultHash, result });
       const confirmed = await lookup(value.requestId);
       if (confirmed.response.state !== 'completed') fail('ai-operation-unconfirmed');
       return confirmed.response;

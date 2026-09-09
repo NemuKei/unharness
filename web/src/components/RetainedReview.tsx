@@ -37,6 +37,11 @@ export function RestoreAdaptationNotice({
 }) {
   const sourceLabel =
     adaptation.sourceType === "favorite" ? "お気に入り" : adaptation.sourceType === "setup" ? "解除設定" : "復帰点";
+  if (adaptation.kind === "source-enrollment") return <div className="restore-adaptation" role="note">
+    <strong>追加後のSkillを含めて準備</strong>
+    <p>{sourceLabel}に保存された指示・Skillを戻し、後から登録した{adaptation.addedSourceIds.length}件のSkillは、
+      保存済みNormalの状態にします。現在の共通設定を維持し、元の保存版はそのまま残します。</p>
+  </div>;
   return (
     <div className="restore-adaptation" role="note">
       <strong>現在の共通設定を維持して準備</strong>

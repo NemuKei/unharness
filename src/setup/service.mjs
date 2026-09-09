@@ -26,6 +26,26 @@ async function assertUnchanged(w) {
   await assertCurrent(w, await loadSnapshot(w.workspace, w.reg, w.state.snapshotId));
 }
 
+// Shared by a setup review and the proposed next registration. Callers hold the
+// profile lock and recheck the real registered files before publication.
+export async function freezePresets(w, proposal) {
+  const app = applicationFor(w.reg.context);
+  if (!app.supportsReleasePresets) fail('setup-application-unsupported');
+  const scope = setupScope(w);
+  if (proposal.basis.runtimeVersion !== null && proposal.basis.runtimeVersion !== w.reg.version) fail('stale-discovery');
+  const options = Object.fromEntries(['unseal', 'trueform'].map(mode => [mode, compileReleasePreset(proposal, mode, scope)]));
+  const normal = await loadNormal(w.workspace, w.reg, activeNormalId(w)), presets = {};
+  for (const mode of ['unseal', 'trueform']) {
+    const result = await app.compile({ reg: w.reg, mode, normal, selection: options[mode].selection,
+      releasePreset: options[mode], targetFile: (key, text) => targetFile(w.reg, key, text, normal) });
+    assertControlChanges({ sources: w.reg.skills, before: normal, after: result.after });
+    assertPlanOwnershipChanges(normal, result.after);
+    presets[mode] = { ...options[mode], guide: result.guide, skillStates: result.skillStates,
+      snapshotId: await saveSnapshot(w.workspace, w.reg, result.after, w.state.snapshotVersion ?? 1) };
+  }
+  return presets;
+}
+
 export async function reviewSetup(args) {
   request(args, ['proposal']);
   return locked(args.workspace, async w => {
@@ -35,18 +55,9 @@ export async function reviewSetup(args) {
     if (!app.supportsReleasePresets) fail('setup-application-unsupported');
     const scope = setupScope(w), proposal = validatePresetProposal(args.proposal, scope);
     if (proposal.basis.runtimeVersion !== null && proposal.basis.runtimeVersion !== w.reg.version) fail('stale-discovery');
-    const options = Object.fromEntries(['unseal', 'trueform'].map(mode => [mode, compileReleasePreset(proposal, mode, scope)]));
     await assertUnchanged(w);
     await freshCatalog(w.reg);
-    const normal = await loadNormal(w.workspace, w.reg, activeNormalId(w)), presets = {};
-    for (const mode of ['unseal', 'trueform']) {
-      const result = await app.compile({ reg: w.reg, mode, normal, selection: options[mode].selection,
-        releasePreset: options[mode], targetFile: (key, text) => targetFile(w.reg, key, text, normal) });
-      assertControlChanges({ sources: w.reg.skills, before: normal, after: result.after });
-      assertPlanOwnershipChanges(normal, result.after);
-      presets[mode] = { ...options[mode], guide: result.guide, skillStates: result.skillStates,
-        snapshotId: await saveSnapshot(w.workspace, w.reg, result.after, w.state.snapshotVersion ?? 1) };
-    }
+    const presets = await freezePresets(w, proposal);
     await sourceTransactionHook('setup-review-compiled');
     await freshCatalog(w.reg);
     await assertUnchanged(w);

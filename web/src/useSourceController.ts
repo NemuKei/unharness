@@ -413,6 +413,7 @@ export function useSourceController() {
     choose,
     loadFavorites,
     executeComparison,
+    executeAuxiliary: executeComparison,
     setDiscovery,
     setReview,
     setRetainedPlan: (next: RetainedPlan) =>

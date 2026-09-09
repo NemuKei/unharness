@@ -1,6 +1,6 @@
 import { dirname, join } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
-import { loadRecord, loadSnapshot, activeNormalId } from '../sources/records.mjs';
+import { loadRecord, loadSnapshot, activeNormalId, scopeWorkspace } from '../sources/records.mjs';
 import { preparationMetadata, validUtc } from '../sources/observation-record.mjs';
 import { exactKeys } from '../comparisons/assessment.mjs';
 import { fail, USER_SOURCE_ERROR_KINDS } from '../sources/errors.mjs';
@@ -20,7 +20,7 @@ const sourceFile = (path, file) => file === null ? absent(path) : { path, presen
   size: Buffer.byteLength(file.text), sha256: digestBytes(Buffer.from(file.text)), meta: file.meta };
 export function replaySourceBinding(w) {
   const boundary = preparationMetadata(w.state);
-  if (boundary.issue || !['normal', 'unseal', 'trueform'].includes(w.state.preparedMode)) fail('replay-preparation-stale');
+  if (boundary.issue || w.state.scopePreparationRequired || !['normal', 'unseal', 'trueform'].includes(w.state.preparedMode)) fail('replay-preparation-stale');
   return { normalId: activeNormalId(w), snapshotId: w.state.snapshotId, snapshotVersion: w.state.snapshotVersion ?? 1,
     revision: w.state.revision, preparedMode: w.state.preparedMode, preparation: boundary.preparation };
 }
@@ -32,6 +32,7 @@ function binding(b) {
 export async function loadReplaySeries(w, seriesId) {
   try {
     const p = await loadRecord(w.workspace, 'experiment', seriesId);
+    w = scopeWorkspace(w, p.scopeId);
     shape(p, ['startId', 'pinnedAt', 'repository']);
     if (p.role !== 'replay-series' || p.schemaVersion !== 1 || p.scopeId !== w.scopeId || !hash(p.startId)
       || !validUtc(p.pinnedAt) || p.repository?.project !== w.reg.context.project) invalid();
@@ -97,13 +98,15 @@ export async function loadReplayReview(w, reviewId) {
   try {
     if (!hash(reviewId)) invalid();
     const p = await loadRecord(w.workspace, 'experiment', reviewId);
+    w = scopeWorkspace(w, p.scopeId);
     shape(p, ['startId', 'seriesId', 'createdAt', 'locationId', 'sourceBinding', 'nativeId', 'variant', 'retainedGuard']);
     if (p.role !== 'replay-review' || p.schemaVersion !== 1 || p.scopeId !== w.scopeId || !validUtc(p.createdAt)
       || !hash(p.locationId) || !hash(p.nativeId)) invalid();
     binding(p.sourceBinding);
     const series = await loadReplaySeries(w, p.seriesId);
-    if (series.startId !== p.startId) invalid();
+    if (series.startId !== p.startId || series.scopeId !== p.scopeId) invalid();
     const saved = await loadSavedStart(w, p.startId, false);
+    if (saved.review.scopeId !== p.scopeId) invalid();
     const snapshot = await loadSnapshot(w.workspace, w.reg, p.sourceBinding.snapshotId, p.sourceBinding.snapshotVersion);
     await loadSnapshot(w.workspace, w.reg, p.sourceBinding.normalId);
     const project = join(w.workspace, 'replays', p.locationId, 'work');
@@ -119,6 +122,7 @@ export async function loadReplayReview(w, reviewId) {
 export async function loadReplayAttempt(w, entry) {
   try {
     const p = await loadRecord(w.workspace, 'experiment', entry.stateId);
+    w = scopeWorkspace(w, p.scopeId);
     shape(p, ['attemptId', 'reviewId', 'previousStateId', 'phase', 'createdAt', 'updatedAt', 'preparedAt', 'readyAt', 'cancelledAt', 'failure', 'captureGuard', 'gitGuard', 'nativeId', 'match', ...(p.schemaVersion === 2 ? ['resultId'] : [])]);
     if (p.role !== 'replay-attempt' || ![1, 2].includes(p.schemaVersion) || p.scopeId !== w.scopeId || p.attemptId !== entry.attemptId
       || p.reviewId !== p.attemptId || !(p.previousStateId === null || hash(p.previousStateId))
@@ -127,6 +131,7 @@ export async function loadReplayAttempt(w, entry) {
       || [p.preparedAt, p.readyAt, p.cancelledAt].some(x => x !== null && !validUtc(x))
       || !(p.failure === null || USER_SOURCE_ERROR_KINDS.includes(p.failure))) invalid();
     const review = await loadReplayReview(w, p.reviewId);
+    if (review.scopeId !== p.scopeId) invalid();
     if (['prepared', 'ready', 'recorded'].includes(p.phase) && !p.preparedAt || ['ready', 'recorded'].includes(p.phase) && !p.readyAt
       || p.phase === 'cancelled' && !p.cancelledAt || p.phase === 'preparation-failed' && !p.failure
       || !['cancelled', 'recorded'].includes(p.phase) && p.cancelledAt !== null || !p.preparedAt && p.readyAt !== null) invalid();

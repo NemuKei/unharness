@@ -10,11 +10,12 @@ import { hash } from './start-records.mjs';
 
 const LIMIT = 1024 * 1024;
 const invalid = () => fail('replay-record-invalid');
+const indexScope = w => w.rootScopeId ?? w.scopeId;
 const markerPath = w => join(w.workspace, 'replay-index-initialized.json');
-const markerValue = w => Buffer.from(JSON.stringify({ kind: 'unharness-replay-index-initialized', schemaVersion: 1, scopeId: w.scopeId }));
+const markerValue = w => Buffer.from(JSON.stringify({ kind: 'unharness-replay-index-initialized', schemaVersion: 1, scopeId: indexScope(w) }));
 function validate(w, value) {
   exactKeys(value, ['kind', 'schemaVersion', 'scopeId', 'revision', 'series', 'attempts', 'activeAttemptId'], [], 'replay-record-invalid');
-  if (value.kind !== 'unharness-replay-index' || value.schemaVersion !== 1 || value.scopeId !== w.scopeId
+  if (value.kind !== 'unharness-replay-index' || value.schemaVersion !== 1 || value.scopeId !== indexScope(w)
     || !Number.isSafeInteger(value.revision) || value.revision < 0 || !Array.isArray(value.series) || !Array.isArray(value.attempts)
     || value.series.length > 2048 || value.attempts.length > 2048 || Buffer.byteLength(JSON.stringify(value)) > LIMIT) invalid();
   for (const [entries, key, reference] of [[value.series, 'startId', 'seriesId'], [value.attempts, 'attemptId', 'stateId']]) {
@@ -39,7 +40,7 @@ export async function loadReplayIndex(w) {
       catch (e) { if (e.code !== 'ENOENT') throw e; }
     }
     const data = file ? JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(file.bytes))
-      : { kind: 'unharness-replay-index', schemaVersion: 1, scopeId: w.scopeId, revision: 0, series: [], attempts: [], activeAttemptId: null };
+      : { kind: 'unharness-replay-index', schemaVersion: 1, scopeId: indexScope(w), revision: 0, series: [], attempts: [], activeAttemptId: null };
     return { data: validate(w, data), file };
   } catch { invalid(); }
 }

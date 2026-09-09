@@ -16,6 +16,8 @@ Try different combinations of skills and instructions on your own work. Find wha
 
 The Codex core now saves reviewed UNSEAL/TRUEFORM presets with model and official-reference provenance, separately from the original Normal. CLI, GUI operations and MCP use the same frozen versions; adoption does not change source files or the current task. The [setup contract](docs/spec-guided-setup.md) records the tested boundary and the remaining onboarding/native checks.
 
+New Skills can be reviewed and added through the local workbench or MCP after a release setup is saved. Enrollment preserves earlier Normal versions and history, changes no configuration file, and asks you to prepare the selected mode afterward. Older favorites show how added Skills will be included. [Enrollment workflow](docs/spec-guided-setup.md#additive-skill-enrollment).
+
 ## Development probe
 
 With Node.js 24+ and a native Codex executable available, run the dependency-free diagnostic from this checkout:

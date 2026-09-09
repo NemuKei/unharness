@@ -148,6 +148,8 @@ GUIは装備のシーン・演出にPixiJS、操作ボタン・読みやすい�
 
 Codexの共通処理では、元のNormalと別に、モデル・公式参照を記録したUNSEAL／TRUEFORMの設定案を保存できます。CLI・GUIの操作API・MCPは同じ保存版を使い、採用だけでは設定ファイルや現在のタスクを変更しません。[設定相談の仕様](docs/spec-guided-setup.md)に、検証済みの境界と、未完了の初回導線・実機確認を記録しています。
 
+解除設定の保存後は、ローカル画面やMCPで未登録のSkillを確認・追加できます。従来のNormalと履歴を残し、登録だけでは設定ファイルを変更しません。登録後に使うモードを準備し、古いお気に入りを戻す際は追加したSkillの扱いも確認できます。[追加登録の流れ](docs/spec-guided-setup.md#additive-skill-enrollment)。
+
 UnharnessはOSS公開に向けて準備中です。インストール手順と検証済みの対応表はまだありません。両OSを設計対象として保ち、まずMac版を完成させます。
 
 | アプリ | macOS | Windows |

@@ -3,6 +3,7 @@ import { Hangar } from "./Hangar";
 import { ComparisonWorkbench } from "./ComparisonWorkbench";
 import { SetupHandoff, FreshTaskHandoff } from "./SetupHandoff";
 import { releaseModeDescription } from "./setup";
+import { EnrollmentPanel } from "./EnrollmentPanel";
 import {
   RestoreAdaptationNotice,
   RetainedReview,
@@ -144,6 +145,7 @@ export function SourceWorkbench() {
             />
             {c.view && <SetupHandoff key={c.view.metadata.contextId + ":" + (source?.setup?.setupId ?? "initial")}
               view={c.view} confirmed={c.confirmed} busy={c.busy} />}
+            <EnrollmentPanel key={c.view?.metadata.contextId + ":" + source?.revision} controller={c} />
           </section>
           <aside className="control-column" aria-label="設定と保存">
             <section className="control-section">
@@ -153,7 +155,8 @@ export function SourceWorkbench() {
                   {source &&
                   c.confirmed &&
                   !source.conflict &&
-                  !source.recovery.pending
+                  !source.recovery.pending &&
+                  !source.registration.modeChangeRequired
                     ? "準備済み"
                     : source
                       ? "要確認"
@@ -164,7 +167,7 @@ export function SourceWorkbench() {
                 {source?.recovery.pending
                   ? "変更が中断しています"
                   : source
-                    ? `${!c.confirmed || source.conflict ? "最後に確認した保存状態：" : ""}${modePresentation[source.preparedMode].title}`
+                    ? `${source.registration.modeChangeRequired ? "追加前の最後の準備：" : !c.confirmed || source.conflict ? "最後に確認した保存状態：" : ""}${modePresentation[source.preparedMode].title}`
                     : "通常装備はまだ保存されていません"}
               </p>
               <p className="boundary">
@@ -174,6 +177,9 @@ export function SourceWorkbench() {
                     ? "ファイルの準備と、タスクへの読み込みは別です。使用時は新しいタスクを作成してください。"
                     : "対象を確認し、追加した任意の指示・Skillだけを選んで保存します。"}
               </p>
+              {source?.registration.modeChangeRequired && <p className="scope-enrollment-notice" role="status">
+                Skillの登録範囲が増えました。追加分は保存済みNormalの状態です。使うモードを選び、差分を確認して準備してください。
+              </p>}
               <button
                 className="text-button"
                 disabled={c.busy}
@@ -181,7 +187,7 @@ export function SourceWorkbench() {
               >
                 状態を再取得
               </button>
-              {c.view && source && <FreshTaskHandoff view={c.view} disabled={!usable} />}
+              {c.view && source && <FreshTaskHandoff view={c.view} disabled={!usable || !!source.registration.modeChangeRequired} />}
               {source?.conflict &&
                 (source.recovery.pending ? (
                   <details>
@@ -302,7 +308,7 @@ export function SourceWorkbench() {
                     この計画で準備する
                   </button>
                 </section>
-                <Save controller={c} usable={usable} />
+                <Save controller={c} usable={usable && !source?.registration.modeChangeRequired} />
               </>
             )}
           </aside>
@@ -351,7 +357,7 @@ export function SourceWorkbench() {
                     }
                   >
                     {f.name} · {modePresentation[f.preparedMode].title}
-                    {source &&
+                    {f.addedSourceIds?.length ? ` · 追加したSkill ${f.addedSourceIds.length}件を含む` : source &&
                     f.normalId !== source.registration.activeNormalId
                       ? " · 現在の共通設定を維持"
                       : ""}
@@ -929,7 +935,8 @@ function Save({
         {c.view?.source &&
         c.confirmed &&
         !c.view.source.conflict &&
-        !c.view.source.recovery.pending
+        !c.view.source.recovery.pending &&
+        !c.view.source.registration.modeChangeRequired
           ? `現在準備した ${modePresentation[c.view.source.preparedMode].title} の内容を保存します。`
           : "ファイル状態を確認してから保存できます。"}
       </p>

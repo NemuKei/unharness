@@ -65,7 +65,7 @@ export async function saveUserStart(args) {
   request(args, ['reviewId']);
   return locked(args.workspace, async w => {
     const review = await loadStartReview(w, args.reviewId);
-    const payload = { kind: 'unharness-user-source', role: 'saved-start', schemaVersion: 1, scopeId: w.scopeId, reviewId: review.reviewId };
+    const payload = { kind: 'unharness-user-source', role: 'saved-start', schemaVersion: 1, scopeId: review.scopeId, reviewId: review.reviewId };
     const startId = recordId('experiment', payload);
     let exists = false;
     try { await readRecord({ store: w.workspace, type: 'experiment', id: startId }); exists = true; }

@@ -183,6 +183,7 @@ function projectClaudeObservation(p, observationId, w) {
 export async function currentObservation(w, loadRecord, { conflict, pending }) {
   const boundary = preparationMetadata(w.state);
   const result = { preparation: boundary.preparation, observation: null, observationIssue: boundary.issue };
+  if (w.state.scopePreparationRequired) return { ...result, observationIssue: 'source-preparation-required' };
   const id = w.state.lastObservationId;
   if (id === undefined || id === null) return result;
   if (!hash(id)) return { ...result, observationIssue: 'observation-pointer-invalid' };

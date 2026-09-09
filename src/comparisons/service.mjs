@@ -18,6 +18,7 @@ async function locked(workspace, action) {
 async function sourceGuard(w) {
   try {
     if (await pending(w.workspace)) return 'recovery-required';
+    if (w.state.scopePreparationRequired) return 'source-preparation-required';
     const current = await openWorkspace(w.workspace);
     if (current.scopeId !== w.scopeId || !isDeepStrictEqual(current.reg, w.reg) || !isDeepStrictEqual(current.state, w.state)) return 'source-conflict';
     await assertCurrent(current, await loadSnapshot(w.workspace, w.reg, w.state.snapshotId));
@@ -71,7 +72,7 @@ export async function saveUserRun(args) {
       const previous = await loadRun(w, args.previousRunId);
       if (previous.review.reviewId !== review.reviewId || previous.review.measurement.taskId !== review.measurement.taskId) fail('comparison-record-invalid');
     }
-    const runId = await record(w.workspace, 'observation', { role: 'comparison-run', schemaVersion: 1, scopeId: w.scopeId,
+    const runId = await record(w.workspace, 'observation', { role: 'comparison-run', schemaVersion: 1, scopeId: review.scopeId,
       reviewId: args.reviewId, title, assessment, previousRunId: args.previousRunId ?? null });
     return (await loadRun(w, runId)).summary;
   });
@@ -112,6 +113,7 @@ export async function compareUserRuns(args) {
   const acceptedCount = runs.filter(r => r.acceptance.accepted).length;
   const outcomeCounts = Object.fromEntries(['accepted', 'failed', 'abandoned', 'unknown'].map(outcome => [outcome, runs.filter(r => r.assessment.outcome === outcome).length]));
   const reasons = [];
+  if (new Set(runs.map(r => r.scopeId)).size > 1) reasons.push('different-source-scopes');
   if (distinctTaskCount !== runs.length) reasons.push('overlapping-task-records');
   if (runs.some(r => r.measurement.usage.availability !== 'available' || r.measurement.usage.totals.totalTokens === null)) reasons.push('usage-unavailable-or-partial');
   const totalTokens = reasons.length ? null : sumCounters(runs.map(r => r.measurement.usage.totals.totalTokens));
@@ -129,7 +131,7 @@ export async function saveUserRunFavorite(args) {
     const { summary } = await loadRun(w, args.runId), a = summary.source.association;
     if (!a || summary.source.observation?.status !== 'matched-record') fail('comparison-source-unavailable');
     const name = suppliedName ?? `Run ${args.runId.slice(0, 12)}`;
-    const favoriteId = await record(w.workspace, 'favorite', { role: 'favorite', scopeId: w.scopeId,
+    const favoriteId = await record(w.workspace, 'favorite', { role: 'favorite', scopeId: a.scopeId,
       name, snapshotId: a.snapshotId, normalId: a.normalId, preparedMode: a.preparedMode, revision: a.revision, comparisonRunId: args.runId });
     return { favoriteId, name, preparedMode: a.preparedMode, comparisonRunId: args.runId, verification: { ...verification } };
   });

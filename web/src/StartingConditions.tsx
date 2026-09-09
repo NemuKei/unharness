@@ -82,7 +82,8 @@ export function StartingConditions({ sourceController, onReplay }: { sourceContr
         <ul>{state.detail.declaration.requirements.map(r => <li key={r.id}>{r.label}{r.critical ? "（必須）" : ""}</li>)}</ul>
         {state.detail.declaration.ratings.map(r => <p key={r.id}>{r.label}：{r.lowAnchor} 〜 {r.highAnchor}</p>)}
         <FileReview files={state.detail.files} selection={state.detail.selection} />
-        {onReplay && <button className="primary" disabled={disabled} onClick={() => onReplay(state.detail!.startId)}>この条件で再実行</button>}
+        {state.detail.scopeId !== sourceController.view?.source?.registration.scopeId && <p className="muted">Skillの登録範囲を追加する前の開始条件です。「この条件から新しい入力を作る」で現在の範囲に保存し直せます。</p>}
+        {onReplay && <button className="primary" disabled={disabled || state.detail.scopeId !== sourceController.view?.source?.registration.scopeId} onClick={() => onReplay(state.detail!.startId)}>この条件で再実行</button>}
         <button className="text-button" disabled={disabled} onClick={() => {
           const value = state.detail!.declaration;
           const { budget, ...input } = structuredClone(value);

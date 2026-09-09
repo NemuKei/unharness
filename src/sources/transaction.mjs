@@ -253,6 +253,7 @@ export async function transact(w, plan, planId) {
   await sourceTransactionHook('before-completion');
   const newState = {
     ...w.state,
+    ...(w.state.scopePreparationRequired === undefined ? {} : { scopePreparationRequired: false }),
     normalId: activeNormalId(w),
     lastRetainedPlanId: null,
     preparation: newPreparation(),
@@ -396,6 +397,10 @@ export async function recoverTransaction(w) {
   if (j.kind === 'unharness-user-source-setup-pending') {
     const { recoverSetup } = await import('../setup/recovery.mjs');
     return recoverSetup(w, j);
+  }
+  if (j.kind === 'unharness-user-source-enrollment-pending') {
+    const { recoverEnrollment } = await import('../setup/enrollment-recovery.mjs');
+    return recoverEnrollment(w, j);
   }
   const { before, after, paths } = await validateJournal(w, j);
   await checkParents(w.reg);
