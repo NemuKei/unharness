@@ -757,4 +757,3 @@ function projection(w, taskId, expected, records, observedAt, readIssue, boundar
     verification
   };
 }
-
