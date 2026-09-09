@@ -4,6 +4,16 @@ Direction refined by the maintainer on 2026-09-09. Initial setup is a conversati
 
 ## The experience
 
+### Recommend TRUEFORM for the first setup conversation
+
+The maintainer proposed starting the initial AI-led review from TRUEFORM on 2026-09-09. Make **零式で初期設定を見直す** the recommended first-time route, while keeping a route that continues with the current configuration. This is a recommended user choice, not an automatic mode switch when a page opens.
+
+Before that switch, the deterministic local core inventories the minimum required file/control metadata, saves the current managed configuration as Normal and confirms which sources are optional and controllable. An initial user directory does not prove authorship or removability. Do not change unclassified sources to manufacture a preliminary TRUEFORM.
+
+After the reviewed transition, start a fresh task and check the selected-source loading evidence available for that app. The AI then treats the saved original configuration as material to assess, not as instructions governing that new task. The Unharness management/control connection, memory, native continuity, permissions and required project/provider conditions remain retained. This creates a condition for reviewing optional instructions with less of their active influence; it is not a guarantee of unbiased reasoning or better performance.
+
+If a fresh TRUEFORM cannot be qualified, explain the remaining unknown or unsupported condition and offer the current-configuration route; do not label a merely prepared or old task as a verified TRUEFORM consultation. Preserve the original Normal and any earlier versions when saving the reviewed setup. This first-time recommendation does not authorize automatic mode changes during later reviews.
+
 The initial GUI offers **AIと初期設定を作る**. It shows a prompt for the selected application and connects it to Unharness's user-facing setup Skill. That Skill inventories the selected environment, asks one material question at a time about the user's work and ambiguous sources, and proposes configurations for UNSEAL and TRUEFORM with short reasons. Detailed customization belongs in that conversation. The ordinary GUI keeps mode switching central and places **設定をAIに相談** near the release modes, rather than expanding a large settings form.
 
 The GUI can present a concise review of both proposals: the additional-instruction choice, automatic/manual Skill counts, retained external functionality and unresolved items. The user confirms source roles and configurations through the chosen AI conversation and the concrete local review/apply boundary. Unharness saves Normal and the two versioned configurations through its deterministic local operations. Daily use then centers on the three modes; the consultation button reopens AI-assisted customization. Recovery remains available outside the AI.
