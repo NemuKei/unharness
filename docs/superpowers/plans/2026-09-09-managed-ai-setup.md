@@ -2,7 +2,7 @@
 
 > **For agentic workers:** Use `superpowers:executing-plans` task by task in the existing task. Preserve unrelated changes; additional agents are not required.
 
-**Goal:** Unharnessの管理入口を零式でも保持し、利用者のAIとの相談から、モデルに合わせた設定の版を安全に保存する。
+**Goal:** Unharnessの管理入口を零式でも保持し、従来のNormalを残したまま、利用者のAIとの相談からモデルに合わせたUNSEAL・TRUEFORMの版を安全に保存する。
 
 **Architecture:** 管理機能の識別と保護はローカルの登録・計画処理が担当する。Skillは相談と操作の呼び出しを担当し、設定ファイルを独自に書き換えない。新しい設定と対象範囲の移行は、既存の履歴と復旧を保つ共通サービスへ集約する。
 
@@ -47,6 +47,7 @@ assert.doesNotThrow(() => assertControlPreserved({
 
 - [ ] 既存の`validatePresetProposal` / `compileReleasePreset`と5件のテストを読み、承認されていない提案データが設定変更へ進めないケースを先に追加する。
 - [ ] 自作・外部・不明の分類、実際のモデル、公式参照URLと確認日、理由、選択した自動／明示呼び出しを変更できない版として保存する。
+- [ ] 初期棚卸しで作る対象をUNSEAL・TRUEFORMに限定する。提案の採用でNormalの管理対象の内容が置き換わらず、相談用の零式をNormalとして保存しないことをテストする。Normalボタンでは従来の構成へ戻れることを確認する。
 - [ ] 不明な由来・役割を本人が判断する前に登録しない。新しいモデルが出ても既存設定を自動で変更しない。
 - [ ] 既存の件数・記録容量の上限を確認する。管理できなかった候補を黙って省いて「すべての自作Skillを扱った」と表示しない。制御や保存の不足は具体的に示し、上限変更が必要ならその範囲を検証する。
 - [ ] 旧Normal・お気に入り・比較・復旧記録を保つ移行を追加する。旧TRUEFORMの保存版を、新しい「自作Skillは明示呼び出し」の構成へ無断変換しない。

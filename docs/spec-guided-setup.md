@@ -1,8 +1,14 @@
 # AI-guided initial setup
 
-Direction refined by the maintainer on 2026-09-09. Initial setup is a conversation with the user's chosen AI that produces two reviewed, saved configurations. It is not an automatic claim that an AI has found an optimal harness. This document defines the next product experience; the currently qualified source adapters still implement the earlier mode contract until the changes below are implemented and verified.
+Direction refined by the maintainer on 2026-09-09. Initial setup is a conversation with the user's chosen AI that produces reviewed, saved UNSEAL and TRUEFORM configurations while retaining the user's existing configuration as Normal. It is not an automatic claim that an AI has found an optimal harness. This document defines the next product experience; the currently qualified source adapters still implement the earlier mode contract until the changes below are implemented and verified.
 
 ## The experience
+
+### Normal preserves the existing configuration
+
+The maintainer clarified that this review exists to design UNSEAL and TRUEFORM, not to redesign Normal. Normal remains the existing configuration saved before the review. Adopting the AI's release-mode proposals must not replace that Normal or promote a reviewed proposal into a new Normal. In particular, the temporary TRUEFORM used for consultation must never be captured as a replacement Normal.
+
+Normal restoration therefore returns to the existing setup, while UNSEAL and TRUEFORM use the separately saved release configurations. A later independent settings edit or explicit new-Skill registration follows its own existing review/versioning contract; the initial consultation does not authorize changing Normal's managed content under the label of optimization.
 
 ### Recommend TRUEFORM for the first setup conversation
 
@@ -16,7 +22,7 @@ If a fresh TRUEFORM cannot be qualified, explain the remaining unknown or unsupp
 
 The initial GUI offers **AIと初期設定を作る**. It shows a prompt for the selected application and connects it to Unharness's user-facing setup Skill. That Skill inventories the selected environment, asks one material question at a time about the user's work and ambiguous sources, and proposes configurations for UNSEAL and TRUEFORM with short reasons. Detailed customization belongs in that conversation. The ordinary GUI keeps mode switching central and places **設定をAIに相談** near the release modes, rather than expanding a large settings form.
 
-The GUI can present a concise review of both proposals: the additional-instruction choice, automatic/manual Skill counts, retained external functionality and unresolved items. The user confirms source roles and configurations through the chosen AI conversation and the concrete local review/apply boundary. Unharness saves Normal and the two versioned configurations through its deterministic local operations. Daily use then centers on the three modes; the consultation button reopens AI-assisted customization. Recovery remains available outside the AI.
+The GUI can present a concise review of both proposals: the additional-instruction choice, automatic/manual Skill counts, retained external functionality and unresolved items. The user confirms source roles and configurations through the chosen AI conversation and the concrete local review/apply boundary. Unharness retains the saved existing Normal and saves the two release configurations through its deterministic local operations. Daily use then centers on the three modes; the consultation button reopens AI-assisted customization of the release modes. Recovery remains available outside the AI.
 
 The existing local GUI route remains usable without a model call. AI guidance uses the user's chosen AI environment and allowance; it adds no paid API requirement, hosted backend or operator service. Prepared appearance generation and card export remain local and independent of this conversation.
 
