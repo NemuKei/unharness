@@ -35,12 +35,12 @@
 
 **Files:** Create `src/appearances/store.mjs`, `src/appearances/service.mjs`, `test/appearance-store.test.mjs`; extend only optional record types in `src/core/local-store.mjs`.
 
-**Interfaces:** `readUserAppearance({workspace})`, `discoverUserAppearance({workspace})` and `selectUserAppearance({workspace,itemId})` resolve the registered scope, validate the saved lifecycle and publish its next immutable state. Seeds and replacement states are internal inputs only. Original-creation service exposure waits for the evidence resolver.
+**Interfaces:** `readUserAppearance({workspace})`, `discoverUserAppearance({workspace,expectedStateId?})`, `selectUserAppearance({workspace,itemId,expectedStateId})` and `recoverUserAppearance({workspace})` resolve the registered scope and validate the saved lifecycle. First discovery is idempotent; a later discovery needs the current state ID. Seeds and replacement states are internal inputs only. Original-creation service exposure waits for the evidence resolver.
 
-- [ ] Write owned-workspace tests for read-only empty state, persistent first discovery, explicit later discovery, restart/readback, selection, duplicate final state, and rejected arbitrary seed/state inputs.
-- [ ] Add interrupted/staged publication and independently edited index cases; verify registered source bytes/state and recovery remain intact.
-- [ ] Run the tests red, implement with the existing source lock and filesystem publication boundary, then run them green with `test/local-store.test.mjs` and affected source/recovery tests.
-- [ ] Record tested scope and leave no public claim that a lifecycle record alone is a rendered or qualified original form.
+- [x] Write owned-workspace tests for read-only empty state, persistent first discovery, explicit later discovery, restart/readback, selection, duplicate final state, and rejected arbitrary seed/state inputs.
+- [x] Add interrupted/staged publication and independently edited index cases; verify registered source bytes/state and recovery remain intact. A real child process was also killed after staging, then recovered to its exact saved state ID.
+- [x] Run the tests red, implement with the existing source lock and filesystem publication boundary, then run them green with `test/local-store.test.mjs` and affected source/recovery tests. Existing source/retained/MCP recovery: 86 pass and one platform skip.
+- [x] Record tested scope and leave no public claim that a lifecycle record alone is a rendered or qualified original form.
 
 ### Subsequent Mac work
 
