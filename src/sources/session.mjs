@@ -175,7 +175,8 @@ export function sourceRequestShape(body, action) {
   return { requestId, input: { launchId, contextId, ...input } };
 }
 
-export async function createSourceController(input, { workspace: selectedWorkspace } = {}) {
+export async function createSourceController(input, { workspace: selectedWorkspace, launchId = randomUUID() } = {}) {
+  if (typeof launchId !== "string" || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(launchId)) fail("gui-invalid-request");
   // The service locator validates canonical roots without native discovery.
   const { applicationFor } = await import("../apps/index.mjs");
   const app = applicationFor(input);
@@ -185,9 +186,9 @@ export async function createSourceController(input, { workspace: selectedWorkspa
       : input;
   let located = await service.locateUserSources({ context });
   if (selectedWorkspace !== undefined && (!located || located.workspace !== selectedWorkspace)) fail("source-session-changed");
-  const selectedScope = selectedWorkspace !== undefined ? located.rootScopeId : null;
-  const launchId = randomUUID();
-  const roots = [app.home(context), context.project, ...(selectedWorkspace === undefined ? [] : [selectedWorkspace])];
+  let pinnedScope = located?.rootScopeId ?? null;
+  let pinnedWorkspace = located?.workspace ?? null;
+  const roots = [app.home(context), context.project, ...(pinnedWorkspace === null ? [] : [pinnedWorkspace])];
   const identities = await Promise.all(roots.map((path) => lstat(path)));
   async function metadata() {
     for (let index = 0; index < roots.length; index++) {
@@ -202,7 +203,16 @@ export async function createSourceController(input, { workspace: selectedWorkspa
     }
     located = await service.locateUserSources({ context });
     const workspace = located?.workspace ?? null;
-    if (selectedWorkspace !== undefined && (workspace !== selectedWorkspace || located?.rootScopeId !== selectedScope)) fail("source-session-changed");
+    if (pinnedWorkspace !== null && (workspace !== pinnedWorkspace || located?.rootScopeId !== pinnedScope)) fail("gui-source-context-changed");
+    if (pinnedWorkspace === null && located) {
+      const candidate = located, identity = await lstat(candidate.workspace);
+      if (pinnedWorkspace === null) {
+        roots.push(candidate.workspace);
+        identities.push(identity);
+        pinnedWorkspace = candidate.workspace;
+        pinnedScope = candidate.rootScopeId;
+      } else if (pinnedWorkspace !== candidate.workspace || pinnedScope !== candidate.rootScopeId) fail("gui-source-context-changed");
+    }
     const contextId = createHash("sha256")
       .update(JSON.stringify({ context, workspace, scopeId: located?.scopeId ?? null }))
       .digest("hex");

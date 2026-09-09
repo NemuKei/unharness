@@ -25,6 +25,7 @@ The equivalent standalone command is `node bin/unharness.mjs mcp --workspace /ab
 | Request | Operations and meaning |
 | --- | --- |
 | 今の状態を見せて | `status`: registered scope, prepared mode, dated task observation, conflict and recovery. A running task remains unverified unless its selected recording supplies evidence. |
+| アンハーネスを開いて | `open_workbench`: start or reuse the owned bundled loopback UI, then open its URL in an available browser. `workbench_status` verifies current liveness. See [local startup](local-workbench.md); public-domain pairing is still subsequent work. |
 | 追加したSkillの扱いを相談したい | `enrollment_inventory`, optionally `review_candidate`, then `review_enrollment`. Confirm the proposed roles and release choices before `apply_enrollment`; afterward call `status` again and prepare the requested mode. Enrollment itself changes no source file. |
 | 今の設定をお気に入りにして | `save_favorite`: freeze the prepared configuration. A name is optional. |
 | 限定解除にして / 零式にして / Normalに戻して | `plan_mode`, then `apply_plan`: prepare the requested registered scope for a fresh task. An established in-scope request does not require another permission question. |

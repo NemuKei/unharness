@@ -1,6 +1,6 @@
 # Local AI entry point
 
-The next [domain/AI entry plan](superpowers/plans/2026-09-09-domain-workbench.md) adds fixed-scope workbench startup and pairing through the retained Unharness management Skill. Those tools are not yet part of the implemented endpoint described below. The [free layered appearance contract](personalization.md) supersedes performance-gated authoring as a product requirement; preserve existing operation receipts and data during migration.
+The [owned launcher](local-workbench.md) now supplies `open_workbench` and `workbench_status` for the registered endpoint. The remaining [domain/AI entry plan](superpowers/plans/2026-09-09-domain-workbench.md) adds plugin onboarding and public-origin pairing through the retained management Skill. The [free layered appearance contract](personalization.md) supersedes performance-gated authoring as a product requirement; preserve existing operation receipts and data during migration.
 
 This slice completes the registered Codex source loop through local MCP. It uses the same deterministic source/comparison/replay operations as the web workbench. The home, project, executable and recording paths come from an existing registration and cannot be supplied by a tool. The [guided setup extension](spec-guided-setup.md#additive-skill-enrollment) adds bounded inventory and reviewed additive enrollment within that fixed context. New source roles and invocation choices require an explicit user decision; a review ID does not prove approval. Initial registration remains outside MCP.
 
@@ -14,7 +14,7 @@ The chosen connection is retained across modes. Installing it is an explicit loc
 
 ## Tools and evidence
 
-Tools cover status, mode/favorite/checkpoint plans, application, favorites, recovery, selected task observations, ordinary-run reviews/assessments/history/output, saved starting conditions and sequential replay. They accept bounded typed IDs and declarations, not arbitrary filesystem targets. Private source bodies and raw task recordings are not tools. An explicit output/start/handoff request can return the bounded saved request or final answer; ordinary summaries omit them.
+Tools cover status, owned workbench startup, mode/favorite/checkpoint plans, application, favorites, recovery, selected task observations, ordinary-run reviews/assessments/history/output, saved starting conditions and sequential replay. They accept bounded typed IDs and declarations, not arbitrary filesystem targets. `review_source` and `review_candidate` expose one explicitly selected source body as data; raw task recordings remain unavailable. An explicit output/start/handoff request can return the bounded saved request or final answer; ordinary summaries omit them.
 
 Read-only hints describe actual effects: creating plans, reviews, observations and saved records is a private write. Source application/recovery and opening a selected desktop work location are also writes. Tools use strict object schemas and fixed safe error kinds. Text output and structured output describe the same result. Stdout contains protocol messages only. Malformed, duplicate-key and oversized messages must not reach a mutation.
 

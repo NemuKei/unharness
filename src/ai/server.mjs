@@ -11,7 +11,8 @@ import { StrictMcpInput, MAX_AI_FRAME_BYTES } from './stdio.mjs';
 const tools = new Map(AI_TOOLS.map(tool => [tool.definition.name, tool]));
 const safeKinds = new Set([...USER_SOURCE_ERROR_KINDS, ...LOCAL_STORE_ERROR_KINDS,
   'source-session-changed', 'ai-request-conflict', 'ai-connection-changed', 'ai-request-store-invalid',
-  'ai-operation-unconfirmed', 'ai-result-too-large', 'ai-busy']);
+  'ai-operation-unconfirmed', 'ai-result-too-large', 'ai-busy',
+  'gui-launch-unconfirmed', 'gui-launch-busy', 'gui-launch-record-invalid', 'gui-launch-record-changed', 'gui-build-missing', 'gui-assets-invalid']);
 function failure(error) {
   const kind = error?.kind === 'gui-invalid-request' ? 'invalid-request'
     : error?.kind === 'gui-source-context-changed' ? 'source-session-changed'
@@ -62,7 +63,15 @@ export async function createAiServer({ workspace, era = 'legacy' }) {
       if (tool.action === 'operation-status') return { ok: true, result: await ledger.status(parsed.data.requestId) };
       const { connectionId: acceptedConnection, requestId, ...input } = parsed.data;
       const perform = async () => {
-        try { return { ok: true, result: await controller.execute(tool.action, { launchId: acceptedMetadata.launchId, contextId: acceptedMetadata.contextId, ...input }) }; }
+        try {
+          if (['open-workbench', 'workbench-status'].includes(tool.action)) {
+            const now = await controller.metadata();
+            if (now.contextId !== acceptedMetadata.contextId) return failure({ kind: 'source-session-changed' });
+            const { openWorkbench, workbenchStatus } = await import('../gui/launch.mjs');
+            return { ok: true, result: await (tool.action === 'open-workbench' ? openWorkbench : workbenchStatus)({ workspace }) };
+          }
+          return { ok: true, result: await controller.execute(tool.action, { launchId: acceptedMetadata.launchId, contextId: acceptedMetadata.contextId, ...input }) };
+        }
         catch (e) { return failure(e); }
       };
       if (!tool.write) return perform();

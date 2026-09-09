@@ -11,6 +11,7 @@ import { loadoutMain, LOADOUT_USAGE } from '../src/loadouts/cli.mjs';
 import { sourcesMain, SOURCES_USAGE } from '../src/sources/cli.mjs';
 import { guiMain, GUI_USAGE } from '../src/gui/cli.mjs';
 import { mcpMain, MCP_USAGE } from '../src/ai/cli.mjs';
+import { workbenchMain, WORKBENCH_USAGE } from '../src/gui/launch-cli.mjs';
 import {
   collectSourceControlProbe,
   sourceControlProbeSucceeded,
@@ -27,7 +28,7 @@ Options:
   --output <file>         Create a JSON report without overwriting
   --timeout-ms <integer>  Request timeout from 100 to 60000 (default: 10000)
   --help                  Show this help
-${DESKTOP_USAGE}\n${LOADOUT_USAGE}\n${GUI_USAGE}\n${SOURCES_USAGE}\n${MCP_USAGE}`;
+${DESKTOP_USAGE}\n${LOADOUT_USAGE}\n${GUI_USAGE}\n${WORKBENCH_USAGE}\n${SOURCES_USAGE}\n${MCP_USAGE}`;
 
 function parseArgs(argv) {
   if (argv.length === 1 && argv[0] === '--help') return { help: true };
@@ -74,6 +75,7 @@ export async function main(argv = process.argv.slice(2), {
   if (argv[0] === 'sources') return sourcesMain(argv, { stdout, stderr });
   if (argv[0] === 'gui') return guiMain(argv, { stdout, stderr });
   if (argv[0] === 'mcp') return mcpMain(argv, { stdout, stderr });
+  if (argv[0] === 'workbench') return workbenchMain(argv, { stdout, stderr });
   const options = parseArgs(argv);
   if (options?.help) {
     stdout.write(USAGE);

@@ -152,14 +152,14 @@ async function readJson(request, strict = false, maxBodyBytes = strict ? 64 * 10
   }
 }
 
-export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0, codexHome, manageSources, inventory: inventoryOptions } = {}, {
-  collectInventory,
+export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0, codexHome, manageSources, sourceWorkspace, launchId, inventory: inventoryOptions } = {}, {
+  collectInventory, handleControlRequest,
 } = {}) {
   if (!Number.isSafeInteger(port) || port < 0 || port > 65535) {
     throw Object.assign(new Error('gui-invalid-port'), { kind: 'gui-invalid-port' });
   }
   const files = await staticFiles(assetsDirectory);
-  const sourceController = manageSources ? await createSourceController(manageSources) : null;
+  const sourceController = manageSources ? await createSourceController(manageSources, { workspace: sourceWorkspace, launchId }) : null;
   const controller = sourceController ?? await createGuiController({ store, scopeId, codexHome });
   const kind = sourceController ? 'user-sources' : 'fixture';
   const inventory = await createGuiInventory(sourceController ? undefined : inventoryOptions, { collect: collectInventory });
@@ -174,6 +174,9 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
     if (stopping) { response.destroy(); return; }
     try {
       const parsed = new URL(request.url, origin);
+      if (parsed.pathname.startsWith('/_unharness/') && handleControlRequest) {
+        await handleControlRequest(request, response); return;
+      }
       const isApi = parsed.pathname.startsWith('/api/');
       if (!isApi) {
         if (!['GET', 'HEAD'].includes(request.method) || parsed.search !== '') {
