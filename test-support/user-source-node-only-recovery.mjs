@@ -1,7 +1,9 @@
-import { registerHooks } from 'node:module';
+import { registerHooks, isBuiltin } from 'node:module';
+import { isAbsolute } from 'node:path';
 registerHooks({
   resolve(specifier, context, next) {
     if (
+      (!isBuiltin(specifier) && !specifier.startsWith('.') && !specifier.startsWith('file:') && !isAbsolute(specifier)) ||
       /yaml|catalog\.mjs|config-editor\.mjs|skill-policy\.mjs/.test(specifier)
     )
       throw Error('Non-Node restoration dependency');

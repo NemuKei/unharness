@@ -2,6 +2,7 @@ import { captureFile, equal, defaultMetadata } from './platform.mjs';
 import { applicationFor, applicationId } from '../apps/index.mjs';
 import { hash } from './hash.mjs';
 import { fail, verification } from './errors.mjs';
+import { retainControlSources } from '../setup/control-sources.mjs';
 export { hash };
 export const retained = Object.freeze([
   'project requirements',
@@ -33,11 +34,12 @@ export async function discoveryCapture(input) {
     version,
     unavailableSources,
     instructions,
-    skills,
+    skills: discoveredSkills,
     files,
     bindings,
     notices = []
   } = await app.discover(context, ownedRoot);
+  const skills = retainControlSources(discoveredSkills);
   const discoveryId = hash({
     context,
     version,

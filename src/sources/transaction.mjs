@@ -2,6 +2,7 @@
 import { randomBytes } from 'node:crypto';
 import { lstat, readdir, rename } from 'node:fs/promises';
 import { join, dirname, basename } from 'node:path';
+import { assertControlChanges } from '../setup/control-sources.mjs';
 import {
   captureFile,
   equal,
@@ -182,6 +183,9 @@ export async function transact(w, plan, planId) {
     fail('stale-plan');
   const before = await loadSnapshot(w.workspace, w.reg, plan.beforeId),
     after = await loadSnapshot(w.workspace, w.reg, plan.afterId);
+  // Forward publications obey today's retained-control rules. A valid older
+  // interrupted transaction still has to be reversible by offline recovery.
+  assertControlChanges({ sources: w.reg.skills, before, after });
   const keys = changes(w, before, after),
     paths = pathsFor(w.reg);
   await assertCurrent(w, before);

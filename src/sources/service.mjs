@@ -32,6 +32,7 @@ import {
 } from './transaction.mjs';
 import { canonical, equal, assertPlanOwnershipChanges } from './platform.mjs';
 import { applicationFor } from '../apps/index.mjs';
+import { requiredControlSources, assertControlPreserved, assertControlChanges } from '../setup/control-sources.mjs';
 import {
   fail,
   privateCall,
@@ -76,6 +77,7 @@ export const registerUserSources = wrap(
       fail('optional-role-required');
     const d = await discoveryCapture(context);
     if (d.discoveryId !== discoveryId) fail('stale-discovery');
+    assertControlPreserved({ selectedIds: selectedSkillIds, control: requiredControlSources(d.skills) });
     if (
       d.unavailableSources.length ||
       (instructionsOptional && !d.instructions.eligible) ||
@@ -164,6 +166,7 @@ async function buildPlan(
   if (['unseal', 'trueform'].includes(mode)) await freshCatalog(w.reg);
   const before = await loadSnapshot(w.workspace, w.reg, w.state.snapshotId);
   await assertCurrent(w, before);
+  assertControlChanges({ sources: w.reg.skills, before, after });
   assertPlanOwnershipChanges(before, after);
   const afterId = await saveSnapshot(w.workspace, w.reg, after, w.state.snapshotVersion ?? 1);
   const plan = {
@@ -205,6 +208,7 @@ export const planUserMode = wrap(async ({ workspace, mode, selectedIds }) => {
   )
     fail('invalid-request');
   if (mode === 'normal' && selection.length) fail('invalid-request');
+  assertControlPreserved({ selectedIds: selection, control: requiredControlSources(w.reg.skills) });
   if (selection.some((id) => !all.find((t) => t.id === id).availability[mode]))
     fail('unsupported-source');
   const normal = await loadNormal(workspace, w.reg, activeNormalId(w));
