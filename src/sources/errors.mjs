@@ -3,6 +3,8 @@ export const USER_SOURCE_ERROR_KINDS = Object.freeze([
   'setup-roles-unconfirmed',
   'setup-manual-control-unavailable',
   'setup-required-control',
+  'setup-record-invalid',
+  'setup-application-unsupported',
   'invalid-request',
   'appearance-recipe-invalid',
   'appearance-state-invalid',

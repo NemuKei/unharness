@@ -26,6 +26,9 @@ const fields = {
   plan: [["mode"], ["selectedIds"]],
   "plan-retained": [[], []],
   "accept-retained": [["planId"], []],
+  setup: [[], []],
+  "review-setup": [["proposal"], []],
+  "apply-setup": [["reviewId"], []],
   apply: [["planId"], []],
   save: [[], ["name"]],
   favorites: [[], ["after"]],
@@ -125,6 +128,8 @@ export function sourceRequestShape(body, action) {
   )
     fail("gui-invalid-request");
   if (Object.hasOwn(input, "declaration") && (!input.declaration || typeof input.declaration !== "object" || Array.isArray(input.declaration)))
+    fail("gui-invalid-request");
+  if (Object.hasOwn(input, "proposal") && (!input.proposal || typeof input.proposal !== "object" || Array.isArray(input.proposal)))
     fail("gui-invalid-request");
   if (Object.hasOwn(input, "additionalPaths") && (!Array.isArray(input.additionalPaths) || input.additionalPaths.length > 2048
     || input.additionalPaths.some(path => typeof path !== "string" || Buffer.byteLength(path) > 1024)))
@@ -243,6 +248,8 @@ export async function createSourceController(input, { workspace: selectedWorkspa
         return service.reviewDiscoveredUserSource({ context, ...input });
       if (!located) fail("workspace-invalid");
       const workspace = located.workspace;
+      if (Object.hasOwn(service.SETUP_OPERATIONS, action))
+        return service.SETUP_OPERATIONS[action]({ workspace, ...input });
       if (action === "review") {
         if (input.discoveryId !== undefined) fail("gui-invalid-request");
         return service.reviewUserSource({ workspace, ...input });

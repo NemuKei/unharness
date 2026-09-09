@@ -14,6 +14,8 @@ Try different combinations of skills and instructions on your own work. Find wha
 
 **Planned product entry:** ask your AI to open Unharness in its in-app browser at your own domain, while settings and artwork stay on your PC. The plan includes a guided installation/demo, retained Unharness controls in TRUEFORM, and freely created entity/restraint/background layers with performance displayed separately. This route and the new artwork import are not yet qualified. See the [Mac product plan](docs/superpowers/plans/2026-09-09-mac-product-experience.md).
 
+The Codex core now saves reviewed UNSEAL/TRUEFORM presets with model and official-reference provenance, separately from the original Normal. CLI, GUI operations and MCP use the same frozen versions; adoption does not change source files or the current task. The [setup contract](docs/spec-guided-setup.md) records the tested boundary and the remaining onboarding/native checks.
+
 ## Development probe
 
 With Node.js 24+ and a native Codex executable available, run the dependency-free diagnostic from this checkout:
@@ -155,7 +157,7 @@ Unharness is being prepared for an open-source release. There is no published in
 
 The initial Mac completion criteria cover Codex Desktop. Claude Code and Windows qualification follow later; their remaining work does not block that scoped release. These are delivery targets, not completed compatibility tests. See [delivery](docs/delivery.md) and [compatibility and evidence](docs/compatibility.md).
 
-Useful early contributions include reproducible compatibility observations, small comparison examples, feedback on the save–try–compare–restore flow, and documentation improvements. Contributor instructions, the license, and reporting channels will be established in the dedicated repository before public use.
+Useful early contributions include reproducible compatibility observations, small comparison examples, feedback on the save–try–compare–restore flow, and documentation improvements. Unharness uses the [MIT License](LICENSE); bundled third-party components retain their own license notices. Public installation and reporting channels are being prepared. The intended release combines a playable web demo, a usable local plugin, and inspectable implementation and verification records.
 
 ## Documentation
 

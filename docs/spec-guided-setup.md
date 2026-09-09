@@ -1,6 +1,24 @@
 # AI-guided initial setup
 
-Direction refined by the maintainer on 2026-09-09. Initial setup is a conversation with the user's chosen AI that produces reviewed, saved UNSEAL and TRUEFORM configurations while retaining the user's existing configuration as Normal. It is not an automatic claim that an AI has found an optimal harness. This document defines the next product experience; the currently qualified source adapters still implement the earlier mode contract until the changes below are implemented and verified.
+Direction refined by the maintainer on 2026-09-09. Initial setup is a conversation with the user's chosen AI that produces reviewed, saved UNSEAL and TRUEFORM configurations while retaining the user's existing configuration as Normal. It is not an automatic claim that an AI has found an optimal harness. The core record/operation slice below is implemented; the existing native desktop qualification covers the earlier mode contract until the new journey is verified.
+
+## Implemented record and operation boundary
+
+The Codex adapter now supports reviewed release presets in the local core. An immutable `setup-review` contains the original Normal ID, registered scope, source revision, confirmed roles, model/reference provenance and two frozen target snapshots. Adopting it adds a separate `release-setup` version to the source state. Adoption changes no source file, original Normal, current prepared snapshot or task-preparation boundary. Ordinary release-mode plans with no explicit source override use the adopted version. An explicit source selection retains the earlier diagnostic mode contract. GUI copy must distinguish those conditions.
+
+Prepared state and saved favorites carry their own optional setup version. Earlier favorites remain frozen and are not reinterpreted as a new TRUEFORM. A separately reviewed retained-settings change may adapt a preset's retained values while preserving its managed content and original model/reference provenance. This does not establish that the old assessment applies to a new model. Source enrollment/migration and the initial conversation UI remain separate implementation work. Claude's existing adapter remains on its earlier contract until that integration is completed.
+
+The following noninteractive CLI commands use the existing `sources <command> --json <object>` interface. They are intended for local integrations and diagnostics; normal users can use the GUI or their AI. Input has no environment-variable fallback, source-path overrides, force flag or implicit confirmation. Successful JSON goes to stdout with exit code 0. Sanitized error JSON goes to stderr: exit code 2 for invalid command/flag/argument count or an oversized argument, and exit code 1 for rejected JSON or a refused/failed operation. No interactive prompts are added.
+
+| Command | Required JSON fields | Result and effect |
+| --- | --- | --- |
+| `setup` | `workspace` | Read the adopted proposal and separately prepared version; no writes |
+| `review-setup` | `workspace`, `proposal` | Freeze a review of the two release configurations; do not adopt or apply it |
+| `apply-setup` | `workspace`, `reviewId` | Adopt that reviewed version after the user's confirmation; do not switch modes |
+
+For example, `node bin/unharness.mjs sources setup --json '{"workspace":"/absolute/registered/workspace"}'` reads one explicitly chosen local workspace. The setup commands reject unknown keys and duplicate JSON keys. The GUI's setup requests keep its 16 KiB input limit; AI requests retain their existing bounded transport. Oversize proposals are refused, never silently shortened. The corresponding MCP tools are `read_setup`, `review_setup` and `apply_setup`, using the established connection/request identity for writes. A review ID is not proof of the user's approval. Mode preparation remains `plan_mode` followed by `apply_plan` for a requested switch.
+
+Setup adoption shares the source-operation lock and revision checks. A pending source transaction prevents adoption. Its record-only journal can be cancelled with the existing offline `sources recover` operation, including after state publication. Cancellation restores only the prior record state and preserves independent file edits. New native Mac task evidence and the full initial-setup journey are still required before claiming the new product flow qualified.
 
 ## The experience
 

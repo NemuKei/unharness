@@ -161,6 +161,37 @@ test('stdio mode loop, favorite, duplicate result and reconnect share the regist
   assert.equal((await s.mutate('recover')).structuredContent.ok, true);
 });
 
+test('MCP setup review, adoption and GUI planning share the saved release version without recapturing Normal', async t => {
+  const p = await aiProfile(t), s = await connect(t, p);
+  const registration = s.status.source.registration;
+  const skills = registration.sources.filter(source => source.id.startsWith('skill-'));
+  const proposal = { schemaVersion: 1, scopeId: p.scopeId, normalId: p.normalId,
+    basis: { application: 'codex', modelId: 'gpt-6-astra', modelSource: 'user-specified', desktopVersion: null, runtimeVersion: '0.153.4',
+      references: [{ url: 'https://developers.openai.com/api/docs/guides/latest-model', title: 'Official guide', checkedAt: '2026-09-09T00:00:00.000Z' }], rationale: 'Reviewed synthetic proposal.' },
+    roles: skills.map(skill => ({ sourceId: skill.id, origin: 'self', reason: 'Explicit synthetic decision.' })),
+    unseal: { instructions: 'minimal', automaticSkillIds: skills.map(skill => skill.id) },
+    trueform: { automaticExternalSkillIds: [] } };
+  const reviewed = (await s.mutate('review_setup', { proposal })).structuredContent;
+  assert.equal(reviewed.ok, true, JSON.stringify(reviewed));
+  assert.equal((await s.call('read_setup')).structuredContent.result.setupId, null);
+  const requestId = randomUUID();
+  const adopted = (await s.mutate('apply_setup', { reviewId: reviewed.result.reviewId }, requestId)).structuredContent;
+  assert.equal(adopted.ok, true, JSON.stringify(adopted));
+  assert.equal(adopted.result.normalId, p.normalId);
+  assert.deepEqual(await readSourceProfileFiles(p.context), p.originalFiles);
+  const retried = (await s.mutate('apply_setup', { reviewId: reviewed.result.reviewId }, requestId)).structuredContent;
+  assert.deepEqual(retried, adopted);
+  const { createSourceController } = await import('../src/sources/session.mjs');
+  const controller = await createSourceController(p.context), meta = await controller.metadata();
+  const plan = await controller.execute('plan', { launchId: meta.launchId, contextId: meta.contextId, mode: 'trueform' });
+  assert.equal(plan.setupId, adopted.result.setupId);
+  assert.equal(plan.skillStates[0].manualOnly, true);
+  assert.equal((await s.mutate('apply_plan', { planId: plan.planId })).structuredContent.ok, true);
+  assert.equal((await s.call('read_setup')).structuredContent.result.preparedSetupId, adopted.result.setupId);
+  assert.ok(!JSON.stringify([reviewed, adopted]).includes('PRIVATE_TEST'));
+  assert.ok(!JSON.stringify([reviewed, adopted]).includes(p.context.codexHome));
+});
+
 test('stdio schemas reject arbitrary paths and extra keys before private writes, with safe errors', async t => {
   const p = await aiProfile(t), s = await connect(t, p);
   for (const [name, args] of [

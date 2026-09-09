@@ -124,6 +124,7 @@ export const userSourceState = wrap(async ({ workspace }) => {
       sources: targets(w.reg)
     },
     preparedMode: w.state.preparedMode,
+    setup: { setupId: w.state.setupId ?? null, preparedSetupId: w.state.preparedSetupId ?? null },
     revision: w.state.revision,
     conflict,
     recovery: {
@@ -146,6 +147,7 @@ function planSummary(plan, planId) {
     skillStates: plan.skillStates,
     guide: plan.guide,
     adaptation: plan.adaptation ?? null,
+    setupId: plan.setupId ?? null,
     retained,
     verification
   };
@@ -159,7 +161,8 @@ async function buildPlan(
     after,
     guide = null,
     skillStates = [],
-    adaptation = null
+    adaptation = null,
+    setupId = null
   }
 ) {
   if (await pending(w.workspace)) fail('recovery-required');
@@ -174,6 +177,7 @@ async function buildPlan(
     normalId: activeNormalId(w),
     snapshotVersion: w.state.snapshotVersion ?? 1,
     adaptation,
+    setupId,
     scopeId: w.scopeId,
     revision: w.state.revision,
     mode,
@@ -196,6 +200,10 @@ export const planUserMode = wrap(async ({ workspace, mode, selectedIds }) => {
   if (!['normal', 'unseal', 'trueform'].includes(mode)) fail('invalid-request');
   const w = await openWorkspace(workspace),
     all = targets(w.reg);
+  if (selectedIds === undefined && mode !== 'normal' && w.state.setupId) {
+    const { savedPresetForMode } = await import('../setup/service.mjs');
+    return buildPlan(w, { mode, ...await savedPresetForMode(w, mode) });
+  }
   const selection =
     selectedIds ??
     (mode === 'normal'
@@ -290,6 +298,7 @@ export const saveUserFavorite = wrap(async ({ workspace, name }) => {
       name,
       snapshotId: w.state.snapshotId,
       preparedMode: w.state.preparedMode,
+      preparedSetupId: w.state.preparedSetupId ?? null,
       revision: w.state.revision
     });
     return {
@@ -337,6 +346,7 @@ async function restorePlan({ workspace, id, type }) {
   return buildPlan(w, {
     mode: type,
     adaptation,
+    setupId: r.preparedSetupId ?? null,
     preparedMode: r.preparedMode,
     selectedIds: targets(w.reg).map((s) => s.id),
     after
@@ -448,3 +458,8 @@ export const readUserReplayResult = wrap(async args => (await import('../experim
 export const openUserReplay = wrap(async args => (await import('../experiments/replay-service.mjs')).openUserReplay(args));
 export const compareUserReplayResults = wrap(async args => (await import('../experiments/replay-results.mjs')).compareUserReplayResults(args));
 export const saveUserReplayFavorite = wrap(async args => (await import('../experiments/replay-results.mjs')).saveUserReplayFavorite(args));
+
+export const readUserSetup = wrap(async args => (await import('../setup/service.mjs')).readSetup(args));
+export const reviewUserSetup = wrap(async args => (await import('../setup/service.mjs')).reviewSetup(args));
+export const applyUserSetup = wrap(async args => (await import('../setup/service.mjs')).applySetup(args));
+export const SETUP_OPERATIONS = Object.freeze({ setup: readUserSetup, 'review-setup': reviewUserSetup, 'apply-setup': applyUserSetup });

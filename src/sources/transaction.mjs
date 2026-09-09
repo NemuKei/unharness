@@ -159,6 +159,7 @@ export async function loadPlan(w, id) {
     fail('record-invalid');
   if ((p.snapshotVersion !== undefined && ![1, 2].includes(p.snapshotVersion)) ||
       (w.state.snapshotVersion === 2 && (p.snapshotVersion !== 2 || !p.normalId))) fail('record-invalid');
+  if (p.setupId != null && (typeof p.setupId !== 'string' || !/^[0-9a-f]{64}$/.test(p.setupId))) fail('record-invalid');
   await loadNormal(w.workspace, w.reg, p.normalId ?? w.reg.normalId);
   await loadSnapshot(w.workspace, w.reg, p.beforeId, p.snapshotVersion ?? 1);
   await loadSnapshot(w.workspace, w.reg, p.afterId, p.snapshotVersion ?? 1);
@@ -196,6 +197,7 @@ export async function transact(w, plan, planId) {
     scopeId: w.scopeId,
     snapshotId: plan.beforeId,
     preparedMode: w.state.preparedMode,
+    preparedSetupId: w.state.preparedSetupId ?? null,
     revision: w.state.revision
   });
   const nonce = randomBytes(16).toString('hex');
@@ -258,6 +260,7 @@ export async function transact(w, plan, planId) {
     ownedDirs: dirs,
     revision: w.state.revision + 1,
     preparedMode: plan.preparedMode,
+    preparedSetupId: plan.setupId ?? null,
     snapshotId: plan.afterId,
     lastCheckpointId: checkpointId,
     lastPlanId: planId
@@ -389,6 +392,10 @@ export async function recoverTransaction(w) {
   if (j.kind === 'unharness-user-source-retained-pending') {
     const { recoverRetainedSettings } = await import('./retained-settings.mjs');
     return recoverRetainedSettings(w, j);
+  }
+  if (j.kind === 'unharness-user-source-setup-pending') {
+    const { recoverSetup } = await import('../setup/recovery.mjs');
+    return recoverSetup(w, j);
   }
   const { before, after, paths } = await validateJournal(w, j);
   await checkParents(w.reg);

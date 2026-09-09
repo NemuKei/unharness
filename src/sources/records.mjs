@@ -107,6 +107,8 @@ export function validateState(reg, state) {
   for (const key of ['lastCheckpointId', 'lastPlanId'])
     if (state[key] !== null && !/^[0-9a-f]{64}$/.test(state[key]))
       fail('workspace-invalid');
+  for (const key of ['setupId', 'preparedSetupId'])
+    if (state[key] != null && (typeof state[key] !== 'string' || !/^[0-9a-f]{64}$/.test(state[key]))) fail('workspace-invalid');
   const paths = pathsFor(reg);
   if (
     new Set(state.ownedDirs.map((d) => d.path)).size !== state.ownedDirs.length

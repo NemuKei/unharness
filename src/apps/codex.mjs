@@ -316,21 +316,24 @@ export const application = {
         fail('stale-discovery');
   },
 
-  // TRUEFORM disables Skill configuration before automatic metadata is
-  // restored; the caller keeps that ordering by staging one complete plan.
-  async compile({ reg, mode, selection, normal, targetFile }) {
+  supportsReleasePresets: true,
+  // Stored legacy plans keep their original disabled-Skill contract. Reviewed
+  // release presets explicitly request manual invocation for either mode.
+  async compile({ reg, mode, selection, normal, targetFile, releasePreset }) {
     const after = structuredClone(normal);
     let guide = null;
     const skillStates = [];
     if (mode === 'normal') return { after, guide, skillStates };
+    const instructionStyle = releasePreset?.instructionStyle ?? (mode === 'unseal' ? 'minimal' : 'none');
+    const manualOnly = releasePreset?.skillRelease === 'manual-only' || mode === 'unseal';
     if (reg.instructions && selection.includes(reg.instructions.id)) {
       const { getMinimalGuide } = await import('../sources/guide.mjs');
       const fixed = getMinimalGuide();
       after.override = await targetFile(
         'override',
-        mode === 'unseal' ? fixed.text : '<!-- -->\n'
+        instructionStyle === 'minimal' ? fixed.text : '<!-- -->\n'
       );
-      if (mode === 'unseal') {
+      if (instructionStyle === 'minimal') {
         const { text, ...identity } = fixed;
         guide = identity;
       }
@@ -339,10 +342,10 @@ export const application = {
     for (const s of skills) {
       skillStates.push({
         id: s.id,
-        enabled: mode === 'trueform' ? false : s.enabled,
-        manualOnly: mode === 'unseal' && s.enabled
+        enabled: manualOnly ? s.enabled : false,
+        manualOnly: manualOnly && s.enabled
       });
-      if (mode === 'unseal' && s.enabled) {
+      if (manualOnly && s.enabled) {
         const { makeManualSkillPolicy } = await import(
           '../sources/skill-policy.mjs'
         );
@@ -351,7 +354,7 @@ export const application = {
         after[key] = await targetFile(key, result);
       }
     }
-    if (mode === 'trueform' && skills.length) {
+    if (!manualOnly && skills.length) {
       const { disableSkillConfig } = await import('../codex/config-editor.mjs');
       const result = await disableSkillConfig({
         configText: normal.config?.text ?? '',

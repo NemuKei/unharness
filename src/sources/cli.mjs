@@ -32,6 +32,7 @@ const comparisonOperations = {
   'run-favorite': service.saveUserRunFavorite
 };
 const operations = {
+  ...service.SETUP_OPERATIONS,
   ...replayOperations,
   ...comparisonOperations,
   ...startingOperations,
@@ -57,7 +58,7 @@ export async function sourcesMain(
   { stdout = process.stdout, stderr = process.stderr } = {}
 ) {
   if (argv.length === 2 && argv[1] === '--help') {
-    stdout.write(SOURCES_USAGE);
+    stdout.write(SOURCES_USAGE + '  Setup commands: ' + Object.keys(service.SETUP_OPERATIONS).join(', ') + '\n');
     return 0;
   }
   if (
@@ -70,7 +71,7 @@ export async function sourcesMain(
     return 2;
   }
   try {
-    const args = Object.hasOwn(comparisonOperations, argv[1]) || Object.hasOwn(startingOperations, argv[1]) || Object.hasOwn(replayOperations, argv[1]) ? parseStrictJson(argv[3]) : JSON.parse(argv[3]);
+    const args = Object.hasOwn(comparisonOperations, argv[1]) || Object.hasOwn(startingOperations, argv[1]) || Object.hasOwn(replayOperations, argv[1]) || Object.hasOwn(service.SETUP_OPERATIONS, argv[1]) ? parseStrictJson(argv[3]) : JSON.parse(argv[3]);
     if (!args || typeof args !== 'object' || Array.isArray(args)) throw Error();
     const result = await operations[argv[1]](args);
     stdout.write(JSON.stringify(result) + '\n');

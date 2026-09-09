@@ -22,13 +22,27 @@ const replayAssessment = z.strictObject({ outcome, provenance, note,
   requirements: z.array(z.strictObject({ id: itemId, result })).max(24),
   ratings: z.array(z.strictObject({ id: itemId, score: z.number().int().min(1).max(5).nullable(), reason: text(500, true) })).max(8),
 });
+const comparisonRule = z.strictObject({ schemaVersion: z.literal(1), metric: z.literal('recorded-root-tokens-per-accepted-task'),
+  baselineSnapshotId: id, candidateSnapshotId: id, attemptsPerLoadout: z.number().int().min(1).max(20),
+  minimumAcceptedRuns: z.number().int().min(1).max(20), minimumReductionPercent: z.number().int().min(1).max(99) });
 const declaration = z.strictObject({ title: text(120).optional(), request: text(16384, true),
   requirements: z.array(z.strictObject(requirement)).min(1).max(24), ratings: z.array(z.strictObject(rating)).max(8),
   budget: z.strictObject({ maxAttempts: z.number().int().min(1).max(20), maxTurnsPerAttempt: z.number().int().min(1).max(100),
     maxRecordedTokens: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER).nullable() }),
+  comparisonRule: comparisonRule.optional(),
 });
 const list = { after: id.optional() };
 const selected = z.array(id).min(1).max(3);
+const version = z.string().max(40).regex(/^\d+(?:\.\d+){1,3}$/).nullable();
+const setupProposal = z.strictObject({ schemaVersion: z.literal(1), scopeId: id, normalId: id,
+  basis: z.strictObject({ application: z.enum(['codex', 'claude']), modelId: text(200),
+    modelSource: z.enum(['user-specified', 'ai-reported', 'task-record']), desktopVersion: version, runtimeVersion: version,
+    references: z.array(z.strictObject({ url: text(2000), title: text(160), checkedAt: text(30) })).min(1).max(8),
+    rationale: text(2000, true) }),
+  roles: z.array(z.strictObject({ sourceId, origin: z.enum(['self', 'external', 'unknown']), reason: text(600, true) })).max(32),
+  unseal: z.strictObject({ instructions: z.enum(['minimal', 'none']), automaticSkillIds: z.array(sourceId).max(32) }),
+  trueform: z.strictObject({ automaticExternalSkillIds: z.array(sourceId).max(32) }),
+});
 const mutation = { connectionId: uuid.describe('Identity returned by status; preserve it when retrying the same operation.'),
   requestId: uuid.describe('New lowercase UUID for a new operation. Reuse the exact ID and arguments after timeout/disconnection.') };
 
@@ -57,6 +71,9 @@ export const AI_TOOLS = Object.freeze([
   tool('observe_task', 'observe', 'Record a bounded observation of one explicitly selected fresh native task UUID. The core checks project, preparation time and sources; never treats a current task as newly loaded.', { taskId: uuid }, true),
   tool('plan_retained_settings', 'plan-retained', 'Review an independent edit proven to affect retained configuration only. Returns a record-only Normal update plan and no raw configuration values.', {}, true),
   tool('accept_retained_settings', 'accept-retained', 'Accept the exact reviewed retained-only Normal update. Records a new local Normal version without changing managed source files.', { planId: id }, true, true),
+  tool('read_setup', 'setup', 'Read the adopted UNSEAL and TRUEFORM definitions, model/reference provenance and the separately prepared version. No source bodies or paths are accepted.', {}),
+  tool('review_setup', 'review-setup', 'Review two proposed release configurations against the fixed registered scope and saved Normal. Confirm source roles with the user first; unknown roles and unsupported manual controls are refused. This only saves a proposal, without changing Normal, active defaults or source files.', { proposal: setupProposal }, true),
+  tool('apply_setup', 'apply-setup', 'Adopt the exact setup review after the user confirms its source roles and both release configurations. A review ID is not proof of approval. Saves release defaults without changing Normal or the current preparation; use plan_mode and apply_plan for a requested switch.', { reviewId: id }, true, true),
   tool('review_run', 'review-run', 'Collect a private ordinary-run review for one selected task; optional throughTurnId chooses a recorded cutoff. Summaries omit the final answer.', { taskId: uuid, throughTurnId: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/).optional() }, true),
   tool('save_run', 'save-run', 'Save an attributed assessment of one reviewed ordinary run. Keep unknowns and failed attempts; AI assessments use agent provenance.', { reviewId: id, assessment, title: text(120).optional(), previousRunId: id.optional() }, true),
   tool('list_runs', 'runs', 'List saved ordinary-run assessments without answer text. Cursor pages retain previous versions.', list),

@@ -2,7 +2,7 @@
 
 Updated: 2026-09-09.
 
-The active Mac Codex finish now has a forward guard for retained Unharness controls, frozen configuration compatibility and offline rollback. The focused source/retained-settings/Claude fixture suite passed 142 tests with one platform skip, the stronger Node-only frozen/legacy checks passed, and type/CSP/build checks passed. The source guard and pure preset compiler are implemented; persisted setup, plugin installation, domain pairing, free layered art and the complete native product journey remain in progress.
+The active Mac Codex finish now has retained-control guards and persisted release setup through CLI, shared GUI operations and MCP. Adoption preserves the original Normal, current source files and preparation boundary. Default mode plans use approved frozen presets, including explicit Skill invocation in TRUEFORM; old favorites retain their earlier behavior and setup identity. Record-only interruption recovery works without Codex/YAML dependencies. The focused setup/source/retained-settings/Claude/MCP suite passed 172 tests with one platform skip, and type/CSP checks passed. Source enrollment/migration, onboarding, plugin installation, domain pairing, free layered art and the complete native product journey remain in progress.
 
 The [plugin distribution plan](spec-plugin-distribution.md) bundles the related Skills and local MCP, with WebMCP on the public page. The dedicated `deltahelmlab-unharness` Cloudflare Pages project exists and is separate from the existing landing page. No deployment or custom-domain binding is yet qualified.
 
@@ -95,4 +95,4 @@ The single unresolved Phase 2 step is operator-assisted: a fresh native Code tas
 
 ## Before public release
 
-Choose and add the license, configure real reporting/contribution channels, publish tested installation and recovery instructions, add the product favicon, and replace draft availability statements with the verified compatibility matrix. These are release preparation items, not claims of current support.
+The maintainer selected the MIT License on 2026-09-09 and clarified the public goal: let people enjoy a usable free product and make the implementation and care visible as a body of work. The root license and package metadata now reflect that choice. Configure real reporting/contribution channels, publish tested installation and recovery instructions, add the product favicon, and replace draft availability statements with the verified compatibility matrix. The playable site, installable plugin, source/verification records and author link belong to the same release. These are release preparation items, not claims of current support.
