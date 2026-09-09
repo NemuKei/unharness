@@ -7,13 +7,15 @@ On 2026-09-08, the maintainer changed the near-term goal to completing the Mac v
 | Phase | Implementation and validation owner | Target | Completion evidence |
 | --- | --- | --- | --- |
 | 1 | Codex | Codex desktop core on macOS | Save, three modes, fresh comparison, favorites and recovery work through the web and AI entry points on Mac |
-| 2 | Claude Code | Claude Code desktop on macOS | Its Mac adapter meets the same contract and preserves the Mac Codex baseline |
+| 2 | Claude Code | Claude Code desktop on macOS | Its Mac adapter meets the same contract and preserves the Mac Codex baseline — implemented and qualified except fresh native mode loading and the native AI connection |
 | 3 | Codex | Mac product review and finish | Both Mac integrations, shared product features, onboarding and recovery are qualified for the declared Mac release scope |
 | 4 | Codex | Codex desktop on Windows | Native Windows filesystem/process behavior and the same core loop are qualified without regressing Mac |
 | 5 | Claude Code | Claude Code desktop on Windows | Its Windows adapter meets the same contract and preserves both Codex baselines |
 | 6 | Codex | Cross-platform review and finish | All four combinations, recovery behavior, UX, and documentation are reconciled |
 
-The maintainer has both operating systems and Claude Code desktop available for verification. Actual machine access, app versions, and test results are established at execution time. The [Mac Codex Phase 1 audit](evidence/2026-09-09-ai-desktop-macos.md) is complete for the registered selected-source scope. Its runtime baseline is `ca4dbcc26261168515724f41b41cdc2c6fff30b5`; the complete source/test/evidence baseline is `1cac327a0997c349f4d634954de93087db02bcf3`, now integrated into private main. The [Claude Code Mac handoff](handoff-claude-macos.md) defines the next isolated implementation. On 2026-09-09, the handoff was submitted in Claude Desktop 1.49585.0, Code tab, as a local session on the isolated `codex/claude-macos` worktree. The UI showed the task running. Implementation and native qualification are in progress, not completed.
+The maintainer has both operating systems and Claude Code desktop available for verification. Actual machine access, app versions, and test results are established at execution time. The [Mac Codex Phase 1 audit](evidence/2026-09-09-ai-desktop-macos.md) is complete for the registered selected-source scope. Its runtime baseline is `ca4dbcc26261168515724f41b41cdc2c6fff30b5`; the complete source/test/evidence baseline is `1cac327a0997c349f4d634954de93087db02bcf3`, now integrated into private main.
+
+On 2026-09-09, the [Claude Code Mac handoff](handoff-claude-macos.md) was submitted in Claude Desktop 1.49585.0 as a local Code session on `codex/claude-macos`. Claude implemented the adapter and three review corrections through `6767c35`. See the [Phase 2 evidence](evidence/2026-09-09-claude-desktop-macos.md), [adapter design](claude-macos.md) and remaining [operator-assisted native step](claude-native-qualification.md). Codex is reviewing that code together with the [local appearance evidence gate](spec-appearances.md) on an isolated Mac integration branch. Fresh native Claude mode/AI qualification and the remaining Mac product work are still pending; this integration branch is not a completed Mac release.
 
 ## Phase 1: complete the Mac Codex core
 

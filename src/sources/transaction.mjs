@@ -29,6 +29,7 @@ import {
   loadNormal
 } from './records.mjs';
 import { pathsFor } from './capture.mjs';
+import { applicationFor } from '../apps/index.mjs';
 import { fail, verification } from './errors.mjs';
 let testHook = null;
 // Internal process-local seam: never accepted as service/CLI/browser input.
@@ -162,13 +163,7 @@ export async function loadPlan(w, id) {
   await loadSnapshot(w.workspace, w.reg, p.afterId, p.snapshotVersion ?? 1);
   return p;
 }
-function controlKeys(reg) {
-  return [
-    'config',
-    ...(reg.instructions ? ['override'] : []),
-    ...reg.skills.map((s) => s.id + ':policy')
-  ];
-}
+const controlKeys = (reg) => applicationFor(reg.context).controlKeys(reg);
 function changes(w, before, after) {
   const allowed = controlKeys(w.reg);
   for (const k of Object.keys(before))

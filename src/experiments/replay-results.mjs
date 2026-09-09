@@ -8,6 +8,7 @@ import { fail, verification, USER_SOURCE_ERROR_KINDS } from '../sources/errors.m
 import { sourceTransactionHook } from '../sources/transaction.mjs';
 import { findCurrentDesktopSession, readDesktopRecords } from '../codex/desktop-record.mjs';
 import { projectReplayTask } from '../codex/replay-observation.mjs';
+import { assertReplaySupported } from './replay-service.mjs';
 import { loadReplayIndex } from './replay-index.mjs';
 import { loadReplayAttempts, loadReplayNative } from './replay-records.mjs';
 import { withReplayLock, assertReplayReviewCurrent, transitionReplay, replayStatePayload } from './replay-service.mjs';
@@ -93,6 +94,7 @@ export async function observeUserReplay(args) {
   if (!hash(args.attemptId) || !validUuid(args.taskId)) fail('invalid-request');
   const taskId = args.taskId.toLowerCase();
   return withReplayLock(args.workspace, async w => {
+    assertReplaySupported(w);
     const index = await loadReplayIndex(w), attempt = selected(await loadReplayAttempts(w, index), args.attemptId);
     if (!['ready', 'cancelled'].includes(attempt.phase) || !attempt.readyAt) fail('replay-attempt-unavailable');
     let read = { records: [], recordRead: { incompleteTrailingLine: false, snapshotBytes: 0 } }, readIssue = null;

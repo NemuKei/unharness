@@ -4,8 +4,7 @@ import { openWorkspace, record, loadSnapshot } from '../sources/records.mjs';
 import { acquire, assertCurrent, pending, sourceTransactionHook } from '../sources/transaction.mjs';
 import { projectRegisteredTaskObservation } from '../sources/observation.mjs';
 import { preparationMetadata, projectObservation, validUuid } from '../sources/observation-record.mjs';
-import { findCurrentDesktopSession, readDesktopRecords } from '../codex/desktop-record.mjs';
-import { projectCodexRun } from '../codex/run-metrics.mjs';
+import { applicationFor } from '../apps/index.mjs';
 import { fail, verification } from '../sources/errors.mjs';
 import { listRecordPage } from '../core/local-store.mjs';
 import { sumCounters } from './measurement.mjs';
@@ -49,11 +48,10 @@ export async function reviewUserRun(args) {
   const taskId = args.taskId.toLowerCase();
   return locked(args.workspace, async w => {
     const captureIssue = await sourceGuard(w), sourceContext = freezeSourceContext(w);
-    let read;
-    try { read = await readDesktopRecords(await findCurrentDesktopSession({ sessionId: taskId, codexHome: w.reg.context.codexHome })); }
-    catch (e) { fail(e.kind === 'current-session-unavailable' ? 'comparison-task-record-unavailable' : 'comparison-task-record-invalid'); }
+    const app = applicationFor(w.reg.context);
+    const read = await app.readRunRecords(w, taskId);
     await sourceTransactionHook('comparison-read');
-    const { measurement, outputText } = projectCodexRun(read.records, { taskId, expectedProject: w.reg.context.project, ...(args.throughTurnId === undefined ? {} : { throughTurnId: args.throughTurnId }), recordRead: read.recordRead });
+    const { measurement, outputText } = await app.projectRun(w, read.records, { taskId, expectedProject: w.reg.context.project, ...(args.throughTurnId === undefined ? {} : { throughTurnId: args.throughTurnId }), recordRead: read.recordRead });
     const capturedAt = new Date().toISOString();
     const source = await captureMatchingInitialSourceEvidence({ ...w, selectedTaskId: taskId, captureIssue, readIssue: read.recordRead.incompleteTrailingLine ? 'task-record-invalid' : null }, read.records, capturedAt);
     const reviewId = await record(w.workspace, 'application', { role: 'run-review', schemaVersion: 1, scopeId: w.scopeId,

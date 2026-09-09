@@ -1,19 +1,28 @@
 import { ApiError } from "./api.ts";
 import type { Api } from "./api";
 import type { SourceMetadata, SourceView } from "./sources";
+import { sourceHomeOf, sourceRuntimeOf } from "./sources.ts";
 export function validateSourceMetadata(value: SourceMetadata): SourceMetadata {
+  const context = value?.context as Record<string, unknown> | undefined;
+  const string = (key: string) =>
+    typeof context?.[key] === "string" && !!context[key];
   if (
     value?.kind !== "user-sources" ||
+    !["codex", "claude"].includes(value.application) ||
+    typeof value.applicationLabel !== "string" ||
+    !value.applicationLabel ||
     typeof value.launchId !== "string" ||
     !value.launchId ||
     typeof value.contextId !== "string" ||
     !/^[a-f0-9]{64}$/.test(value.contextId) ||
-    !value.context ||
-    ["codexHome", "project", "executable"].some(
-      (key) =>
-        typeof value.context[key as keyof SourceMetadata["context"]] !==
-          "string" || !value.context[key as keyof SourceMetadata["context"]],
-    ) ||
+    !context ||
+    !string("project") ||
+    // Each application declares exactly its own launch identity fields.
+    (value.application === "claude"
+      ? context.application !== "claude" ||
+        !string("claudeHome") ||
+        !string("appBundle")
+      : !string("codexHome") || !string("executable")) ||
     (value.workspace !== null &&
       (typeof value.workspace !== "string" || !value.workspace))
   )
@@ -25,9 +34,10 @@ export function sameSourceContext(a: SourceMetadata, b: SourceMetadata) {
     a.launchId === b.launchId &&
     a.contextId === b.contextId &&
     a.workspace === b.workspace &&
-    a.context.codexHome === b.context.codexHome &&
+    a.application === b.application &&
+    sourceHomeOf(a.context) === sourceHomeOf(b.context) &&
     a.context.project === b.context.project &&
-    a.context.executable === b.context.executable
+    sourceRuntimeOf(a.context) === sourceRuntimeOf(b.context)
   );
 }
 export function sameSourcePlanContext(

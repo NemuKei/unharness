@@ -5,7 +5,7 @@
 | OS | Application | Delivery phase | Current evidence |
 | --- | --- | --- | --- |
 | macOS | Codex desktop | 1 | Registered-source core loop qualified through GUI and actual desktop AI on the recorded Mac/app version; full runtime coverage and Mac product finish remain open |
-| macOS | Claude Code desktop, Code tab | 2 | Documentation reviewed; integration not implemented or tested |
+| macOS | Claude Code desktop, Code tab | 2 | Adapter implemented and qualified on owned fixtures, the built interface and a real recording; fresh native mode loading and the native AI connection remain unverified |
 | Windows | Codex desktop | 4, deferred | Native inventory, six-case source controls, current-task projection, fixture/loadout recovery, GUI smoke, and one qualified fresh task completed; baseline recording did not match, so successful saved-version association remains pending |
 | Windows | Claude Code desktop, Code tab | 5, deferred | Test environment available per maintainer; no test result yet |
 
@@ -30,6 +30,35 @@ The [pre-use capture check](evidence/2026-09-08-starting-conditions-macos.md) us
 The [sequential replay workbench check](evidence/2026-09-09-replay-gui-macos.md) adds shared CLI/HTTP/GUI preparation, native opening, collection, history, comparison and historical favorites. Four new agent-created Mac desktop tasks in separate owned worktrees matched one frozen request and the registered source/runtime conditions for Normal, UNSEAL, TRUEFORM and restored Normal. The profile's managed files returned to the saved Normal bytes/metadata. Browser tests and a same-port real-profile restart covered loss/staleness/context boundaries, effects off, desktop and narrow views; the full suite passed 573 of 574 tests with one existing platform skip. This qualifies the stated registered-source replay workflow on the recorded Mac/app version. It does not prove identical live memory/tool inputs, atomic submission, complete runtime/usage coverage, performance improvement, AI/MCP integration, Claude Code or Windows support.
 
 The [AI transport check](evidence/2026-09-09-ai-transport-macos.md) adds 35 strict registered tools, persisted duplicate/uncertainty receipts, current/legacy MCP protocol tests and native app-server tool calls with exact owned-source restoration. No model task or personal configuration change was made. The [open-GUI update check](evidence/2026-09-09-ai-gui-updates-macos.md) further verifies source/history changes from MCP, preserved drafts, stale/uncertain replies, context replacement and safe server shutdown. The subsequent [actual desktop AI qualification](evidence/2026-09-09-ai-desktop-macos.md) completes the registered save/modes/observation/comparison/favorite/restore sequence in native tasks, retains the connection across modes and verifies the open GUI. Exact managed bytes/metadata return to Normal. Its Phase 1 audit is complete for this scope; Claude Code and the Mac product finish remain open.
+
+The [Claude Code Mac adapter](evidence/2026-09-09-claude-desktop-macos.md) adds
+the Phase 2 integration on macOS 26.6.2 with Claude Desktop 1.49585.0 and the
+embedded Claude Code 2.1.260. It qualifies discovery, three modes, exact Normal
+restoration, favorites, checkpoints, six interruption phases, offline recovery,
+retained-settings review and acceptance, task-observation projection and
+ordinary-run measurement — against freshly created synthetic profiles, the
+built loopback interface, an MCP stdio connection and four Playwright cases on
+the built workbench. It also records a read-only census of the maintainer's
+real `~/.claude`, where no source is currently registrable: there is no
+user-scope `CLAUDE.md` and the one personal Skill is a symlink, so both are
+refused rather than followed. The desktop record reader and the run parser were
+additionally run against an actual 1,066-record Claude Code 2.1.260 recording.
+
+That evidence does **not** establish fresh native mode loading, the native AI
+connection, complete runtime coverage, sequential replay for Claude, Windows
+support, or any performance result. `runtimeStateVerified` and
+`modeSwitchingVerified` stay false and `sourceCoverage` stays unknown. The
+remaining operator-assisted step is specified in
+[native qualification](claude-native-qualification.md); the adapter's design
+and its Claude-specific boundaries are in [claude-macos](claude-macos.md).
+
+Two Claude-specific limits are worth carrying into any support claim. Sequential
+replay is refused for Claude with `replay-application-unsupported`, because
+macOS exposes no local runtime conditions report and no project-open command for
+a qualified attempt. And a managed policy delivered by MDM, the claude.ai
+console or the embedding desktop application is not a readable file, so a
+prepared user-layer Skill override is confirmed only by a fresh task
+observation.
 
 ## What to record for a real test
 
@@ -73,3 +102,18 @@ The [desktop reference](https://code.claude.com/docs/en/desktop#shared-configura
 The [memory reference](https://code.claude.com/docs/en/memory#agentsmd) documents `CLAUDE.md` importing `AGENTS.md`; this is the basis for the repository's one-line bridge. It also documents shared automatic memory across worktrees, which makes memory isolation an explicit comparison check.
 
 App launch or deep-link support is only a navigation mechanism until verified otherwise. It does not prove mode application, task isolation, or successful fresh-task startup with the intended configuration.
+
+Reviewed on 2026-09-09 for the Phase 2 implementation: [settings
+precedence](https://code.claude.com/docs/en/settings) places managed over
+project-local over shared-project over user settings, and a worktree reads
+`.claude/settings.local.json` from the main checkout's root; [skill
+visibility](https://code.claude.com/docs/en/skills) is set by `skillOverrides`
+keyed by invocation name; [managed
+settings](https://code.claude.com/docs/en/managed-settings) can arrive as a file
+in `/Library/Application Support/ClaudeCode/`, by MDM profile, from the
+claude.ai console, or from an embedding host such as Claude Desktop; and
+[`CLAUDE_CONFIG_DIR`](https://code.claude.com/docs/en/claude-directory)
+relocates every `~/.claude` path. The installed 1.49585.0 bundle references
+`CLAUDE_CONFIG_DIR`, `.mcp.json` and `enableAllProjectMcpServers`. Whether a
+desktop-launched Code session receives that variable is untested and is the
+first question the operator step answers.

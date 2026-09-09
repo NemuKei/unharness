@@ -1,5 +1,11 @@
 # Registered user-source modes
 
+This contract is shared by both application adapters. Where it names a Codex
+file, path or native editor below, the Claude Code adapter has its own
+equivalent and its own boundaries; see [claude-macos](claude-macos.md) for the
+Claude source layout, its single instruction file, its central Skill-override
+settings, its settings precedence and the sources it deliberately refuses.
+
 The maintainer approved Normal → minimal guide/manual Skills → selected extras absent on 2026-09-08. This slice implements registered user-source preparation and deterministic recovery. It does not establish desktop-loaded mode verification or change the retained memory/native-continuity policy.
 
 ## Scope
@@ -28,6 +34,12 @@ Ship `unharness-minimal-v1` with fixed UTF-8/LF content and SHA-256 identity:
 Record the guide ID, content hash, review date and official Codex/Claude guide references. It is Unharness-authored comparison material, not an official universal template or a performance promise. Show it in the UNSEAL customization disclosure. No model call generates or rewrites it during selection, planning or application.
 
 For this initial version, `reviewedOn` is `2026-09-08`; references are `https://learn.chatgpt.com/guides/best-practices` and `https://code.claude.com/docs/en/best-practices`.
+
+The Claude Code adapter writes the same fixed guide into its single user
+instruction file, and the same inert override for TRUEFORM. Its reason differs:
+Claude Code has no base file to fall back to, so the inert content exists to
+keep the file present — Claude Code strips block-level HTML comments before
+injecting a memory file — rather than to prevent a fallback.
 
 TRUEFORM writes a nonempty inert `<!-- -->\n` override when selected global optional instructions should be absent. An empty override would permit fallback. Normal restores the exact original override content or absence; the base AGENTS.md stays unchanged and guarded.
 

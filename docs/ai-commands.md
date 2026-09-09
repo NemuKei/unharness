@@ -40,6 +40,18 @@ History tools return bounded cursor pages and summaries. `read_run_output`, `rea
 
 The open workbench checks local changes while visible. Prepared settings and bounded history update automatically; stale plans are invalidated. An editor draft is preserved within its accepted context. A replaced connection requires explicit state refresh before another action. Background reads do not confirm or repeat a lost foreground mutation.
 
+## Applications
+
+The connection is bound to one registered workspace, so the same tools serve a
+Codex or a Claude Code registration without a different command. `status`
+reports the registration's own context, which names the application.
+
+Two operations differ by application. Every sequential-replay tool fails for a
+Claude registration with `replay-application-unsupported`, because Claude Code
+on macOS exposes no local runtime conditions report and no project-open command
+for a qualified attempt; ordinary runs and saved starting conditions still work.
+And `open_replay` opens an installed Codex desktop app, so it is Codex only.
+
 ## Lost responses and recovery
 
 Call `status` first to obtain `connectionId`. For each new write, supply a new lowercase UUID as `requestId`. Reuse both IDs and the exact arguments for the same logical operation. Read-only tools do not need a write identity.
