@@ -2,13 +2,13 @@
 
 ## Agreed sequence
 
-On 2026-09-08, the maintainer changed the near-term goal to completing the Mac version first. Windows remains a design target, but its unfinished verification is not a gate for Mac delivery. Keep the shared core portable and preserve the existing Windows evidence and publication gates.
+On 2026-09-09, the maintainer made the complete Mac Codex product the active goal and deferred Claude Code until they have capacity. The initial Mac release therefore requires Codex Desktop and the shared product experience; neither Claude native qualification nor Windows completion is a release gate. Preserve the existing Claude adapter and both Windows design/evidence boundaries. Phase numbers below remain stable so older evidence links retain their meaning; execution now prioritizes Phase 3 before resuming Phase 2.
 
 | Phase | Implementation and validation owner | Target | Completion evidence |
 | --- | --- | --- | --- |
 | 1 | Codex | Codex desktop core on macOS | Save, three modes, fresh comparison, favorites and recovery work through the web and AI entry points on Mac |
-| 2 | Claude Code | Claude Code desktop on macOS | Its Mac adapter meets the same contract and preserves the Mac Codex baseline — implemented and qualified except fresh native mode loading and the native AI connection |
-| 3 | Codex | Mac product review and finish | Both Mac integrations, shared product features, onboarding and recovery are qualified for the declared Mac release scope |
+| 3 | Codex | Initial Mac Codex product review and finish — active | Codex integration, shared features, domain entry, onboarding, free original art, cards and recovery meet the declared Mac Codex scope |
+| 2 | Claude Code, then Codex review | Claude Code desktop on macOS — deferred | Its adapter meets the same contract after native loading and AI connection qualification; existing implementation remains preserved |
 | 4 | Codex | Codex desktop on Windows | Native Windows filesystem/process behavior and the same core loop are qualified without regressing Mac |
 | 5 | Claude Code | Claude Code desktop on Windows | Its Windows adapter meets the same contract and preserves both Codex baselines |
 | 6 | Codex | Cross-platform review and finish | All four combinations, recovery behavior, UX, and documentation are reconciled |
@@ -29,7 +29,7 @@ The initial loop selects one mode and runs one task, then reviews saved observat
 
 The immediate sequence is: verify registered mode loading and restoration in fresh Mac tasks; implement ordinary-run records and optional sequential comparison; connect natural-language operations to the same deterministic service. Preserve the accepted simple GUI throughout.
 
-Codex is ready for the Mac Claude Code handoff after the per-combination acceptance criteria in [the specification](spec.md) pass for Mac Codex and the tested revision, evidence, known limitations, and relevant data contracts are recorded. Windows results are carried as deferred work, not a handoff prerequisite. If a required desktop control is unavailable, revisit the integration approach instead of renaming a partial result as completed Zero support.
+When Claude Code work resumes, Codex is ready for its Mac handoff after the per-combination acceptance criteria in [the specification](spec.md) pass for Mac Codex and the tested revision, evidence, known limitations, and relevant data contracts are recorded. Windows results are carried as deferred work, not a handoff prerequisite. If a required desktop control is unavailable, revisit the integration approach instead of renaming a partial result as completed Zero support.
 
 ## What Claude Code receives
 
@@ -39,7 +39,7 @@ The same repository and a concrete tested source revision, plus:
 - The application-adapter boundary, favorite schema version, operation-state meaning, and recovery contract.
 - A small synthetic fixture set and shared acceptance scenarios.
 - Exact build/test instructions, qualified Codex evidence for the active OS, and known limitations. Keep the other OS's evidence separate.
-- The bounded task: implement and verify the Claude Code desktop adapter on the active OS while preserving shared behavior and qualified Codex support. The first handoff is macOS; Windows follows in Phase 5.
+- The bounded task: implement and verify the Claude Code desktop adapter on the active OS while preserving shared behavior and qualified Codex support. The first handoff targets macOS and is currently deferred; Windows follows in Phase 5.
 
 Claude Code should inspect its own desktop environment and current primary documentation. It must identify the selected user-added instruction/Skill/hook sources and the retained memory, native continuity, provider and MCP conditions that affect the chosen scope. Memory is not an initial release target. A needed shared-contract change should be documented with its Codex impact and checked against the baseline.
 
@@ -55,7 +55,7 @@ Use a separate development branch for the handoff and keep the source revision e
 
 ## Final review and finish
 
-Codex reviews the actual changes and evidence, verifies that the common core remains coherent, and runs the relevant regression checks. Phase 3 qualifies the two Mac integrations and finishes the agreed shared appearance/collection/card features and first-user experience for Mac. A Mac completion or release claim must identify its Mac scope; it does not establish Windows support. Phase 6 later reconciles all four OS × app combinations.
+Codex reviews the actual changes and evidence, verifies that the common core remains coherent, and runs the relevant regression checks. Phase 3 qualifies the Mac Codex integration and finishes the agreed domain entry, guided setup, appearance/collection/card features and first-user experience. Claude qualification remains a later Phase 2 gate for adding Claude support, not a gate for the first Mac Codex release. A Mac completion or release claim must identify its Mac scope; it does not establish Windows support. Phase 6 later reconciles all four OS × app combinations.
 
 Review the first-user journey through save, trial, comparison, favorite, and recovery; ensure effects and state labels remain honest. Reconcile English and Japanese README content and the actual install and recovery instructions. Confirm the license, reporting channels, and packaged assets before a public release.
 

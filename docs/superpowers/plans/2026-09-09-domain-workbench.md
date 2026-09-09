@@ -2,7 +2,7 @@
 
 > **For agentic workers:** Use `superpowers:executing-plans` task by task in the existing task. Preserve unrelated changes; additional agents are not required.
 
-**Goal:** 「アンハーネスを開いて」から、独自ドメインの操作画面をCodex / Claude Code Desktop内に開き、登録済みのローカル設定へ接続する。
+**Goal:** 「アンハーネスを開いて」から、独自ドメインの操作画面をCodex Desktop内に開き、登録済みのローカル設定へ接続する。初回のMac完成はCodexを対象にし、Claude固有の導線・実機確認は後続にする。
 
 **Architecture:** 既存の`startGuiServer`とローカルMCPを使い、プロセス所有の確認・接続の紐付け・公開UI用の狭いAPIを分ける。従来の同一origin用認証は保持し、公開originには別の明示した接続権限を与える。
 
@@ -68,7 +68,7 @@ assert.throws(() => redeemPairing({ ticket, origin: webOrigin, launchId, now }),
 - [ ] 既存タブと接続は確認して再利用する。URLの引き渡し情報は読み取り後に除去し、フッター等の外部リンクへ流出させない。
 - [ ] 公開UIの配信コードと依存物をまとめ、広告・外部の解析スクリプトを操作画面へ入れない。CSP、外部リンク、エラー時の表示を確認する。
 - [ ] `npm run check`、`npm run build`、`node --test test/web-connection.test.mjs test/web-ai-updates.test.mjs test/web-source-updates.test.mjs`を実行する。
-- [ ] 本物のHTTPS originからのloopback接続をMacのCodex / Claude Code Desktopで確認し、許可・拒否・再接続・別タブ・状態変更の実機証拠を記録する。通常ブラウザーだけで合格にしない。
+- [ ] 本物のHTTPS originからのloopback接続をMacのCodex Desktopで確認し、許可・拒否・再接続・別タブ・状態変更の実機証拠を記録する。通常ブラウザーだけで合格にしない。
 
 ## タスク4: オフラインの復旧入口
 
