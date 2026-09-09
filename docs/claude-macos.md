@@ -65,7 +65,8 @@ bytes are already saved, so recovery stays Node-only for both adapters.
 ### What stays unselectable, and why it is visible
 
 Discovery returns a `notices` list so a TRUEFORM absence claim is never read as
-covering more than it does:
+covering more than it does. The workbench renders them under the
+unavailable-candidates disclosure, beside the sources it refused:
 
 | Notice | Meaning |
 | --- | --- |
@@ -195,8 +196,11 @@ comparison product under the same name; the refusal is deliberate.
 Read-only discovery, from the project root:
 
 ```bash
-node bin/unharness.mjs sources discover --json '{"context":{"application":"claude","claudeHome":"'"$HOME"'/.claude","project":"'"$PWD"'","appBundle":"/Applications/Claude.app"}}'
+node bin/unharness.mjs sources discover --json "{\"application\":\"claude\",\"claudeHome\":\"$HOME/.claude\",\"project\":\"$PWD\",\"appBundle\":\"/Applications/Claude.app\"}"
 ```
+
+`discover` and `locate` take the context object directly. `register` takes it
+under a `context` key alongside the discovery identity and the selection.
 
 The registered workbench, after `npm run build`:
 
@@ -218,4 +222,7 @@ one for the user.
 ## Verified boundary
 
 See [the Mac Claude Code evidence](evidence/2026-09-09-claude-desktop-macos.md)
-for what was actually run, on which versions, and what remains unknown.
+for what was actually run, on which versions, and what remains unknown. The one
+remaining Phase 2 step needs someone to drive the desktop window: its exact
+fixture, launch control, request, expected observation and restoration are in
+[native qualification](claude-native-qualification.md).

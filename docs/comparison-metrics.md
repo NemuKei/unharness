@@ -52,6 +52,29 @@ Retain reported breakdowns separately. Do not add cached input on top of input o
 
 Treat monetary estimates separately from token counts. A subscription plan's usage cannot automatically be translated into an exact per-task price.
 
+## Claude Code usage evidence
+
+Claude Code 2.1.260 records usage per API request, and several `assistant`
+records can belong to one request and repeat its `usage`. Usage is therefore
+attributed once per `requestId`; a repeat with different numbers is a
+`response-replay-conflict` that withholds every total rather than charging
+twice. In a real 1,066-record recording this collapsed 371 assistant records to
+191 charged requests.
+
+The recorded usage carries `input_tokens`, `cache_read_input_tokens`,
+`cache_creation_input_tokens`, `output_tokens` and
+`output_tokens_details.thinking_tokens` — and **no total**. `totalTokens`
+therefore stays null with `response-usage-missing-field`, and availability is
+`partial`. Deriving a sum would publish this parser's arithmetic under a field
+name that means a recorded value for the Codex parser, so the four component
+counters compare exactly and the total stays unknown. A `user` record starts a
+new turn only when it is a human prompt; tool results share the record type and
+are not turn boundaries.
+
+Each application parser declares the runtime versions it qualifies. A
+measurement may not claim a version its own parser has not been checked
+against, and adding an application never loosens another one's admission.
+
 ## Output quality
 
 For coding tasks, start with explicit acceptance checks: requested behavior, relevant tests, retained behavior, and required constraints. Add a small review scorecard only for qualities the executable checks cannot capture.

@@ -3,7 +3,7 @@ import type { Api } from "./api";
 import { sameSourceContext, validateSourceMetadata } from "./source-operations.ts";
 import { validReplayResponse } from "./replays.ts";
 import type { ReplayPage } from "./replays";
-import type { SourceMetadata, SourceView, SourceFavoritePage } from "./sources";
+import type { SourceApplication, SourceMetadata, SourceView, SourceFavoritePage } from "./sources";
 import type { RunPage } from "./comparisons";
 import type { StartingPage } from "./starting-conditions";
 import { validateMeasurement } from "../../src/comparisons/measurement.mjs";
@@ -36,14 +36,24 @@ const verification = (v: unknown) => object(v) && v.runtimeStateVerified === fal
 const invalid = () => { throw new ApiError("invalid-response"); };
 const fieldsMatch = (value: unknown, expected: Record<string, unknown>) => object(value)
   && Object.entries(expected).every(([key, item]) => value[key] === item);
-function observation(v: unknown, scopeId: string) {
+// Each application records its own runtime identity: Codex reports one CLI
+// version, Claude Code reports the runtime read from the recording plus the
+// desktop bundle version its plan depended on. The shared fields are the same.
+function observedVersions(conditions: Record<string, unknown>, application: SourceApplication) {
+  return application === "claude"
+    ? Object.hasOwn(conditions, "runtimeVersion") &&
+        [conditions.runtimeVersion, conditions.desktopVersion].every(maybeText)
+    : Object.hasOwn(conditions, "codexVersion") && maybeText(conditions.codexVersion);
+}
+function observation(v: unknown, scopeId: string, application: SourceApplication) {
   if (v === null) return true;
   return object(v) && v.scopeId === scopeId && hash(v.observationId) && text(v.taskId) && hash(v.snapshotId)
     && maybeText(v.preparationId) && mode(v.preparedMode) && time(v.observedAt)
     && oneOf(v.status, ["matched-record", "not-matched-record", "unqualified-record", "unknown-record"])
     && strings(v.reasons) && Array.isArray(v.sources) && v.sources.every(s => object(s) && text(s.sourceId)
       && text(s.category) && text(s.expected) && text(s.recorded) && text(s.status))
-    && object(v.conditions) && [v.conditions.codexVersion, v.conditions.model, v.conditions.reasoningEffort].every(maybeText)
+    && object(v.conditions) && observedVersions(v.conditions, application)
+    && [v.conditions.model, v.conditions.reasoningEffort].every(maybeText)
     && maybeHash(v.conditions.executionPolicyDigest) && maybeHash(v.conditions.projectInstructionsDigest)
     && typeof v.conditions.memoryGuidanceRecorded === "boolean" && verification(v.verification);
 }
@@ -62,7 +72,7 @@ function sourceView(value: unknown, metadata: SourceMetadata): value is SourceVi
     || !(s.conflict === null || object(s.conflict) && text(s.conflict.kind)) || !object(s.recovery)
     || typeof s.recovery.pending !== "boolean" || !maybeHash(s.recovery.lastCheckpointId) || !strings(s.recovery.argv)
     || !(s.preparation === null || object(s.preparation) && text(s.preparation.id) && time(s.preparation.preparedAt))
-    || !maybeText(s.observationIssue) || !observation(s.observation, s.registration.scopeId) || !verification(s.verification)) return false;
+    || !maybeText(s.observationIssue) || !observation(s.observation, s.registration.scopeId, metadata.application) || !verification(s.verification)) return false;
   return true;
 }
 function page(value: unknown, key: string, valid: (row: unknown) => boolean) {

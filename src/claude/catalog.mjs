@@ -32,22 +32,16 @@ export const MANAGED_POLICY_INSTRUCTIONS = join(MANAGED_SYSTEM_DIRECTORY, 'CLAUD
 export const MANAGED_SETTINGS = join(MANAGED_SYSTEM_DIRECTORY, 'managed-settings.json');
 export const MANAGED_SETTINGS_DIRECTORY = join(MANAGED_SYSTEM_DIRECTORY, 'managed-settings.d');
 
-// Settings precedence, highest first (code.claude.com/docs/en/settings). Only
-// the user layer is ever written; the others are read to find out whether a
-// user-layer override could take effect at all.
-export const SETTINGS_LAYERS = Object.freeze([
-  'managed',
-  'project-local',
-  'project',
-  'user'
-]);
+// Settings precedence is managed > project-local > project > user
+// (code.claude.com/docs/en/settings). Only the user layer is ever written; the
+// others are read to find out whether a user-layer override could take effect.
+// `higherPrecedenceOverrides` below reads them in that order.
 
 export const homePaths = (home) => ({
   instructions: join(home, 'CLAUDE.md'),
   settings: join(home, 'settings.json')
 });
 
-export const skillBodyPath = (skillPath) => skillPath;
 export const skillRoot = (home) => join(home, 'skills');
 export const projectSkillRoot = (project) => join(project, '.claude', 'skills');
 export const pluginRoot = (home) => join(home, 'plugins');

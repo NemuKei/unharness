@@ -235,7 +235,10 @@ export const application = {
         path: s.path,
         scope: s.scope,
         pluginId: s.pluginId,
-        enabled: modelInvocable ?? false,
+        // A registered Skill always has a read frontmatter state. For a row
+        // this cannot read - a plugin Skill - fall back to what the winning
+        // settings layer says rather than defaulting to "off".
+        enabled: modelInvocable ?? s.enabled ?? false,
         override: s.override,
         shadowedBy: s.shadowedBy,
         eligible,

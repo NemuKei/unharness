@@ -751,6 +751,20 @@ function Setup({ controller: c }: { controller: Controller }) {
                 {row.id}: {row.reason}
               </p>
             ))}
+            {/* Sources no mode manages. Shown so "selected extras absent"
+                is never read as covering more than it does. */}
+            {(c.discovery.notices ?? []).map((notice) => (
+              <div className="source-notice" key={notice.id + notice.path}>
+                <p>
+                  {notice.label}
+                  {notice.count > 0 ? `（${notice.count}）` : ""}
+                </p>
+                <p>
+                  <code>{notice.path}</code>
+                </p>
+                <p className="muted">{notice.detail}</p>
+              </div>
+            ))}
           </details>
         )}
         <label className="source-declaration">

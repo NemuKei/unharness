@@ -5,10 +5,13 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { tmpdir } from 'node:os';
 
+import { randomUUID } from 'node:crypto';
 import { startGuiServer } from '../src/gui/server.mjs';
+import * as service from '../src/sources/service.mjs';
 import {
   createOwnedClaudeProfile,
-  readClaudeProfileFiles
+  readClaudeProfileFiles,
+  writeOwnedClaudeSession
 } from '../src/claude/owned-profile.mjs';
 import { getMinimalGuide } from '../src/sources/guide.mjs';
 
@@ -160,6 +163,19 @@ test('the workbench explains an unselectable Claude source instead of hiding it'
   await row.locator(':scope > summary').click();
   await row.getByText('skill-override-shadowed', { exact: true }).waitFor();
   await row.getByText('UNSEAL: 非対応 ／ TRUEFORM: 非対応', { exact: true }).waitFor();
+
+  // Sources no mode manages are named too, so an absence claim is not over-read.
+  const notices = unavailable.locator('.source-notice');
+  await notices.first().waitFor();
+  const noticeText = await notices.allInnerTexts();
+  assert.ok(
+    noticeText.some((t) => t.includes('rules')),
+    `the user rules directory is named: ${noticeText.join(' | ')}`
+  );
+  assert.ok(
+    noticeText.some((t) => t.includes('settings')),
+    `the shadowing settings layer is named: ${noticeText.join(' | ')}`
+  );
   assert.deepEqual(s.errors, []);
 });
 
@@ -210,5 +226,73 @@ test('a lost server leaves the Claude workbench truthful and recoverable', brows
   t.after(() => next.close());
   await page.getByRole('button', { name: '状態を再取得', exact: true }).click();
   await page.locator('.control-column .selected-name').filter({ hasText: 'Normal' }).waitFor();
+  assert.deepEqual(s.errors, []);
+});
+
+test('an external Claude observation reaches an open workbench through background updates', browserCase, async (t) => {
+  const s = await setup(t);
+  const { page } = s;
+  await page.goto(s.gui.url);
+  await registerThroughBrowser(page);
+  await page.locator('.control-column .selected-name').filter({ hasText: 'Normal' }).waitFor();
+
+  const located = await service.locateUserSources({ context: s.profile.context });
+  const trueform = await service.planUserMode({ workspace: located.workspace, mode: 'trueform' });
+  await service.applyUserPlan({ workspace: located.workspace, planId: trueform.planId });
+  await page.locator('.control-column .selected-name').filter({ hasText: 'TRUEFORM' }).waitFor();
+
+  // A Claude observation reports runtimeVersion and desktopVersion, not a
+  // codexVersion. The background update path must accept it: regression for a
+  // validator that rejected every Claude observation as an invalid response.
+  const taskId = randomUUID().toLowerCase();
+  await writeOwnedClaudeSession(s.profile.context, {
+    sessionId: taskId,
+    instructionFiles: [
+      {
+        path: join(s.profile.context.claudeHome, 'CLAUDE.md'),
+        type: 'User',
+        content: '<!-- -->\n'
+      }
+    ],
+    skillNames: []
+  });
+  const observed = await service.observeUserTask({
+    workspace: located.workspace,
+    taskId
+  });
+  assert.equal(observed.status, 'matched-record');
+  assert.equal(observed.conditions.codexVersion, undefined);
+  assert.equal(observed.conditions.runtimeVersion, '2.1.260');
+
+  // The open page picks it up without a reload and without an error notice.
+  await page.locator('.task-observation-result.matched-record').waitFor();
+  await page.getByText('選択範囲の記録が一致', { exact: true }).waitFor();
+  assert.equal(
+    await page.getByText('invalid-response', { exact: false }).count(),
+    0,
+    'the background update was accepted'
+  );
+
+  // A not-matched observation is equally acceptable to the validator.
+  const second = randomUUID().toLowerCase();
+  await writeOwnedClaudeSession(s.profile.context, {
+    sessionId: second,
+    instructionFiles: [
+      {
+        path: join(s.profile.context.claudeHome, 'CLAUDE.md'),
+        type: 'User',
+        content: '# something else\n'
+      }
+    ],
+    skillNames: ['example']
+  });
+  const mismatch = await service.observeUserTask({
+    workspace: located.workspace,
+    taskId: second
+  });
+  assert.equal(mismatch.status, 'not-matched-record');
+  await page.locator('.task-observation-result.not-matched-record').waitFor();
+  await page.getByText('記録が一致しません', { exact: true }).waitFor();
+  assert.equal(await page.getByText('invalid-response', { exact: false }).count(), 0);
   assert.deepEqual(s.errors, []);
 });

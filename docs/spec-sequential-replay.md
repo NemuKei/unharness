@@ -80,6 +80,22 @@ Comparison accepts up to three distinct result IDs and omits private request/ans
 
 The Comparison screen adds the next action to a saved start, with one active attempt and its immutable history. Keep source-controller context binding, one operation lock, explicit uncertain-write states, stale-response rejection, effects-off operation and narrow-screen readability. Equipment and offline configuration recovery remain usable when a replay list or detail read fails.
 
+## Application availability
+
+A qualified attempt needs two things from the application: a
+runtime-authoritative report of the resolved configuration layers, Skill
+catalog and hooks before the task starts, and a command that opens one specific
+project as a fresh task. Codex provides both through its local app server and
+`codex app <project>`.
+
+Claude Code on macOS provides neither: it ships inside the desktop bundle with
+no CLI and no local read-only RPC. Every replay operation therefore fails for a
+Claude registration with `replay-application-unsupported`, carrying that reason.
+Saved starting conditions are application neutral and remain available, as do
+ordinary recorded runs and their comparison. Substituting a weaker preflight
+would produce a different comparison product under the same name, so the
+refusal is deliberate rather than a gap to fill later without new evidence.
+
 ## Acceptance
 
 - Two attempts from one start reproduce the same original bytes, including binary, uncommitted, untracked and missing files, even after the original and first attempt change.

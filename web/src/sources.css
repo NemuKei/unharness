@@ -597,3 +597,15 @@
 @media (max-width: 620px) { .replay-summary { grid-template-columns: 1fr; } .replay-actions > button { width: 100%; } .replay-history li { align-items: flex-start; flex-direction: column; } }
 .source-sync-notice { margin: 0; padding: .5rem clamp(14px, 3vw, 38px); font-size: .85rem; overflow-wrap: anywhere; }
 .source-sync-notice.quiet { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+.source-notice {
+  margin: 0.4rem 0 0.6rem;
+  padding-left: 0.6rem;
+  border-left: 2px solid var(--line, rgba(255, 255, 255, 0.18));
+}
+.source-notice p {
+  margin: 0.1rem 0;
+}
+.source-notice code {
+  overflow-wrap: anywhere;
+}

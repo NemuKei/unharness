@@ -219,12 +219,24 @@ export type SourceView = {
   guide: Guide;
   changeVersion?: string | null;
 };
+/** A source no mode manages, reported so an absence claim is not over-read. */
+export type SourceNotice = {
+  id: string;
+  kind: string;
+  label: string;
+  path: string;
+  count: number;
+  detail: string;
+};
 export type Discovery = {
   discoveryId: string;
+  application?: SourceApplication;
+  applicationLabel?: string;
   instructions: SourceRow;
   skills: SourceRow[];
   registrationAvailable: boolean;
   unavailableSources: { id: string; reason: string }[];
+  notices?: SourceNotice[];
   retained: string[];
   limitations: string[];
 };

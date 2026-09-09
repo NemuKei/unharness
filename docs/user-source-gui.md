@@ -13,11 +13,19 @@ npm run build
 node bin/unharness.mjs gui --manage-sources --codex-home "<canonical Codex home>" --project "<canonical project>" --codex "<native executable>"
 ```
 
-Select the home/project locally; the browser cannot supply a home, workspace, project or executable. `--codex` defaults to `codex`; `--port` optionally selects a loopback port. Management cannot be combined with `--demo`, `--store`, `--scope`, `--parent`, or `--inspect-cwd`. Existing fixture launch arguments retain their behavior.
+For Claude Code, name the application and its own launch identity instead:
+
+```text
+node bin/unharness.mjs gui --manage-sources --app claude --claude-home "<canonical Claude home>" --project "<canonical project>" --app-bundle "<installed application>"
+```
+
+Select the home/project locally; the browser cannot supply a home, workspace, project, executable or application bundle. `--app` defaults to `codex`; `--codex` defaults to `codex`; `--port` optionally selects a loopback port. Each application requires exactly its own identity flags — mixing `--codex-home` with `--app claude`, or omitting `--app-bundle`, is a usage error rather than a silent default. Management cannot be combined with `--demo`, `--store`, `--scope`, `--parent`, or `--inspect-cwd`. Existing fixture launch arguments retain their behavior.
 
 The output contains `kind: "user-sources"`, the local URL, context and `resumeArgv`. Pass the argument array directly to Node without joining or evaluating shell text. Repeating the same launch reopens an existing registration through the read-only locator, even when Codex is unavailable. A foreign, corrupt or interrupted reservation is refused; it is never replaced with a new Normal. Closing the browser or stopping the server does not restore settings.
 
-For qualification, create a fresh owned profile with `createOwnedSourceProfile({ parent, executable })` from [owned-profile.mjs](../src/sources/owned-profile.mjs). Use an existing canonical temporary parent. Its Node-created ownership manifest excludes inherited external Skills. Do not replace this manifest with a browser trust flag or register personal settings to manufacture test evidence.
+The workbench shows the application in its context panel: "Claude Code" with a Claude home and an application bundle, or Codex with a Codex home and an executable. A source no mode can control — a Skill shadowed by a higher-precedence settings layer, a symlinked Skill directory, a name two scopes share — appears under the unavailable-candidates disclosure with its reason and its per-mode support, never as a working toggle.
+
+For qualification, create a fresh owned Claude profile with `createOwnedClaudeProfile({ parent })` from [claude/owned-profile.mjs](../src/claude/owned-profile.mjs), or a Codex one with `createOwnedSourceProfile({ parent, executable })` from [owned-profile.mjs](../src/sources/owned-profile.mjs). Use an existing canonical temporary parent. Its Node-created ownership manifest excludes inherited external Skills. Do not replace this manifest with a browser trust flag or register personal settings to manufacture test evidence.
 
 ## Review, prepare and restore
 

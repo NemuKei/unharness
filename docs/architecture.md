@@ -202,6 +202,8 @@ Codex and Claude Code each have an adapter responsible for:
 
 Keep app-specific flags, file formats, startup behavior, and runtime evidence out of shared favorite and comparison logic. Do not simulate Claude Code support with a renamed Codex adapter or by assuming CLI behavior matches the desktop app.
 
+`src/apps/` implements that boundary. The registry resolves one adapter from the registration's stored context; a Codex registration keeps its original three-field context with no application marker, so absence means Codex and no existing record migrates. Each adapter owns its context admission, source paths and eligibility, mode compilation, control keys, freshness key, retained-settings partition, task-record grammar, run measurement and replay capability. The shared core keeps snapshots, hashing, the exclusive profile lock, journaling, recovery, favorites and the CLI/GUI/AI operations. Both adapters keep native RPC, YAML and JSON transforms behind lazy imports, so Node-only recovery keeps its import budget. See [claude-macos](claude-macos.md) for the Claude adapter and the properties of Claude Code that shape it.
+
 An adapter capability report must distinguish controllable, observable, unsupported, and unknown. An unsupported required part of Zero prevents claiming that Zero has been applied.
 
 ## OS boundary

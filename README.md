@@ -8,7 +8,7 @@ Try different combinations of skills and instructions on your own work. Find wha
 
 [日本語](README.ja.md)
 
-> **Draft for the intended public release.** Codex inventory, isolated source-control fixtures, local desktop-record diagnostics, and private ordinary-run comparison records are available for feasibility testing. Registered optional-source preparation, recovery and sequential replay through the local workbench have scoped macOS evidence. The registered local MCP endpoint now also has an [actual Mac desktop AI loop](docs/evidence/2026-09-09-ai-desktop-macos.md): save, three modes, fresh observations, comparison, historical favorites and exact Normal restoration, with an open workbench receiving its changes. Complete runtime coverage, performance verdicts and the Mac product finish remain unfinished. Delivery prioritizes the Mac version: Codex core, Claude Code integration, then Mac product finish. Windows remains a later target, with Codex before Claude Code.
+> **Draft for the intended public release.** Codex inventory, isolated source-control fixtures, local desktop-record diagnostics, and private ordinary-run comparison records are available for feasibility testing. Registered optional-source preparation, recovery and sequential replay through the local workbench have scoped macOS evidence. The registered local MCP endpoint now also has an [actual Mac desktop AI loop](docs/evidence/2026-09-09-ai-desktop-macos.md): save, three modes, fresh observations, comparison, historical favorites and exact Normal restoration, with an open workbench receiving its changes. Complete runtime coverage, performance verdicts and the Mac product finish remain unfinished. Delivery prioritizes the Mac version: Codex core, Claude Code integration, then Mac product finish. Windows remains a later target, with Codex before Claude Code. The [Claude Code Mac adapter](docs/claude-macos.md) is now implemented and has [scoped evidence](docs/evidence/2026-09-09-claude-desktop-macos.md) for discovery, three modes, exact restoration, recovery, observation projection and ordinary-run measurement; a fresh native Claude Code task and the native AI connection are still unverified, and sequential replay is unavailable for Claude with a recorded reason.
 
 **Free, with no required paid API or hosted backend.** Unharness is designed to run locally with no recurring operator service expense. Your existing AI subscription and usage are separate. Artwork, including three-candidate original forms, and card export have a local route without model calls. See [feasibility and limitations](docs/feasibility.md).
 
@@ -149,7 +149,7 @@ Unharness is being prepared for an open-source release. There is no published in
 | Application | macOS | Windows |
 | --- | --- | --- |
 | Codex desktop | Phase 1, current priority | Phase 4, deferred |
-| Claude Code desktop | Phase 2, after Mac Codex | Phase 5, after Windows Codex |
+| Claude Code desktop | Phase 2, adapter implemented; fresh native task pending | Phase 5, after Windows Codex |
 
 Phase 3 finishes the Mac product; Phase 6 later reconciles all four combinations. Windows qualification does not block Mac completion. These are delivery targets, not completed compatibility tests. See [delivery](docs/delivery.md) and [compatibility and evidence](docs/compatibility.md).
 

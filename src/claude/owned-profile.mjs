@@ -32,21 +32,26 @@ export async function createOwnedClaudeProfile({
   rules = false,
   projectSettings = null,
   projectLocalSettings = null,
-  worktreeOf = null
+  worktreeOf = null,
+  // Native qualification binds the fixture to the installed application, since
+  // the desktop version is the freshness key and that app runs the task.
+  appBundle: installedBundle = null
 } = {}) {
   await canonical(parent);
   const root = await mkdtemp(join(parent, 'unharness-owned-claude-'));
   const claudeHome = join(root, 'claude'),
     project = join(root, 'project'),
-    appBundle = join(root, 'Claude.app');
+    appBundle = installedBundle ?? join(root, 'Claude.app');
   await mkdir(claudeHome, { mode: 0o700 });
   await mkdir(project, { mode: 0o700 });
-  await mkdir(join(appBundle, 'Contents'), { recursive: true, mode: 0o700 });
-  await writeFile(
-    join(appBundle, 'Contents', 'Info.plist'),
-    INFO_PLIST(version, OWNED_BUNDLE_IDENTIFIER),
-    { mode: 0o600 }
-  );
+  if (installedBundle === null) {
+    await mkdir(join(appBundle, 'Contents'), { recursive: true, mode: 0o700 });
+    await writeFile(
+      join(appBundle, 'Contents', 'Info.plist'),
+      INFO_PLIST(version, OWNED_BUNDLE_IDENTIFIER),
+      { mode: 0o600 }
+    );
+  }
   await mkdir(join(claudeHome, 'skills', 'example'), {
     recursive: true,
     mode: 0o700
