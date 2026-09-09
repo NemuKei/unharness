@@ -31,6 +31,7 @@ import {
   recoverTransaction
 } from './transaction.mjs';
 import { canonical, equal, assertPlanOwnershipChanges } from './platform.mjs';
+import { applicationFor } from '../apps/index.mjs';
 import {
   fail,
   privateCall,
@@ -183,12 +184,7 @@ async function buildPlan(
       .filter((k) => !equal(before[k], after[k]))
       .map((id) => ({
         id,
-        label:
-          id === 'override'
-            ? 'Global instruction override'
-            : id === 'config'
-              ? 'Skill enablement configuration'
-              : 'Skill invocation policy'
+        label: applicationFor(w.reg.context).changedFileLabel(id)
       }))
   };
   return planSummary(plan, await record(w.workspace, 'application', plan));
@@ -211,49 +207,16 @@ export const planUserMode = wrap(async ({ workspace, mode, selectedIds }) => {
   if (mode === 'normal' && selection.length) fail('invalid-request');
   if (selection.some((id) => !all.find((t) => t.id === id).availability[mode]))
     fail('unsupported-source');
-  const normal = await loadNormal(workspace, w.reg, activeNormalId(w)),
-    after = structuredClone(normal);
-  let guide = null;
-  const skillStates = [];
-  if (mode !== 'normal') {
-    if (w.reg.instructions && selection.includes(w.reg.instructions.id)) {
-      const { getMinimalGuide } = await import('./guide.mjs');
-      const fixed = getMinimalGuide();
-      after.override = await targetFile(
-        w.reg,
-        'override',
-        mode === 'unseal' ? fixed.text : '<!-- -->\n',
-        normal
-      );
-      if (mode === 'unseal') {
-        const { text, ...identity } = fixed;
-        guide = identity;
-      }
-    }
-    const skills = w.reg.skills.filter((s) => selection.includes(s.id));
-    for (const s of skills) {
-      skillStates.push({
-        id: s.id,
-        enabled: mode === 'trueform' ? false : s.enabled,
-        manualOnly: mode === 'unseal' && s.enabled
-      });
-      if (mode === 'unseal' && s.enabled) {
-        const { makeManualSkillPolicy } = await import('./skill-policy.mjs');
-        const key = s.id + ':policy';
-        const result = await makeManualSkillPolicy(normal[key]?.text ?? null);
-        after[key] = await targetFile(w.reg, key, result, normal);
-      }
-    }
-    if (mode === 'trueform' && skills.length) {
-      const { disableSkillConfig } = await import('../codex/config-editor.mjs');
-      const result = await disableSkillConfig({
-        configText: normal.config?.text ?? '',
-        skillPaths: skills.map((s) => s.path),
-        executable: w.reg.context.executable
-      });
-      after.config = await targetFile(w.reg, 'config', result.text, normal);
-    }
-  }
+  const normal = await loadNormal(workspace, w.reg, activeNormalId(w));
+  const { after, guide, skillStates } = await applicationFor(
+    w.reg.context
+  ).compile({
+    reg: w.reg,
+    mode,
+    selection,
+    normal,
+    targetFile: (key, text) => targetFile(w.reg, key, text, normal)
+  });
   return buildPlan(w, {
     mode,
     selectedIds: selection,
@@ -417,7 +380,7 @@ export const reviewDiscoveredUserSource = wrap(
 export const locateUserSources = wrap(async ({ context }) => {
   const { contextOf } = await import('./catalog.mjs');
   const bound = await contextOf(context);
-  const owner = ownerPath(bound.codexHome);
+  const owner = ownerPath(applicationFor(bound).home(bound));
   try {
     await lstat(owner);
   } catch (e) {

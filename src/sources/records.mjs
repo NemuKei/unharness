@@ -11,6 +11,7 @@ import {
 import { join, dirname, isAbsolute, relative, resolve } from 'node:path';
 import { createStore, putRecord, readRecord } from '../core/local-store.mjs';
 import { canonical, captureFile, equal } from './platform.mjs';
+import { applicationFor } from '../apps/index.mjs';
 import {
   pathsFor,
   validateFiles,
@@ -72,9 +73,12 @@ export const activeNormalId = (w) => w.state.normalId ?? w.reg.normalId;
 export async function loadNormal(workspace, reg, id = reg.normalId) {
   const normal = await loadSnapshot(workspace, reg, id);
   if (id !== reg.normalId) {
+    // Only the one file that mixes managed and retained settings may differ
+    // between Normal versions; that key is application specific.
+    const skip = applicationFor(reg.context).retainedKey;
     const baseline = await loadSnapshot(workspace, reg, reg.normalId);
     for (const key of Object.keys(baseline))
-      if (key !== 'config' && !equal(normal[key], baseline[key])) fail('record-invalid');
+      if (key !== skip && !equal(normal[key], baseline[key])) fail('record-invalid');
   }
   return normal;
 }
@@ -130,17 +134,21 @@ export async function openWorkspace(workspace) {
     reg.skills.length > 32
   )
     fail('workspace-invalid');
-  await canonical(reg.context.codexHome);
+  const home = applicationFor(reg.context).home(reg.context);
+  await canonical(home);
   await canonical(reg.context.project);
-  const owner = ownerPath(reg.context.codexHome);
+  const owner = ownerPath(home);
   await canonical(owner);
   const reservation = await readJson(join(owner, 'reservation.json'));
   if (
     reservation.workspace !== workspace ||
     reservation.scopeId !== manifest.scopeId ||
-    reservation.codexHome !== reg.context.codexHome
+    // Codex reservations written before the application seam carry only
+    // codexHome; both spellings must resolve to the registered home.
+    (reservation.home ?? reservation.codexHome) !== home
   )
     fail('workspace-invalid');
+  const app = applicationFor(reg.context);
   if (
     reg.skills.some(
       (s) =>
@@ -149,7 +157,7 @@ export async function openWorkspace(workspace) {
         s.id !==
           'skill-' +
             hash({ identity: s.identity, sourceDigest: s.sourceDigest }) ||
-        s.pluginId?.includes('@openai-')
+        app.rejectsRegisteredSkill(s)
     )
   )
     fail('workspace-invalid');
@@ -185,20 +193,15 @@ export async function openWorkspace(workspace) {
   await validateStateSnapshots(workspace, reg, state);
   const normal = await loadSnapshot(workspace, reg, reg.normalId);
   for (const s of reg.skills)
-    if (
-      s.sourceDigest !==
-      hash({
-        body: normal[s.id + ':body'],
-        policy: normal[s.id + ':policy'],
-        format: normal[s.id + ':format']
-      })
-    )
+    if (s.sourceDigest !== app.skillSourceDigest(normal, s))
       fail('workspace-invalid');
   return { workspace, scopeId: manifest.scopeId, reg, state, owner };
 }
 export async function initializeWorkspace(d, selected, instructionsOptional) {
   assertRegistrationOwnership(d, selected, instructionsOptional);
-  const owner = ownerPath(d.context.codexHome);
+  const app = applicationFor(d.context);
+  const home = app.home(d.context);
+  const owner = ownerPath(home);
   try {
     await mkdir(owner, { mode: 0o700 });
   } catch (e) {
@@ -206,11 +209,18 @@ export async function initializeWorkspace(d, selected, instructionsOptional) {
     throw e;
   }
   // Reservation directory survives every interrupted initialization.
+  // A Codex reservation keeps its original codexHome field so that a CLI
+  // built before the application seam still validates workspaces this build
+  // creates. New readers use `home`; `application` is additive.
+  const homeFields =
+    app.id === 'codex'
+      ? { application: app.id, home, codexHome: home }
+      : { application: app.id, home };
   await writeJson(
     join(owner, 'initializing.json'),
     {
       kind: 'unharness-user-source-initialization',
-      codexHome: d.context.codexHome,
+      ...homeFields,
       pid: process.pid
     },
     true
@@ -240,14 +250,13 @@ export async function initializeWorkspace(d, selected, instructionsOptional) {
     normalId: null
   };
   const files = { ...d.files };
-  for (const s of d.skills.filter((s) => selected.includes(s.id))) {
-    files[s.id + ':body'] = s.body;
-    files[s.id + ':policy'] = s.policy;
-    files[s.id + ':format'] = s.format;
-    reg.bindings[s.id + ':body'] = s.binding;
-    reg.bindings[s.id + ':policy'] = s.policyBinding;
-    reg.bindings[s.id + ':format'] = s.formatBinding;
-  }
+  // Each application decides which files back one registered Skill: Codex has
+  // a policy and format sidecar, Claude Code has only the guarded body.
+  for (const s of d.skills.filter((s) => selected.includes(s.id)))
+    for (const [key, { file, binding }] of Object.entries(app.skillFiles(s))) {
+      files[key] = file;
+      reg.bindings[key] = binding;
+    }
   reg.normalId = await saveSnapshot(workspace, reg, files);
   const scopeId = await record(workspace, 'scope', reg);
   await writeJson(join(workspace, 'registration.json'), { scopeId }, true);
@@ -270,7 +279,7 @@ export async function initializeWorkspace(d, selected, instructionsOptional) {
     join(owner, 'reservation.json'),
     {
       kind: 'unharness-user-source-reservation',
-      codexHome: d.context.codexHome,
+      ...homeFields,
       workspace,
       scopeId
     },

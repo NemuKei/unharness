@@ -7,26 +7,31 @@ import { equal, assertWritableOwnership } from './platform.mjs';
 import { openWorkspace, activeNormalId, loadNormal, loadSnapshot, saveSnapshot,
   loadRecord, record, writeJson, readJson, unlink, newPreparation, validateStateSnapshots } from './records.mjs';
 import { acquire, pending, assertCurrent, sourceTransactionHook } from './transaction.mjs';
+import { applicationFor } from '../apps/index.mjs';
 import { fail, verification } from './errors.mjs';
-const categories = Object.freeze(['Codex settings']);
 const modes = ['normal', 'unseal', 'trueform'];
-const sameNonConfig = (left, right, kind = 'source-conflict') => {
+// The one registered file that mixes managed and retained settings. Everything
+// else must be byte-identical for an edit to qualify as retained-only.
+const retainedKey = reg => applicationFor(reg.context).retainedKey;
+const sameExceptRetained = (reg, left, right, kind = 'source-conflict') => {
+  const skip = retainedKey(reg);
   for (const key of Object.keys(left))
-    if (key !== 'config' && !equal(left[key], right[key])) fail(kind);
+    if (key !== skip && !equal(left[key], right[key])) fail(kind);
 };
 async function compose(w, base, target, current) {
-  const { mergeRetainedConfig } = await import('../codex/config-reconcile.mjs');
-  const result = await mergeRetainedConfig({ baseText: base.config?.text ?? '',
-    targetText: target.config?.text ?? '', currentText: current.config?.text ?? '',
-    skillPaths: w.reg.skills.map(s => s.path), executable: w.reg.context.executable });
-  if (result.codexVersion !== w.reg.version) fail('stale-discovery');
+  const key = retainedKey(w.reg);
+  const result = await applicationFor(w.reg.context).mergeRetained({
+    reg: w.reg, baseText: base[key]?.text ?? '',
+    targetText: target[key]?.text ?? '', currentText: current[key]?.text ?? '' });
+  if (result.version !== w.reg.version) fail('stale-discovery');
   await freshCatalog(w.reg);
   return result;
 }
-function summary(p, planId) {
+function summary(reg, p, planId) {
   return { planId, scopeId: p.scopeId, revision: p.revision,
     preparedMode: p.preparedMode, previousNormalId: p.previousNormalId,
-    normalId: p.normalId, managedFilesChanged: 0, changedCategories: [...categories],
+    normalId: p.normalId, managedFilesChanged: 0,
+    changedCategories: [...applicationFor(reg.context).retainedCategories],
     retained, verification };
 }
 export async function planRetainedSettings({ workspace }) {
@@ -38,14 +43,15 @@ export async function planRetainedSettings({ workspace }) {
     const expected = await loadSnapshot(workspace, w.reg, w.state.snapshotId);
     const actual = await captureRegistered(w.reg);
     await assertCurrent(w, actual);
-    sameNonConfig(expected, actual);
+    const key = retainedKey(w.reg);
+    sameExceptRetained(w.reg, expected, actual);
     if (equal(expected, actual)) fail('no-retained-change');
-    assertWritableOwnership(actual.config);
+    assertWritableOwnership(actual[key]);
     const normal = await loadNormal(workspace, w.reg, activeNormalId(w));
     const merged = await compose(w, expected, normal, actual);
-    const nextNormal = { ...normal, config: actual.config === null ? null : { ...actual.config, text: merged.text } };
-    // An absent current config must not conceal selected entries required by Normal.
-    if (actual.config === null && merged.text !== '') fail('config-transform-failed');
+    const nextNormal = { ...normal, [key]: actual[key] === null ? null : { ...actual[key], text: merged.text } };
+    // An absent current file must not conceal selected entries required by Normal.
+    if (actual[key] === null && merged.text !== '') fail('config-transform-failed');
     const normalId = await saveSnapshot(workspace, w.reg, nextNormal, 2);
     const observedId = await saveSnapshot(workspace, w.reg, actual, 2);
     await assertCurrent(w, actual);
@@ -53,7 +59,7 @@ export async function planRetainedSettings({ workspace }) {
       revision: w.state.revision, preparedMode: w.state.preparedMode,
       previousNormalId: activeNormalId(w), beforeId: w.state.snapshotId,
       observedId, normalId, snapshotVersion: 2 };
-    return summary(plan, await record(workspace, 'application', plan));
+    return summary(w.reg, plan, await record(workspace, 'application', plan));
   } finally { await release(); }
 }
 async function loadRetainedPlan(w, planId) {
@@ -68,7 +74,7 @@ async function loadRetainedPlan(w, planId) {
   await loadNormal(w.workspace, w.reg, p.normalId);
   const before = await loadSnapshot(w.workspace, w.reg, p.beforeId);
   const actual = await loadSnapshot(w.workspace, w.reg, p.observedId, 2);
-  sameNonConfig(before, actual, 'record-invalid');
+  sameExceptRetained(w.reg, before, actual, 'record-invalid');
   if (equal(before, actual)) fail('record-invalid');
   return p;
 }
@@ -128,8 +134,9 @@ export async function adaptRetainedSnapshot(w, r, id, type) {
   if (previousNormalId === normalId) return { after, adaptation: null };
   const current = await loadNormal(w.workspace, w.reg, normalId);
   const merged = await compose(w, base, after, current);
-  after.config = current.config === null && merged.text === '' ? null :
-    await targetFile(w.reg, 'config', merged.text, current);
+  const key = retainedKey(w.reg);
+  after[key] = current[key] === null && merged.text === '' ? null :
+    await targetFile(w.reg, key, merged.text, current);
   return { after, adaptation: { kind: 'retained-settings', sourceType: type,
     sourceId: id, previousNormalId, normalId } };
 }
