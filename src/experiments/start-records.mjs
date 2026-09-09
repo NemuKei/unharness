@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from 'node:util';
 import { dirname } from 'node:path';
-import { loadRecord } from '../sources/records.mjs';
+import { loadRecord, loadSnapshot } from '../sources/records.mjs';
 import { validUtc } from '../sources/observation-record.mjs';
 import { exactKeys } from '../comparisons/assessment.mjs';
 import { validateDeclaration } from './declaration.mjs';
@@ -59,6 +59,10 @@ export async function loadStartReview(w, reviewId, checkChunks = true) {
     if (p.role !== 'start-review' || p.schemaVersion !== 1 || p.scopeId !== w.scopeId || !validUtc(p.capturedAt)
       || !isDeepStrictEqual(p.conditions, START_CONDITIONS)) invalid();
     const declaration = validateDeclaration(p.declaration);
+    if (declaration.comparisonRule) {
+      await loadSnapshot(w.workspace, w.reg, declaration.comparisonRule.baselineSnapshotId);
+      await loadSnapshot(w.workspace, w.reg, declaration.comparisonRule.candidateSnapshotId);
+    }
     shape(p.selection, ['kind', 'gitMetadata', 'ignoredFiles', 'retainedProjectInputs', 'additionalPaths']);
     if (!['directory-working-files', 'git-working-files'].includes(p.selection.kind)
       || p.selection.gitMetadata !== 'excluded' || p.selection.retainedProjectInputs !== 'included'

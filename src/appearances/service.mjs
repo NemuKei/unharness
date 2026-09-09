@@ -1,10 +1,11 @@
 import { randomBytes } from 'node:crypto';
 import { exactKeys } from '../comparisons/assessment.mjs';
 import { openWorkspace } from '../sources/records.mjs';
-import { acquire, pending } from '../sources/transaction.mjs';
+import { acquire, pending, sourceTransactionHook } from '../sources/transaction.mjs';
 import { fail } from '../sources/errors.mjs';
-import { initializeAppearance, discoverPrepared, selectOwned } from './lifecycle.mjs';
+import { initializeAppearance, discoverPrepared, selectOwned, beginOriginal, adoptOriginal } from './lifecycle.mjs';
 import { readAppearanceStore, appearanceStoreSummary, publishAppearanceState, recoverAppearanceStore } from './store.mjs';
+import { resolveAppearanceEvidence, assertAppearanceEvidenceCurrent } from './evidence.mjs';
 
 const hash = value => typeof value === 'string' && /^[0-9a-f]{64}$/.test(value);
 const request = (args, required = [], optional = []) => exactKeys(args, ['workspace', ...required], optional, 'invalid-request');
@@ -50,4 +51,39 @@ export async function selectUserAppearance(args) {
 export async function recoverUserAppearance(args) {
   request(args);
   return locked(args.workspace, async w => appearanceStoreSummary(w, await recoverAppearanceStore(w)), true);
+}
+
+export async function createUserOriginalAppearance(args) {
+  request(args, ['startId', 'achievementId', 'expectedStateId']);
+  if (![args.startId, args.achievementId, args.expectedStateId].every(hash)) fail('invalid-request');
+  return locked(args.workspace, async w => {
+    const before = await readAppearanceStore(w);
+    if (before.journal) fail('appearance-recovery-required');
+    if (!before.state) fail('appearance-state-conflict');
+    const evidence = await resolveAppearanceEvidence(w, args.startId);
+    if (!evidence.eligible || evidence.achievementId !== args.achievementId) fail('appearance-ineligible');
+    await assertAppearanceEvidenceCurrent(w, evidence);
+    if (before.state.achievements.some(a => a.achievementId === evidence.achievementId)) return appearanceStoreSummary(w, before);
+    if (before.stateId !== args.expectedStateId) fail('appearance-state-conflict');
+    await sourceTransactionHook('appearance-evidence-checked');
+    await assertAppearanceEvidenceCurrent(w, evidence);
+    const { achievementId, context, resultIds } = evidence;
+    const next = beginOriginal(before.state, { achievementId, context, resultIds, eligible: true }, randomBytes(32).toString('hex'));
+    return appearanceStoreSummary(w, await publishAppearanceState(w, before, next));
+  });
+}
+
+export async function adoptUserOriginalAppearance(args) {
+  request(args, ['achievementId', 'candidateId', 'expectedStateId']);
+  if (![args.achievementId, args.candidateId, args.expectedStateId].every(hash)) fail('invalid-request');
+  return locked(args.workspace, async w => {
+    const before = await readAppearanceStore(w);
+    if (before.journal) fail('appearance-recovery-required');
+    if (!before.state) fail('appearance-state-conflict');
+    const existing = before.state.achievements.find(a => a.achievementId === args.achievementId);
+    if (existing?.adoptedCandidateId === args.candidateId) return appearanceStoreSummary(w, before);
+    if (before.stateId !== args.expectedStateId) fail('appearance-state-conflict');
+    const next = adoptOriginal(before.state, args.achievementId, args.candidateId);
+    return appearanceStoreSummary(w, await publishAppearanceState(w, before, next));
+  });
 }
