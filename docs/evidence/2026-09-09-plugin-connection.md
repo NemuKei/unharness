@@ -1,0 +1,15 @@
+# Plugin connection bootstrap checks — 2026-09-09
+
+Scope: the local Codex plugin connection and shared MCP transport on macOS with Node.js 24.20.0. All source profiles, native data directories and process launches in these checks are synthetic and owned by the test. No private profile, model task, public deployment or native plugin installation was changed.
+
+- CLI accepts one exact native data directory plus either an existing registration or an explicit Codex home/project/executable. Repeated configuration returns the same binding; unknown, duplicate, relative and mixed target arguments fail.
+- Configuration leaves source bytes and registration absent. Its private pointer and authoritative context remain separate from Normal and the host's plugin cache. Native data parent permissions are retained.
+- An official MCP client connects before configuration, reads installation/status, and receives a safe refusal for an open request. After local configuration, the same connection opens the built loopback workbench before Normal is saved.
+- Initial source registration completes through the common service. A new MCP connection reads saved Normal, obtains the original open receipt using its original UUID/arguments, prepares TRUEFORM, saves a favorite and reuses the same owned GUI process.
+- Changing an operation's action/input conflicts with its old request. Deleting its result receipt leaves the request unconfirmed and does not create another process. Corrupt connection output remains an opaque error without echoing the private text.
+- Existing binding edits, duplicate JSON keys, symlinks, a replaced source directory, a replaced project and a replaced native data directory fail closed. Recreating the native data directory and locally configuring the same context retains the original authoritative binding and saved source state; the old live session refuses the replacement.
+- Existing registered MCP server, session, conservative request receipts, interrupted recovery and CLI/MCP workbench reuse checks run alongside these cases. This validates shared behavior, not complete native application integration.
+
+Recorded checks: `test/plugin-binding.test.mjs`, `test/plugin-entrypoints.test.mjs`, `test/ai-server.test.mjs`, `test/ai-session.test.mjs`, `test/ai-requests.test.mjs`, `test/ai-recovery.test.mjs`, `test/workbench-entrypoints.test.mjs`, `test/claude-gui-ai.test.mjs`. An isolated copy of the staged code passed all 39 checks with no skips, plus type/CSP checks and the production build. The no-dependency test runs local connection configuration/status from a copy without `node_modules`. All 175 relative file links in the six changed documents and staged whitespace checks passed. The Claude cases are shared-controller regressions, not native Claude qualification.
+
+Not established by this slice: host plugin installation/update/uninstall behavior, management Skill discovery in fresh native tasks, a portable distribution, public HTTPS pairing, or a complete Mac product journey. These remain in the [delivery plan](../superpowers/plans/2026-09-09-mac-product-experience.md).

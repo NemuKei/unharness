@@ -55,17 +55,24 @@ async function publish(path, value) {
 }
 
 export async function createRequestLedger({ workspace, connectionId }) {
-  if (!validUuid(connectionId)) fail('invalid-request');
   const registered = await openWorkspace(workspace);
   const scopeId = registered.rootScopeId;
+  return createBoundRequestLedger({ root: workspace, scopeId, connectionId, checkBinding: async () => {
+    if ((await openWorkspace(workspace)).rootScopeId !== scopeId) fail('ai-request-store-invalid');
+  } });
+}
+
+// The plugin uses its immutable local binding before and after first source
+// registration. One request namespace survives that transition and reinstall.
+export async function createBoundRequestLedger({ root: workspace, scopeId, connectionId, checkBinding }) {
+  if (!validUuid(connectionId) || !HASH.test(scopeId) || typeof checkBinding !== 'function') fail('invalid-request');
   const root = await directory(workspace);
   const parent = join(workspace, 'ai-requests');
   const inFlight = new Map(), seen = new Set();
   let parentIdentity = (await info(parent)) ? await directory(parent) : null;
   async function check() {
     await directory(workspace, root);
-    const current = await openWorkspace(workspace);
-    if (current.rootScopeId !== scopeId) fail('ai-request-store-invalid');
+    await checkBinding();
     if (parentIdentity) await directory(parent, parentIdentity);
   }
   function claim(value, requestId) {
