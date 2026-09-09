@@ -2,6 +2,10 @@
 
 Updated: 2026-09-09.
 
+The active Mac Codex finish now has a forward guard for retained Unharness controls, frozen configuration compatibility and offline rollback. The focused source/retained-settings/Claude fixture suite passed 142 tests with one platform skip, the stronger Node-only frozen/legacy checks passed, and type/CSP/build checks passed. The source guard and pure preset compiler are implemented; persisted setup, plugin installation, domain pairing, free layered art and the complete native product journey remain in progress.
+
+The [plugin distribution plan](spec-plugin-distribution.md) bundles the related Skills and local MCP, with WebMCP on the public page. The dedicated `deltahelmlab-unharness` Cloudflare Pages project exists and is separate from the existing landing page. No deployment or custom-domain binding is yet qualified.
+
 ## Established
 
 - Product name: **Unharness**.
