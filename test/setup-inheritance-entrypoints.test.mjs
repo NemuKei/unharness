@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { Client } from '@modelcontextprotocol/client';
 import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
@@ -10,6 +10,8 @@ import { startGuiServer } from '../src/gui/server.mjs';
 import { sourcesMain } from '../src/sources/cli.mjs';
 import { readSourceProfileFiles } from '../src/sources/owned-profile.mjs';
 import { AI_TOOLS } from '../src/ai/tools.mjs';
+import { addSetupSkill } from '../test-support/setup-profile.mjs';
+import { openWorkspace } from '../src/sources/records.mjs';
 
 async function entries(t) {
   const p = await aiProfile(t);
@@ -19,13 +21,18 @@ async function entries(t) {
     args: [resolve('bin/unharness.mjs'), 'mcp', '--workspace', p.workspace], stderr: 'pipe' }), { timeout: 5000 });
   t.after(() => client.close());
   const call = async (name, args = {}) => (await client.callTool({ name, arguments: args }, { timeout: 10000 })).structuredContent;
-  const { result: status } = await call('status');
+  let { result: status } = await call('status');
   const mutate = (name, args, requestId = randomUUID()) => call(name, { ...args, connectionId: status.connectionId, requestId });
   const assetsDirectory = join(p.parent, 'assets'); await mkdir(assetsDirectory); await writeFile(join(assetsDirectory, 'index.html'), '<!doctype html>');
   const gui = await startGuiServer({ manageSources: p.context, assetsDirectory }); t.after(() => gui.close());
   const headers = { Origin: gui.url, 'X-Unharness-Client': '1', 'Content-Type': 'application/json' };
   headers['X-Unharness-Token'] = (await (await fetch(gui.url + '/api/bootstrap', { headers })).json()).token;
-  const meta = await (await fetch(gui.url + '/api/sources/metadata', { headers })).json();
+  let meta = await (await fetch(gui.url + '/api/sources/metadata', { headers })).json();
+  const refresh = async () => {
+    status = (await call('status')).result;
+    meta = await (await fetch(gui.url + '/api/sources/metadata', { headers })).json();
+    return status;
+  };
   const http = async (action, args = {}) => {
     const response = await fetch(gui.url + '/api/sources/' + action, { method: 'POST', headers,
       body: JSON.stringify({ ...args, requestId: randomUUID(), launchId: meta.launchId, contextId: meta.contextId }) });
@@ -44,7 +51,7 @@ async function entries(t) {
         checkedAt: '2026-09-10T00:00:00Z' }], rationale: 'Reviewed synthetic condition' },
     roles: inventory.skills.map(s => ({ sourceId: s.id, origin: 'self', reason: 'Explicitly reviewed synthetic role' })),
     trueform: { retainedOfficialPluginIds: [] }, unseal: { instructions: 'minimal', additionalAutomaticSkillIds: inventory.skills.map(s => s.id) } };
-  return { ...p, proposal, inventory, call, mutate, http, cli };
+  return { ...p, proposal, inventory, call, mutate, http, cli, refresh };
 }
 
 test('MCP, CLI and authenticated HTTP freeze the same v2 review; adoption and lost-response readback preserve source files', async t => {
@@ -99,4 +106,64 @@ test('the published MCP proposal schema names inheritance inputs without accepti
   const text = JSON.stringify(schema);
   assert.match(text, /retainedOfficialPluginIds/); assert.match(text, /additionalAutomaticSkillIds/); assert.match(text, /inventoryId/);
   assert.equal(schema.additionalProperties, false);
+});
+
+test('v2 registration reviews match across all entries and require refreshed context plus separate setup after adoption', async t => {
+  const p = await entries(t);
+  const setup = await p.mutate('review_setup', { proposal: p.proposal });
+  assert.equal((await p.mutate('apply_setup', { reviewId: setup.result.reviewId })).ok, true);
+  const n = await addSetupSkill(p), inventory = (await p.call('enrollment_inventory')).result;
+  assert.equal(inventory.enrollmentSchemaVersion, 2);
+  const addition = { sourceId: inventory.candidates[0].id, origin: 'self', reason: 'Confirmed optional fixture source.' };
+  const args = { discoveryId: inventory.discoveryId, additions: [addition] };
+  const cli = await p.cli('review-enrollment', args); assert.equal(cli.code, 0);
+  const http = await p.http('review-enrollment', args); assert.equal(http.ok, true);
+  const mcp = await p.mutate('review_enrollment', args); assert.equal(mcp.ok, true, JSON.stringify(mcp));
+  assert.deepEqual(mcp.result, cli.result); assert.deepEqual(http.result, cli.result);
+  assert.equal(mcp.result.setupId, null); assert.equal(mcp.result.sourceFilesChanged, 0);
+  const requestId = randomUUID(), adoptArgs = { reviewId: mcp.result.reviewId };
+  const adopted = await p.mutate('apply_enrollment', adoptArgs, requestId); assert.equal(adopted.ok, true);
+  assert.deepEqual(await p.mutate('apply_enrollment', adoptArgs, requestId), adopted);
+  const stale = await p.mutate('plan_mode', { mode: 'trueform' }); assert.equal(stale.error.kind, 'source-session-changed');
+  const status = await p.refresh(); assert.equal(status.source.registration.modeChangeRequired, true);
+  assert.equal((await p.mutate('plan_mode', { mode: 'trueform' })).error.kind, 'setup-required');
+  assert.equal((await p.http('plan', { mode: 'unseal' })).error.kind, 'setup-required');
+  assert.equal((await p.cli('plan', { mode: 'trueform' })).result.error.kind, 'setup-required');
+  const saved = (await p.call('read_setup')).result;
+  assert.equal(saved.setupId, null);
+  assert.deepEqual(saved.enrollment.roles, [...p.proposal.roles, addition]);
+  assert.deepEqual((await p.cli('setup')).result, saved);
+  assert.deepEqual((await p.http('setup')).result, saved);
+  assert.deepEqual(await readSourceProfileFiles(p.context), p.originalFiles);
+  assert.deepEqual(await readFile(n.path), n.bytes);
+  const proposal = { ...p.proposal, scopeId: saved.scopeId, normalId: saved.normalId, inventoryId: saved.inventory.inventoryId,
+    roles: saved.enrollment.roles };
+  const reviewed = await p.mutate('review_setup', { proposal }); assert.equal(reviewed.ok, true, JSON.stringify(reviewed));
+  assert.equal((await p.http('apply-setup', { reviewId: reviewed.result.reviewId })).ok, true);
+  assert.equal((await openWorkspace(p.workspace)).state.scopePreparationRequired, true);
+  const plan = await p.mutate('plan_mode', { mode: 'trueform' }); assert.equal(plan.ok, true);
+  assert.equal((await p.mutate('apply_plan', { planId: plan.result.planId })).ok, true);
+  assert.equal((await openWorkspace(p.workspace)).state.scopePreparationRequired, false);
+  assert.match(await readFile(join(n.path, '..', 'agents/openai.yaml'), 'utf8'), /allow_implicit_invocation: false/);
+  const receipt = (await p.call('operation_status', { requestId })).result;
+  assert.equal(receipt.state, 'completed'); assert.equal(receipt.result.result.nextScopeId, adopted.result.nextScopeId);
+  assert.ok(!JSON.stringify([mcp, adopted, saved]).includes('PRIVATE_TEST'));
+});
+
+test('v2 enrollment entry points reject legacy choices, arbitrary paths and claimed official origin', async t => {
+  const p = await entries(t);
+  const setup = await p.mutate('review_setup', { proposal: p.proposal });
+  assert.equal((await p.mutate('apply_setup', { reviewId: setup.result.reviewId })).ok, true);
+  const n = await addSetupSkill(p), inventory = (await p.call('enrollment_inventory')).result;
+  const base = { sourceId: inventory.candidates[0].id, origin: 'self', reason: 'Confirmed fixture.' };
+  for (const [extra, mcpKind] of [[{ unseal: 'automatic', trueform: 'manual' }, 'enrollment-proposal-invalid'],
+    [{ path: n.path }, 'invalid-request'], [{ eligibility: 'official-confirmed' }, 'invalid-request']]) {
+    const args = { discoveryId: inventory.discoveryId, additions: [{ ...base, ...extra }] };
+    const cli = await p.cli('review-enrollment', args); assert.equal(cli.code, 1); assert.equal(cli.result.error.kind, 'enrollment-proposal-invalid');
+    const http = await p.http('review-enrollment', args); assert.equal(http.ok, false); assert.equal(http.error.kind, 'enrollment-proposal-invalid');
+    const mcp = await p.mutate('review_enrollment', args); assert.equal(mcp.ok, false); assert.equal(mcp.error.kind, mcpKind);
+  }
+  assert.equal((await openWorkspace(p.workspace)).reg.skills.length, 1);
+  assert.deepEqual(await readSourceProfileFiles(p.context), p.originalFiles);
+  assert.deepEqual(await readFile(n.path), n.bytes);
 });

@@ -98,6 +98,8 @@ test('UNSEAL inherits TRUEFORM and adds only the reviewed extras', () => {
 
 ## タスク4: 追加登録とGUI・CLI・MCPのレビューを揃える
 
+2026-09-10に、v2の設定と追加登録についてCLI・認証付きHTTP・stdio MCPを接続した。[追加登録の検証](../../evidence/2026-09-10-mode-inheritance-storage.md#registration-expansion-follow-up)では、登録だけでは新しい設定版を採用せず、両モードの再確認と設定準備を独立に要求する。旧Normal・履歴・オフライン復旧、登録変更後の再接続・同じ操作の再送を合成環境で確認した。描画済みGUIの導線とネイティブプラグイン更新の実機資格は、タスク5〜6に残る。
+
 **ファイル:** 変更`src/setup/enrollment.mjs`・`src/setup/enrollment-records.mjs`・`src/setup/service.mjs`・`src/sources/session.mjs`・`src/ai/tools.mjs`。テスト`test/source-enrollment.test.mjs`・`test/setup-entrypoints.test.mjs`・`test/enrollment-entrypoints.test.mjs`・`test/ai-server.test.mjs`。
 
 **境界:** 各入口はインベントリー中のプラグイン／Skill IDだけを受け取り、任意パスや公式資格の上書きを受け取らない。共有サービスがv2を検査する。プラグイン内の新しいSkillは、既存の追加登録後に新しいインベントリー・設定レビューを要求する。

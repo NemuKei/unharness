@@ -132,10 +132,11 @@ export async function readSetup(args) {
     try { inventory = await captureSetupInventory(w); }
     catch (e) { inventoryError = e.kind === 'setup-inventory-unavailable' ? e.kind : 'setup-inventory-invalid'; }
   }
+  const { readEnrollmentContext } = await import('./enrollment-records.mjs');
   return { scopeId: w.scopeId, normalId: activeNormalId(w), setupId: saved?.setupId ?? null,
     preparedSetupId: w.state.preparedSetupId ?? null,
     review: saved ? setupReviewSummary(saved.review) : null,
-    proposal: saved?.review.proposal ?? null, inventory, inventoryError, verification };
+    proposal: saved?.review.proposal ?? null, inventory, inventoryError, enrollment: await readEnrollmentContext(w), verification };
 }
 
 // The caller is already planning a mode within the registered workspace. This

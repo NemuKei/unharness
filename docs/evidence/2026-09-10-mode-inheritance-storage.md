@@ -43,7 +43,7 @@ The actual source writer from commit `0857aea` was separately exported into a pr
 
 ## Remaining qualification
 
-This slice does not qualify official-plugin provenance, automatic-only native plugin control, v2 additive enrollment, the setup UI, the distribution/recovery package upgrade journey or a new Mac desktop task. Those remain in the [implementation plan](../superpowers/plans/2026-09-10-official-plugin-mode-inheritance.md). No complete mode, runtime or Mac-release support claim follows from these checks.
+This evidence does not qualify official-plugin provenance, automatic-only native plugin control, the rendered setup/enrollment UI, the distribution/recovery package upgrade journey or a new Mac desktop task. Those remain in the [implementation plan](../superpowers/plans/2026-09-10-official-plugin-mode-inheritance.md). No complete mode, runtime or Mac-release support claim follows from these checks.
 
 ## CLI, authenticated HTTP and MCP follow-up
 
@@ -56,5 +56,15 @@ The v2 MCP proposal schema is connected to the same service. The [entry-point te
 A subsequent independent review identified a second byte-substitution boundary: a stored application plan could be rehashed with its `afterId` pointing at Normal, after the preset itself had passed verification. Seven altered-plan cases reproduced the problem in the actual service before the fix. The [application check](../../src/setup/apply-plan.mjs) now runs inside the source lock before a v2 workspace publishes a plan. It compares the selected mode, active Normal, setup, source selection, metadata, adapted bytes and actual changed-file list.
 
 New historical restore plans also retain their favorite/checkpoint source ID. The same forward boundary derives those plans from that historical record, using Node-only retained-settings composition; it does not inject the latest v2 preset. Merely changing a release plan's `mode` to `favorite` or `normal` cannot skip the check. The offline journal reader and cancellation paths keep their earlier dependency boundary.
+
+## Registration expansion follow-up
+
+[V2 enrollment](../../src/setup/enrollment.mjs) now accepts only the new source IDs, confirmed roles and reasons. The frozen review keeps the future setup/review IDs null. Adoption extends Normal and the current snapshot with the new sources' saved bytes, preserves the original reservation, manifest and immutable history, and clears the active setup pointer. It neither recompiles the old release set nor changes any source file. The prior prepared mode/setup remains historical, with preparation-required set explicitly.
+
+The [registration tests](../../test/setup-inheritance-enrollment.test.mjs) distinguish setup approval from preparation. New release plans are refused until a separate inventory-based paired setup is adopted. Adoption alone does not clear preparation-required. Normal, historical favorites and checkpoints restore without a setup or native/YAML dependencies. Those restores do not approve the new setup. Registration cancellation returns to the old scope/setup; setup cancellation after registration keeps the new scope awaiting approval. Tests interrupt each publication boundary and preserve independent file/journal edits. Rehashed enrollment records cannot import a setup pointer.
+
+`read_setup.enrollment` exposes confirmed roles for the follow-up conversation. CLI, authenticated HTTP and real stdio MCP produce the same enrollment review. A scope change requires refreshed connection context; duplicate requests and operation receipts keep their original identity. All three entries reject legacy per-mode choices for a v2 workspace, arbitrary paths and claimed official evidence. Existing v1 enrollment keeps its earlier contract.
+
+The missing v2 request behavior failed before implementation. The affected core run passed **41 tests, 0 failures, 0 skips** (`setup-inheritance-enrollment`, `source-enrollment`, `setup-inheritance-migration`). The entry-point run passed **22 tests, 0 failures, 0 skips** (`setup-inheritance-entrypoints`, `enrollment-entrypoints`, `ai-server`, `setup-entrypoints`). These are owned synthetic profile and transport checks, not rendered UI or native-model evidence.
 
 The regression cases reject altered output bytes, absent or substituted setup IDs, mode/prepared-mode disagreement, missing selections, guide/Skill-state disagreement and false change lists. The existing retained-Normal and Node-only historical restore/cancellation cases continue to pass.
