@@ -35,7 +35,7 @@ test('MCP uses the public workspace receipt lookup independently of the expired 
   const p = await aiProfile(t), controller = await createSourceController(p.context);
   const remote = await createRemoteController({ controller }); t.after(() => remote.close());
   const issued = await remote.issue(); await remote.approve(issued.pairingId);
-  const session = await remote.redeem({ ticket: issued.ticket, launchId: issued.launchId, protocolVersion: 1 }, remote.webOrigin);
+  const session = await remote.redeem({ ticket: issued.ticket, launchId: issued.launchId, protocolVersion: 2 }, remote.webOrigin);
   const planned = await remote.request('plan', { requestId: randomUUID(), mode: 'normal', expectedRevision: (await controller.state()).source.revision },
     { token: session.token, origin: remote.webOrigin });
   remote.revoke(session.connectionId);

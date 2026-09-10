@@ -29,7 +29,7 @@ async function setup(t, { clipboardFails = false } = {}) {
   page.on('request', r => { if (r.method() === 'POST') posts.push({ path: new URL(r.url()).pathname, body: r.postDataJSON() }); });
   const headers = { Origin: PUBLIC_WEB_ORIGIN, 'X-Unharness-Client': '1', 'Content-Type': 'application/json' };
   const remote = async (action, body, token) => {
-    const r = await fetch(gui.url + '/remote/v1/' + action, { method: 'POST', headers: { ...headers, ...(token ? { Authorization: 'Bearer ' + token } : {}) }, body: JSON.stringify(body) });
+    const r = await fetch(gui.url + '/remote/v2/' + action, { method: 'POST', headers: { ...headers, ...(token ? { Authorization: 'Bearer ' + token } : {}) }, body: JSON.stringify(body) });
     return { status: r.status, data: await r.json() };
   };
   const snapshot = await readFile(join(p.workspace, 'state.json'));
@@ -38,7 +38,7 @@ async function setup(t, { clipboardFails = false } = {}) {
 
 test('AI-issued local handoff requires visible approval, permits cancellation, and retains old operation lookup', browserCase, async t => {
   const s = await setup(t), { page } = s, ticket = await s.gui.requestPublicPairing();
-  const redeem = { ticket: ticket.ticket, launchId: ticket.launchId, protocolVersion: 1 };
+  const redeem = { ticket: ticket.ticket, launchId: ticket.launchId, protocolVersion: 2 };
   assert.equal((await s.remote('redeem', redeem)).status, 401);
   await page.goto(s.gui.url + '/#pairing=' + ticket.pairingId);
   await page.getByRole('button', { name: 'このサイトへの接続を許可', exact: true }).waitFor();
@@ -48,10 +48,12 @@ test('AI-issued local handoff requires visible approval, permits cancellation, a
   assert.equal(await page.getByRole('heading', { name: 'このMacへの接続許可' }).evaluate(e => document.activeElement === e), true);
   assert.equal(await page.getByRole('link', { name: '公開画面を開く', exact: true }).count(), 0);
   await page.getByText(PUBLIC_WEB_ORIGIN, { exact: true }).waitFor();
+  await page.getByText(/作品の画像・コレクションの読込、画像レビュー・保存・選択・名前変更・作品保存の復旧/).waitFor();
   await page.getByRole('button', { name: 'このサイトへの接続を許可', exact: true }).click();
   const link = page.getByRole('link', { name: '公開画面を開く', exact: true }); await link.waitFor();
   const url = new URL(await link.getAttribute('href')), fragment = new URLSearchParams(url.hash.slice(1));
   assert.equal(url.origin, PUBLIC_WEB_ORIGIN); assert.equal(fragment.get('ticket'), ticket.ticket);
+  assert.equal(fragment.get('unharness'), '2');
   assert.equal(fragment.get('port'), new URL(s.gui.url).port);
   if (process.env.UNHARNESS_CONNECTION_SCREENSHOT_DIR) {
     await mkdir(process.env.UNHARNESS_CONNECTION_SCREENSHOT_DIR, { recursive: true });
@@ -141,7 +143,7 @@ test('expiry while approval is dispatched ends pending verification without issu
   await page.getByRole('button', { name: '接続許可を確認する', exact: true }).waitFor();
   assert.equal(await page.getByRole('button', { name: '同じ操作の結果を確認', exact: true }).count(), 0);
   assert.equal(s.posts.filter(r => r.path === '/api/remote/issue').length, 0);
-  assert.equal((await s.remote('redeem', { ticket: ticket.ticket, launchId: ticket.launchId, protocolVersion: 1 })).status, 401);
+  assert.equal((await s.remote('redeem', { ticket: ticket.ticket, launchId: ticket.launchId, protocolVersion: 2 })).status, 401);
   await page.getByRole('button', { name: '接続許可を確認する', exact: true }).click();
   await page.getByRole('button', { name: 'このサイトへの接続を許可', exact: true }).waitFor();
   assert.equal(s.posts.filter(r => r.path === '/api/remote/issue').length, 1);

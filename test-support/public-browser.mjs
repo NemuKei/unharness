@@ -19,8 +19,12 @@ export async function publicBrowser(t, { clipboardFails = false } = {}) {
   const gui = await startGuiServer({ manageSources: p.context, assetsDirectory }, { remoteNow: () => time });
   const { chromium } = await import(pathToFileURL(resolve(process.env.UNHARNESS_PLAYWRIGHT_MODULE)).href);
   const browser = await chromium.launch({ headless: true, ...(process.env.UNHARNESS_BROWSER_EXECUTABLE ? { executablePath: process.env.UNHARNESS_BROWSER_EXECUTABLE } : {}) });
-  t.after(async () => { await browser.close(); await gui.close(); for (const cleanup of cleanups) await cleanup(); });
-  const browserContext = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 1440, height: 1050 } });
+  let browserContext;
+  t.after(async () => {
+    try { await browserContext?.unrouteAll({ behavior: 'wait' }); }
+    finally { await browser.close(); await gui.close(); for (const cleanup of cleanups) await cleanup(); }
+  });
+  browserContext = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 1440, height: 1050 } });
   await browserContext.addInitScript(() => {
     const definitions = new Map();
     Object.defineProperty(window, '__unharnessTestTools', { value: definitions });
@@ -34,7 +38,7 @@ export async function publicBrowser(t, { clipboardFails = false } = {}) {
   });
   if (clipboardFails) await browserContext.addInitScript(() => Object.defineProperty(navigator.clipboard, 'writeText', { value: async () => { throw Error('Synthetic clipboard failure'); } }));
   const siteRoot = resolve('site-dist');
-  const requests = [], posts = [], errors = [], secrets = new Set();
+  const requests = [], posts = [], errors = [], httpErrors = [], secrets = new Set();
   await browserContext.route(PUBLIC_WEB_ORIGIN + '/**', async route => {
     const url = new URL(route.request().url()), path = resolve(siteRoot, '.' + (url.pathname === '/' ? '/index.html' : decodeURIComponent(url.pathname)));
     assert.ok(path.startsWith(siteRoot + '/'));
@@ -43,7 +47,7 @@ export async function publicBrowser(t, { clipboardFails = false } = {}) {
     const contentType = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml' }[extname(path)] ?? 'application/octet-stream';
     await route.fulfill({ status: 200, contentType, headers: { 'Referrer-Policy': 'no-referrer' }, body: await readFile(path) });
   });
-  await browserContext.route(gui.url + '/remote/v1/**', async route => {
+  await browserContext.route(gui.url + '/remote/v2/**', async route => {
     const r = route.request();
     const authorization = r.headers().authorization;
     if (authorization?.startsWith('Bearer ')) secrets.add(authorization.slice(7));
@@ -55,6 +59,14 @@ export async function publicBrowser(t, { clipboardFails = false } = {}) {
   const page = await browserContext.newPage(); page.setDefaultTimeout(10000);
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+  page.on('response', response => {
+    if (response.status() < 400) return;
+    const failure = { path: new URL(response.url()).pathname, status: response.status(), kind: null };
+    httpErrors.push(failure);
+    void response.json().then(value => {
+      if (typeof value?.error?.kind === 'string' && /^[a-z-]{1,64}$/.test(value.error.kind)) failure.kind = value.error.kind;
+    }).catch(() => {});
+  });
   const localHeaders = { Origin: gui.url, 'X-Unharness-Client': '1', 'Content-Type': 'application/json' };
   localHeaders['X-Unharness-Token'] = (await (await fetch(gui.url + '/api/bootstrap', { headers: localHeaders })).json()).token;
   async function approveLink() {
@@ -62,7 +74,7 @@ export async function publicBrowser(t, { clipboardFails = false } = {}) {
     secrets.add(ticket.ticket);
     assert.equal((await fetch(gui.url + '/api/remote/approve', { method: 'POST', headers: localHeaders,
       body: JSON.stringify({ requestId: randomUUID(), pairingId: ticket.pairingId }) })).status, 200);
-    return PUBLIC_WEB_ORIGIN + '/#' + new URLSearchParams({ unharness: '1', port: new URL(gui.url).port, launch: ticket.launchId, ticket: ticket.ticket });
+    return PUBLIC_WEB_ORIGIN + '/#' + new URLSearchParams({ unharness: '2', port: new URL(gui.url).port, launch: ticket.launchId, ticket: ticket.ticket });
   }
   async function callPageTool(name, input) {
     return page.evaluate(async ({ name, input }) => JSON.parse(await window.__unharnessTestTools.get(name).execute(input)), { name, input });
@@ -77,6 +89,6 @@ export async function publicBrowser(t, { clipboardFails = false } = {}) {
     for (const secret of secrets) assert.ok(!visible.includes(secret), 'ticket/token absent from URL, visible content and storage');
     assert.ok(!visible.includes(p.context.project)); assert.ok(!visible.includes('PRIVATE_TEST'));
   }
-  return { ...p, gui, browser, browserContext, page, requests, posts, errors, approveLink, callPageTool, screenshot,
+  return { ...p, gui, browser, browserContext, page, requests, posts, errors, httpErrors, approveLink, callPageTool, screenshot,
     assertNoSecrets, advance: ms => { time += ms; }, dropNextApply: () => { dropApply = true; } };
 }
