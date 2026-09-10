@@ -1,6 +1,6 @@
 # Local workbench startup
 
-The development server also contains the [restricted public connection backend](domain-connection.md). Its local approval screen, MCP handoff and real HTTPS browser connection are still being built. Ordinary startup continues to return the bundled local origin; it does not grant public authorization.
+The development server also contains the [restricted public connection backend and local approval screen](domain-connection.md). MCP can request its local approval URL without granting permission or receiving a ticket. The local screen shows the site/scope/operations and permits approval, cancellation and old public-operation lookup. Ordinary startup returns the bundled local origin; the public client and real HTTPS browser connection remain unfinished.
 
 The owned launcher starts or reuses the bundled loopback workbench for one locally selected context. Opening the UI does not prepare a mode, save a new Normal, or establish task loading. Plugin onboarding and the public-origin bridge are separate parts of the [Mac product plan](superpowers/plans/2026-09-09-mac-product-experience.md).
 

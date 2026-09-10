@@ -319,6 +319,10 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
   return {
     server,
     url: origin,
+    requestPublicPairing() {
+      if (!remote || stopping) throw Object.assign(Error('remote-registration-required'), { kind: 'remote-registration-required' });
+      return remote.issueForLauncher();
+    },
     async close() {
       if (closing) return closing;
       stopping = true;

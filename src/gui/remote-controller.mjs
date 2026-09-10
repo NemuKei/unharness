@@ -7,6 +7,12 @@ import { isHash, isMode, isRevision, isUuid, projectRemoteState,
 
 const publicAction = action => ['remote-plan', 'remote-apply'].includes(action);
 const absent = requestId => ({ requestId, operation: null, state: 'not-found' });
+function checkReceiptOwnership(receipt) {
+  // Missing/corrupt claims are not proof that an operation never existed.
+  // Return no contents or connection details, but retain the uncertainty.
+  if (receipt.state === 'unconfirmed' && (!isUuid(receipt.connectionId) || typeof receipt.action !== 'string'))
+    remoteFail('remote-operation-unconfirmed');
+}
 function planResult(data) {
   if (!isHash(data?.planId) || !isHash(data.scopeId) || !isRevision(data.revision) || !isMode(data.mode)
     || !Number.isSafeInteger(data.changedFileCount) || data.changedFileCount < 0) remoteFail('remote-operation-unconfirmed');
@@ -26,6 +32,14 @@ function projectReceipt(receipt) {
   try { return { ...base, result: { ok: true, data: receipt.action === 'remote-plan'
     ? planResult(receipt.result.data) : applyResult(receipt.result.data) } }; }
   catch { return { ...base, state: 'unconfirmed' }; }
+}
+
+export async function readPublicOperation({ workspace, requestId }) {
+  if (!isUuid(requestId)) remoteFail('remote-invalid-request');
+  const ledger = await createRequestLedger({ workspace, connectionId: randomUUID() });
+  const raw = await ledger.status(requestId);
+  checkReceiptOwnership(raw);
+  return publicAction(raw.action) ? projectReceipt(raw) : absent(requestId);
 }
 
 export async function createRemoteController({ controller, webOrigin, now, enqueue = perform => perform() }) {
@@ -55,6 +69,7 @@ export async function createRemoteController({ controller, webOrigin, now, enque
   }
   async function receiptFor(session, requestId) {
     const raw = await (await ledgerFor(session)).status(requestId);
+    checkReceiptOwnership(raw);
     if (raw.connectionId !== session.connectionId || !publicAction(raw.action)) return absent(requestId);
     return projectReceipt(raw);
   }
@@ -99,14 +114,13 @@ export async function createRemoteController({ controller, webOrigin, now, enque
     webOrigin: pairing.webOrigin,
     async issue() { return pairing.issue(await binding()); },
     async approve(pairingId) { if (!isUuid(pairingId)) remoteFail('remote-invalid-request'); return pairing.approve(pairingId, await binding()); },
+    async details(pairingId) { return pairing.details(pairingId, await binding()); },
+    cancel(pairingId) { return pairing.cancel(pairingId); },
     async redeem(input, origin) { remoteRequestShape('redeem', input); return pairing.redeem({ ...input, origin }, await binding()); },
     revoke(connectionId) { return pairing.revoke(connectionId); },
     async localReceipt(requestId) {
-      if (!isUuid(requestId)) remoteFail('remote-invalid-request');
       const selected = await binding();
-      const ledger = await createRequestLedger({ workspace: selected.workspace, connectionId: randomUUID() });
-      const raw = await ledger.status(requestId);
-      return publicAction(raw.action) ? projectReceipt(raw) : absent(requestId);
+      return readPublicOperation({ workspace: selected.workspace, requestId });
     },
     request(operation, input, auth) {
       if (stopping) return Promise.reject(Object.assign(Error('remote-connection-expired'), { kind: 'remote-connection-expired' }));

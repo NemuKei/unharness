@@ -59,6 +59,27 @@ test('stopping and reopening preserves data and gives the browser a new launch i
   assert.deepEqual(await readSourceProfileFiles(p.context), p.originalFiles);
 });
 
+test('owned pairing requests reuse one unapproved ticket and expose only a local approval link to AI callers', async t => {
+  const p = await setup(t), launched = await p.openWorkbench({ workspace: p.workspace }, { assetsDirectory: p.assetsDirectory });
+  const { requestPublicConnection } = await import('../src/gui/launch.mjs');
+  const requestId = randomUUID();
+  const a = await requestPublicConnection({ workspace: p.workspace }, { requestId });
+  const b = await requestPublicConnection({ workspace: p.workspace }, { requestId });
+  assert.deepEqual(a, b); assert.equal(a.approved, false); assert.equal(a.ticket, undefined); assert.equal(a.token, undefined);
+  const link = new URL(a.approvalUrl);
+  assert.equal(link.origin, launched.loopbackOrigin);
+  assert.equal(link.hash, '#pairing=' + a.pairingId);
+  const headers = { Origin: launched.loopbackOrigin, 'X-Unharness-Client': '1', 'Content-Type': 'application/json' };
+  headers['X-Unharness-Token'] = (await (await fetch(launched.loopbackOrigin + '/api/bootstrap', { headers })).json()).token;
+  const details = await (await fetch(launched.loopbackOrigin + '/api/remote/details', { method: 'POST', headers,
+    body: JSON.stringify({ requestId: randomUUID(), pairingId: a.pairingId }) })).json();
+  assert.equal(details.status, 'awaiting-approval'); assert.ok(details.ticket);
+  assert.ok(!JSON.stringify(a).includes(details.ticket));
+  assert.deepEqual(await readSourceProfileFiles(p.context), p.originalFiles);
+  await p.stopWorkbench({ workspace: p.workspace });
+  await assert.rejects(requestPublicConnection({ workspace: p.workspace }, { requestId: randomUUID() }), { kind: 'gui-launch-unconfirmed' });
+});
+
 test('a stale port owned by another server never receives the launcher secret or a stop request', async t => {
   const p = await setup(t);
   const first = await p.openWorkbench({ workspace: p.workspace }, { assetsDirectory: p.assetsDirectory });

@@ -7,9 +7,11 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { isDeepStrictEqual } from 'node:util';
 import { canonical } from '../sources/platform.mjs';
 import { acquire } from '../sources/transaction.mjs';
+import { openWorkspace } from '../sources/records.mjs';
 import { LAUNCH_PROTOCOL, launchFail, launchDirectory, readLaunchReceipt, publishLaunchReceipt, processPresent } from './launch-records.mjs';
-import { nonce, probeLaunch, signature, launchRequest } from './launch-protocol.mjs';
+import { nonce, probeLaunch, signature, matchesSignature, launchRequest } from './launch-protocol.mjs';
 import { resolveWorkbenchTarget } from './launch-target.mjs';
+import { isUuid, PUBLIC_WEB_ORIGIN, REMOTE_PROTOCOL_VERSION, REMOTE_OPERATIONS } from './remote-policy.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const worker = fileURLToPath(new URL('./launch-worker.mjs', import.meta.url));
@@ -31,7 +33,7 @@ async function runtimeIdentity(assetsDirectory, recovery) {
   await canonical(assetsDirectory);
   const hash = createHash('sha256').update(root + '\n' + assetsDirectory);
   if (recovery) hash.update(JSON.stringify(recovery));
-  const guiModules = ['server.mjs', 'pairing.mjs', 'remote-policy.mjs', 'remote-controller.mjs', 'remote-http.mjs'];
+  const guiModules = ['server.mjs', 'launch-protocol.mjs', 'pairing.mjs', 'remote-policy.mjs', 'remote-controller.mjs', 'remote-http.mjs'];
   for (const path of [join(root, 'package.json'), worker, ...guiModules.map(name => fileURLToPath(new URL(name, import.meta.url))), join(assetsDirectory, 'index.html')]) hash.update(await readFile(path));
   return hash.digest('hex');
 }
@@ -54,6 +56,28 @@ export async function workbenchStatus(input) {
   if (!receipt) return summary(null, 'not-started');
   if (await probeLaunch(receipt)) return summary(receipt, 'running', { rootScopeId: w.rootScopeId });
   return summary(receipt, receipt.phase === 'stopped' || !processPresent(receipt.pid) ? 'stopped' : 'unknown');
+}
+export async function requestPublicConnection(input, { requestId }) {
+  if (!isUuid(requestId)) launchFail('gui-launch-target-invalid');
+  const w = await resolveWorkbenchTarget(input);
+  if (!w.workspace) launchFail('gui-launch-target-invalid');
+  return withLock(w, async () => {
+    const receipt = await readLaunchReceipt(w);
+    if (!await probeLaunch(receipt)) launchFail('gui-launch-unconfirmed');
+    const value = { launchId: receipt.launchId, nonce: nonce(), requestId };
+    let response;
+    try { response = await launchRequest(receipt.loopbackOrigin, '/_unharness/pair', { ...value, signature: signature(receipt.key, 'pair', value) }); }
+    catch { launchFail('gui-launch-unconfirmed'); }
+    const p = response?.pairing, selected = await openWorkspace(w.workspace);
+    if (!p || !matchesSignature(receipt.key, 'pair-result', { ...value, pairing: p }, response.signature)
+      || p.launchId !== receipt.launchId || !isUuid(p.pairingId) || p.webOrigin !== PUBLIC_WEB_ORIGIN
+      || p.protocolVersion !== REMOTE_PROTOCOL_VERSION || p.approved !== false || !Number.isSafeInteger(p.expiresAt)
+      || p.target?.scopeId !== selected.scopeId || selected.rootScopeId !== w.rootScopeId
+      || p.target?.application !== w.application || JSON.stringify(p.operations) !== JSON.stringify(REMOTE_OPERATIONS)) launchFail('gui-launch-unconfirmed');
+    return { kind: 'unharness-public-connection', protocolVersion: p.protocolVersion, launchId: p.launchId,
+      pairingId: p.pairingId, webOrigin: p.webOrigin, expiresAt: p.expiresAt, approved: false,
+      target: p.target, operations: p.operations, approvalUrl: receipt.loopbackOrigin + '/#pairing=' + p.pairingId };
+  });
 }
 export async function stopWorkbench(input) {
   const w = await resolveWorkbenchTarget(input);

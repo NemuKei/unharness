@@ -1,4 +1,5 @@
-import { useEffect, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import type { LocalConnectionAction } from "./local-connection";
 import { Api } from "./api";
 import {
   initialSourceControllerState,
@@ -31,6 +32,8 @@ export type AuxiliarySourceOperationResult<T> =
 
 export function useSourceController() {
   const api = useRef(new Api()).current;
+  const requestConnection = useCallback(<T,>(action: LocalConnectionAction, input: object) =>
+    api.post<T>("/remote/" + action, input), [api]);
   const lock = useRef(false);
   const [state, dispatch] = useReducer(
     sourceControllerReducer,
@@ -414,6 +417,7 @@ export function useSourceController() {
     loadFavorites,
     executeComparison,
     executeAuxiliary: executeComparison,
+    requestConnection,
     setDiscovery,
     setReview,
     setRetainedPlan: (next: RetainedPlan) =>

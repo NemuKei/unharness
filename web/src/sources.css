@@ -1,6 +1,25 @@
 .source-workbench details {
   margin-top: 12px;
 }
+.local-connection { padding: 0 36px 12px; }
+.connection-review { max-width: 860px; padding: 20px; margin-top: 14px; border: 1px solid var(--line); background: #0d171e; }
+.connection-review h2 { font-size: 19px; margin: 0; }
+.connection-review h2:focus { outline: none; }
+.connection-review .source-context { margin-top: 18px; font-size: 13px; }
+.connection-review .connection-origin { font-size: 16px; color: var(--text); }
+.connection-link { margin-top: 18px; }
+.connection-link > a { display: inline-flex; align-items: center; text-decoration: none; }
+.connection-review label { display: block; font-size: 13px; }
+.connection-review textarea, .connection-review input { display: block; width: 100%; margin-top: 7px; padding: 10px;
+  border: 1px solid var(--line); background: #080f13; color: inherit; font: 12px/1.6 ui-monospace, monospace; }
+.connection-review textarea { resize: vertical; overflow-wrap: anywhere; }
+.public-operation-lookup { border-top: 1px solid var(--line); padding-top: 12px; }
+@media (max-width: 600px) {
+  .local-connection { padding: 0 18px 12px; }
+  .connection-review { padding: 16px; }
+  .connection-review .section-heading { flex-direction: column; align-items: start; gap: 8px; }
+  .connection-review .primary { font-size: 15px; min-height: 48px; }
+}
 .source-workbench summary {
   cursor: pointer;
   color: var(--muted);

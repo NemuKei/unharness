@@ -14,6 +14,7 @@ import { pluginInstallationStatus } from '../setup/plugin-binding.mjs';
 const safeKinds = new Set([...USER_SOURCE_ERROR_KINDS, ...LOCAL_STORE_ERROR_KINDS,
   'source-session-changed', 'ai-request-conflict', 'ai-connection-changed', 'ai-request-store-invalid',
   'ai-operation-unconfirmed', 'ai-result-too-large', 'ai-busy',
+  'remote-operation-unconfirmed',
   'gui-launch-unconfirmed', 'gui-launch-busy', 'gui-launch-record-invalid', 'gui-launch-record-changed', 'gui-build-missing', 'gui-assets-invalid',
   'plugin-not-configured', 'plugin-binding-invalid', 'plugin-binding-changed', 'plugin-registration-required']);
 function failure(error) {
@@ -89,16 +90,25 @@ export async function createAiServer({ workspace, binding, era = 'legacy' }) {
       }
       await controller.metadata();
       if (tool.action === 'operation-status') return { ok: true, result: await ledger.status(parsed.data.requestId) };
+      if (tool.action === 'public-operation-status') {
+        if (!acceptedMetadata.workspace) return failure({ kind: 'plugin-registration-required' });
+        const { readPublicOperation } = await import('../gui/remote-controller.mjs');
+        return { ok: true, result: await readPublicOperation({ workspace: acceptedMetadata.workspace, requestId: parsed.data.operationId }) };
+      }
       const { connectionId: acceptedConnection, requestId, ...input } = parsed.data;
       const perform = async () => {
         try {
           if (binding) await binding.read();
           if (binding && tool.write) await binding.ensureRecovery?.();
-          if (['open-workbench', 'workbench-status'].includes(tool.action)) {
+          if (['open-workbench', 'workbench-status', 'request-public-connection'].includes(tool.action)) {
             const now = await controller.metadata();
             if (now.contextId !== acceptedMetadata.contextId) return failure({ kind: 'source-session-changed' });
-            const { openWorkbench, workbenchStatus } = await import('../gui/launch.mjs');
+            const { openWorkbench, workbenchStatus, requestPublicConnection } = await import('../gui/launch.mjs');
             const input = now.workspace ? { workspace: now.workspace } : { context: target.context };
+            if (tool.action === 'request-public-connection') {
+              if (!now.workspace) return failure({ kind: 'plugin-registration-required' });
+              return { ok: true, result: await requestPublicConnection(input, { requestId }) };
+            }
             return { ok: true, result: await (tool.action === 'open-workbench' ? openWorkbench : workbenchStatus)(input) };
           }
           if (!acceptedMetadata.workspace) return failure({ kind: 'plugin-registration-required' });

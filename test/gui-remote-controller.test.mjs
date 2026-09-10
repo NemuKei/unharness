@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, writeFile, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { aiProfile } from '../test-support/ai-profile.mjs';
 import { createSourceController } from '../src/sources/session.mjs';
@@ -107,4 +107,20 @@ test('corrupted public receipts remain unconfirmed and never repeat the setting 
   assert.equal(calls, 2);
   const claim = await readFile(join(s.p.workspace, 'ai-requests', id, 'request.json'), 'utf8');
   assert.ok(!claim.includes(s.auth.token));
+});
+
+test('missing or corrupt request ownership remains unconfirmed through public and local lookup', async t => {
+  let calls = 0;
+  const s = await setup(t, c => ({ ...c, execute: (...args) => { calls++; return c.execute(...args); } }));
+  const planned = await plan(s, 'normal', (await s.controller.state()).source.revision), id = randomUUID();
+  await apply(s, planned, id);
+  const path = join(s.p.workspace, 'ai-requests', id, 'request.json');
+  for (const damage of ['corrupt', 'missing']) {
+    if (damage === 'corrupt') await writeFile(path, '{"broken":true}');
+    else await unlink(path);
+    await assert.rejects(s.remote.request('operation-status', { requestId: id }, s.auth), { kind: 'remote-operation-unconfirmed' });
+    await assert.rejects(s.remote.localReceipt(id), { kind: 'remote-operation-unconfirmed' });
+    await assert.rejects(apply(s, planned, id), { kind: 'remote-operation-unconfirmed' });
+    assert.equal(calls, 2);
+  }
 });

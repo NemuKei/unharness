@@ -46,7 +46,7 @@ export function createPairingManager({ launchId, webOrigin = PUBLIC_WEB_ORIGIN, 
       const time = clock(), binding = validBinding(input, launchId);
       prune(tickets, time);
       const ticket = randomBytes(32).toString('hex'), pairingId = randomUUID(), expiresAt = time + PAIRING_TTL_MS;
-      tickets.set(pairingId, { binding, key: tokenKey(ticket), expiresAt, approved: false });
+      tickets.set(pairingId, { binding, key: tokenKey(ticket), ticket, expiresAt, approved: false });
       return { protocolVersion: REMOTE_PROTOCOL_VERSION, pairingId, ticket, expiresAt, approved: false, launchId,
         webOrigin, target: target(binding), operations: [...REMOTE_OPERATIONS] };
     },
@@ -54,6 +54,22 @@ export function createPairingManager({ launchId, webOrigin = PUBLIC_WEB_ORIGIN, 
       const issued = pending(pairingId, binding);
       issued.approved = true;
       return { pairingId, approved: true, expiresAt: issued.expiresAt, webOrigin, target: target(issued.binding), operations: [...REMOTE_OPERATIONS] };
+    },
+    details(pairingId, input) {
+      if (!isUuid(pairingId)) remoteFail('remote-invalid-request');
+      const time = clock(), binding = validBinding(input, launchId), issued = tickets.get(pairingId);
+      const session = [...sessions.values()].find(value => value.pairingId === pairingId);
+      const savedBinding = issued?.binding ?? session;
+      if (savedBinding && !sameBinding(savedBinding, binding)) remoteFail('remote-connection-changed');
+      if (issued) {
+        if (issued.expiresAt <= time) return { pairingId, status: 'expired' };
+        return { pairingId, status: issued.approved ? 'approved' : 'awaiting-approval', ticket: issued.ticket,
+          protocolVersion: REMOTE_PROTOCOL_VERSION, launchId, webOrigin, expiresAt: issued.expiresAt,
+          target: target(binding), operations: [...REMOTE_OPERATIONS] };
+      }
+      if (session) return session.expiresAt <= time ? { pairingId, status: 'expired' }
+        : { pairingId, status: 'connected', connection: publicConnection(session) };
+      return { pairingId, status: 'unavailable' };
     },
     redeem(input, binding) {
       exactRemote(input, ['ticket', 'origin', 'launchId', 'protocolVersion']);
@@ -66,7 +82,7 @@ export function createPairingManager({ launchId, webOrigin = PUBLIC_WEB_ORIGIN, 
       if (!issued.approved) remoteFail('remote-pairing-unavailable');
       prune(sessions, time);
       const token = randomBytes(32).toString('hex');
-      const session = Object.freeze({ ...issued.binding, webOrigin, connectionId: randomUUID(), expiresAt: time + CONNECTION_TTL_MS });
+      const session = Object.freeze({ ...issued.binding, webOrigin, pairingId, connectionId: randomUUID(), expiresAt: time + CONNECTION_TTL_MS });
       tickets.delete(pairingId);
       sessions.set(tokenKey(token), session);
       return { ...publicConnection(session), token };
@@ -78,6 +94,12 @@ export function createPairingManager({ launchId, webOrigin = PUBLIC_WEB_ORIGIN, 
       if (!session || session.expiresAt <= time) { sessions.delete(key); remoteFail('remote-connection-expired'); }
       if (!sameBinding(session, binding)) { sessions.delete(key); remoteFail('remote-connection-changed'); }
       return session;
+    },
+    cancel(pairingId) {
+      if (!isUuid(pairingId)) remoteFail('remote-invalid-request');
+      tickets.delete(pairingId);
+      for (const [key, value] of sessions) if (value.pairingId === pairingId) sessions.delete(key);
+      return { pairingId, cancelled: true };
     },
     revoke(connectionId) {
       if (!isUuid(connectionId)) remoteFail('remote-invalid-request');

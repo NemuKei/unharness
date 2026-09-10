@@ -27,7 +27,7 @@
 
 ## タスク2: 一回限りの接続引換えと公開UI向けAPI
 
-2026-09-10時点: [バックエンドと19件の新規テスト](../../evidence/2026-09-10-domain-bridge-backend.md)を実装。既存回帰を含む55件が通過した。ローカル認証済みAPIでの発行・承認、短期接続、同一接続の計画、操作結果の保持は確認済み。承認画面・MCPの引き渡し・公開クライアント・画像経路・実HTTPS接続が残るため、タスク全体は未完了。
+2026-09-10時点: [バックエンド](../../evidence/2026-09-10-domain-bridge-backend.md)に続き、[ローカル許可・取消画面とMCPの引き渡し](../../evidence/2026-09-10-local-connection-approval.md)を実装。後者の関連35件とブラウザー3件が通過した。短期接続、同一接続の計画、操作結果の保持と期限後のGUI/MCP読取を確認済み。公開クライアント・画像経路・実HTTPS接続が残るため、タスク全体は未完了。
 
 **ファイル:** 新規`src/gui/pairing.mjs`・`src/gui/remote-policy.mjs`、変更`src/gui/server.mjs`・`src/ai/tools.mjs`、テスト`test/gui-pairing.test.mjs`・`test/gui-remote-policy.test.mjs`。
 

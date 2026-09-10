@@ -23,6 +23,12 @@ Use the Unharness plugin's local MCP tools. The plugin runs on the user's Mac; o
 
 Opening the workbench preserves the current mode. `workbench_status` checks current process liveness. An older completed open receipt is only historical. A confirmed launch that later stopped can be opened by a new explicit request; an unconfirmed request must retain its original ID.
 
+### Public-page connection in development builds
+
+After confirming a running workbench and a registered scope, `request_public_connection` returns a local approval URL without granting permission or returning a ticket/token. Open that verified local URL in the current app. The local screen shows the exact site, selected application/project, registered scope and allowed operations for approval; requesting the page is not that approval. After approval, use its one-time link for the public page. Do not change the origin, pass arbitrary local paths, automate approval based only on an open request, or treat a returned URL as a successful public connection. The full public client and native HTTPS connection still require qualification.
+
+Keep the original request ID after a lost issuance response. Its receipt does not extend an expired ticket; a later explicitly requested connection needs a new logical request. For a public-page operation, use `public_operation_status` with that page's operation UUID, including after expiry or GUI shutdown. This reads the public workspace ledger; ordinary `operation_status` reads local MCP requests instead. A missing or unconfirmed result does not authorize repeating a mode change with a new ID.
+
 ## Operate the saved scope
 
 - For a requested mode, call `plan_mode`, inspect the plan, and call `apply_plan` for that plan. The user's requested switch authorizes both within the established source scope; do not add another confirmation. Refuse or explain a reported conflict. Report **prepared for a fresh task**, including any limited/unknown conditions the core returns.

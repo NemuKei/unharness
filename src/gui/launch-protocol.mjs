@@ -51,7 +51,8 @@ export async function probeLaunch(receipt) {
 
 // This channel is for the private launcher only. A browser cannot use either
 // its ordinary GUI token or a claimed local origin to control the process.
-export function createLaunchHandler({ current, close }) {
+export function createLaunchHandler({ current, close, issuePairing }) {
+  const pairRequests = new Map();
   return async (request, response) => {
     const receipt = current();
     const send = (status, body) => { response.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' }); response.end(JSON.stringify(body)); };
@@ -72,6 +73,27 @@ export function createLaunchHandler({ current, close }) {
           || !HASH.test(body.nonce) || !matchesSignature(receipt.key, 'stop', { launchId: body.launchId, nonce: body.nonce }, body.signature)) throw new Error();
         response.once('finish', () => { void close(); });
         send(200, { stopping: true, launchId: receipt.launchId }); return;
+      } catch {}
+    }
+    if (request.method === 'POST' && url.pathname === '/_unharness/pair' && !url.search && issuePairing) {
+      try {
+        let size = 0; const chunks = [];
+        for await (const chunk of request) { size += chunk.length; if (size > 1024) throw new Error(); chunks.push(chunk); }
+        const body = parseStrictJson(new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks)));
+        if (!body || Object.keys(body).sort().join() !== 'launchId,nonce,requestId,signature' || body.launchId !== receipt.launchId
+          || !HASH.test(body.nonce) || typeof body.requestId !== 'string' || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(body.requestId)) throw new Error();
+        const value = { launchId: body.launchId, nonce: body.nonce, requestId: body.requestId };
+        if (!matchesSignature(receipt.key, 'pair', value, body.signature)) throw new Error();
+        if (!pairRequests.has(body.requestId)) {
+          if (pairRequests.size >= 1000) throw new Error();
+          const issued = (async () => {
+            const { ticket, ...summary } = await issuePairing();
+            return summary; // The ticket is read only from the local approval UI.
+          })();
+          pairRequests.set(body.requestId, issued);
+        }
+        const pairing = await pairRequests.get(body.requestId);
+        send(200, { pairing, signature: signature(receipt.key, 'pair-result', { ...value, pairing }) }); return;
       } catch {}
     }
     send(403, { error: { kind: 'gui-request-forbidden' } });

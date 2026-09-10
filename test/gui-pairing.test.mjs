@@ -78,3 +78,31 @@ test('only exact HTTPS origins and bounded local binding fields can issue a tick
   s.manager.close();
   assert.throws(() => s.manager.issue(s.current));
 });
+
+test('local pairing details follow approval and redemption without disclosing a connection token', () => {
+  const s = setup();
+  assert.equal(s.manager.details(s.issue.pairingId, s.current).status, 'awaiting-approval');
+  assert.equal(s.manager.details(s.issue.pairingId, s.current).ticket, s.issue.ticket);
+  s.manager.approve(s.issue.pairingId, s.current);
+  assert.equal(s.manager.details(s.issue.pairingId, s.current).status, 'approved');
+  const session = s.manager.redeem(s.input, s.current);
+  const connected = s.manager.details(s.issue.pairingId, s.current);
+  assert.equal(connected.status, 'connected'); assert.equal(connected.connection.connectionId, session.connectionId);
+  assert.equal(connected.ticket, undefined); assert.ok(!JSON.stringify(connected).includes(session.token));
+  assert.throws(() => s.manager.details(s.issue.pairingId, { ...s.current, scopeId: 'f'.repeat(64) }));
+  s.manager.revoke(session.connectionId);
+  assert.equal(s.manager.details(s.issue.pairingId, s.current).status, 'unavailable');
+});
+
+test('local cancellation invalidates pending tickets and already redeemed connections', () => {
+  for (const state of ['pending', 'approved', 'connected']) {
+    const s = setup();
+    if (state !== 'pending') s.manager.approve(s.issue.pairingId, s.current);
+    const session = state === 'connected' ? s.manager.redeem(s.input, s.current) : null;
+    assert.deepEqual(s.manager.cancel(s.issue.pairingId), { pairingId: s.issue.pairingId, cancelled: true });
+    assert.equal(s.manager.details(s.issue.pairingId, s.current).status, 'unavailable');
+    assert.throws(() => s.manager.redeem(s.input, s.current), { kind: 'remote-pairing-unavailable' });
+    if (session) assert.throws(() => s.manager.authorize({ token: session.token, origin: webOrigin }, s.current), { kind: 'remote-connection-expired' });
+    assert.equal(s.manager.cancel(s.issue.pairingId).cancelled, true);
+  }
+});

@@ -66,6 +66,22 @@ test('public HTTP needs local approval; token cannot authorize the local API or 
   assert.equal((await s.call('/remote/v1/status', {}, { ...auth, Authorization: undefined })).status, 403);
 });
 
+test('local details are fresh under repeated read IDs and cancellation never becomes public authority', async t => {
+  const s = await setup(t), ticket = (await s.local('issue')).data, readId = randomUUID();
+  const input = { pairingId: ticket.pairingId };
+  assert.equal((await s.local('details', input, readId)).data.status, 'awaiting-approval');
+  await s.local('approve', input);
+  assert.equal((await s.local('details', input, readId)).data.status, 'approved');
+  const headers = { Origin: PUBLIC_WEB_ORIGIN, 'X-Unharness-Client': '1', 'Content-Type': 'application/json' };
+  assert.equal((await s.call('/api/remote/cancel', { ...input, requestId: randomUUID() }, headers)).status, 403);
+  const writeId = randomUUID(), cancelled = await s.local('cancel', input, writeId);
+  assert.deepEqual(cancelled.data, { pairingId: ticket.pairingId, cancelled: true });
+  assert.deepEqual((await s.local('cancel', input, writeId)).data, cancelled.data);
+  assert.equal((await s.local('details', input, readId)).data.status, 'unavailable');
+  assert.equal((await s.call('/remote/v1/redeem', { ticket: ticket.ticket, launchId: ticket.launchId, protocolVersion: 1 }, headers)).status, 401);
+  assert.deepEqual(await readSourceProfileFiles(s.p.context), s.p.originalFiles);
+});
+
 test('public HTTP enforces CORS, strict bodies and Host without exposing private data', async t => {
   const s = await setup(t), { publicHeaders } = await s.connect();
   const preflight = await s.call('/remote/v1/status', undefined, { Origin: PUBLIC_WEB_ORIGIN,
@@ -106,6 +122,21 @@ test('HTTP retries return one apply receipt; local status can read it after publ
   s.advance(CONNECTION_TTL_MS);
   assert.equal((await s.call('/remote/v1/status', {}, publicHeaders)).status, 401);
   assert.deepEqual((await s.local('operation-status', { operationId: body.requestId })).data, a.data);
+});
+
+test('unreadable request ownership returns uncertainty through both HTTP lookup routes', async t => {
+  const s = await setup(t), { publicHeaders } = await s.connect();
+  const state = (await s.call('/remote/v1/status', {}, publicHeaders)).data.state;
+  const id = randomUUID();
+  const planned = await s.call('/remote/v1/plan', { requestId: id, mode: 'normal', expectedRevision: state.revision }, publicHeaders);
+  assert.equal(planned.data.result.ok, true);
+  await writeFile(join(s.p.workspace, 'ai-requests', id, 'request.json'), '{"broken":true}');
+  const publicRead = await s.call('/remote/v1/operation-status', { requestId: id }, publicHeaders);
+  const localRead = await s.local('operation-status', { operationId: id });
+  for (const response of [publicRead, localRead]) {
+    assert.equal(response.status, 500); assert.equal(response.data.error.kind, 'remote-operation-unconfirmed');
+    assert.ok(!JSON.stringify(response.data).includes(s.p.parent));
+  }
 });
 
 test('registered scope expansion revokes the old public connection; new authorization cannot apply its old plan', async t => {

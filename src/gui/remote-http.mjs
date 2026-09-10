@@ -38,12 +38,16 @@ export async function createRemoteHttp({ controller, enqueue, readJson, now }) {
     // checks first. Public sessions cannot issue or approve a connection.
     async localRequest(request, response, url) {
       try {
-        const match = /^\/api\/remote\/(issue|approve|revoke|operation-status)$/.exec(url.pathname);
+        const match = /^\/api\/remote\/(issue|approve|details|cancel|revoke|operation-status)$/.exec(url.pathname);
         if (!match || request.method !== 'POST' || url.search) remoteFail('remote-invalid-request');
         const action = match[1], input = await readJson(request, true, MAX_BODY_BYTES);
-        const fields = { issue: [], approve: ['pairingId'], revoke: ['connectionId'], 'operation-status': ['operationId'] }[action];
+        const fields = { issue: [], approve: ['pairingId'], details: ['pairingId'], cancel: ['pairingId'], revoke: ['connectionId'], 'operation-status': ['operationId'] }[action];
         exactRemote(input, ['requestId', ...fields]);
         if (!isUuid(input.requestId) || fields.some(key => !isUuid(input[key]))) remoteFail('remote-invalid-request');
+        if (action === 'details' || action === 'operation-status') {
+          send(response, 200, action === 'details' ? await remote.details(input.pairingId) : await remote.localReceipt(input.operationId));
+          return;
+        }
         const fingerprint = JSON.stringify([action, ...fields.map(key => input[key])]);
         let saved = localRequests.get(input.requestId);
         if (saved && saved.fingerprint !== fingerprint) remoteFail('remote-operation-conflict');
@@ -52,7 +56,7 @@ export async function createRemoteHttp({ controller, enqueue, readJson, now }) {
           const execute = async () => {
             try {
               const body = action === 'issue' ? await remote.issue() : action === 'approve' ? await remote.approve(input.pairingId)
-                : action === 'revoke' ? remote.revoke(input.connectionId) : await remote.localReceipt(input.operationId);
+                : action === 'revoke' ? remote.revoke(input.connectionId) : remote.cancel(input.pairingId);
               return { status: 200, body };
             } catch (error) { const safe = remoteError(error); return { status: remoteErrorStatus(safe.kind), body: { error: safe } }; }
           };
@@ -63,6 +67,7 @@ export async function createRemoteHttp({ controller, enqueue, readJson, now }) {
         send(response, result.status, result.body);
       } catch (error) { failure(response, error); }
     },
+    issueForLauncher: () => remote.issue(),
     close: () => remote.close(),
   };
 }

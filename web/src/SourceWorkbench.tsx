@@ -4,6 +4,7 @@ import { ComparisonWorkbench } from "./ComparisonWorkbench";
 import { SetupHandoff, FreshTaskHandoff } from "./SetupHandoff";
 import { releaseModeDescription } from "./setup";
 import { EnrollmentPanel } from "./EnrollmentPanel";
+import { LocalConnectionPanel } from "./LocalConnectionPanel";
 import {
   RestoreAdaptationNotice,
   RetainedReview,
@@ -100,6 +101,8 @@ export function SourceWorkbench() {
           比較
         </button>
       </nav>
+      {c.view?.source && <LocalConnectionPanel key={c.view.metadata.launchId + ":" + c.view.metadata.contextId + ":" + c.view.source.registration.scopeId}
+        view={c.view} enabled={c.confirmed && !c.busy} request={c.requestConnection} />}
       {c.syncNotice && <p className={`source-sync-notice muted${c.syncIssue ? "" : " quiet"}`} role="status">{c.syncNotice}</p>}
       <main id="main">
         <div hidden={activeTab !== "comparison"}>

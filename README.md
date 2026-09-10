@@ -18,7 +18,7 @@ A [Mac arm64 package candidate](docs/plugin-package.md) now includes Node, the U
 
 **Planned product entry:** ask your AI to open Unharness in its in-app browser at your own domain, while settings and artwork stay on your PC. The plan includes a guided installation/demo, retained Unharness controls in TRUEFORM, and freely created entity/restraint/background layers with performance displayed separately. This route and the new artwork import are not yet qualified. See the [Mac product plan](docs/superpowers/plans/2026-09-09-mac-product-experience.md).
 
-The [restricted public connection backend](docs/domain-connection.md) now has local approval, expiring authorization and durable operation receipts under synthetic/HTTP tests. The approval screen, public client and real HTTPS browser connection are still in development.
+The [restricted public connection bridge](docs/domain-connection.md) now has a local approval/cancellation screen, MCP handoff, expiring authorization and durable operation lookup. Synthetic/HTTP and built-local-browser tests cover these parts. The public client and real HTTPS browser connection remain in development.
 
 The Codex core now saves reviewed UNSEAL/TRUEFORM presets with model and official-reference provenance, separately from the original Normal. CLI, GUI operations and MCP use the same frozen versions; adoption does not change source files or the current task. The [setup contract](docs/spec-guided-setup.md) records the tested boundary and the remaining onboarding/native checks.
 
