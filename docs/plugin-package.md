@@ -1,6 +1,6 @@
 # Mac plugin assembly
 
-The development package combines the built local interface, deterministic core/MCP, management, setup and original-authoring Skills, locked production dependencies and an official Node runtime. It currently targets **macOS arm64**. Native update/removal/reinstall and [independent recovery](plugin-recovery.md) have scoped evidence. The [v2/artwork package checkpoint](evidence/2026-09-10-native-package-v2.md) adds actual in-app saving and version selection. The end-user installer, public download and complete model-driven journey remain in progress under the [plugin contract](spec-plugin-distribution.md).
+The development package combines the built local interface, deterministic core/MCP, management, setup and original-authoring Skills, locked production dependencies and an official Node runtime. It currently targets **macOS arm64**. Native update/removal/reinstall and [independent recovery](plugin-recovery.md) have scoped evidence. The [integrated private candidate](evidence/2026-09-11-final-native-candidate.md) now has an [AI-guided installable wrapper](mac-installation.md), native v2/artwork checks and recovery after removal with external networking denied. Public download and the complete model-driven journey remain in progress under the [plugin contract](spec-plugin-distribution.md).
 
 ## Maintainer build
 
@@ -31,3 +31,5 @@ The [Mac package evidence](evidence/2026-09-09-plugin-package-macos.md) covers t
 The [subsequent v2/artwork check](evidence/2026-09-10-native-package-v2.md) covers all three bundled Skills, native MCP authoring operations, in-app file selection and three-mode previews, saved setup and collection preservation through an update, old Normal favorite restoration, and recovery after native removal. The official-plugin selection was empty and no model turn was submitted.
 
 The [archive checkpoint](evidence/2026-09-10-distribution-archive.md) additionally verifies ZIP extraction, complete identity preservation, launch permissions and supplemental dependency notices. It remains a private candidate; downloaded-file launch and the final public client are not qualified by that check.
+
+The [integrated candidate](evidence/2026-09-11-final-native-candidate.md) supersedes that assembly checkpoint for the v2 client/server and persistent Mac directory format. Its immutable payload is wrapped with a native local marketplace and Japanese installation request, then checked after ZIP extraction. The [wrapper recipe and templates](mac-installation.md) are separate from the plugin payload. Native installation, saved Normal/v2/artwork and same-distribution recovery have bounded evidence; no Internet download or publication is claimed.

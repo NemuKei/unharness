@@ -1,0 +1,20 @@
+{
+  "name": "deltahelmlab-unharness",
+  "interface": {
+    "displayName": "Unharness"
+  },
+  "plugins": [
+    {
+      "name": "unharness",
+      "source": {
+        "source": "local",
+        "path": "./plugins/unharness"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

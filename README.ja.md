@@ -1,8 +1,8 @@
 # Unharness
 
-開発版では、CLIまたはMCPから[ローカル画面を起動・再利用](docs/local-workbench.md)できます。[プラグイン接続](docs/plugin-connection.md)では、選んだローカル環境に固定して、登録前のNormal保存画面も開けます。プラグインによる一括導入と独自ドメインへの接続は引き続き実装中です。
+開発版では、CLIまたはMCPから[ローカル画面を起動・再利用](docs/local-workbench.md)できます。[プラグイン接続](docs/plugin-connection.md)では、選んだローカル環境に固定して、登録前のNormal保存画面も開けます。公開ダウンロード、導入全体の一巡、本物の独自ドメインとの接続は引き続き未完了です。
 
-[Mac arm64向けの配布候補](docs/plugin-package.md)には、Node・画面・MCP・管理／設定相談Skillを同梱できます。隔離したCodexへの導入、初回保存、更新・削除・再導入と、別保存した[ローカル画面からの復旧](docs/plugin-recovery.md)を確認しました。公開配布と導入全体の仕上げはまだ完了していません。
+[Mac arm64向けの配布候補](docs/plugin-package.md)には、Node・画面・MCP・管理／設定相談／制作Skillを同梱しています。[AIに導入を依頼する配布形式](docs/mac-installation.md)で、実際のCodexへの導入とZIP展開後の一致を確認しました。統合した候補では、Normal・新しい解除設定・お気に入り・作品を保存し、[削除後に外部通信を遮断した状態で復旧](docs/evidence/2026-09-11-final-native-candidate.md)できています。公開前の候補であり、一般公開や実際のAIによる導入全体の検証は完了していません。
 
 ハーネスを、気軽に試着する。
 
