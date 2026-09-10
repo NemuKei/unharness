@@ -20,6 +20,7 @@ import {
   assertRegistrationOwnership
 } from './capture.mjs';
 import { fail } from './errors.mjs';
+import { validDirectoryIdentity } from '../platform/directory-identity.mjs';
 export const newPreparation = () => ({ id: randomBytes(16).toString('hex'), preparedAt: new Date().toISOString() });
 export const ownerPath = (home) => join(home, '.unharness-user-sources');
 export async function readJson(path) {
@@ -121,8 +122,7 @@ export function validateState(reg, state) {
       !Object.hasOwn(paths, d.key) ||
       d.path !== dirname(paths[d.key]) ||
       !reg.bindings[d.key].missing.includes(d.path) ||
-      !Number.isSafeInteger(d.identity?.dev) ||
-      !Number.isSafeInteger(d.identity?.ino)
+      !validDirectoryIdentity(d.identity)
     )
       fail('workspace-invalid');
 }
@@ -161,8 +161,7 @@ async function loadRegistration(workspace, scopeId) {
     if (
       !b ||
       !Array.isArray(b.missing) ||
-      !Number.isSafeInteger(b.dev) ||
-      !Number.isSafeInteger(b.ino)
+      !validDirectoryIdentity(b)
     )
       fail('workspace-invalid');
     if (b.missing.length === 0) {

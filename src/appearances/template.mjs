@@ -11,6 +11,7 @@ const hash = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
 export const LAYER_IMAGE_LIMIT = 8 * 1024 * 1024;
 export const LAYER_SET_LIMIT = 64 * 1024 * 1024;
 export const LAYER_COUNT_LIMIT = 64;
+export const APPEARANCE_UPLOAD_BODY_LIMIT = Math.ceil(LAYER_SET_LIMIT * 4 / 3) + 64 * 1024;
 const definition = {
   kind: 'unharness-layer-template', schemaVersion: 1, name: 'hangar-layered-v1',
   rendererVersion: 'mechanical-layers/v1', canvas: { width: WORLD, height: WORLD },

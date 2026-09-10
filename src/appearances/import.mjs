@@ -18,7 +18,7 @@ const invalid = () => fail('appearance-import-invalid');
 const shape = (value, keys) => exactKeys(value, keys, [], 'appearance-import-invalid');
 const request = (args, keys) => exactKeys(args, ['workspace', ...keys], [], 'invalid-request');
 const stateId = value => value === null || hash(value);
-export const APPEARANCE_UPLOAD_BODY_LIMIT = Math.ceil(LAYER_SET_LIMIT * 4 / 3) + 64 * 1024;
+export { APPEARANCE_UPLOAD_BODY_LIMIT } from './template.mjs';
 
 export async function reviewAppearanceUpload(args) {
   request(args, ['expectedStateId', 'importId', 'manifest', 'files']);

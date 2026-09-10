@@ -32,6 +32,7 @@ import {
 import { pathsFor } from './capture.mjs';
 import { applicationFor } from '../apps/index.mjs';
 import { fail, verification } from './errors.mjs';
+import { captureDirectoryIdentity, directoryIdentity, hasVolumeUuid, matchesDirectoryIdentity } from '../platform/directory-identity.mjs';
 let testHook = null;
 // Internal process-local seam: never accepted as service/CLI/browser input.
 export function setSourceTransactionTestHook(hook) {
@@ -113,7 +114,17 @@ export async function acquire(w, recovery = false) {
   };
 }
 export async function checkParents(reg) {
-  for (const b of Object.values(reg.bindings)) await checkBinding(b);
+  const seen = new Set();
+  for (const b of Object.values(reg.bindings)) {
+    const key = JSON.stringify(b);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    await checkBinding(b);
+  }
+}
+async function directoryMatches(path, stat, expected) {
+  return Boolean(expected && stat?.isDirectory() && !stat.isSymbolicLink()
+    && matchesDirectoryIdentity(await captureDirectoryIdentity(path, stat, { persistent: hasVolumeUuid(expected) }), expected));
 }
 export async function assertCurrent(w, expected) {
   await checkParents(w.reg);
@@ -124,10 +135,7 @@ export async function assertCurrent(w, expected) {
       const owned = (w.state.ownedDirs ?? []).find((d) => d.path === path);
       if (
         !owned?.identity ||
-        s.dev !== owned.identity.dev ||
-        s.ino !== owned.identity.ino ||
-        !s.isDirectory() ||
-        s.isSymbolicLink()
+        !await directoryMatches(path, s, owned.identity)
       )
         fail('source-redirection');
     }
@@ -226,9 +234,16 @@ export async function transact(w, plan, planId) {
   await sourceTransactionHook('journal');
   for (const dir of dirs) {
     if (dir.identity) continue;
+    const parent = w.reg.bindings[dir.key], parentStat = await lstat(parent.path);
+    const parentIdentity = await captureDirectoryIdentity(parent.path, parentStat, { persistent: hasVolumeUuid(parent) });
+    if (dirname(dir.path) !== parent.path || !matchesDirectoryIdentity(parentIdentity, parent)) fail('source-redirection');
     await mkdir(dir.path, { mode: 0o700 });
     const s = await lstat(dir.path);
-    dir.identity = { dev: s.dev, ino: s.ino };
+    if (!s.isDirectory() || s.isSymbolicLink() || s.dev !== parentStat.dev) fail('source-redirection');
+    // Resolve the fallible OS metadata before mkdir. A child on the same
+    // current device inherits that verified volume UUID; record its inode
+    // immediately so a later metadata timeout still has a recovery identity.
+    dir.identity = directoryIdentity(s, parentIdentity.volumeUuid);
     await writeJson(join(w.workspace, 'pending.json'), journal);
     await sourceTransactionHook('directory');
   }
@@ -333,11 +348,7 @@ async function validateJournal(w, j) {
     const st = await exists(d.path);
     if (
       st &&
-      (!d.identity ||
-        st.dev !== d.identity.dev ||
-        st.ino !== d.identity.ino ||
-        !st.isDirectory() ||
-        st.isSymbolicLink())
+      !await directoryMatches(d.path, st, d.identity)
     )
       fail('journal-invalid');
   }
@@ -369,7 +380,7 @@ async function cleanupDirs(j, desired, paths, recovering) {
   for (const d of j.dirs) {
     const s = await exists(d.path);
     if (!s) continue;
-    if (!d.identity || s.dev !== d.identity.dev || s.ino !== d.identity.ino)
+    if (!await directoryMatches(d.path, s, d.identity))
       fail('journal-invalid');
     if (
       Object.keys(paths).some(
@@ -442,17 +453,13 @@ export async function recoverTransaction(w) {
     if (!current) continue;
     await canonical(d.path);
     if (
-      !d.identity ||
-      !current.isDirectory() ||
-      current.isSymbolicLink() ||
-      current.dev !== d.identity.dev ||
-      current.ino !== d.identity.ino
+      !await directoryMatches(d.path, current, d.identity)
     )
       fail('journal-invalid');
     recoveredState.ownedDirs.push({
       key: d.key,
       path: d.path,
-      identity: { dev: d.identity.dev, ino: d.identity.ino }
+      identity: { ...d.identity }
     });
   }
   validateState(w.reg, recoveredState);

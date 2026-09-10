@@ -1,7 +1,6 @@
 ---
 name: unharness-original
 description: Use when the user explicitly requests original Unharness artwork, replacement entity/restraint/background layers, or revisions via オリジナルイメージを作成; not for ordinary mode switching or benchmark tasks.
-disable-model-invocation: true
 ---
 
 # Unharness Original

@@ -1,28 +1,27 @@
 #!/usr/bin/env node
 // Maintainer-only assembly. End users receive the runtime and built interface.
-import { chmod, cp, mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } from 'node:fs/promises';
+import { chmod, cp, mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { NODE_RUNTIME, distributionFile, indexDistribution } from '../src/setup/distribution.mjs';
+import { dependencyNotices } from './license-notices.mjs';
 
 const root = resolve(fileURLToPath(new URL('../', import.meta.url)));
 const run = (file, args, cwd = root) => promisify(execFile)(file, args, { cwd, maxBuffer: 8 * 1024 * 1024, encoding: 'utf8' });
 const usage = 'node scripts/build-plugin.mjs --output <new absolute directory> --runtime-archive <verified Node archive>\n';
 async function notices(output) {
-  const modules = join(output, 'node_modules'), rows = [];
-  for (const entry of (await readdir(modules)).sort()) {
-    if (entry.startsWith('.')) continue;
-    const names = entry.startsWith('@') ? (await readdir(join(modules, entry))).map(name => entry + '/' + name) : [entry];
-    for (const name of names) {
-      const pkg = JSON.parse(await readFile(join(modules, name, 'package.json'), 'utf8'));
-      rows.push(`| ${pkg.name} | ${pkg.version} | ${typeof pkg.license === 'string' ? pkg.license : 'See package license'} | node_modules/${name} |`);
-    }
+  const { packages } = await dependencyNotices(output), rows = [];
+  for (const pkg of packages) {
+    for (const notice of pkg.notices) if (notice.supplied)
+      await writeFile(join(output, pkg.path, notice.name), notice.text, { flag: 'wx' });
+    rows.push(`| ${pkg.name} | ${pkg.version} | ${pkg.license} | ${pkg.path} |`);
   }
   await writeFile(join(output, 'THIRD_PARTY_NOTICES.md'), '# Bundled components\n\nUnharness is MIT licensed; see LICENSE. Component licenses and notices remain in their package directories.\n\n'
     + `Node.js ${NODE_RUNTIME.version}: official ${NODE_RUNTIME.platform} archive, SHA256 ${NODE_RUNTIME.archiveSha256}. Its license and notices are in runtime/LICENSE.\n\n`
+    + 'The offline TOML reader and its BSD-3-Clause notice are in src/vendor/smol-toml. Browser builds include THIRD_PARTY_NOTICES.txt.\n\n'
     + '| Package | Version | Declared license | Included source and notices |\n| --- | --- | --- | --- |\n' + rows.join('\n') + '\n');
 }
 export async function buildPlugin({ output, runtimeArchive }) {

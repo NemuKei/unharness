@@ -2,7 +2,7 @@
 
 2026-09-09の利用者の提案・同意に基づく。初回のMac Codex版は、管理・設定相談・オリジナル制作のSkillとローカルMCPを一つのUnharnessプラグインにまとめる。公開ページの操作は[WebMCP](spec-domain-entry.md)でも提供し、同じローカル処理を呼ぶ。公式ディレクトリへの掲載審査は初回のMac完成条件にしない。
 
-開発用の[パッケージ作成](plugin-package.md)では、Mac arm64向けに公式Node・既存UI・MCP・管理／設定相談Skillをまとめ、ファイルの版とハッシュを記録できる。隔離したCodexへの実導入と初回保存・3モードには[限定した検証記録](evidence/2026-09-09-plugin-package-macos.md)がある。[更新・削除・再導入と独立した復旧画面](evidence/2026-09-09-plugin-recovery-macos.md)も検証した。制作Skill、利用者向け導入と公開接続は引き続き実装・検証する。
+開発用の[パッケージ作成](plugin-package.md)では、Mac arm64向けに公式Node・既存UI・MCP・管理／設定相談／制作Skillをまとめ、ファイルの版とハッシュを記録できる。隔離したCodexへの実導入と初回保存・3モードには[限定した検証記録](evidence/2026-09-09-plugin-package-macos.md)がある。[更新・削除・再導入と独立した復旧画面](evidence/2026-09-09-plugin-recovery-macos.md)に加え、[v2設定・作品保存と削除後の復旧](evidence/2026-09-10-native-package-v2.md)を確認した。制作Skillの実際のモデル呼出し、利用者向け導入と公開接続は引き続き検証する。
 
 ## 配布物と保存データ
 

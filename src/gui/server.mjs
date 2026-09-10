@@ -9,7 +9,7 @@ import { createGuiController } from './controller.mjs';
 import { createGuiInventory } from './inventory.mjs';
 import { createSourceController, sourceRequestShape } from './sources.mjs';
 import { createRemoteHttp } from './remote-http.mjs';
-import { APPEARANCE_UPLOAD_BODY_LIMIT } from '../appearances/import.mjs';
+import { APPEARANCE_UPLOAD_BODY_LIMIT } from '../appearances/template.mjs';
 import { USER_SOURCE_ERROR_KINDS, APPEARANCE_OPERATIONS, SETUP_OPERATIONS, ENROLLMENT_OPERATIONS } from '../sources/service.mjs';
 
 const MAX_BODY_BYTES = 16 * 1024;

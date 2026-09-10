@@ -19,6 +19,7 @@ import { dirname, isAbsolute, resolve, join } from 'node:path';
 import { execFile } from 'node:child_process';
 import { isDeepStrictEqual, promisify } from 'node:util';
 import { fail } from './errors.mjs';
+import { captureDirectoryIdentity, hasVolumeUuid, matchesDirectoryIdentity } from '../platform/directory-identity.mjs';
 const exec = promisify(execFile);
 export const equal = isDeepStrictEqual;
 // Capture remains ownership-neutral for retained read-only dependencies.
@@ -65,7 +66,7 @@ export async function canonical(path) {
   if ((await realpath(path)) !== path) fail('source-redirection');
   return path;
 }
-export async function parentBinding(path) {
+export async function parentBinding(path, { persistent = true } = {}) {
   let parent = dirname(path),
     missing = [];
   for (;;) {
@@ -73,7 +74,7 @@ export async function parentBinding(path) {
       await canonical(parent);
       const s = await lstat(parent);
       if (!s.isDirectory()) fail('source-redirection');
-      return { path: parent, dev: s.dev, ino: s.ino, missing };
+      return { path: parent, ...await captureDirectoryIdentity(parent, s, { persistent }), missing };
     } catch (e) {
       if (e.code !== 'ENOENT') throw e;
       missing.unshift(parent);
@@ -84,7 +85,9 @@ export async function parentBinding(path) {
 export async function checkBinding(binding) {
   await canonical(binding.path);
   const s = await lstat(binding.path);
-  if (s.dev !== binding.dev || s.ino !== binding.ino || !s.isDirectory())
+  if (!s.isDirectory() || s.isSymbolicLink()) fail('source-redirection');
+  const current = await captureDirectoryIdentity(binding.path, s, { persistent: hasVolumeUuid(binding) });
+  if (!matchesDirectoryIdentity(current, binding))
     fail('source-redirection');
 }
 async function metadata(path, s) {
@@ -122,7 +125,7 @@ async function metadata(path, s) {
 export async function captureFileBytes(path, maxBytes = 128 * 1024) {
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 0 || maxBytes > 8 * 1024 * 1024)
     fail('source-too-large');
-  await parentBinding(path);
+  await parentBinding(path, { persistent: false });
   let s;
   try {
     s = await lstat(path);
