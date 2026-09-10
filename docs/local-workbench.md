@@ -1,5 +1,7 @@
 # Local workbench startup
 
+The development server also contains the [restricted public connection backend](domain-connection.md). Its local approval screen, MCP handoff and real HTTPS browser connection are still being built. Ordinary startup continues to return the bundled local origin; it does not grant public authorization.
+
 The owned launcher starts or reuses the bundled loopback workbench for one locally selected context. Opening the UI does not prepare a mode, save a new Normal, or establish task loading. Plugin onboarding and the public-origin bridge are separate parts of the [Mac product plan](superpowers/plans/2026-09-09-mac-product-experience.md).
 
 For an existing registration, use Node.js 24+ and this checkout's locked dependencies and production build:

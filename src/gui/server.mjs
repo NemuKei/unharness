@@ -8,6 +8,7 @@ import { parseStrictJson } from '../core/strict-json.mjs';
 import { createGuiController } from './controller.mjs';
 import { createGuiInventory } from './inventory.mjs';
 import { createSourceController, sourceRequestShape } from './sources.mjs';
+import { createRemoteHttp } from './remote-http.mjs';
 import { USER_SOURCE_ERROR_KINDS, SETUP_OPERATIONS, ENROLLMENT_OPERATIONS } from '../sources/service.mjs';
 
 const MAX_BODY_BYTES = 16 * 1024;
@@ -154,7 +155,7 @@ async function readJson(request, strict = false, maxBodyBytes = strict ? 64 * 10
 }
 
 export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0, codexHome, manageSources, sourceWorkspace, launchId, recoveryBinding, inventory: inventoryOptions } = {}, {
-  collectInventory, handleControlRequest,
+  collectInventory, handleControlRequest, remoteNow,
 } = {}) {
   if (!Number.isSafeInteger(port) || port < 0 || port > 65535) {
     throw Object.assign(new Error('gui-invalid-port'), { kind: 'gui-invalid-port' });
@@ -174,6 +175,13 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
   const requests = new Map();
   let queue = Promise.resolve();
   let origin;
+  const enqueue = perform => {
+    const run = queue.then(perform);
+    queue = run.then(() => undefined, () => undefined);
+    return run;
+  };
+  const remote = sourceController && !recoveryBinding
+    ? await createRemoteHttp({ controller: sourceController, enqueue, readJson, now: remoteNow }) : null;
 
   const server = createServer(async (request, response) => {
     if (stopping) { response.destroy(); return; }
@@ -181,6 +189,11 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
       const parsed = new URL(request.url, origin);
       if (parsed.pathname.startsWith('/_unharness/') && handleControlRequest) {
         await handleControlRequest(request, response); return;
+      }
+      if (parsed.pathname.startsWith('/remote/')) {
+        if (remote) await remote.publicRequest(request, response, parsed, origin);
+        else sendJson(response, 403, { error: { kind: 'gui-request-forbidden' } });
+        return;
       }
       const isApi = parsed.pathname.startsWith('/api/');
       if (!isApi) {
@@ -210,6 +223,9 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
         return;
       }
 
+      if (remote && parsed.pathname.startsWith('/api/remote/')) {
+        await remote.localRequest(request, response, parsed); return;
+      }
       if (request.method === 'GET') {
         const params = [...parsed.searchParams.keys()];
         if (parsed.pathname === '/api/bootstrap' && params.length === 0) sendJson(response, 200, { token, kind });
@@ -275,8 +291,7 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
           return { status: statusFor(safe.kind), body: { error: safe } };
         }
       };
-      const run = action === 'inspect' ? execute() : queue.then(execute);
-      if (action !== 'inspect') queue = run.then(() => undefined, () => undefined);
+      const run = action === 'inspect' ? execute() : enqueue(execute);
       requests.set(parsedBody.requestId, { fingerprint, result: run });
       const completed = await run;
       sendJson(response, completed.status, completed.body);
@@ -313,6 +328,9 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
         // idle-HTTP cleanup alone cannot release them. Closing transport never
         // cancels accepted writes: the existing operation queue is drained.
         for (const socket of sockets) socket.destroy();
+        // Remote receipts finish after the underlying source transaction and
+        // remain durable even when all browser transports have disconnected.
+        await remote?.close();
         await queue;
         await stopped;
       })();

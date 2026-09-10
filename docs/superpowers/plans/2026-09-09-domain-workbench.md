@@ -27,6 +27,8 @@
 
 ## タスク2: 一回限りの接続引換えと公開UI向けAPI
 
+2026-09-10時点: [バックエンドと19件の新規テスト](../../evidence/2026-09-10-domain-bridge-backend.md)を実装。既存回帰を含む55件が通過した。ローカル認証済みAPIでの発行・承認、短期接続、同一接続の計画、操作結果の保持は確認済み。承認画面・MCPの引き渡し・公開クライアント・画像経路・実HTTPS接続が残るため、タスク全体は未完了。
+
 **ファイル:** 新規`src/gui/pairing.mjs`・`src/gui/remote-policy.mjs`、変更`src/gui/server.mjs`・`src/ai/tools.mjs`、テスト`test/gui-pairing.test.mjs`・`test/gui-remote-policy.test.mjs`。
 
 **新しい境界:** `createPairing({ launchId, scopeId, webOrigin, expiresAt })`はローカルの管理経路でのみ使用する。`redeemPairing({ ticket, origin, launchId, now })`は一回だけ接続権限へ引き換える。`authorizeRemoteRequest({ origin, host, session, operation })`は正確なorigin・Host・起動ID・scope・許可操作を確認する。引数の日時はテストで固定でき、実サービスではローカル時計を使う。

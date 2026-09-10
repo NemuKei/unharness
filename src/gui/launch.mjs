@@ -31,7 +31,8 @@ async function runtimeIdentity(assetsDirectory, recovery) {
   await canonical(assetsDirectory);
   const hash = createHash('sha256').update(root + '\n' + assetsDirectory);
   if (recovery) hash.update(JSON.stringify(recovery));
-  for (const path of [join(root, 'package.json'), worker, fileURLToPath(new URL('./server.mjs', import.meta.url)), join(assetsDirectory, 'index.html')]) hash.update(await readFile(path));
+  const guiModules = ['server.mjs', 'pairing.mjs', 'remote-policy.mjs', 'remote-controller.mjs', 'remote-http.mjs'];
+  for (const path of [join(root, 'package.json'), worker, ...guiModules.map(name => fileURLToPath(new URL(name, import.meta.url))), join(assetsDirectory, 'index.html')]) hash.update(await readFile(path));
   return hash.digest('hex');
 }
 async function stopOwned(w, receipt) {
