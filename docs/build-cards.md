@@ -1,6 +1,8 @@
 # Build cards and X sharing
 
-Sharing direction recorded on 2026-09-06 and refined on 2026-09-09 for freely selected layered artwork. The maintainer approved making it easy to post an adopted original form to X, with Unharness free to use and no recurring operator service expense. Card rendering and sharing remain planned work; reusable artwork packs and public discovery are later design work after local creation/save/reuse. This does not change the Codex-first delivery order or require an Unharness cloud service.
+Sharing direction recorded on 2026-09-06 and refined on 2026-09-09 for freely selected layered artwork. The maintainer approved making it easy to post an adopted original form to X, with Unharness free to use and no recurring operator service expense. The local appearance-only card, PNG download and explicit X preparation flow are implemented with [scoped UI evidence](evidence/2026-09-10-artwork-ui.md). Comparison-bearing cards, reusable artwork packs and public discovery remain later extensions. This does not change the Codex-first delivery order or require an Unharness cloud service.
+
+The implemented card asks for public names separately, begins with blank name/author fields and freezes one selected artwork version. Changing public fields invalidates the previous export immediately. Failed image decoding or canvas readback leaves no downloadable placeholder. The official `twitter-text` parser is pinned for Japanese/emoji/link-aware draft validation. Clipboard and composer results are reported separately; only explicit user actions copy or open anything. The approved public repository URL is still unset, so development drafts omit it.
 
 ## The flow to share
 

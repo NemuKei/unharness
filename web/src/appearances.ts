@@ -27,7 +27,7 @@ export type AppearanceEvidence = { scopeId: string; startId: string; eligible: b
   baseline: AppearanceGroup | null; candidate: AppearanceGroup | null; completeIsolationVerified: false };
 export type AppearancePresentation = { itemId: string; mode: string; assessment: AppearanceEvidence['assessment'];
   treatment: AppearanceTreatment; allowedTreatments: AppearanceTreatment[]; fallback: boolean; reason: string | null; recipe: AppearanceRecipe | null; manifest?: LayerManifest };
-export type AppearanceView = { scopeId: string; collectionScopeId?: string; preparedRevision: number; stateId: string | null; recoveryRequired: boolean; pendingStateId: string | null;
+export type AppearanceView = { scopeId: string; collectionScopeId?: string; collectionRevision: number; preparedRevision: number; stateId: string | null; recoveryRequired: boolean; pendingStateId: string | null;
   selectedItem: AppearanceItem | null; itemCount: number; collection: AppearanceCollectionItem[]; nextCursor: string | null;
   achievements: Array<{ achievementId: string; adoptedCandidateId: string | null; parentItemId: string; app: string; model: string }>;
   evidenceStartId: string | null; evidence: AppearanceEvidence | null; evidenceIssue: string | null; applicable: boolean;
@@ -142,11 +142,15 @@ export function appearanceErrorMessage(error: unknown) {
     'appearance-state-conflict': '外観の選択が更新されています。現在の内容を読み直してください。',
     'appearance-ineligible': '現在の装備・条件では、オリジナル作成の条件を満たしていません。',
     'appearance-choice-final': 'この比較での採用は確定済みです。コレクションから別の姿を選べます。',
-    'appearance-recovery-required': '外観の保存が中断しています。「外観の保存を復旧」で同じ内容を再開できます。',
+    'appearance-recovery-required': '作品の保存が中断しています。「作品の保存を復旧」で同じ内容を再開できます。',
     'appearance-collection-full': '保存できる外観の上限に達しています。既存のコレクションは引き続き使えます。',
     'appearance-record-invalid': '外観の保存データを確認できません。装備の操作・復旧は引き続き利用できます。',
+    'appearance-image-invalid': '画像を確認できません。正方形で最大2048 px、8 MiB以内の静止PNGを選んでください。',
+    'appearance-import-invalid': '画像と部品の組み合わせを確認してください。',
+    'appearance-image-store-invalid': '保存した画像を確認できません。元の画像と保存データを確認してください。',
+    'appearance-authoring-invalid': '制作場所の状態を確認できません。独立した変更がないか確認してください。',
   };
   return messages[kind] ?? (error instanceof ApiError && error.disposition === 'uncertain'
-    ? '外観の保存結果は未確認です。読み直してから、必要な場合だけ復旧してください。'
+    ? '作品の操作結果は未確認です。同じ操作IDで結果を確認してください。'
     : '外観を確認できませんでした。読み直してください。装備の設定は変更していません。');
 }

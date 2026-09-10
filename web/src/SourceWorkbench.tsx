@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Hangar } from "./Hangar";
 import { ComparisonWorkbench } from "./ComparisonWorkbench";
 import { SetupHandoff, FreshTaskHandoff } from "./SetupHandoff";
 import { releaseModeDescription } from "./setup";
 import { EnrollmentPanel } from "./EnrollmentPanel";
 import { LocalConnectionPanel } from "./LocalConnectionPanel";
+import { useLocalAppearance } from './useLocalAppearance';
+import { AppearancePanel } from './AppearancePanel';
+import type { ArtworkImageLoader } from './artwork';
 import {
   RestoreAdaptationNotice,
   RetainedReview,
@@ -40,6 +43,9 @@ function displayPreference() {
 }
 export function SourceWorkbench() {
   const c = useSourceController();
+  const art = useLocalAppearance(c), artwork = art.view?.selectedItem ?? null;
+  const imageLoader = useMemo<ArtworkImageLoader | undefined>(() => artwork?.kind === 'layered'
+    ? (asset, signal) => art.image(artwork.id, asset, signal, art.key) : undefined, [art.key, artwork?.id, art.image]);
   const [effects, setEffects] = useState(displayPreference);
   const [activeTab, setActiveTab] = useState<"equipment" | "comparison">(
     "equipment",
@@ -134,6 +140,8 @@ export function SourceWorkbench() {
             <Hangar
               condition={presentation.scene}
               effects={effects && activeTab === "equipment"}
+              artwork={artwork}
+              imageLoader={imageLoader}
             />
             <p className="scene-caption">
               姿は選択プレビューです。実行中のタスクの状態を表すものではありません。
@@ -147,6 +155,7 @@ export function SourceWorkbench() {
               controller={c}
               usable={usable}
             />
+            {source && <AppearancePanel controller={art}/>}
             {c.view && <SetupHandoff key={c.view.metadata.contextId + ":" + (source?.setup?.setupId ?? "initial")}
               view={c.view} confirmed={c.confirmed} busy={c.busy} execute={c.executeAuxiliary} />}
             <EnrollmentPanel key={c.view?.metadata.contextId + ":" + source?.revision} controller={c} />

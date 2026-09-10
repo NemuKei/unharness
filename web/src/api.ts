@@ -40,6 +40,33 @@ export class Api {
   post<T>(route: string, body: object) {
     return this.request<T>(route, { requestId: crypto.randomUUID(), ...body });
   }
+  async image(route: string, expectedBytes: number, signal: AbortSignal): Promise<Blob> {
+    let response: Response;
+    try {
+      response = await fetch(`${this.base}/api${route}`, { cache: 'no-store', credentials: 'same-origin', redirect: 'error',
+        headers: { 'X-Unharness-Client': '1', 'X-Unharness-Token': this.token },
+        signal: AbortSignal.any([signal, AbortSignal.timeout(30000)]) });
+    } catch { throw new ApiError('appearance-image-unavailable'); }
+    if (!response.ok) {
+      let payload: { error?: { kind?: string } } = {};
+      try { payload = await response.json(); } catch {}
+      throw new ApiError(payload.error?.kind ?? 'appearance-image-unavailable', undefined, response.status === 403 ? 'auth-required' : 'rejected');
+    }
+    if (response.headers.get('content-type') !== 'image/png' || !response.body || !Number.isSafeInteger(expectedBytes)
+      || expectedBytes < 1 || expectedBytes > 8 * 1024 * 1024) throw new ApiError('appearance-image-unavailable');
+    const reader = response.body.getReader(), chunks: Uint8Array<ArrayBuffer>[] = []; let size = 0;
+    try {
+      for (;;) {
+        const { done, value } = await reader.read(); if (done) break;
+        size += value.byteLength;
+        if (size > expectedBytes) throw new ApiError('appearance-image-unavailable');
+        chunks.push(new Uint8Array(value));
+      }
+      if (size !== expectedBytes) throw new ApiError('appearance-image-unavailable');
+      return new Blob(chunks, { type: 'image/png' });
+    } catch (error) { await reader.cancel().catch(() => {}); throw error; }
+    finally { reader.releaseLock(); }
+  }
   private async request<T>(route: string, body?: object): Promise<T> {
     let response: Response;
     try {
@@ -53,7 +80,7 @@ export class Api {
           ...(body ? { "Content-Type": "application/json" } : {}),
         },
         body: body ? JSON.stringify(body) : undefined,
-        signal: AbortSignal.timeout(["/sources/review-start", "/sources/save-start", "/sources/start", "/sources/review-replay", "/sources/prepare-replay",
+        signal: AbortSignal.timeout(["/sources/review-appearance-import", "/sources/review-start", "/sources/save-start", "/sources/start", "/sources/review-replay", "/sources/prepare-replay",
           "/sources/handoff-replay", "/sources/open-replay", "/sources/observe-replay", "/sources/save-replay-result", "/sources/replay-result", "/sources/compare-replays"].includes(route) ? 120000 : 30000),
       });
     } catch {

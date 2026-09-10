@@ -1,16 +1,19 @@
 import { useEffect, useRef, useState } from "react";
-import artwork from "../assets/hangar-states-v1.png";
+import fallbackArtwork from "../assets/hangar-states-v1.png";
 import type { FixtureCase } from "./types";
 import type { Scene } from "./renderer";
-import type { AppearancePresentation } from "./appearances";
+import { setSceneArtwork } from './artwork-render';
+import type { ArtworkImageLoader, ArtworkItem } from './artwork';
 export function Hangar({
   condition,
   effects,
-  appearance = null,
+  artwork = null,
+  imageLoader,
 }: {
   condition: FixtureCase;
   effects: boolean;
-  appearance?: AppearancePresentation | null;
+  artwork?: ArtworkItem | null;
+  imageLoader?: ArtworkImageLoader;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const scene = useRef<Scene | null>(null);
@@ -18,8 +21,8 @@ export function Hangar({
   conditionRef.current = condition;
   const effectsRef = useRef(effects);
   effectsRef.current = effects;
-  const appearanceRef = useRef(appearance);
-  appearanceRef.current = appearance;
+  const artworkRef = useRef(artwork), loaderRef = useRef(imageLoader), artGeneration = useRef(0);
+  artworkRef.current = artwork; loaderRef.current = imageLoader;
   const [graphicsState, setGraphicsState] = useState<
     "loading" | "ready" | "failed"
   >("loading");
@@ -45,23 +48,29 @@ export function Hangar({
           if (!controller.signal.aborted) setMoving(active);
         });
       })
-      .then((renderer) => {
+      .then(async (renderer) => {
         if (!renderer) return;
         if (controller.signal.aborted) {
           renderer.destroy();
           return;
         }
         scene.current = renderer;
-        renderer.setAppearance(appearanceRef.current?.recipe ?? null, appearanceRef.current?.treatment);
         renderer.setCondition(conditionRef.current, true);
         syncPlayback();
-        setGraphicsState("ready");
+        const generation = ++artGeneration.current;
+        try {
+          await setSceneArtwork(renderer, artworkRef.current, loaderRef.current);
+          if (!controller.signal.aborted && generation === artGeneration.current) setGraphicsState("ready");
+        } catch {
+          if (!controller.signal.aborted && generation === artGeneration.current) setGraphicsState('failed');
+        }
       })
       .catch(() => {
         if (!controller.signal.aborted) setGraphicsState("failed");
       });
     return () => {
       controller.abort();
+      ++artGeneration.current;
       media.removeEventListener("change", syncPlayback);
       document.removeEventListener("visibilitychange", syncPlayback);
       scene.current?.destroy();
@@ -78,19 +87,26 @@ export function Hangar({
     );
   }, [effects]);
   useEffect(() => {
-    scene.current?.setAppearance(appearance?.recipe ?? null, appearance?.treatment);
-  }, [appearance]);
+    const renderer = scene.current;
+    if (!renderer) return;
+    const generation = ++artGeneration.current;
+    setGraphicsState('loading');
+    void setSceneArtwork(renderer, artwork, imageLoader)
+      .then(() => { if (generation === artGeneration.current) setGraphicsState('ready'); })
+      .catch(() => { if (generation === artGeneration.current) setGraphicsState('failed'); });
+    return () => { if (generation === artGeneration.current) ++artGeneration.current; };
+  }, [artwork?.id, imageLoader]);
   return (
     <div className="hangar-scene">
-      <div className={`static-scene frame-${condition}`} aria-hidden="true" hidden={appearance !== null && graphicsState === 'failed'}>
-        <img src={artwork} alt="" />
+      <div className={`static-scene frame-${condition}`} aria-hidden="true" hidden={graphicsState === 'ready' || artwork !== null}>
+        <img src={fallbackArtwork} alt="" />
       </div>
-      <div className="pixi-host" ref={host} />
+      <div className="pixi-host" ref={host} style={{ visibility: graphicsState === 'ready' ? 'visible' : 'hidden' }} />
       <span className="scene-indicator">
         {graphicsState === "loading"
           ? "描画を準備中…"
           : graphicsState === "failed"
-          ? "静止画表示 · 操作は利用できます"
+          ? artwork ? "外観を表示できません · 装備の操作は利用できます" : "静止画表示 · 操作は利用できます"
           : reduced
             ? "静止画表示 · 動きを減らす設定"
             : effects
