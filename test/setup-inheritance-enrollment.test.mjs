@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
@@ -109,7 +109,7 @@ test('v2 registration, setup approval and preparation are three distinct operati
   await assert.rejects(sources.saveUserFavorite({ workspace: s.workspace, name: 'Saved but unprepared' }), { kind: 'source-preparation-required' });
   const saved = await readSetup({ workspace: s.workspace });
   assert.deepEqual(saved.review.inheritance.trueformAutomaticSkillIds, []);
-  assert.deepEqual(saved.review.inheritance.unsealAutomaticSkillIds, proposal.unseal.additionalAutomaticSkillIds);
+  assert.deepEqual(saved.review.inheritance.unsealAutomaticSkillIds, [...proposal.unseal.additionalAutomaticSkillIds].sort());
   await switchMode(s, 'trueform');
   assert.equal((await openWorkspace(s.workspace)).state.scopePreparationRequired, false);
   assert.match(await readFile(join(n.path, '..', 'agents/openai.yaml'), 'utf8'), /allow_implicit_invocation: false/);
@@ -118,6 +118,59 @@ test('v2 registration, setup approval and preparation are three distinct operati
   await switchMode(s, 'normal');
   assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
   assert.deepEqual(await readFile(n.path), n.bytes);
+});
+
+test('two successive v2 registrations retain every earlier Normal and can restore the root favorite with Node only', mac, async t => {
+  const s = await fixture(t), initial = await switchMode(s, 'trueform');
+  const favorite = await sources.saveUserFavorite({ workspace: s.workspace, name: 'Before both expansions' });
+  const root = await openWorkspace(s.workspace), rootNormal = await loadSnapshot(s.workspace, root.reg, root.reg.normalId);
+  const normalIds = [root.reg.normalId], addedSkills = [];
+  for (const name of ['first-addition', 'second-addition']) {
+    const n = await added(s, name); addedSkills.push(n);
+    await applyEnrollment({ workspace: s.workspace, reviewId: (await reviewNew(s, n)).reviewId });
+    s.proposal = await expandedProposal(s, n, false);
+    s.setup = await adopt(s, s.proposal);
+    const current = await openWorkspace(s.workspace); normalIds.push(current.reg.normalId);
+    const normal = await loadSnapshot(s.workspace, current.reg, current.reg.normalId);
+    for (const [key, value] of Object.entries(rootNormal)) assert.deepEqual(normal[key], value);
+    await switchMode(s, 'unseal');
+  }
+  const expanded = await openWorkspace(s.workspace), saved = await readSetup({ workspace: s.workspace });
+  assert.equal(new Set(normalIds).size, 3);
+  assert.equal(expanded.registrations.length, 3);
+  assert.equal(saved.proposal.roles.length, 3);
+  assert.deepEqual(saved.review.inheritance.additionalSkillIds, root.reg.skills.map(x => x.id));
+  assert.equal((await offlineRecovery(s, favorite.favoriteId, initial.checkpointId)).status, 'frozen-restores-passed');
+  assert.equal((await openWorkspace(s.workspace)).state.setupId, s.setup.setupId);
+  assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
+  for (const n of addedSkills) {
+    assert.deepEqual(await readFile(n.path), n.bytes);
+    await assert.rejects(readFile(join(n.path, '..', 'agents/openai.yaml')), { code: 'ENOENT' });
+  }
+});
+
+for (const initialPolicy of ['automatic', 'manual']) test(`a new ${initialPolicy} Skill omitted from additional choices stays manual in both release modes`, mac, async t => {
+  const s = await fixture(t), n = await added(s);
+  const policyPath = join(n.path, '..', 'agents/openai.yaml');
+  const originalPolicy = 'policy:\n  allow_implicit_invocation: false\n';
+  if (initialPolicy === 'manual') {
+    await mkdir(join(policyPath, '..'), { recursive: true });
+    await writeFile(policyPath, originalPolicy);
+    const discovery = await inspectEnrollment({ workspace: s.workspace });
+    n.discoveryId = discovery.discoveryId;
+    n.addition.sourceId = discovery.candidates.find(c => c.path === n.path).id;
+  }
+  await applyEnrollment({ workspace: s.workspace, reviewId: (await reviewNew(s, n)).reviewId });
+  await adopt(s, await expandedProposal(s, n, false));
+  const setup = await readSetup({ workspace: s.workspace });
+  assert.ok(!setup.review.inheritance.unsealAutomaticSkillIds.includes(n.addition.sourceId));
+  for (const mode of ['trueform', 'unseal']) {
+    await switchMode(s, mode);
+    assert.match(await readFile(policyPath, 'utf8'), /allow_implicit_invocation: false/);
+  }
+  await switchMode(s, 'normal');
+  if (initialPolicy === 'manual') assert.equal(await readFile(policyPath, 'utf8'), originalPolicy);
+  else await assert.rejects(readFile(policyPath), { code: 'ENOENT' });
 });
 
 test('v2 enrollment refuses independent mode choices, injected provenance and stale inventories before changing state', mac, async t => {

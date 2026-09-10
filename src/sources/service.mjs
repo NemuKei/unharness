@@ -128,7 +128,9 @@ export const userSourceState = wrap(async ({ workspace }) => {
       sources: targets(w.reg)
     },
     preparedMode: w.state.preparedMode,
-    setup: { setupId: w.state.setupId ?? null, preparedSetupId: w.state.preparedSetupId ?? null },
+    setup: { setupId: w.state.setupId ?? null, preparedSetupId: w.state.preparedSetupId ?? null,
+      schemaVersion: w.state.setupSchemaVersion ?? (w.state.setupId ? 1 : null),
+      setupRequired: w.manifestVersion === 2 && !w.state.setupId },
     revision: w.state.revision,
     conflict,
     recovery: {

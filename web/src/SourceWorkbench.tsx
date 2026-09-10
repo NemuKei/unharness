@@ -49,7 +49,8 @@ export function SourceWorkbench() {
   } | null>(null);
   const source = c.view?.source;
   const presentation = { ...modePresentation[c.selected], description:
-    releaseModeDescription(c.selected, c.plan ? c.plan.setupId : source?.setup?.setupId) ?? modePresentation[c.selected].description };
+    releaseModeDescription(c.selected, c.plan ? c.plan.setupId : source?.setup?.setupId,
+      c.plan && c.plan.setupId !== source?.setup?.setupId ? undefined : source?.setup?.schemaVersion) ?? modePresentation[c.selected].description };
   const comparisonKey = comparisonContextKey(c.view);
   const usable =
     !!source &&
@@ -144,7 +145,7 @@ export function SourceWorkbench() {
               usable={usable}
             />
             {c.view && <SetupHandoff key={c.view.metadata.contextId + ":" + (source?.setup?.setupId ?? "initial")}
-              view={c.view} confirmed={c.confirmed} busy={c.busy} />}
+              view={c.view} confirmed={c.confirmed} busy={c.busy} execute={c.executeAuxiliary} />}
             <EnrollmentPanel key={c.view?.metadata.contextId + ":" + source?.revision} controller={c} />
           </section>
           <aside className="control-column" aria-label="設定と保存">
@@ -178,7 +179,9 @@ export function SourceWorkbench() {
                     : "対象を確認し、追加した任意の指示・Skillだけを選んで保存します。"}
               </p>
               {source?.registration.modeChangeRequired && <p className="scope-enrollment-notice" role="status">
-                Skillの登録範囲が増えました。追加分は保存済みNormalの状態です。使うモードを選び、差分を確認して準備してください。
+                Skillの登録範囲が増えました。追加分は保存済みNormalの状態です。
+                {source.setup?.setupRequired ? '先に「設定をAIに相談」で両モードの構成を確認・保存してください。Normalと過去の保存版には戻せます。'
+                  : '使うモードを選び、差分を確認して準備してください。'}
               </p>}
               <button
                 className="text-button"
@@ -335,6 +338,7 @@ export function SourceWorkbench() {
               <h2>お気に入り</h2>
               <span>内容を保存した版</span>
             </div>
+            <p className="muted">保存した時点の構成へ戻せます。旧規則の保存版も、現在の零式の選択で置き換えません。</p>
             <button
               className="secondary"
               disabled={!source || c.busy}
@@ -839,7 +843,7 @@ function ModeChoices({
         <div className="source-mode" key={mode}>
           <button
             aria-pressed={c.selected === mode}
-            disabled={!usable}
+            disabled={!usable || (mode !== "normal" && c.view?.source?.setup?.setupRequired)}
             onClick={() => c.choose(mode, custom[mode])}
           >
             <span className="mode-icon" aria-hidden="true">
@@ -850,7 +854,7 @@ function ModeChoices({
               <small>{modePresentation[mode].label}</small>
             </span>
           </button>
-          {mode !== "normal" && c.view?.source && !c.view.source.setup?.setupId && (
+          {mode !== "normal" && c.view?.source && !c.view.source.setup?.setupId && !c.view.source.setup?.setupRequired && (
             <details>
               <summary>対象を調整</summary>
               <p className="muted">

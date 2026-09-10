@@ -129,7 +129,7 @@ export type SourceState = {
   };
   preparedMode: SourceMode;
   revision: number;
-  setup?: { setupId: string | null; preparedSetupId: string | null };
+  setup?: { setupId: string | null; preparedSetupId: string | null; schemaVersion?: 1 | 2 | null; setupRequired?: boolean };
   preparation: { id: string; preparedAt: string } | null;
   observation: TaskObservation | null;
   observationIssue: string | null;
