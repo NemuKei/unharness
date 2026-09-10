@@ -44,7 +44,9 @@
 
 **ファイル:** 新規`src/setup/mode-inheritance.mjs`・`test/mode-inheritance.test.mjs`。変更`src/setup/preset.mjs`・`src/sources/errors.mjs`。
 
-**境界:** 新規`resolveModeSkillSets({ plugins, skills, retainedOfficialPluginIds, additionalAutomaticSkillIds })`を作る。`plugins`はタスク1の内部結果、`skills`は確認済み登録から得る`{ id, enabled, manualControl, requiredControl }[]`。戻り値は順序を正規化した`{ trueformAutomaticSkillIds, unsealAutomaticSkillIds, inheritedSkillIds, additionalSkillIds }`。必須管理機能は任意集合に含めず、既存の管理保護を両モードで別途適用する。
+**境界:** `resolveModeSkillSets({ plugins, skills, retainedOfficialPluginIds, additionalAutomaticSkillIds })`を作る。`plugins`はタスク1の内部結果、`skills`は確認済み登録とNormalから得る`{ id, enabled, normalAutomatic, manualControl, automaticControl, requiredControl }[]`。`normalAutomatic`は実際の保存状態、二つのcontrolは各方向への変更能力を表す。既に手動のSkillを自動として選んだのに元の状態のまま「自動」と表示することを防ぐ。戻り値は順序を正規化した`{ trueformAutomaticSkillIds, unsealAutomaticSkillIds, inheritedSkillIds, additionalSkillIds }`。必須管理機能は任意集合に含めず、既存の管理保護を両モードで別途適用する。
+
+2026-09-10に[共通の純粋処理](../../../src/setup/mode-inheritance.mjs)と35件の合成テストを実装した。未知の由来、無効状態、継承の削除、登録外の対象、管理機能、自動・手動の両方向の未対応を検査する。これ単体では掲載元を認証せず、設定・保存記録も変更しない。v1のコンパイラーは旧規則のまま保持し、v2のサービス・記録・入口への接続を以下のタスク3〜4で行う。
 
 - [ ] 下記を含むテストを書き、`node --test test/mode-inheritance.test.mjs`で未実装の失敗を確認する。入力は製品データではない合成フィクスチャとする。
 
@@ -61,8 +63,8 @@ test('UNSEAL inherits TRUEFORM and adds only the reviewed extras', () => {
         distribution: 'fixture-source', version: 'fixture-v1',
         contentId: 'f'.repeat(64), checkedAt: '2026-09-10T00:00:00Z',
       } }],
-    skills: ['a', 'b', 'c'].map(id => ({ id, enabled: true,
-      manualControl: true, requiredControl: false })),
+    skills: ['a', 'b', 'c'].map(id => ({ id, enabled: true, normalAutomatic: true,
+      manualControl: true, automaticControl: true, requiredControl: false })),
     retainedOfficialPluginIds: ['official-a'],
     additionalAutomaticSkillIds: ['b', 'c'],
   });
