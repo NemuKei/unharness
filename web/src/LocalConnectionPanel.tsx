@@ -19,7 +19,7 @@ export function LocalConnectionPanel({ view, enabled, request }: {
   latestView.current = view; pendingRef.current = pending;
   // This ID cannot authorize the public site. Tickets and connection tokens are
   // never persisted; the local API revalidates the saved ID after a reload.
-  const storageKey = `unharness.local-pairing.${view.metadata.launchId}.${view.metadata.contextId}.${view.source?.registration.scopeId}`;
+  const storageKey = `unharness.local-pairing.v2.${view.metadata.launchId}.${view.metadata.contextId}.${view.source?.registration.scopeId}.${view.source?.registration.rootScopeId ?? view.source?.registration.scopeId}`;
   function remember(id: string) {
     setPairingId(id);
     try { sessionStorage.setItem(storageKey, id); } catch {}
@@ -107,9 +107,10 @@ export function LocalConnectionPanel({ view, enabled, request }: {
         <dt>接続を許可するサイト</dt><dd className="connection-origin">{PUBLIC_WEB_ORIGIN}</dd>
         <dt>操作する対象</dt><dd>このMac・{view.metadata.applicationLabel} ／ 登録済みの追加設定 {view.source?.registration.sources.length ?? 0}件</dd>
         <dt>選択中のプロジェクト</dt><dd>{view.metadata.context.project}</dd>
-        <dt>許可する操作</dt><dd>準備状態の確認、モード変更の計画と実行、操作結果の確認</dd>
+        <dt>作品の保存範囲</dt><dd>この設定で保存した作品コレクション</dd>
+        <dt>許可する操作</dt><dd>準備状態の確認、モード変更の計画と実行、操作結果の確認。作品の画像・コレクションの読込、画像レビュー・保存・選択・名前変更・作品保存の復旧。</dd>
       </dl>
-      <p className="boundary">接続は10分間有効です。許可後に開くリンクは一回限り・発行から2分以内です。許可だけではモードは変わりません。</p>
+      <p className="boundary">接続は10分間有効です。許可後に開くリンクは一回限り・発行から2分以内です。許可だけではモードや作品は変わりません。設定の追加登録や制作場所の読取は許可しません。</p>
       {error && <p role="alert">{error}</p>}
       {!enabled && <p role="status">ローカルの状態を再取得し、登録対象を確認してください。</p>}
       <div className="source-actions">

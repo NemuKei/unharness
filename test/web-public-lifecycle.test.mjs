@@ -13,8 +13,8 @@ for (const late of ['success', 'failure']) test(`demo during redeem allows expli
   const s = await publicBrowser(t), { page } = s, oldLink = await s.approveLink();
   const oldTicket = new URLSearchParams(new URL(oldLink).hash.slice(1)).get('ticket');
   const redeems = [];
-  page.on('request', r => { if (r.url().endsWith('/remote/v1/redeem')) redeems.push(r.postDataJSON().ticket); });
-  await page.route(s.gui.url + '/remote/v1/redeem', async route => {
+  page.on('request', r => { if (r.url().endsWith('/remote/v2/redeem')) redeems.push(r.postDataJSON().ticket); });
+  await page.route(s.gui.url + '/remote/v2/redeem', async route => {
     if (route.request().postDataJSON().ticket !== oldTicket) { await route.fallback(); return; }
     const response = await route.fetch(); entered.resolve(); await release.promise;
     try { if (late === 'failure') await route.abort(); else await route.fulfill({ response }); }

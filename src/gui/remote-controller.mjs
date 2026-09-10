@@ -3,11 +3,14 @@ import { createRequestLedger } from '../ai/requests.mjs';
 import { openWorkspace } from '../sources/records.mjs';
 import { createPairingManager, publicConnection } from './pairing.mjs';
 import { isHash, isMode, isRevision, isUuid, projectRemoteState,
-  remoteError, remoteFail, remoteRequestShape } from './remote-policy.mjs';
+  remoteError, remoteFail, remoteRequestShape, remoteLedgerInput, REMOTE_WRITES, ARTWORK_WRITES } from './remote-policy.mjs';
 
-const publicAction = action => ['remote-plan', 'remote-apply'].includes(action);
+import { projectArtwork, projectArtworkItem, projectArtworkReview, projectArtworkReceipt, projectArtworkImage } from './remote-artwork.mjs';
+
+const publicAction = action => REMOTE_WRITES.some(operation => action === 'remote-' + operation);
 const absent = requestId => ({ requestId, operation: null, state: 'not-found' });
-function checkReceiptOwnership(receipt) {
+function checkReceiptOwnership(receipt, requestId) {
+  if (receipt?.requestId !== requestId || !isUuid(requestId)) remoteFail('remote-operation-unconfirmed');
   // Missing/corrupt claims are not proof that an operation never existed.
   // Return no contents or connection details, but retain the uncertainty.
   if (receipt.state === 'unconfirmed' && (!isUuid(receipt.connectionId) || typeof receipt.action !== 'string'))
@@ -26,11 +29,16 @@ function applyResult(data) {
 }
 function projectReceipt(receipt) {
   const base = { requestId: receipt.requestId, operation: receipt.action.slice('remote-'.length), state: receipt.state };
-  if (receipt.state !== 'completed') return base;
+  if (receipt.state !== 'completed') return { ...base, state: ['running', 'unconfirmed'].includes(receipt.state) ? receipt.state : 'unconfirmed' };
   if (receipt.result?.ok === false) return { ...base, result: { ok: false, error: remoteError(receipt.result.error) } };
   if (receipt.result?.ok !== true) return { ...base, state: 'unconfirmed' };
-  try { return { ...base, result: { ok: true, data: receipt.action === 'remote-plan'
-    ? planResult(receipt.result.data) : applyResult(receipt.result.data) } }; }
+  try {
+    const data = receipt.action === 'remote-plan' ? planResult(receipt.result.data)
+      : receipt.action === 'remote-apply' ? applyResult(receipt.result.data)
+        : receipt.action === 'remote-review-appearance-import' ? projectArtworkReview(receipt.result.data)
+          : projectArtworkReceipt(receipt.result.data);
+    return { ...base, result: { ok: true, data } };
+  }
   catch { return { ...base, state: 'unconfirmed' }; }
 }
 
@@ -38,7 +46,7 @@ export async function readPublicOperation({ workspace, requestId }) {
   if (!isUuid(requestId)) remoteFail('remote-invalid-request');
   const ledger = await createRequestLedger({ workspace, connectionId: randomUUID() });
   const raw = await ledger.status(requestId);
-  checkReceiptOwnership(raw);
+  checkReceiptOwnership(raw, requestId);
   return publicAction(raw.action) ? projectReceipt(raw) : absent(requestId);
 }
 
@@ -53,9 +61,12 @@ export async function createRemoteController({ controller, webOrigin, now, enque
     const w = await openWorkspace(meta.workspace), after = await controller.metadata();
     if (meta.contextId !== after.contextId || meta.launchId !== after.launchId || meta.workspace !== after.workspace) remoteFail('remote-connection-changed');
     return { launchId: meta.launchId, contextId: meta.contextId, workspace: meta.workspace, application: meta.application,
-      scopeId: w.scopeId, rootScopeId: w.rootScopeId };
+      scopeId: w.scopeId, rootScopeId: w.rootScopeId ?? w.scopeId, collectionScopeId: w.rootScopeId ?? w.scopeId };
   }
-  async function authorize(auth) { return pairing.authorize(auth, await binding()); }
+  async function authorize(auth) {
+    if (stopping) remoteFail('remote-connection-expired');
+    return pairing.authorize(auth, await binding());
+  }
   function ledgerFor(session) {
     if (!ledgers.has(session)) ledgers.set(session, createRequestLedger({ workspace: session.workspace, connectionId: session.connectionId }));
     return ledgers.get(session);
@@ -64,12 +75,12 @@ export async function createRemoteController({ controller, webOrigin, now, enque
     const state = await controller.state();
     if (state.metadata?.launchId !== session.launchId || state.metadata?.contextId !== session.contextId
       || state.metadata?.workspace !== session.workspace || state.source?.registration?.scopeId !== session.scopeId
-      || state.source?.registration?.rootScopeId !== session.rootScopeId) remoteFail('remote-connection-changed');
+      || (state.source?.registration?.rootScopeId ?? state.source?.registration?.scopeId) !== session.rootScopeId) remoteFail('remote-connection-changed');
     return projectRemoteState(state);
   }
   async function receiptFor(session, requestId) {
     const raw = await (await ledgerFor(session)).status(requestId);
-    checkReceiptOwnership(raw);
+    checkReceiptOwnership(raw, requestId);
     if (raw.connectionId !== session.connectionId || !publicAction(raw.action)) return absent(requestId);
     return projectReceipt(raw);
   }
@@ -77,9 +88,18 @@ export async function createRemoteController({ controller, webOrigin, now, enque
     try {
       // A queued request is authorized again when execution can start. Once the
       // service starts, expiry/disconnect must not cancel it or receipt storage.
-      await authorize(auth);
-      const current = await currentState(session);
+      const checked = await authorize(auth);
+      if (checked !== session) remoteFail('remote-connection-changed');
       const context = { launchId: session.launchId, contextId: session.contextId };
+      if (ARTWORK_WRITES.includes(operation)) {
+        const { requestId, ...payload } = input;
+        const raw = await controller.execute(operation, { ...context, ...payload });
+        const data = operation === 'review-appearance-import' ? projectArtworkReview(raw, session) : projectArtworkReceipt(raw, session);
+        if (operation === 'save-appearance-import' && (data.reviewId !== input.reviewId || !isHash(data.savedItemId)))
+          remoteFail('remote-state-unconfirmed');
+        return { ok: true, data };
+      }
+      const current = await currentState(session);
       if (operation === 'plan') {
         if (current.revision !== input.expectedRevision) remoteFail('remote-stale-plan');
         const planned = await controller.execute('plan', { ...context, mode: input.mode });
@@ -98,20 +118,51 @@ export async function createRemoteController({ controller, webOrigin, now, enque
       return { ok: false, error: remoteError(error) };
     }
   }
+  async function readArtwork(operation, input, session, auth) {
+    const context = { launchId: session.launchId, contextId: session.contextId };
+    const result = operation === 'artwork-image'
+      ? projectArtworkImage(await controller.image({ ...context, ...input }), input.assetId)
+      : await controller.execute(operation, { ...context, ...(operation === 'artwork' && input.after === null ? {} : input) });
+    // Reads do not need a historical completion receipt. Never return data for
+    // a changed/revoked binding, or relabel the result as belonging to a new one.
+    if (await authorize(auth) !== session) remoteFail('remote-connection-changed');
+    if (operation === 'artwork-image') return result;
+    if (operation === 'artwork') return projectArtwork(result, session);
+    if (operation === 'artwork-item') {
+      const view = projectArtworkItem(result, session);
+      if (view.item.id !== input.itemId) remoteFail('remote-state-unconfirmed');
+      return view;
+    }
+    const review = projectArtworkReview(result, session);
+    if (review.reviewId !== input.reviewId) remoteFail('remote-state-unconfirmed');
+    return review;
+  }
   async function request(operation, input, auth) {
-    remoteRequestShape(operation, input);
-    if (!['status', 'plan', 'apply', 'operation-status'].includes(operation)) remoteFail('remote-invalid-request');
+    auth = { token: auth?.token, origin: auth?.origin };
     const session = await authorize(auth);
+    let payload = remoteRequestShape(operation, input);
+    input = null;
+    if (operation === 'redeem') remoteFail('remote-invalid-request');
     if (operation === 'status') return { connection: publicConnection(session), state: await currentState(session) };
-    if (operation === 'operation-status') return receiptFor(session, input.requestId);
-    const ledger = await ledgerFor(session);
-    const result = await ledger.execute({ requestId: input.requestId, connectionId: session.connectionId,
-      action: 'remote-' + operation, input }, () => enqueue(() => perform(operation, input, session, ledger, auth)));
-    if (result.connectionId !== session.connectionId || !publicAction(result.action)) remoteFail('remote-operation-unconfirmed');
-    return projectReceipt(result);
+    if (operation === 'operation-status') return receiptFor(session, payload.requestId);
+    if (!REMOTE_WRITES.includes(operation)) return readArtwork(operation, payload, session, auth);
+    const ledger = await ledgerFor(session), requestId = payload.requestId, action = 'remote-' + operation;
+    const claimInput = remoteLedgerInput(operation, payload);
+    try {
+      const result = await ledger.execute({ requestId, connectionId: session.connectionId, action, input: claimInput },
+        () => enqueue(async () => {
+          try { return await perform(operation, payload, session, ledger, auth); }
+          finally { payload = null; }
+        }));
+      checkReceiptOwnership(result, requestId);
+      if (result.connectionId !== session.connectionId || result.action !== action) remoteFail('remote-operation-unconfirmed');
+      return projectReceipt(result);
+    } finally { payload = null; }
   }
   return {
     webOrigin: pairing.webOrigin,
+    // HTTP admission check, before parsing even the first upload body byte.
+    authenticate: async auth => { await authorize(auth); },
     async issue() { return pairing.issue(await binding()); },
     async approve(pairingId) { if (!isUuid(pairingId)) remoteFail('remote-invalid-request'); return pairing.approve(pairingId, await binding()); },
     async details(pairingId) { return pairing.details(pairingId, await binding()); },

@@ -8,15 +8,16 @@ export const PAIRING_TTL_MS = 2 * 60 * 1000;
 export const CONNECTION_TTL_MS = 10 * 60 * 1000;
 const CAPACITY = 32;
 const tokenKey = value => createHash('sha256').update(value).digest('hex');
-const BINDING_FIELDS = ['launchId', 'contextId', 'rootScopeId', 'scopeId', 'workspace', 'application'];
+const BINDING_FIELDS = ['launchId', 'contextId', 'rootScopeId', 'scopeId', 'collectionScopeId', 'workspace', 'application'];
 function validBinding(binding, launchId) {
   if (!binding || binding.launchId !== launchId || !isHash(binding.contextId) || !isHash(binding.rootScopeId)
-    || !isHash(binding.scopeId) || typeof binding.workspace !== 'string' || !binding.workspace
+    || !isHash(binding.scopeId) || !isHash(binding.collectionScopeId) || binding.collectionScopeId !== binding.rootScopeId
+    || typeof binding.workspace !== 'string' || !binding.workspace
     || !['codex', 'claude'].includes(binding.application)) remoteFail('remote-connection-changed');
   return Object.freeze(Object.fromEntries(BINDING_FIELDS.map(k => [k, binding[k]])));
 }
 const sameBinding = (a, b) => BINDING_FIELDS.every(key => a[key] === b?.[key]);
-const target = binding => ({ application: binding.application, scopeId: binding.scopeId });
+const target = binding => ({ application: binding.application, scopeId: binding.scopeId, collectionScopeId: binding.collectionScopeId });
 export function publicConnection(session) {
   return { protocolVersion: REMOTE_PROTOCOL_VERSION, connectionId: session.connectionId, launchId: session.launchId,
     expiresAt: session.expiresAt, webOrigin: session.webOrigin, target: target(session), operations: [...REMOTE_OPERATIONS] };

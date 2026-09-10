@@ -40,7 +40,7 @@ async function setup(t, profile = aiProfile) {
     const ticket = issued.data;
     assert.equal((await local('approve', { pairingId: ticket.pairingId })).status, 200);
     const publicHeaders = { Origin: PUBLIC_WEB_ORIGIN, 'X-Unharness-Client': '1', 'Content-Type': 'application/json' };
-    const exchanged = await call('/remote/v1/redeem', { ticket: ticket.ticket, launchId: ticket.launchId, protocolVersion: 1 }, publicHeaders);
+    const exchanged = await call('/remote/v2/redeem', { ticket: ticket.ticket, launchId: ticket.launchId, protocolVersion: 2 }, publicHeaders);
     assert.equal(exchanged.status, 200, JSON.stringify(exchanged.data));
     publicHeaders.Authorization = 'Bearer ' + exchanged.data.token;
     return { publicHeaders, session: exchanged.data };
@@ -52,18 +52,18 @@ test('public HTTP needs local approval; token cannot authorize the local API or 
   const s = await setup(t), issued = await s.local('issue');
   assert.equal(issued.status, 200, JSON.stringify(issued.data));
   const headers = { Origin: PUBLIC_WEB_ORIGIN, 'X-Unharness-Client': '1', 'Content-Type': 'application/json' };
-  const redeem = { ticket: issued.data.ticket, launchId: issued.data.launchId, protocolVersion: 1 };
-  assert.equal((await s.call('/remote/v1/redeem', redeem, headers)).status, 401);
+  const redeem = { ticket: issued.data.ticket, launchId: issued.data.launchId, protocolVersion: 2 };
+  assert.equal((await s.call('/remote/v2/redeem', redeem, headers)).status, 401);
   assert.equal((await s.call('/api/remote/approve', { requestId: randomUUID(), pairingId: issued.data.pairingId }, headers)).status, 403);
   await s.local('approve', { pairingId: issued.data.pairingId });
-  const accepted = await s.call('/remote/v1/redeem', redeem, headers);
+  const accepted = await s.call('/remote/v2/redeem', redeem, headers);
   assert.equal(accepted.status, 200);
-  assert.equal((await s.call('/remote/v1/redeem', redeem, headers)).status, 401);
+  assert.equal((await s.call('/remote/v2/redeem', redeem, headers)).status, 401);
   const auth = { ...headers, Authorization: 'Bearer ' + accepted.data.token, 'X-Unharness-Token': accepted.data.token };
   assert.equal((await s.call('/api/sources/state', undefined, auth, 'GET')).status, 403);
   assert.equal((await s.call('/_unharness/stop', { launchId: s.meta.launchId }, auth)).status, 403);
   assert.equal(s.stopped(), false);
-  assert.equal((await s.call('/remote/v1/status', {}, { ...auth, Authorization: undefined })).status, 403);
+  assert.equal((await s.call('/remote/v2/status', {}, { ...auth, Authorization: undefined })).status, 403);
 });
 
 test('local details are fresh under repeated read IDs and cancellation never becomes public authority', async t => {
@@ -78,31 +78,31 @@ test('local details are fresh under repeated read IDs and cancellation never bec
   assert.deepEqual(cancelled.data, { pairingId: ticket.pairingId, cancelled: true });
   assert.deepEqual((await s.local('cancel', input, writeId)).data, cancelled.data);
   assert.equal((await s.local('details', input, readId)).data.status, 'unavailable');
-  assert.equal((await s.call('/remote/v1/redeem', { ticket: ticket.ticket, launchId: ticket.launchId, protocolVersion: 1 }, headers)).status, 401);
+  assert.equal((await s.call('/remote/v2/redeem', { ticket: ticket.ticket, launchId: ticket.launchId, protocolVersion: 2 }, headers)).status, 401);
   assert.deepEqual(await readSourceProfileFiles(s.p.context), s.p.originalFiles);
 });
 
 test('public HTTP enforces CORS, strict bodies and Host without exposing private data', async t => {
   const s = await setup(t), { publicHeaders } = await s.connect();
-  const preflight = await s.call('/remote/v1/status', undefined, { Origin: PUBLIC_WEB_ORIGIN,
+  const preflight = await s.call('/remote/v2/status', undefined, { Origin: PUBLIC_WEB_ORIGIN,
     'Access-Control-Request-Method': 'POST', 'Access-Control-Request-Headers': 'authorization,content-type,x-unharness-client' }, 'OPTIONS');
   assert.equal(preflight.status, 204);
   assert.equal(preflight.headers.get('access-control-allow-origin'), PUBLIC_WEB_ORIGIN);
-  const hostile = await s.call('/remote/v1/status', {}, { ...publicHeaders, Origin: PUBLIC_WEB_ORIGIN + '.attacker.test' });
+  const hostile = await s.call('/remote/v2/status', {}, { ...publicHeaders, Origin: PUBLIC_WEB_ORIGIN + '.attacker.test' });
   assert.equal(hostile.status, 403); assert.equal(hostile.headers.get('access-control-allow-origin'), null);
   const forged = await new Promise((resolve, reject) => {
-    const r = httpRequest(s.running.url + '/remote/v1/status', { method: 'POST', headers: { ...publicHeaders, Host: 'attacker.test' } }, response => {
+    const r = httpRequest(s.running.url + '/remote/v2/status', { method: 'POST', headers: { ...publicHeaders, Host: 'attacker.test' } }, response => {
       response.resume(); response.on('end', () => resolve(response.statusCode));
     }); r.on('error', reject); r.end('{}');
   });
   assert.equal(forged, 403);
   for (const [operation, input] of [['status', { workspace: s.p.workspace }], ['register', {}], ['apply', { requestId: randomUUID(), planId: 'a'.repeat(64) }]])
-    assert.equal((await s.call('/remote/v1/' + operation, input, publicHeaders)).status, 400);
-  const oversized = await s.call('/remote/v1/status', { text: 'PRIVATE'.repeat(3000) }, publicHeaders);
+    assert.equal((await s.call('/remote/v2/' + operation, input, publicHeaders)).status, 400);
+  const oversized = await s.call('/remote/v2/status', { text: 'PRIVATE'.repeat(3000) }, publicHeaders);
   assert.equal(oversized.status, 413);
-  const duplicate = await fetch(s.running.url + '/remote/v1/status', { method: 'POST', headers: publicHeaders, body: '{"a":1,"a":2}' });
+  const duplicate = await fetch(s.running.url + '/remote/v2/status', { method: 'POST', headers: publicHeaders, body: '{"a":1,"a":2}' });
   assert.equal(duplicate.status, 400);
-  const state = await s.call('/remote/v1/status', {}, publicHeaders);
+  const state = await s.call('/remote/v2/status', {}, publicHeaders);
   assert.equal(state.status, 200); assert.ok(!JSON.stringify(state.data).includes(s.p.parent));
   assert.equal(state.data.state.runtimeState, 'unknown');
 });
@@ -110,28 +110,28 @@ test('public HTTP enforces CORS, strict bodies and Host without exposing private
 test('HTTP retries return one apply receipt; local status can read it after public expiry', async t => {
   const s = await setup(t), { publicHeaders } = await s.connect();
   const before = await readSourceProfileFiles(s.p.context);
-  const state = (await s.call('/remote/v1/status', {}, publicHeaders)).data.state;
-  const planned = await s.call('/remote/v1/plan', { requestId: randomUUID(), mode: 'normal', expectedRevision: state.revision }, publicHeaders);
+  const state = (await s.call('/remote/v2/status', {}, publicHeaders)).data.state;
+  const planned = await s.call('/remote/v2/plan', { requestId: randomUUID(), mode: 'normal', expectedRevision: state.revision }, publicHeaders);
   assert.equal(planned.data.result.ok, true, JSON.stringify(planned.data));
   const body = { requestId: randomUUID(), planRequestId: planned.data.requestId };
-  const [a, b] = await Promise.all([s.call('/remote/v1/apply', body, publicHeaders), s.call('/remote/v1/apply', body, publicHeaders)]);
+  const [a, b] = await Promise.all([s.call('/remote/v2/apply', body, publicHeaders), s.call('/remote/v2/apply', body, publicHeaders)]);
   assert.equal(a.data.result.ok, true); assert.deepEqual(a.data, b.data);
   assert.equal(a.data.result.data.revision, state.revision + 1);
   assert.deepEqual((await s.local('operation-status', { operationId: body.requestId })).data, a.data);
   assert.deepEqual(await readSourceProfileFiles(s.p.context), before);
   s.advance(CONNECTION_TTL_MS);
-  assert.equal((await s.call('/remote/v1/status', {}, publicHeaders)).status, 401);
+  assert.equal((await s.call('/remote/v2/status', {}, publicHeaders)).status, 401);
   assert.deepEqual((await s.local('operation-status', { operationId: body.requestId })).data, a.data);
 });
 
 test('unreadable request ownership returns uncertainty through both HTTP lookup routes', async t => {
   const s = await setup(t), { publicHeaders } = await s.connect();
-  const state = (await s.call('/remote/v1/status', {}, publicHeaders)).data.state;
+  const state = (await s.call('/remote/v2/status', {}, publicHeaders)).data.state;
   const id = randomUUID();
-  const planned = await s.call('/remote/v1/plan', { requestId: id, mode: 'normal', expectedRevision: state.revision }, publicHeaders);
+  const planned = await s.call('/remote/v2/plan', { requestId: id, mode: 'normal', expectedRevision: state.revision }, publicHeaders);
   assert.equal(planned.data.result.ok, true);
   await writeFile(join(s.p.workspace, 'ai-requests', id, 'request.json'), '{"broken":true}');
-  const publicRead = await s.call('/remote/v1/operation-status', { requestId: id }, publicHeaders);
+  const publicRead = await s.call('/remote/v2/operation-status', { requestId: id }, publicHeaders);
   const localRead = await s.local('operation-status', { operationId: id });
   for (const response of [publicRead, localRead]) {
     assert.equal(response.status, 500); assert.equal(response.data.error.kind, 'remote-operation-unconfirmed');
@@ -148,34 +148,34 @@ test('registered scope expansion revokes the old public connection; new authoriz
     return p;
   });
   const { publicHeaders } = await s.connect();
-  const state = (await s.call('/remote/v1/status', {}, publicHeaders)).data.state;
-  const planned = (await s.call('/remote/v1/plan', { requestId: randomUUID(), mode: 'normal', expectedRevision: state.revision }, publicHeaders)).data;
+  const state = (await s.call('/remote/v2/status', {}, publicHeaders)).data.state;
+  const planned = (await s.call('/remote/v2/plan', { requestId: randomUUID(), mode: 'normal', expectedRevision: state.revision }, publicHeaders)).data;
   assert.equal(planned.result.ok, true);
   const added = await addSetupSkill(s.p), inventory = await inspectEnrollment({ workspace: s.p.workspace });
   const candidate = inventory.candidates.find(c => c.path === added.path);
   const review = await reviewEnrollment({ workspace: s.p.workspace, discoveryId: inventory.discoveryId,
-    additions: [{ sourceId: candidate.id, origin: 'self', reason: 'Synthetic fixture author confirmed it.' }] });
+    additions: [{ sourceId: candidate.id, origin: 'self', reason: 'Synthetic fixture confirmed it.' }] });
   await applyEnrollment({ workspace: s.p.workspace, reviewId: review.reviewId });
-  const stale = await s.call('/remote/v1/status', {}, publicHeaders);
+  const stale = await s.call('/remote/v2/status', {}, publicHeaders);
   assert.equal(stale.status, 409); assert.equal(stale.data.error.kind, 'remote-connection-changed');
-  assert.equal((await s.call('/remote/v1/status', {}, publicHeaders)).status, 401);
+  assert.equal((await s.call('/remote/v2/status', {}, publicHeaders)).status, 401);
   const next = await s.connect();
-  const nextState = (await s.call('/remote/v1/status', {}, next.publicHeaders)).data.state;
+  const nextState = (await s.call('/remote/v2/status', {}, next.publicHeaders)).data.state;
   assert.notEqual(nextState.scopeId, state.scopeId); assert.equal(nextState.setupRequired, true);
-  const denied = await s.call('/remote/v1/apply', { requestId: randomUUID(), planRequestId: planned.requestId }, next.publicHeaders);
+  const denied = await s.call('/remote/v2/apply', { requestId: randomUUID(), planRequestId: planned.requestId }, next.publicHeaders);
   assert.equal(denied.data.result.error.kind, 'remote-plan-unavailable');
   assert.deepEqual((await s.local('operation-status', { operationId: planned.requestId })).data, planned);
 });
 
 test('shutdown closes browser transport but drains accepted public applies through receipt publication', async t => {
   const s = await setup(t), { publicHeaders } = await s.connect();
-  const state = (await s.call('/remote/v1/status', {}, publicHeaders)).data.state;
-  const planned = (await s.call('/remote/v1/plan', { requestId: randomUUID(), mode: 'unseal', expectedRevision: state.revision }, publicHeaders)).data;
+  const state = (await s.call('/remote/v2/status', {}, publicHeaders)).data.state;
+  const planned = (await s.call('/remote/v2/plan', { requestId: randomUUID(), mode: 'unseal', expectedRevision: state.revision }, publicHeaders)).data;
   const entered = Promise.withResolvers(), proceed = Promise.withResolvers();
   t.after(() => { proceed.resolve(); setSourceTransactionTestHook(null); });
   setSourceTransactionTestHook(async phase => { if (phase === 'before-completion') { entered.resolve(); await proceed.promise; } });
   const id = randomUUID();
-  const transport = s.call('/remote/v1/apply', { requestId: id, planRequestId: planned.requestId }, publicHeaders).catch(() => null);
+  const transport = s.call('/remote/v2/apply', { requestId: id, planRequestId: planned.requestId }, publicHeaders).catch(() => null);
   await entered.promise;
   let closed = false;
   const closing = s.running.close().then(() => { closed = true; });

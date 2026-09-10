@@ -3,24 +3,32 @@ import type { ConnectionSummary } from "./connection-contract.ts";
 import { isPublicMode, readPublicReceipt, readPublicState } from "./connection-results.ts";
 import type { PublicSourceState, PublicReceipt, PublicPlanReceipt } from "./connection-results.ts";
 import type { SourceMode } from "./sources";
+import { PublicArtworkError, artworkInput, artworkFingerprint, artworkExpectation, checkArtworkResult,
+  readArtworkData, readArtworkReceipt, readLayerAsset, isArtworkWrite } from './connection-artwork.ts';
+import type { ArtworkRead, ArtworkReadResult, ArtworkWrite, PublicArtworkReceipt, PublicOperationReceipt } from './connection-artwork.ts';
+import type { LayerAsset } from './appearance-layers';
 
-type Handoff = { protocolVersion: 1; port: number; launchId: string; ticket: string };
+type Handoff = { protocolVersion: 2; port: number; launchId: string; ticket: string };
 export type ConnectionHandoff = { kind: "none" } | { kind: "invalid"; reason: string } | { kind: "ready"; handoff: Handoff };
 export type ConnectionPhase = "disconnected" | "pairing" | "connected" | "expired" | "incompatible" | "unknown";
 export type PublicOperation = { requestId: string; operation: "plan" | "apply"; connectionId: string; receipt: PublicReceipt | null; error: string | null };
 type Command = { requestId: string; operation: "plan" | "apply"; subject: string; mode: SourceMode; revision: number; connectionId: string;
   confirmedReceipt?: Extract<PublicReceipt, { state: "completed" }> };
+type ArtworkCommand = { requestId: string; operation: ArtworkWrite; fingerprint: string; input: Record<string, unknown>;
+  connectionId: string; confirmedReceipt?: Extract<PublicArtworkReceipt, { state: "completed" }>; rejected?: string };
+export type PublicArtworkOperation = { requestId: string; operation: ArtworkWrite; connectionId: string;
+  receipt: PublicArtworkReceipt | null; error: string | null };
 export type ConnectionSnapshot = {
   phase: ConnectionPhase; connection: ConnectionSummary | null; state: PublicSourceState | null;
-  plan: PublicPlanReceipt | null; lastOperation: PublicOperation | null; busy: boolean; error: string | null;
+  plan: PublicPlanReceipt | null; lastOperation: PublicOperation | null; lastArtworkOperation: PublicArtworkOperation | null; artworkPending: boolean; artworkVersion: number; busy: boolean; error: string | null;
 };
-export class ConnectionError extends Error {
+export class ConnectionError extends PublicArtworkError {
   kind: string;
   constructor(kind: string) { super(kind); this.kind = kind; }
 }
 function fail(kind: string): never { throw new ConnectionError(kind); }
-const errorKind = (error: unknown) => error instanceof ConnectionError ? error.kind : "remote-state-unconfirmed";
-const EMPTY: ConnectionSnapshot = { phase: "disconnected", connection: null, state: null, plan: null, lastOperation: null, busy: false, error: null };
+const errorKind = (error: unknown) => error instanceof PublicArtworkError ? error.kind : "remote-state-unconfirmed";
+const EMPTY: ConnectionSnapshot = { phase: "disconnected", connection: null, state: null, plan: null, lastOperation: null, lastArtworkOperation: null, artworkPending: false, artworkVersion: 0, busy: false, error: null };
 
 /** Only the locally generated, exact public fragment is a connection handoff.
  * Removal happens before validation or any caller-initiated network request. */
@@ -31,11 +39,11 @@ export function consumeConnectionHandoff(href: string, replace: (clean: string) 
   if (url.origin !== PUBLIC_WEB_ORIGIN || url.pathname !== "/" || url.search
     || [...values.keys()].length !== 4 || [...values.keys()].some(key => !["unharness", "port", "launch", "ticket"].includes(key))
     || ["unharness", "port", "launch", "ticket"].some(key => values.getAll(key).length !== 1)) return { kind: "invalid", reason: "remote-pairing-unavailable" };
-  if (values.get("unharness") !== "1") return { kind: "invalid", reason: "remote-incompatible" };
+  if (values.get("unharness") !== "2") return { kind: "invalid", reason: "remote-incompatible" };
   const port = values.get("port")!, launchId = values.get("launch"), ticket = values.get("ticket");
   if (!/^[1-9]\d{0,4}$/.test(port) || Number(port) > 65535 || !isConnectionId(launchId) || !isConnectionHash(ticket))
     return { kind: "invalid", reason: "remote-pairing-unavailable" };
-  return { kind: "ready", handoff: { protocolVersion: 1, port: Number(port), launchId, ticket } };
+  return { kind: "ready", handoff: { protocolVersion: 2, port: Number(port), launchId, ticket } };
 }
 
 /** One page, one current grant. GUI and WebMCP share these deterministic calls.
@@ -48,6 +56,10 @@ export class PublicConnection {
   #grant: ConnectionSummary | null = null; #epoch = 0; #readGeneration = 0;
   #lastCommand: Command | null = null; #receiptGeneration = 0;
   #requestInputs = new Map<string, string>();
+  #artworkCommands = new Map<string, ArtworkCommand>();
+  #artworkActive: { requestId: string; operation: ArtworkWrite; connectionId: string;
+    fingerprint: Promise<string>; promise: Promise<PublicArtworkReceipt> } | null = null;
+  #imageLifetime = new AbortController(); #artworkGeneration = 0;
   #active: { operation: "plan" | "apply"; subject: string; requestId: string; promise: Promise<PublicReceipt> } | null = null;
   constructor({ pageOrigin, handoff = { kind: "none" }, fetcher = (...args) => globalThis.fetch(...args), now = Date.now }: {
     pageOrigin: string; handoff?: ConnectionHandoff; fetcher?: typeof fetch; now?: () => number;
@@ -60,19 +72,21 @@ export class PublicConnection {
     this.#listeners.forEach(listener => listener());
   }
   acceptHandoff(value: ConnectionHandoff) {
+    if (value.kind === 'ready' && value.handoff.protocolVersion !== 2) value = { kind: 'invalid', reason: 'remote-incompatible' };
     ++this.#epoch; ++this.#readGeneration; this.#token = null; this.#grant = null; this.#loopback = null; this.#handoff = null;
     // Abandon only the connection attempt. Accepted writes keep their own
     // busy boundary and must settle normally even after this handoff changes.
-    this.#requestInputs.clear();
-    if (value.kind === "ready") this.#handoff = value.handoff;
+    this.#requestInputs.clear(); this.#artworkCommands.clear();
+    this.#imageLifetime.abort(); this.#imageLifetime = new AbortController();
+    if (value.kind === "ready") this.#handoff = { ...value.handoff };
     this.#set({ phase: value.kind === "ready" ? "pairing" : value.kind === "none" ? "disconnected"
       : value.reason === "remote-incompatible" ? "incompatible" : "unknown",
-      connection: null, state: null, plan: null, busy: this.#active !== null, error: value.kind === "invalid" ? value.reason : null });
+      connection: null, state: null, plan: null, busy: this.#active !== null || this.#artworkActive !== null, artworkPending: false, error: value.kind === "invalid" ? value.reason : null });
   }
   disconnect() { this.acceptHandoff({ kind: "none" }); }
   tick() {
     if (this.#grant && this.#grant.expiresAt <= this.#now()) {
-      this.#token = null; this.#grant = null;
+      this.#token = null; this.#grant = null; this.#imageLifetime.abort();
       this.#set({ phase: "expired", connection: null, state: null, plan: null, error: "remote-connection-expired" });
     }
   }
@@ -84,13 +98,13 @@ export class PublicConnection {
   #failed(error: unknown) {
     const kind = errorKind(error), expired = this.#view.phase === "expired" || ["remote-connection-expired", "remote-pairing-unavailable"].includes(kind);
     const incompatible = kind === "remote-incompatible";
-    if (expired || incompatible || kind === "remote-connection-changed" || kind === "remote-request-forbidden") { this.#token = null; this.#grant = null; }
+    if (expired || incompatible || kind === "remote-connection-changed" || kind === "remote-request-forbidden") { this.#token = null; this.#grant = null; this.#imageLifetime.abort(); }
     this.#set({ phase: expired ? "expired" : incompatible ? "incompatible" : "unknown", connection: null, state: null, plan: null, error: kind });
   }
   async #post(loopback: string, action: string, body: object, token?: string) {
     let response: Response;
     try {
-      response = await this.#fetch(loopback + "/remote/v1/" + action, {
+      response = await this.#fetch(loopback + "/remote/v2/" + action, {
         method: "POST", mode: "cors", credentials: "omit", cache: "no-store", redirect: "error", referrerPolicy: "no-referrer",
         headers: { "Content-Type": "application/json", "X-Unharness-Client": "1", ...(token ? { Authorization: "Bearer " + token } : {}) },
         body: JSON.stringify(body), signal: AbortSignal.timeout(30000),
@@ -105,16 +119,16 @@ export class PublicConnection {
     return data;
   }
   async connect() {
-    if (this.#active || this.#view.busy) fail("remote-operation-in-progress");
+    if (this.#active || this.#artworkActive || this.#view.busy) fail("remote-operation-in-progress");
     if (this.#pageOrigin !== PUBLIC_WEB_ORIGIN || !this.#handoff) fail("remote-pairing-unavailable");
     const handoff = this.#handoff, before = ++this.#epoch;
     this.#handoff = null; this.#set({ busy: true, phase: "pairing", error: null });
     const loopback = `http://127.0.0.1:${handoff.port}`;
     try {
-      const response = await this.#post(loopback, "redeem", { ticket: handoff.ticket, launchId: handoff.launchId, protocolVersion: 1 });
+      const response = await this.#post(loopback, "redeem", { ticket: handoff.ticket, launchId: handoff.launchId, protocolVersion: 2 });
       if (before !== this.#epoch) return;
       const raw = connectionRecord(response);
-      if (raw.protocolVersion !== 1) fail("remote-incompatible");
+      if (raw.protocolVersion !== 2) fail("remote-incompatible");
       const { token, ...rest } = raw, grant = readConnectionSummary(rest);
       if (!isConnectionHash(token) || grant.launchId !== handoff.launchId) fail("remote-connection-changed");
       if (grant.expiresAt <= this.#now()) fail("remote-connection-expired");
@@ -125,7 +139,7 @@ export class PublicConnection {
     } catch (error) {
       if (before !== this.#epoch) return; // A superseded attempt cannot report against the new connection.
       this.#failed(error); throw error;
-    } finally { if (before === this.#epoch) this.#set({ busy: this.#active !== null }); }
+    } finally { if (before === this.#epoch) this.#set({ busy: this.#active !== null || this.#artworkActive !== null }); }
   }
   async refresh() {
     if (this.#active) fail("remote-operation-in-progress");
@@ -133,7 +147,7 @@ export class PublicConnection {
     try {
       const value = connectionRecord(await this.#post(loopback, "status", {}, token));
       connectionFields(value, ["connection", "state"]);
-      if (connectionRecord(value.connection).protocolVersion !== 1) fail("remote-incompatible");
+      if (connectionRecord(value.connection).protocolVersion !== 2) fail("remote-incompatible");
       const connection = readConnectionSummary(value.connection);
       if (JSON.stringify(connection) !== JSON.stringify(grant)) fail("remote-connection-changed");
       const state = readPublicState(value.state, grant.target.scopeId);
@@ -155,6 +169,8 @@ export class PublicConnection {
       || receipt.result.data.revision !== command.revision + 1) fail("remote-operation-unconfirmed");
   }
   #write(operation: "plan" | "apply", subject: string, requestId?: string): Promise<PublicReceipt> {
+    if (this.#artworkActive) return Promise.reject(new ConnectionError("remote-operation-in-progress"));
+    if (this.#view.artworkPending) return Promise.reject(new ConnectionError("remote-operation-unconfirmed"));
     if (this.#active) {
       if (this.#active.operation === operation && this.#active.subject === subject && (!requestId || requestId === this.#active.requestId)) return this.#active.promise;
       return Promise.reject(new ConnectionError("remote-operation-in-progress"));
@@ -187,7 +203,7 @@ export class PublicConnection {
           let receipt = readPublicReceipt(await this.#post(loopback, operation, body, token), id, grant.target.scopeId);
           this.#checkReceipt(receipt, command); ++this.#receiptGeneration;
           if (receipt.state === "completed") command.confirmedReceipt ??= receipt;
-          if (receipt.state === "running" && command.confirmedReceipt) receipt = command.confirmedReceipt;
+          if (command.confirmedReceipt) receipt = command.confirmedReceipt;
           if (this.#view.lastOperation?.requestId === id && this.#view.lastOperation.connectionId === grant.connectionId)
             this.#set({ lastOperation: { requestId: id, operation, connectionId: grant.connectionId, receipt, error: null } });
           if (before === this.#epoch) {
@@ -217,18 +233,34 @@ export class PublicConnection {
   }
   plan(mode: SourceMode, requestId?: string) { return this.#write("plan", mode, requestId); }
   apply(planRequestId: string, requestId?: string) { return this.#write("apply", planRequestId, requestId); }
-  async operationStatus(requestId: string) {
+  async operationStatus(requestId: string): Promise<PublicOperationReceipt> {
     if (!isConnectionId(requestId)) fail("remote-invalid-request");
     const { grant, token, loopback } = this.#authority(), before = this.#epoch, read = ++this.#receiptGeneration;
     const command = this.#lastCommand;
     try {
-      let receipt = readPublicReceipt(await this.#post(loopback, "operation-status", { requestId }, token), requestId, grant.target.scopeId);
+      const raw = await this.#post(loopback, "operation-status", { requestId }, token);
+      const art = this.#artworkCommands.get(requestId);
+      if (command?.requestId === requestId && command.connectionId === grant.connectionId && isArtworkWrite(connectionRecord(raw).operation)) fail('remote-operation-unconfirmed');
+      if (isArtworkWrite(connectionRecord(raw).operation) || art?.connectionId === grant.connectionId) {
+        let receipt = readArtworkReceipt(raw, requestId, grant.target.scopeId, grant.target.collectionScopeId);
+        if (art?.connectionId === grant.connectionId) {
+          checkArtworkResult(receipt, art.operation, art.input);
+          if (receipt.state === "completed") art.confirmedReceipt ??= receipt;
+          if (art.confirmedReceipt) receipt = art.confirmedReceipt;
+          const last = this.#view.lastArtworkOperation;
+          if (before === this.#epoch && last?.requestId === requestId && last.connectionId === grant.connectionId
+            && (read === this.#receiptGeneration || receipt.state === "completed")) this.#rememberArtwork(art, receipt, before);
+        }
+        this.tick();
+        return receipt;
+      }
+      let receipt = readPublicReceipt(raw, requestId, grant.target.scopeId);
       if (command?.requestId === requestId && command.connectionId === grant.connectionId) {
         this.#checkReceipt(receipt, command);
         if (receipt.state === "completed") command.confirmedReceipt ??= receipt;
         // Progress can arrive after a terminal result. It cannot undo that
         // same command's verified outcome, including a durable failure.
-        if (receipt.state === "running" && command.confirmedReceipt) receipt = command.confirmedReceipt;
+        if (command.confirmedReceipt) receipt = command.confirmedReceipt;
       }
       const last = this.#view.lastOperation;
       if (before === this.#epoch && read === this.#receiptGeneration && last?.requestId === requestId && last.connectionId === grant.connectionId) {
@@ -241,4 +273,146 @@ export class PublicConnection {
       return receipt;
     } catch (error) { if (before === this.#epoch && read === this.#receiptGeneration) this.#failed(error); throw error; }
   }
+  #artworkFailure(error: unknown, epoch: number) {
+    if (epoch !== this.#epoch) return;
+    const kind = errorKind(error);
+    // A definitive image/collection error does not say source status is wrong.
+    if (!kind.startsWith('appearance-') && !['remote-capacity','remote-invalid-request','remote-operation-conflict','remote-operation-in-progress','remote-artwork-stale'].includes(kind)) this.#failed(error);
+  }
+  #rememberArtwork(command: ArtworkCommand, receipt: PublicArtworkReceipt, epoch: number) {
+    const last = this.#view.lastArtworkOperation;
+    if (last?.requestId !== command.requestId || last.connectionId !== command.connectionId) return;
+    const changed = JSON.stringify(last.receipt) !== JSON.stringify(receipt);
+    if (changed && receipt.state === 'completed' && epoch === this.#epoch) ++this.#artworkGeneration;
+    this.#set({ lastArtworkOperation: { ...last, receipt, error: null },
+      ...(epoch === this.#epoch ? { artworkPending: receipt.state !== 'completed',
+        ...(changed && receipt.state === 'completed' ? { artworkVersion: this.#view.artworkVersion + 1 } : {}) } : {}) });
+  }
+  async artworkRead(operation: ArtworkRead, input: Record<string, unknown>): Promise<ArtworkReadResult> {
+    if (!['artwork','artwork-item','read-appearance-import'].includes(operation)) fail('remote-invalid-request');
+    const payload = artworkInput(operation, input), { grant, token, loopback } = this.#authority(), epoch = this.#epoch, generation = this.#artworkGeneration;
+    try {
+      const raw = await this.#post(loopback, operation, payload, token);
+      if (epoch !== this.#epoch) fail('remote-connection-changed');
+      this.tick(); if (this.#grant?.connectionId !== grant.connectionId) fail('remote-connection-expired');
+      if (generation !== this.#artworkGeneration) fail('remote-artwork-stale');
+      const result = readArtworkData(operation, raw, grant.target.scopeId, grant.target.collectionScopeId);
+      if (operation === 'artwork-item' && 'item' in result && result.item.id !== payload.itemId
+        || operation === 'read-appearance-import' && 'reviewId' in result && result.reviewId !== payload.reviewId) fail('remote-artwork-unconfirmed');
+      return result;
+    } catch (error) { this.#artworkFailure(error, epoch); throw error; }
+  }
+  artworkWrite(operation: ArtworkWrite, input: Record<string, unknown>, requestId: string = crypto.randomUUID()): Promise<PublicArtworkReceipt> {
+    try {
+      if (!isArtworkWrite(operation) || !isConnectionId(requestId)) fail('remote-invalid-request');
+      const pending = this.#artworkActive;
+      if (pending) {
+        if (pending.operation !== operation || pending.requestId !== requestId) fail('remote-operation-in-progress');
+        const copy = artworkInput(operation, input);
+        return Promise.all([artworkFingerprint(operation, copy, pending.connectionId), pending.fingerprint]).then(([a,b]) => {
+          if (a !== b) fail('remote-operation-conflict'); return pending.promise;
+        });
+      }
+      if (this.#active || this.#view.busy) fail('remote-operation-in-progress');
+      let payload: Record<string, unknown> | null = artworkInput(operation, input);
+      const { grant, token, loopback } = this.#authority(), epoch = this.#epoch;
+      const fingerprint = artworkFingerprint(operation, payload, grant.connectionId);
+      const active = { requestId, operation, connectionId: grant.connectionId, fingerprint, promise: null as unknown as Promise<PublicArtworkReceipt> };
+      const promise = Promise.resolve().then(async () => {
+        let command: ArtworkCommand | undefined;
+        try {
+          const digest = await fingerprint;
+          if (epoch !== this.#epoch) fail('remote-connection-changed');
+          const current = this.#authority();
+          if (current.grant.connectionId !== grant.connectionId) fail('remote-connection-changed');
+          const previous = this.#requestInputs.get(requestId);
+          if (previous !== undefined && previous !== digest) fail('remote-operation-conflict');
+          const known = this.#artworkCommands.get(requestId);
+          if (known) {
+            if (known.operation !== operation || known.connectionId !== grant.connectionId) fail('remote-operation-conflict');
+            if (known.rejected) fail(known.rejected);
+            // A retry is lookup-only, including an unfinished or missing claim.
+            return known.confirmedReceipt ?? await this.operationStatus(requestId) as PublicArtworkReceipt;
+          }
+          if (this.#view.artworkPending || this.#view.lastOperation && this.#view.lastOperation.connectionId === grant.connectionId && this.#view.lastOperation.receipt?.state !== 'completed') fail('remote-operation-unconfirmed');
+          if (this.#view.phase !== 'connected') fail('remote-state-unconfirmed');
+          if (this.#artworkCommands.size >= 1000 || this.#requestInputs.size >= 1000) fail('remote-capacity');
+          command = { requestId, operation, connectionId: grant.connectionId, fingerprint: digest, input: artworkExpectation(operation, payload!) };
+          this.#requestInputs.set(requestId, digest); this.#artworkCommands.set(requestId, command);
+          ++this.#receiptGeneration; ++this.#artworkGeneration;
+          this.#set({ artworkPending: true, lastArtworkOperation: { requestId, operation, connectionId: grant.connectionId, receipt: null, error: null } });
+          const raw = await this.#post(loopback, operation, { ...payload, requestId }, token);
+          let receipt = readArtworkReceipt(raw, requestId, grant.target.scopeId, grant.target.collectionScopeId);
+          checkArtworkResult(receipt, operation, command.input);
+          if (receipt.state === 'completed') command.confirmedReceipt ??= receipt;
+          if (command.confirmedReceipt) receipt = command.confirmedReceipt;
+          this.#rememberArtwork(command, receipt, epoch);
+          if (epoch === this.#epoch) {
+            this.tick();
+            if (receipt.state === 'completed' && !receipt.result.ok) this.#artworkFailure(new ConnectionError(receipt.result.error.kind), epoch);
+          }
+          return receipt;
+        } catch (error) {
+          const receipt = command?.confirmedReceipt;
+          if (receipt && command) this.#rememberArtwork(command, receipt, epoch);
+          const kind = errorKind(error);
+          const rejected = ['remote-capacity','remote-invalid-request','remote-operation-conflict'].includes(kind);
+          if (command && rejected) command.rejected = kind;
+          if (epoch === this.#epoch) {
+            this.tick(); this.#artworkFailure(error, epoch);
+            if (command && !receipt && this.#view.lastArtworkOperation?.requestId === requestId)
+              this.#set({ lastArtworkOperation: { ...this.#view.lastArtworkOperation, error: kind }, artworkPending: !rejected });
+          }
+          if (receipt) return receipt;
+          throw error;
+        } finally {
+          payload = null; // Neither command history nor fingerprints retain base64.
+          if (this.#artworkActive === active) { this.#artworkActive = null; this.#set({ busy: this.#active !== null }); }
+        }
+      });
+      active.promise = promise; this.#artworkActive = active; this.#set({ busy: true });
+      return promise;
+    } catch (error) { return Promise.reject(error); }
+  }
+  async artworkImage(referenceId: string, suppliedAsset: LayerAsset, signal: AbortSignal): Promise<Blob> {
+    const asset = readLayerAsset(suppliedAsset), input = artworkInput('artwork-image', { referenceId, assetId: asset.assetId });
+    const { grant, token, loopback } = this.#authority(), epoch = this.#epoch;
+    const abort = AbortSignal.any([signal, this.#imageLifetime.signal, AbortSignal.timeout(30000)]);
+    let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+    const cancelRead = () => { void reader?.cancel().catch(() => {}); };
+    try {
+      abort.throwIfAborted();
+      const response = await this.#fetch(loopback + '/remote/v2/artwork-image', { method: 'POST', mode: 'cors', credentials: 'omit', cache: 'no-store', redirect: 'error', referrerPolicy: 'no-referrer',
+        headers: { 'Content-Type': 'application/json', 'X-Unharness-Client': '1', Authorization: 'Bearer ' + token }, body: JSON.stringify(input), signal: abort });
+      if (epoch !== this.#epoch) fail('remote-connection-changed');
+      abort.throwIfAborted();
+      if (!response.ok) {
+        if (response.status === 401) { await response.body?.cancel(); fail('remote-connection-expired'); }
+        if (response.status === 403) { await response.body?.cancel(); fail('remote-request-forbidden'); }
+        const raw = connectionRecord(await response.json()), error = connectionRecord(raw.error);
+        fail(typeof error.kind === 'string' && /^[-a-z]{1,64}$/.test(error.kind) ? error.kind : 'remote-state-unconfirmed');
+      }
+      const length = response.headers.get('content-length');
+      if (response.headers.get('content-type') !== 'image/png' || !response.body || length !== null && (!/^\d+$/.test(length) || Number(length) !== asset.bytes)) {
+        await response.body?.cancel(); fail('appearance-image-invalid');
+      }
+      reader = response.body.getReader(); abort.addEventListener('abort', cancelRead, { once: true }); const chunks: Uint8Array<ArrayBuffer>[] = []; let bytes = 0;
+      for (;;) {
+        abort.throwIfAborted();
+        const result = await reader.read();
+        if (result.done) break;
+        bytes += result.value.byteLength; if (bytes > asset.bytes || bytes > 8*1024*1024) fail('appearance-image-invalid');
+        chunks.push(new Uint8Array(result.value));
+      }
+      abort.throwIfAborted(); if (epoch !== this.#epoch) fail('remote-connection-changed');
+      this.tick(); if (this.#grant?.connectionId !== grant.connectionId) fail('remote-connection-expired');
+      if (bytes !== asset.bytes) fail('appearance-image-invalid');
+      return new Blob(chunks, { type: 'image/png' });
+    } catch (error) {
+      await reader?.cancel().catch(() => {});
+      if (!signal.aborted && epoch === this.#epoch) this.#artworkFailure(error, epoch);
+      throw error;
+    } finally { abort.removeEventListener('abort', cancelRead); reader?.releaseLock(); }
+  }
+
 }

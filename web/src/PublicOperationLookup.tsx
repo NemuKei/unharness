@@ -1,12 +1,17 @@
 import { useRef, useState } from "react";
 import { connectionRecord, isConnectionHash, isConnectionId } from "./connection-contract";
+import { readOperationReceipt, isArtworkWrite, artworkResultText } from './connection-artwork';
+import type { PublicArtworkReceipt } from './connection-artwork';
 import type { LocalConnectionRequest } from "./local-connection";
 
 function receiptMessage(value: unknown, requestId: string) {
-  const v = connectionRecord(value);
+  const checked = readOperationReceipt(value, requestId);
+  if (isArtworkWrite(checked.operation)) return artworkResultText(checked as PublicArtworkReceipt);
+  const v = connectionRecord(checked);
   if (v.requestId !== requestId) throw Error("invalid-receipt");
   if (v.state === "not-found" && v.operation === null) return "記録が見つかりません。未実行と断定せず、公開画面の操作IDとローカルの状態を確認してください。";
   if (!["apply", "plan"].includes(v.operation as string)) throw Error("invalid-receipt");
+  if (v.state === "running") return "処理中です。同じ操作IDで結果を確認してください。";
   if (v.state === "unconfirmed") return "結果は未確認です。ローカルの準備状態と復旧の案内を確認してください。";
   if (v.state !== "completed") throw Error("invalid-receipt");
   const result = connectionRecord(v.result);

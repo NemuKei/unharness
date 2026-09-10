@@ -1,4 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AppearancePanel } from './AppearancePanel';
+import { usePublicAppearance } from './usePublicAppearance';
+import { artworkResultText } from './connection-artwork';
+import type { LayerAsset } from './appearance-layers';
 import { Hangar } from "./Hangar";
 import { ConnectionStatus, connectionLabel } from "./ConnectionStatus";
 import { ConnectionError } from "./connection";
@@ -30,8 +34,14 @@ export function PublicWorkbench({ client, view }: { client: PublicConnection; vi
   const [checkingResult, setCheckingResult] = useState(false);
   const current = publicModes[selected], plan = view.plan, last = view.lastOperation;
   const localUrl = client.getLocalWorkbenchUrl();
+  const artwork = usePublicAppearance(client, view), lastArtwork = view.lastArtworkOperation;
+  const selectedArtwork = artwork.enabled && artwork.confirmed ? artwork.view?.selectedItem ?? null : null;
+  const imageLoader = useCallback((asset: LayerAsset, signal: AbortSignal) => {
+    if (!selectedArtwork) return Promise.reject(new Error('appearance-image-unavailable'));
+    return artwork.image(selectedArtwork.id, asset, signal, artwork.key);
+  }, [artwork.image, artwork.key, selectedArtwork?.id]);
   const usable = view.phase === "connected" && !!view.state && !view.state.conflict && !view.state.recoveryPending && !view.busy
-    && (!last || last.receipt?.state === "completed");
+    && !view.artworkPending && (!last || last.receipt?.state === "completed");
   useEffect(() => { if (view.state) select(view.state.preparedMode); }, [view.state?.preparedMode, view.state?.revision]);
   useEffect(() => { if (plan) select(plan.result.data.mode); }, [plan?.requestId]);
   useEffect(() => {
@@ -79,11 +89,19 @@ export function PublicWorkbench({ client, view }: { client: PublicConnection; vi
           : view.phase === "unknown" ? <p>現在の接続状態を確認できません。期限やブラウザーの接続許可を確認してください。前の操作の成否は下の記録で確認します。</p> : null}
       <ConnectionInstructions/>
     </section>}
-    {(view.phase === "connected" || !!last) && <div className="public-two-column"><section className="public-mode-stage">
+    {(view.phase === "connected" || !!last || !!lastArtwork) && <div className="public-two-column"><section className="public-mode-stage">
       <p className="eyebrow">モード <span>／ 選択プレビュー</span></p><h1>{current.title}</h1><p className="scene-subtitle">{current.label}</p>
       <p className="entry-lead">保存したこのモードの構成で、次のタスクを準備する。</p>
-      <PublicModeChoices mode={selected} choose={select}/><Hangar condition={current.scene} effects={false}/>
-      <p className="scene-caption">標準外観の選択プレビューです。実行中のタスクの状態は表していません。</p>
+      <PublicModeChoices mode={selected} choose={select}/><Hangar condition={current.scene} effects={false} artwork={selectedArtwork} imageLoader={imageLoader}/>
+      <p className="scene-caption">選択した外観のモード別プレビューです。作品の読込や画像カードでは設定を切り替えません。実行中のタスクの状態は表していません。</p>
+      <AppearancePanel controller={artwork}/>
+      {lastArtwork && <section className="public-operation" aria-label="最後の作品操作結果"><h3>最後の作品操作結果</h3>
+        <p role="status">{artworkResultText(lastArtwork.receipt)}</p>
+        <label>作品の操作ID<input aria-label="作品の操作ID" value={lastArtwork.requestId} readOnly/></label>
+        <button className="secondary" disabled={checkingResult || !['connected','unknown'].includes(view.phase)} onClick={() => void lookup(lastArtwork.requestId)}>作品操作の保存された結果を確認</button>
+        <details><summary>ローカルで作品操作を確認する</summary><CopyRequest key={lastArtwork.requestId} label="作品操作の結果確認"
+          text={`Unharnessのpublic_operation_statusで ${lastArtwork.requestId} の作品操作結果を確認してください。同じ操作を新しいIDで自動再実行せず、現在のコレクションと作品保存の復旧を確認してください。装備の設定は変更しないでください。`}/></details>
+      </section>}
     </section><aside className="public-panel preparation-panel"><p className="eyebrow">登録済みの追加設定</p><h2>現在の準備</h2>
       <p className="prepared-mode">{view.state ? publicModes[view.state.preparedMode].title : "未確認"}</p>
       {view.state && <p className="muted">保存版 {view.state.revision}{view.state.modeChangeRequired ? " ／ 追加した対象の準備が必要です" : ""}</p>}

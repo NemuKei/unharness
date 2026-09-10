@@ -1,5 +1,5 @@
 import { createRemoteController } from './remote-controller.mjs';
-import { exactRemote, isUuid, remoteError, remoteErrorStatus, remoteFail, remoteHttpPolicy } from './remote-policy.mjs';
+import { exactRemote, isUuid, remoteError, remoteErrorStatus, remoteFail, remoteHttpPolicy, REMOTE_OPERATIONS, REMOTE_UPLOAD_BODY_LIMIT } from './remote-policy.mjs';
 
 const MAX_BODY_BYTES = 16 * 1024;
 const MAX_LOCAL_REQUESTS = 1000;
@@ -15,24 +15,38 @@ function failure(response, error, cors) {
 export async function createRemoteHttp({ controller, enqueue, readJson, now }) {
   const remote = await createRemoteController({ controller, enqueue, now });
   const localRequests = new Map();
+  // One large upload across all public connections, including its queued work.
+  let uploading = false;
   return {
     // Called before the ordinary local API branch. It never falls through to a
     // local controller or returns its raw state, metadata or service result.
     async publicRequest(request, response, url, loopbackOrigin) {
-      let cors = {};
+      let cors = {}, ownsUpload = false;
       try {
         cors = remoteHttpPolicy(request, { loopbackOrigin, webOrigin: remote.webOrigin });
-        const match = /^\/remote\/v1\/(redeem|status|plan|apply|operation-status)$/.exec(url.pathname);
-        if (!match || url.search) remoteFail('remote-invalid-request');
+        const match = /^\/remote\/v2\/([a-z-]+)$/.exec(url.pathname);
+        if (!match || !['redeem', ...REMOTE_OPERATIONS].includes(match[1]) || url.search) remoteFail('remote-invalid-request');
         if (request.method === 'OPTIONS') { send(response, 204, null, cors); return; }
-        const input = await readJson(request, true, MAX_BODY_BYTES);
         const operation = match[1];
         const auth = /^Bearer ([a-f0-9]{64})$/.exec(request.headers.authorization ?? '');
         if (operation !== 'redeem' && !auth) remoteFail('remote-request-forbidden');
+        const authorization = { token: auth?.[1], origin: request.headers.origin };
+        // OPTIONS has no bearer by design; redeem stays a small unauthenticated
+        // exchange. Every other route authenticates before readJson allocates.
+        if (operation !== 'redeem') await remote.authenticate(authorization);
+        if (operation === 'review-appearance-import') {
+          if (uploading) remoteFail('remote-capacity');
+          uploading = true; ownsUpload = true;
+        }
+        const input = await readJson(request, true, operation === 'review-appearance-import' ? REMOTE_UPLOAD_BODY_LIMIT : MAX_BODY_BYTES);
         const result = operation === 'redeem' ? await remote.redeem(input, request.headers.origin)
-          : await remote.request(operation, input, { token: auth[1], origin: request.headers.origin });
-        send(response, 200, result, cors);
-      } catch (error) { failure(response, error, cors); }
+          : await remote.request(operation, input, authorization);
+        if (operation === 'artwork-image') {
+          response.writeHead(200, { ...cors, 'Content-Type': 'image/png', 'Content-Length': result.bytes.length });
+          response.end(result.bytes);
+        } else send(response, 200, result, cors);
+      } catch (error) { if (!response.destroyed) failure(response, error, cors); }
+      finally { if (ownsUpload) uploading = false; }
     },
     // The caller must complete the existing local Host/origin/client/token
     // checks first. Public sessions cannot issue or approve a connection.
