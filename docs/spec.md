@@ -6,10 +6,10 @@ The requirements below are agreed product targets. The [read-only inventory](spe
 
 | OS | Codex desktop | Claude Code desktop |
 | --- | --- | --- |
-| macOS | Phase 1 | Phase 2 |
+| macOS | Phase 1 core / Phase 3 product finish, active | Phase 2, deferred |
 | Windows | Phase 4, deferred | Phase 5, deferred |
 
-On 2026-09-08, the maintainer chose to complete macOS first. Complete the Codex core on Mac before handing Claude Code its Mac integration; Codex then reviews and finishes the Mac product in Phase 3. Windows qualification does not block these Mac milestones. Preserve portable boundaries and existing Windows evidence, then resume Windows Codex followed by Windows Claude Code, with a final review across all four combinations in Phase 6. See [delivery](delivery.md). The target is the desktop experience using local work, not an assumption that a successful CLI run covers it. Windows native and WSL execution must be identified separately in evidence.
+The current sequence follows the 2026-09-09 decision in [delivery](delivery.md): finish the Mac Codex product first, retaining the existing Claude adapter while deferring its native qualification. Neither Claude nor Windows qualification blocks that scoped release. Preserve portable boundaries and existing evidence; later Windows work remains Codex before Claude Code, with a final cross-platform review. The target is the desktop experience using local work, not an assumption that a successful CLI run covers it. Windows native and WSL execution must be identified separately in evidence.
 
 ## One useful loop
 
@@ -30,14 +30,18 @@ The [feasibility boundaries](feasibility.md) identify what is established, what 
 | Stable meaning | Display label | Managed behavior |
 | --- | --- | --- |
 | Normal | 通常装備 | Use the saved loadout. |
-| Limited release | 限定解除 — UNSEAL | Use a reviewed saved choice of minimal additional guidance or no selected additional guidance; keep the chosen Skills automatic and make other selected enabled Skills explicitly invocable. |
-| Zero | 零式 — TRUEFORM | Remove selected optional additional guidance; make confirmed self-authored Skills explicitly invocable and review automatic use of user-added external Skills. Preserve required Unharness controls, memory, task continuity and permissions. |
+| Limited release | 限定解除 — UNSEAL | Use the saved minimal guide or no selected additional guidance. Inherit every optional automatic Skill retained by TRUEFORM, then add reviewed external/self-authored Skills. Other controlled enabled Skills remain explicitly invocable. |
+| Zero | 零式 — TRUEFORM | Remove selected optional additional guidance. Optional automatic Skills may remain only through user-selected plugins with verified official-marketplace provenance. Other controlled enabled Skills remain explicitly invocable. Required management and common conditions remain retained. |
 
-These mode targets were refined on 2026-09-09. [AI-guided setup](spec-guided-setup.md) defines their versioned review and migration. Existing qualified adapters and saved configurations still follow their recorded earlier contract until that migration is implemented and verified; a matching mode label alone cannot reinterpret an old favorite.
+These targets were refined on 2026-09-10. [The mode-inheritance contract](spec-mode-inheritance.md) is the current selection rule; [AI-guided setup](spec-guided-setup.md) describes the consultation and preserved operation boundaries. Official-plugin verification and inherited presets are planned, not implemented or newly qualified by this documentation. Existing adapters, v1 presets and saved favorites keep their recorded earlier meaning until a separately reviewed migration. A matching mode label alone cannot reinterpret an old favorite.
+
+For registered optional Skills, derive `UNSEAL = TRUEFORM ∪ additional selections`; do not accept two unrelated automatic-use lists. A TRUEFORM selection can be empty. Common management, memory, continuity, requirements and permissions remain outside this optional set. Normal is the saved original configuration, not a required superset. Official listing is an eligibility boundary, not provider authorship or proof of better performance. Verify the installed plugin, source and content version; a name, local marketplace, `pluginId`, user path or an AI assertion alone is insufficient.
+
+Review a changed TRUEFORM together with its UNSEAL impact and save a new paired version. Adoption does not apply either mode, rewrite Normal, or update old favorites/comparisons. Keep inherited items read-only within UNSEAL; explicit additions remain separate. Skill manual-only control must not disable the containing plugin, its tools, hooks or permissions. Unsupported control remains a stated limitation, not an approximated success.
 
 The same policy names express the same user intent in both applications. Each integration must declare which controls implement that intent. Unsupported controls are not silently approximated by a weaker mode.
 
-The initial scope includes self-authored and personally added third-party sources, primarily global AGENTS.md / CLAUDE.md and automatic Skill selection. Provider defaults, managed sources and mandatory project requirements remain outside the release set. A user directory or `user` scope is not evidence of authorship or removability. Hooks require an optional-role classification. Memory remains a common comparison condition rather than varied equipment. The maintainer accepted [the three comparison conditions](harness-scope.md) on 2026-09-08. The [registered user-source contract](spec-user-sources.md) defines the fixed guide and the first Codex write boundary: global optional instructions and explicitly registered Skills. Project instructions and hooks remain unchanged in this slice; unavailable controls cannot be selected as working replacements.
+The initial scope includes self-authored and personally added third-party sources, primarily global AGENTS.md / CLAUDE.md and automatic Skill selection. Provider defaults, managed sources and mandatory project requirements remain outside the release set. A user directory or `user` scope is not evidence of authorship or removability. Hooks require an optional-role classification. Memory remains a common comparison condition rather than varied equipment. The [scope history](harness-scope.md) retains the 2026-09-08 comparison conditions separately from the new target. The [registered user-source contract](spec-user-sources.md) defines the fixed guide and the first Codex write boundary: global optional instructions and explicitly registered Skills. Project instructions and hooks remain unchanged in this slice; unavailable controls cannot be selected as working replacements.
 
 Keep ordinary GUI use focused on mode selection, with **設定をAIに相談** near the modes. The user's AI discusses detailed customization and returns a reviewable proposal for registered, classified sources. Preserve memory/provider protections and do not expose unimplemented toggles.
 
@@ -117,6 +121,8 @@ The primary sharing action copies the card PNG to the clipboard and opens X's co
 ## Acceptance for each supported OS × app combination
 
 - A user can save a setup, run Normal → UNSEAL → TRUEFORM → Normal, and observe the managed changes and retained conditions.
+- For the new rule, only verified official-plugin selections remain optional automatic Skills in TRUEFORM; UNSEAL contains every inherited selection plus its reviewed additions through GUI, CLI and MCP. Empty selections, unknown provenance and unsupported controls have explicit outcomes.
+- New paired setup versions preserve the original Normal, old favorites/comparisons and current prepared state. Verify legacy restore, plugin/Skill updates, enrollment and offline recovery before claiming the new policy supported.
 - The same loop works through the web interface and natural-language requests, including recovery from Zero.
 - A custom favorite can be loaded after another mode is applied, reproducing its saved managed state or reporting a concrete incompatibility.
 - A comparison starts from recorded conditions and preserves separate outcomes.

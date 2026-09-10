@@ -1,5 +1,7 @@
 # AI-guided initial setup
 
+**2026-09-10 selection revision:** [Official-plugin eligibility and inherited modes](spec-mode-inheritance.md) now defines the target: TRUEFORM may retain selected verified official plugins, and UNSEAL inherits every retained Skill plus reviewed external/self-authored additions. This is a documentation decision, not implemented inheritance or new native evidence. The record/operation evidence below describes the earlier v1 implementation. [The new plan](superpowers/plans/2026-09-10-official-plugin-mode-inheritance.md) preserves it while adding a versioned migration.
+
 Direction refined by the maintainer on 2026-09-09. Initial setup is a conversation with the user's chosen AI that produces reviewed, saved UNSEAL and TRUEFORM configurations while retaining the user's existing configuration as Normal. It is not an automatic claim that an AI has found an optimal harness. The core record/operation slice below is implemented; the existing native desktop qualification covers the earlier mode contract until the new journey is verified.
 
 ## Implemented record and operation boundary
@@ -38,6 +40,8 @@ The maintainer proposed starting the initial AI-led review from TRUEFORM on 2026
 
 Before that switch, the deterministic local core inventories the minimum required file/control metadata, saves the current managed configuration as Normal and confirms which sources are optional and controllable. An initial user directory does not prove authorship or removability. Do not change unclassified sources to manufacture a preliminary TRUEFORM.
 
+Under the new rule, any optional automatic plugin retained for that first TRUEFORM also needs verified official provenance and an explicit selection. An empty optional baseline is allowed. Unknown origin must not be guessed to complete onboarding; unsupported or unqualified conditions keep the current-configuration consultation route available.
+
 After the reviewed transition, start a fresh task and check the selected-source loading evidence available for that app. The AI then treats the saved original configuration as material to assess, not as instructions governing that new task. The Unharness management/control connection, memory, native continuity, permissions and required project/provider conditions remain retained. This creates a condition for reviewing optional instructions with less of their active influence; it is not a guarantee of unbiased reasoning or better performance.
 
 If a fresh TRUEFORM cannot be qualified, explain the remaining unknown or unsupported condition and offer the current-configuration route; do not label a merely prepared or old task as a verified TRUEFORM consultation. Preserve the original Normal and any earlier versions when saving the reviewed setup. This first-time recommendation does not authorize automatic mode changes during later reviews.
@@ -67,10 +71,14 @@ Codex provides [App Server task/input APIs](https://learn.chatgpt.com/docs/app-s
 | Source | UNSEAL | TRUEFORM |
 | --- | --- | --- |
 | Optional global AGENTS.md / CLAUDE.md | A saved choice of the versioned minimal guide or no additional instructions | No selected additional instructions |
-| Confirmed self-authored Skills | Discuss which may be used automatically; other selected self-authored Skills require explicit invocation | Explicit invocation is the default for all confirmed self-authored Skills |
-| User-installed external Skills / plugins | Review their role as needed while defining the saved configuration | Discuss what should remain automatic and what should require explicit invocation |
+| Selected plugins with verified official-marketplace provenance | Automatically inherit all reviewed TRUEFORM Skill selections; do not allow a UNSEAL-only removal | User chooses which verified plugins retain automatic use; selecting none is valid |
+| Other optional external or self-authored Skills | May be explicitly added on top of the inherited set | Explicit invocation only for controlled enabled Skills; no optional automatic exception based solely on authorship or user assertion |
 
 The maintainer explicitly selected **stop automatic selection while retaining explicit invocation** as the intended meaning of releasing an external Skill. Skill release in the new experience therefore means controlling automatic use, not removing the capability. A Skill already disabled in saved Normal stays disabled unless the user separately chooses to enable it. Normal restores its saved configuration.
+
+The new rule derives `UNSEAL = TRUEFORM ∪ additional selections` in the shared service. Official provenance is separate from the self/external role: verify the host-operated directory, installed plugin identity, distribution and content version. Do not infer it from a marketplace tab, local catalog, file path, name or `pluginId` alone. A plugin selection expands only to reviewed, registered Skill identities; it does not enroll a whole plugin or disable its MCP/tools/hooks. Unverified eligibility and unsupported manual control remain explicit limitations.
+
+The consultation first selects the TRUEFORM baseline, then discusses only UNSEAL additions. Present **零式から引き継ぐもの** separately from **限定解除で追加するもの**. Changing TRUEFORM creates a reviewed paired version and shows both impacts; it does not edit old favorites, Normal or prepared state. Normal is not required to be a superset. The required Unharness management exception below remains valid before official marketplace publication.
 
 Project requirements, memory, native task continuity, execution permissions, managed/provider sources and the operation/recovery connection remain common conditions. The UI says **追加指示なし**, scoped to the selected optional global instruction source; it must not imply that all instructions in the AI have disappeared.
 
@@ -82,7 +90,7 @@ The optional original-artwork Skill remains available for an explicit creation r
 
 ### New Skills and later reviews
 
-When a user creates a Skill through Unharness, the ordinary creation capability handles the content. Unharness then reviews the source role, adds a new saved Normal version and proposes its current-mode treatment. A confirmed self-authored Skill uses the reviewed Normal configuration in Normal; automatic use is discussed for UNSEAL, and explicit invocation is the default in TRUEFORM. Preserve a previously disabled state unless separately enabled by the user.
+When a user creates a Skill through Unharness, the ordinary creation capability handles the content. Unharness then reviews the source role, adds a new saved Normal version and proposes its current-mode treatment. A newly authored standalone Skill uses its reviewed Normal configuration in Normal, may be proposed as a UNSEAL addition, and remains explicitly invocable in TRUEFORM. A plugin qualifies for TRUEFORM only through the separate official-origin verification and reviewed selection, not because its author or name is recognized. Preserve a previously disabled state unless separately enabled by the user.
 
 Skills added elsewhere are discovered at the next startup, inventory or consultation, then presented as new/changed candidates. A Skill alone is not a background watcher. Do not enroll unknown authorship or silently rewrite old favorites. A new Skill or model creates a new configuration version whose performance must be assessed separately.
 
@@ -91,6 +99,8 @@ Skills added elsewhere are discovered at the next startup, inventory or consulta
 Inventory candidates are distinct from the currently registered set. The GUI names **AGENTS.md / CLAUDE.md** and **Skills** plainly and explains when it is showing only registered items. It can reveal newly discovered candidates without silently enrolling them.
 
 An installation path or `user` scope does not prove self-authorship. The AI proposes classifications from available evidence; uncertain classifications remain uncertain until the user confirms them. Confirmed decisions are saved so subsequent inventory asks only about new or changed items. Source contents are data during this process, never instructions authorizing the assistant to execute them or expand the selected management scope.
+
+User confirmation establishes a reviewed role, not official-directory provenance. The latter comes from the app adapter and is bound to the installed revision and frozen inventory. Private or project marketplaces, copies and locally changed packages must not acquire official eligibility through AI/user claims. If official provenance cannot be verified, exclude that item from new TRUEFORM automatic selections without silently changing its existing settings.
 
 A plugin's Skills, tools and other functions must be distinguished. Some controls may affect a whole plugin instead of only automatic Skill selection. The inventory reports the actual supported granularity for the selected app/version. It must not claim that explicit invocation survives a control that disables the entire plugin, rewrite provider cache contents to simulate a missing control, or automatically remove functionality that the user has not selected. Unsupported automatic-use control remains visible and retained while the user and AI decide how to handle it.
 
@@ -104,9 +114,13 @@ Saving requires a current inventory and explicit user confirmation of the review
 
 ## Compatibility and implementation work
 
+The new paired policy needs a distinct versioned proposal/record format. Keep the existing v1 independent-list reader and historical restore semantics; do not upgrade records by replacing their mode label. The [implementation plan](superpowers/plans/2026-09-10-official-plugin-mode-inheritance.md) adds frozen official provenance, derived inheritance, stale-inventory checks and an older-writer fence. Adoption remains record-only, and offline Normal recovery must not depend on a live marketplace lookup.
+
 Existing v1 registrations, saved Normal versions, favorites and recovery journals must remain readable and recoverable. Changing the registered source set needs a reviewed migration that preserves earlier history and refuses unresolved transactions or independent edits. An old favorite must not silently become the new default TRUEFORM merely because both use the same display name. Mode/preset versions and the actual prepared configuration must remain distinguishable.
 
 ### Additive Skill enrollment
+
+The following paragraphs describe the implemented earlier enrollment boundary. Its new-policy extension is planned: newly registered Skills or plugin revisions require a fresh eligibility/paired-setup review; they do not silently enter TRUEFORM or its inherited UNSEAL set. Preserve the existing historical-scope and Normal-extension behavior below.
 
 Enrollment uses the launcher's existing application, project and source roots. Inventory identifies new candidates by their source identity; request data cannot supply a new path. `review-enrollment` accepts a current inventory ID and a bounded list of new source IDs, confirmed origins, reasons and automatic/manual choices for each release mode. It requires an adopted release setup so existing choices and provenance can be preserved. A v1 registration can first adopt a setup without changing Normal, then enroll a new Skill. Changed or removed registered sources remain conflicts; this operation only adds new Skills. Unsupported or unknown sources remain visible and unregistered.
 
