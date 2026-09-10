@@ -17,6 +17,7 @@ function failureText(error: unknown) {
   return "接続または操作結果を確認できません。状態を再取得し、必要に応じてローカル画面で確認してください。";
 }
 function resultText(receipt: PublicReceipt | null) {
+  if (receipt?.state === "running") return "処理中です。完了はまだ確認できていません。同じ操作IDで結果を確認してください。";
   if (!receipt || receipt.state === "unconfirmed") return "結果は未確認です。同じ操作IDで保存された結果を確認してください。";
   if (receipt.state === "not-found") return "記録が見つかりません。未実行とは断定せず、ローカル画面で状態を確認してください。";
   if (!receipt.result.ok) return "操作を完了できなかった記録があります。ローカルの準備状態と復旧の案内を確認してください。";
@@ -25,7 +26,8 @@ function resultText(receipt: PublicReceipt | null) {
 }
 export function PublicWorkbench({ client, view }: { client: PublicConnection; view: ConnectionSnapshot }) {
   const [selected, select] = useState<SourceMode>(view.state?.preparedMode ?? "normal"), [notice, setNotice] = useState("");
-  const lookupField = useRef<HTMLInputElement>(null);
+  const lookupField = useRef<HTMLInputElement>(null), lookupLock = useRef(false);
+  const [checkingResult, setCheckingResult] = useState(false);
   const current = publicModes[selected], plan = view.plan, last = view.lastOperation;
   const localUrl = client.getLocalWorkbenchUrl();
   const usable = view.phase === "connected" && !!view.state && !view.state.conflict && !view.state.recoveryPending && !view.busy
@@ -51,6 +53,12 @@ export function PublicWorkbench({ client, view }: { client: PublicConnection; vi
   async function run(perform: () => Promise<unknown>) {
     setNotice("");
     try { await perform(); } catch (error) { setNotice(failureText(error)); }
+  }
+  async function lookup(requestId: string) {
+    if (lookupLock.current) return;
+    lookupLock.current = true; setCheckingResult(true);
+    try { await run(() => client.operationStatus(requestId)); }
+    finally { lookupLock.current = false; setCheckingResult(false); }
   }
   const nextTask = `Unharnessで直近に準備した構成を使い、新しいタスクを始めたいです。現在の保存状態と登録範囲をUnharnessのstatusで確認してください。古い会話に反映済みとは扱わず、新しいタスクの読み込みを別に確認してください。`;
   return <main id="main" className="public-workbench">
@@ -88,9 +96,9 @@ export function PublicWorkbench({ client, view }: { client: PublicConnection; vi
         <button className="primary" disabled={!usable} onClick={() => void run(() => client.apply(plan.requestId))}>この計画で準備する</button>
       </div>}
       {last && <section className="public-operation" aria-label="最後の操作結果"><h3>最後の操作結果</h3>
-        <p role="status">{view.busy ? "操作結果を待っています…" : resultText(last.receipt)}</p>
+        <p role="status">{view.busy && !last.receipt ? "操作結果を待っています…" : resultText(last.receipt)}</p>
         <label>操作ID<input aria-label="操作ID" value={last.requestId} readOnly ref={lookupField}/></label>
-        <button className="secondary" disabled={view.busy || view.phase === "expired" || view.phase === "disconnected"} onClick={() => void run(() => client.operationStatus(last.requestId))}>同じ操作の結果を確認</button>
+        <button className="secondary" disabled={checkingResult || !["connected", "unknown"].includes(view.phase)} onClick={() => void lookup(last.requestId)}>同じ操作の結果を確認</button>
         <details><summary>ローカルのAIから結果を確認する</summary><CopyRequest key={last.requestId} label="操作結果を確認する依頼文"
           text={`Unharnessの公開画面で行った操作 ${last.requestId} の結果を、ローカルMCPのpublic_operation_statusで確認してください。結果が不明でも新しい操作IDで再実行せず、ローカルの準備状態と復旧の必要を確認してください。`}/></details>
       </section>}
