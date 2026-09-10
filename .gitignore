@@ -7,6 +7,7 @@ Desktop.ini
 # Installed JavaScript dependencies
 node_modules/
 dist/
+site-dist/
 
 # Local secrets and private agent configuration
 .env

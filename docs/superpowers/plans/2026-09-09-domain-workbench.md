@@ -61,6 +61,8 @@ assert.throws(() => redeemPairing({ ticket, origin: webOrigin, launchId, now }),
 
 ## タスク3: アプリ内表示と接続状態
 
+2026-09-10時点: [公開クライアントと静的な入口](../../public-workbench.md)を実装し、[関連15件とブラウザー3件](../../evidence/2026-09-10-public-client.md)が通過した。状態と操作結果の分離・期限切れ・同じIDの照会・GUI/WebMCPの共通クライアントを確認済み。ブラウザー内のHTTPS originとWebMCPの入口は合成しているため、実ドメイン公開後のCodexでの接続許可・列挙・呼び出しは未完了。
+
 **ファイル:** `skills/unharness/SKILL.md`、新規`web/src/connection.ts`・`web/src/ConnectionStatus.tsx`、変更`web/src/api.ts`・`web/src/App.tsx`・`web/src/source-updates.ts`、テスト`test/web-connection.test.mjs`。
 
 - [ ] Skillがローカル起動情報を確認し、導入済みの正確な公開URLを現在のAIアプリのブラウザーへ渡す。対応するCodexの`open_in_codex`等は実際に利用可能かを調べ、Claude固有の開き方はClaude Codeが実装・検証する。

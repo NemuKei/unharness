@@ -1,6 +1,6 @@
 # Public-page connection protocol
 
-The development build has a restricted public-page backend, local approval screen and MCP handoff for one locally selected, registered source workspace. This is part of [domain entry](spec-domain-entry.md). The public client, WebMCP and actual HTTPS-to-loopback browser qualification remain subsequent work; the complete public entry is not yet qualified.
+The development build has a restricted public-page backend, local approval screen, MCP handoff and [static public client](public-workbench.md) for one locally selected, registered source workspace. This is part of [domain entry](spec-domain-entry.md). Publication, actual HTTPS-to-loopback permission and native Codex WebMCP invocation remain subsequent work; the complete public entry is not yet qualified.
 
 ## Local authority and lifetime
 
@@ -8,7 +8,7 @@ The initial public origin is the maintainer-selected `https://unharness.deltahel
 
 The authenticated local API or owned HMAC launcher can issue a connection request. Only the local API can approve it. Issuing creates a random 256-bit ticket valid for two minutes; issuance is not approval. Approval binds the selected application, workspace identity, root scope, current scope, context and launch. Redemption consumes an approved ticket once and returns a separate random token valid for ten minutes. These deadlines are product defaults, not browser standards.
 
-The local process stores connection-token hashes and pending tickets in process memory. Tickets/connections disappear on restart. Expiry, local revocation and a detected scope/context change refuse new requests. A revision change does not renew the connection or expand its scope. The public client must keep tokens only in memory and remove any one-time fragment after reading it; that public-client behavior needs its own tests.
+The local process stores connection-token hashes and pending tickets in process memory. Tickets/connections disappear on restart. Expiry, local revocation and a detected scope/context change refuse new requests. A revision change does not renew the connection or expand its scope. The public client keeps tokens only in memory and removes the one-time fragment before connecting; the [client evidence](evidence/2026-09-10-public-client.md) separates these tests from real browser-permission qualification.
 
 The local screen shows the fixed site, selected Mac/application/project, registered-source count, allowed operations and expiry before approval. It can refuse or cancel both an unused ticket and a redeemed connection. Its session storage remembers only a non-authorizing pairing UUID, keyed to the launch/context/scope, so a reload can still cancel the connection. Neither ticket nor connection token is persisted there. An unreadable or mismatched status hides the link; an uncertain write retains the original request ID.
 
