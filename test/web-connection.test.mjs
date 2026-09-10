@@ -169,3 +169,150 @@ test('a different protocol version stops the connection with a distinct incompat
   assert.equal(c.getSnapshot().phase, 'incompatible'); assert.equal(c.getSnapshot().state, null);
   assert.equal(s.calls.length, 1);
 });
+
+// Transport-only receipt-order tests. These use the real client/parsers, not
+// a model, browser, native profile or replacement implementation of the client.
+function receiptOrderFixture(failed = false) {
+  let time = Date.now(), intercept = null, connection, revision = 0, mode = 'normal';
+  const calls = [], receipts = new Map(), scopeId = 'a'.repeat(64);
+  const handoff = () => consumeConnectionHandoff(readyUrl(), () => {});
+  const client = new PublicConnection({ pageOrigin: PUBLIC_WEB_ORIGIN, handoff: handoff(), now: () => time,
+    fetcher: async (url, options) => {
+      calls.push({ url, options });
+      const action = new URL(url).pathname.split('/').at(-1), input = JSON.parse(options.body);
+      let result;
+      if (action === 'redeem') {
+        connection = { protocolVersion: 1, connectionId: randomUUID(), launchId: input.launchId,
+          expiresAt: time + CONNECTION_TTL_MS, webOrigin: PUBLIC_WEB_ORIGIN,
+          target: { application: 'codex', scopeId }, operations: ['status', 'plan', 'apply', 'operation-status'] };
+        result = { ...connection, token: 'c'.repeat(64) };
+      } else if (action === 'status') {
+        result = { connection, state: { scopeId, revision, preparedMode: mode, setupRequired: false,
+          modeChangeRequired: false, conflict: false, recoveryPending: false, runtimeState: 'unknown' } };
+      } else if (action === 'operation-status') {
+        result = receipts.get(connection.connectionId + ':' + input.requestId)
+          ?? { requestId: input.requestId, operation: null, state: 'not-found' };
+      } else {
+        assert.ok(['plan', 'apply'].includes(action));
+        const planned = receipts.get(connection.connectionId + ':' + input.planRequestId);
+        if (action === 'apply' && !failed) { ++revision; mode = planned.result.data.mode; }
+        result = { requestId: input.requestId, operation: action, state: 'completed',
+          result: action === 'apply' && failed ? { ok: false, error: { kind: 'source-conflict' } }
+            : { ok: true, data: action === 'plan' ? { planId: 'd'.repeat(64), scopeId, revision,
+              mode: input.mode, changedFileCount: 1 } : { planRequestId: input.planRequestId, scopeId,
+              revision, preparedMode: mode, readback: 'matched', runtimeState: 'unknown' } } };
+        receipts.set(connection.connectionId + ':' + input.requestId, result);
+      }
+      const response = Response.json(result);
+      return intercept ? intercept(url, options, response) : response;
+    } });
+  return { client, calls, handoff, advance: ms => { time += ms; }, intercept: fn => { intercept = fn; } };
+}
+function delayApplyResponse(t, s, lookup = response => response) {
+  const entered = Promise.withResolvers(), release = Promise.withResolvers();
+  t.after(() => release.resolve());
+  s.intercept(async (url, options, response) => {
+    if (url.endsWith('/apply')) { entered.resolve(); await release.promise; throw Error('Synthetic late transport failure'); }
+    return url.endsWith('/operation-status') ? lookup(response) : response;
+  });
+  return { entered: entered.promise, release: () => release.resolve() };
+}
+async function assertLookupSurvives(t, s, ok, end, beforeApply = async () => {}) {
+  const c = s.client; await c.connect(); const planned = await c.plan('unseal'), requestId = randomUUID();
+  await beforeApply();
+  const held = delayApplyResponse(t, s);
+  const writing = c.apply(planned.requestId, requestId), duplicate = c.apply(planned.requestId, requestId);
+  const outcome = writing.then(receipt => ({ receipt }), error => ({ error }));
+  assert.equal(duplicate, writing);
+  await held.entered;
+  const confirmed = await c.operationStatus(requestId);
+  assert.equal(confirmed.state, 'completed'); assert.equal(confirmed.result.ok, ok);
+  assert.deepEqual(c.getSnapshot().lastOperation.receipt, confirmed);
+  if (end === 'expired') { s.advance(CONNECTION_TTL_MS); c.tick(); }
+  if (end === 'disconnected') c.disconnect();
+  held.release();
+  const result = await outcome;
+  assert.deepEqual(result, { receipt: confirmed }, 'the original caller receives the verified durable outcome, including failure');
+  assert.deepEqual(c.getSnapshot().lastOperation.receipt, confirmed);
+  assert.equal(c.getSnapshot().lastOperation.error, null);
+  assert.equal(c.getSnapshot().phase, end === 'unchanged' ? 'unknown' : end);
+  assert.equal(c.getSnapshot().state, null, 'a historical receipt does not establish current state');
+  assert.equal(c.getSnapshot().plan, null);
+  assert.equal(c.getSnapshot().busy, false);
+  assert.equal(s.calls.filter(call => call.url.endsWith('/apply')).length, 1);
+  return { confirmed, requestId };
+}
+for (const ok of [true, false]) for (const end of ['unchanged', 'expired', 'disconnected']) {
+  test(`confirmed ${ok ? 'successful' : 'failed'} receipt survives a late transport failure (${end})`, async t => {
+    await assertLookupSurvives(t, receiptOrderFixture(!ok), ok, end);
+  });
+}
+
+test('an unrelated or unconfirmed receipt cannot resolve the pending apply', async t => {
+  const s = receiptOrderFixture(), c = s.client; await c.connect(); const planned = await c.plan('unseal'), requestId = randomUUID();
+  const held = delayApplyResponse(t, s, async response => {
+    const receipt = await response.json();
+    return Response.json(receipt.requestId === requestId
+      ? { requestId, operation: 'apply', state: 'unconfirmed' } : receipt);
+  });
+  const writing = c.apply(planned.requestId, requestId);
+  const rejected = assert.rejects(writing, { kind: 'remote-connection-lost' });
+  await held.entered;
+  assert.equal((await c.operationStatus(planned.requestId)).state, 'completed');
+  assert.equal((await c.operationStatus(requestId)).state, 'unconfirmed');
+  held.release(); await rejected;
+  assert.equal(c.getSnapshot().lastOperation.receipt, null);
+  assert.equal(s.calls.filter(call => call.url.endsWith('/apply')).length, 1);
+});
+
+for (const field of ['preparedMode', 'revision', 'planRequestId']) test(`mismatched ${field} is not cached as a durable apply result`, async t => {
+  const s = receiptOrderFixture(), c = s.client; await c.connect(); const planned = await c.plan('unseal'), requestId = randomUUID();
+  const held = delayApplyResponse(t, s, async response => {
+    const receipt = await response.json();
+    receipt.result.data[field] = field === 'preparedMode' ? 'normal' : field === 'revision' ? 42 : randomUUID();
+    return Response.json(receipt);
+  });
+  const writing = c.apply(planned.requestId, requestId);
+  const rejected = assert.rejects(writing, { kind: 'remote-connection-lost' });
+  await held.entered;
+  await assert.rejects(c.operationStatus(requestId), { kind: 'remote-operation-unconfirmed' });
+  held.release(); await rejected;
+  assert.equal(c.getSnapshot().lastOperation.receipt, null);
+});
+
+test('a completed receipt from the old connection cannot resolve a new connection request', async t => {
+  const s = receiptOrderFixture(true), c = s.client;
+  const old = await assertLookupSurvives(t, s, false, 'disconnected');
+  s.intercept(null); c.acceptHandoff(s.handoff()); await c.connect();
+  const planned = await c.plan('unseal'), requestId = randomUUID();
+  const held = delayApplyResponse(t, s);
+  const writing = c.apply(planned.requestId, requestId);
+  const rejected = assert.rejects(writing, { kind: 'remote-connection-lost' });
+  await held.entered;
+  assert.equal((await c.operationStatus(old.requestId)).state, 'not-found');
+  held.release(); await rejected;
+  assert.equal(c.getSnapshot().lastOperation.requestId, requestId);
+  assert.equal(c.getSnapshot().lastOperation.receipt, null);
+  assert.equal(s.calls.filter(call => call.url.endsWith('/apply')).length, 2);
+});
+
+test('a saved failure cannot be reused for different requested content under the same UUID', async t => {
+  const s = receiptOrderFixture(true), c = s.client;
+  const previous = await assertLookupSurvives(t, s, false, 'unchanged');
+  s.intercept(null); await c.refresh();
+  const planned = await c.plan('normal'), count = s.calls.length;
+  await assert.rejects(c.apply(planned.requestId, previous.requestId), { kind: 'remote-operation-conflict' });
+  assert.equal(s.calls.length, count, 'changed content is refused before transport or receipt substitution');
+  assert.equal(c.getSnapshot().lastOperation.requestId, planned.requestId);
+});
+
+// Repeat the same response ordering with the existing real HTTP/owned-profile
+// fixture. This is separate from the transport-only coverage above.
+for (const ok of [true, false]) for (const end of ['unchanged', 'expired']) {
+  test(`HTTP durable ${ok ? 'success' : 'failure'} precedes the original lost response (${end})`, async t => {
+    const s = await setup(t);
+    await assertLookupSurvives(t, s, ok, end, async () => {
+      if (!ok) await writeFile(join(s.context.codexHome, 'AGENTS.md'), '# Synthetic independent edit\n');
+    });
+  });
+}
