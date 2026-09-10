@@ -16,6 +16,8 @@ The builder runs type/CSP and production-build checks, installs production depen
 
 `scripts/unharness` launches only the bundled `runtime/bin/node`; it fails clearly when the distribution is incomplete. There is no hard-coded Codex-internal executable path, API key, model call, hosted service or required system Node installation. `runtime/LICENSE`, each production package's own notices and `THIRD_PARTY_NOTICES.md` remain in the bundle alongside Unharness's MIT license.
 
+Both browser builds also emit the complete dependency notices in `THIRD_PARTY_NOTICES.txt`. The build checks installed production versions against the lockfile and refuses missing or empty notices. The locked colord package omits its license file; a [reviewed copy from its exact upstream version](dependency-notices.md) supplies it during assembly. This step needs no network access.
+
 ## Integrity and local records
 
 `distribution.json` indexes every shipped regular file, including runtime, UI, dependencies, Skills and licenses, by bytes, SHA256 and executable status. Reading the bundle checks its supported manifest/runtime version, matching plugin/package versions, required files, complete file list and all contents. Extra, missing, modified or symlinked files fail; selected private-data root names are refused during assembly. The manifest is an integrity record for a user-selected package, not independent proof of publisher authenticity. Source revision and dirty status remain visible; a dirty candidate is not a reproducible public release.
