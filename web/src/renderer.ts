@@ -62,7 +62,9 @@ export async function createScene(
     ++layerEpoch; layerLoad?.abort(); layerLoad = null;
     signal.removeEventListener('abort', dispose);
     const ownedCanvasWasAttached = initialized && app.canvas.parentElement === host;
-    try { if (initialized) app.destroy(true, { children: true, texture: false, textureSource: false }); }
+    // Other live scenes still use Pixi's shared pools. Boolean true would
+    // release those pools as well as this canvas, invalidating their batches.
+    try { if (initialized) app.destroy({ removeView: true, releaseGlobalResources: false }, { children: true, texture: false, textureSource: false }); }
     finally {
       try { rig?.destroy(); }
       finally {

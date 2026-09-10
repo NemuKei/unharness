@@ -3,6 +3,35 @@ import assert from 'node:assert/strict';
 import { layerBrowser, layerBrowserCase } from '../test-support/layer-browser.mjs';
 import { layerPng, pngChunk, imageAsset } from '../test-support/layer-png-fixture.mjs';
 
+test('closing preview scenes preserves the live workbench and later previews', layerBrowserCase, async t => {
+  const { page, errors } = await layerBrowser(t);
+  const result = await page.evaluate(async () => {
+    const f = window.layerFixture, { createScene } = await import('/web/src/renderer.ts');
+    const selected = f.selection({ entity: await f.png('#33bbee'), background: await f.png('#102030') });
+    await f.scene.setLayers(selected.manifest, selected.load);
+    f.scene.setCondition('fixed-only', true);
+    const baseline = await f.scene.snapshot(), kept = [];
+    for (let i = 0; i < 3; i++) {
+      const scene = await createScene(document.createElement('div'), new AbortController().signal);
+      if (!scene) throw Error('subsequent preview scene unavailable');
+      try {
+        scene.setEffects(false);
+        await scene.setLayers(selected.manifest, selected.load);
+        scene.setCondition('fixed-only', true);
+        await scene.snapshot();
+      } finally { scene.destroy(); }
+      // A texture change exercises the surviving renderer's cached batches.
+      await f.scene.setLayers(selected.manifest, selected.load);
+      kept.push(await f.same(baseline, await f.scene.snapshot()));
+    }
+    f.scene.destroy();
+    return { kept, counts: f.counts() };
+  });
+  assert.deepEqual(result.kept, [true, true, true]);
+  for (const count of result.counts) assert.deepEqual(count, { bitmap: 1, texture: 1, source: 1 });
+  assert.deepEqual(errors, []);
+});
+
 test('real Pixi stock/reset pixels and standard template exports are invariant across layered selection', layerBrowserCase, async t => {
   const { page, errors } = await layerBrowser(t);
   const checks = await page.evaluate(async () => {

@@ -49,6 +49,8 @@ test('entity import shows three modes, saves a version, survives reload and rese
   assert.notEqual(second.state.selectedItemId, first.state.selectedItemId);
   await page.getByRole('button', { name: 'コレクション', exact: true }).click();
   dialog = page.getByRole('dialog');
+  await dialog.getByRole('img', { name: '金色の本体の見た目', exact: true }).waitFor();
+  await dialog.getByRole('img', { name: '金色の本体・次の版の見た目', exact: true }).waitFor();
   await dialog.getByRole('article').filter({ has: page.getByRole('heading', { name: '金色の本体', exact: true }) }).getByRole('button', { name: 'この作品を選ぶ', exact: true }).click();
   try { await page.getByText('この作品を選びました。', { exact: true }).waitFor(); }
   catch (error) {
@@ -58,6 +60,8 @@ test('entity import shows three modes, saves a version, survives reload and rese
     throw error;
   }
   assert.equal((await readUserAppearance({ workspace: s.workspace })).state.selectedItemId, first.state.selectedItemId);
+  await page.locator('.pixi-host').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('.pixi-host').getAttribute('data-appearance'), 'layered');
   assert.deepEqual(await readFile(join(s.workspace, 'state.json')), s.sourceState);
   assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
   assert.equal(s.posts.filter(row => /\/(apply|plan|register)$/.test(row.path)).length, 0);
