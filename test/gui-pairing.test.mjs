@@ -5,12 +5,12 @@ import { createPairingManager, PAIRING_TTL_MS, CONNECTION_TTL_MS } from '../src/
 
 const webOrigin = 'https://unharness.example.test';
 const binding = () => ({ launchId: randomUUID(), contextId: 'a'.repeat(64), rootScopeId: 'b'.repeat(64),
-  scopeId: 'c'.repeat(64), workspace: '/synthetic/private/workspace', application: 'codex' });
+  scopeId: 'c'.repeat(64), collectionScopeId: 'b'.repeat(64), workspace: '/synthetic/private/workspace', application: 'codex' });
 function setup() {
   let time = 1000;
   const current = binding(), manager = createPairingManager({ launchId: current.launchId, webOrigin, now: () => time });
   const issue = manager.issue(current);
-  const input = { ticket: issue.ticket, launchId: current.launchId, origin: webOrigin, protocolVersion: 1 };
+  const input = { ticket: issue.ticket, launchId: current.launchId, origin: webOrigin, protocolVersion: 2 };
   return { current, manager, issue, input, advance: ms => { time += ms; } };
 }
 
@@ -23,6 +23,8 @@ test('a local issue is not approval; approved tickets redeem exactly once', () =
   assert.match(session.token, /^[a-f0-9]{64}$/);
   assert.equal(session.expiresAt, 1000 + CONNECTION_TTL_MS);
   assert.equal(session.target.application, 'codex');
+  assert.equal(session.protocolVersion, 2);
+  assert.equal(session.target.collectionScopeId, s.current.rootScopeId);
   assert.ok(!JSON.stringify(session).includes('/synthetic'));
   assert.throws(() => s.manager.redeem(s.input, s.current), { kind: 'remote-pairing-unavailable' });
   const auth = { token: session.token, origin: webOrigin };
@@ -35,7 +37,7 @@ test('wrong origins and claimed launch/protocol cannot redeem a valid approved t
   const s = setup(); s.manager.approve(s.issue.pairingId, s.current);
   for (const input of [{ ...s.input, origin: 'https://unharness.example.test.attacker.test' },
     { ...s.input, origin: webOrigin + '/' }, { ...s.input, origin: 'null' },
-    { ...s.input, launchId: randomUUID() }, { ...s.input, protocolVersion: 2 }, { ...s.input, approve: true }]) {
+    { ...s.input, launchId: randomUUID() }, { ...s.input, protocolVersion: 1 }, { ...s.input, approve: true }]) {
     assert.throws(() => s.manager.redeem(input, s.current));
   }
   assert.ok(s.manager.redeem(s.input, s.current).token, 'invalid attempts do not approve or consume the ticket');
@@ -48,7 +50,7 @@ test('tickets expire at the deadline and approval cannot revive them', () => {
 });
 
 test('scope, root, context, workspace and launch changes invalidate issued tickets and connections', () => {
-  for (const field of ['scopeId', 'rootScopeId', 'contextId', 'workspace', 'launchId']) {
+  for (const field of ['scopeId', 'rootScopeId', 'collectionScopeId', 'contextId', 'workspace', 'launchId', 'application']) {
     const s = setup(); s.manager.approve(s.issue.pairingId, s.current);
     const changed = { ...s.current, [field]: field === 'launchId' ? randomUUID() : field === 'workspace' ? '/other' : 'd'.repeat(64) };
     assert.throws(() => s.manager.redeem(s.input, changed), undefined, field);

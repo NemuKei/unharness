@@ -18,7 +18,7 @@ async function setup(t, wrap = c => c) {
   t.after(() => remote.close());
   async function connect() {
     const ticket = await remote.issue(); await remote.approve(ticket.pairingId);
-    const session = await remote.redeem({ ticket: ticket.ticket, launchId: ticket.launchId, protocolVersion: 1 }, webOrigin);
+    const session = await remote.redeem({ ticket: ticket.ticket, launchId: ticket.launchId, protocolVersion: 2 }, webOrigin);
     return { session, auth: { token: session.token, origin: webOrigin } };
   }
   const connection = await connect();
