@@ -1,7 +1,7 @@
 // Public-page protocol. This allowlist is deliberately separate from the local
 // GUI/MCP schema, whose registration and private readers remain local only.
 import { createHash } from 'node:crypto';
-import stock from '../../assets/appearance-templates/hangar-layered-v1/stock.json' with { type: 'json' };
+import { getAppearanceTemplate, LAYER_IMAGE_LIMIT, LAYER_SET_LIMIT, APPEARANCE_UPLOAD_BODY_LIMIT } from '../appearances/template.mjs';
 
 export const REMOTE_PROTOCOL_VERSION = 2;
 export const PUBLIC_WEB_ORIGIN = 'https://unharness.deltahelmlab.com';
@@ -11,10 +11,10 @@ export const REMOTE_WRITES = Object.freeze(['plan', 'apply', ...ARTWORK_WRITES])
 export const REMOTE_OPERATIONS = Object.freeze(['status', 'plan', 'apply', 'operation-status',
   'artwork', 'artwork-item', 'artwork-image', 'review-appearance-import', 'read-appearance-import',
   'save-appearance-import', 'select-appearance', 'name-appearance', 'recover-appearance']);
-export const REMOTE_IMAGE_LIMIT = 8 * 1024 * 1024;
-export const REMOTE_SET_LIMIT = 64 * 1024 * 1024;
-export const REMOTE_UPLOAD_BODY_LIMIT = Math.ceil(REMOTE_SET_LIMIT * 4 / 3) + 64 * 1024;
-const partIds = stock.files.map(file => file.partId);
+export const REMOTE_IMAGE_LIMIT = LAYER_IMAGE_LIMIT;
+export const REMOTE_SET_LIMIT = LAYER_SET_LIMIT;
+export const REMOTE_UPLOAD_BODY_LIMIT = APPEARANCE_UPLOAD_BODY_LIMIT;
+const template = getAppearanceTemplate(), partIds = template.parts.map(part => part.id);
 const fileId = value => typeof value === 'string' && /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/.test(value);
 const optionalHash = value => value === null || isHash(value);
 const text = (value, empty = false) => typeof value === 'string' && value.length <= 80
@@ -64,7 +64,7 @@ export function remoteHttpPolicy(request, { loopbackOrigin, webOrigin }) {
 function uploadShape(value) {
   const m = value.manifest;
   exactRemote(m, ['templateId', 'baseItemId', 'name', 'author', 'parts']);
-  if (m.templateId !== stock.manifest.templateId || !optionalHash(m.baseItemId)
+  if (m.templateId !== template.id || !optionalHash(m.baseItemId)
     || !text(m.name) || !text(m.author, true) || !Array.isArray(m.parts) || !m.parts.length
     || m.parts.length > partIds.length || !Array.isArray(value.files) || !value.files.length
     || value.files.length > 64) remoteFail('remote-invalid-request');

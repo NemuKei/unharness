@@ -1,9 +1,10 @@
 // Public DTO projection is a separate boundary, not permission to read raw
 // appearance/evidence records. Core ownership and PNG decoding remain local.
 import { createHash } from 'node:crypto';
-import stock from '../../assets/appearance-templates/hangar-layered-v1/stock.json' with { type: 'json' };
+import { getAppearanceTemplate } from '../appearances/template.mjs';
 import { isHash, isRevision, remoteFail, REMOTE_IMAGE_LIMIT, REMOTE_SET_LIMIT } from './remote-policy.mjs';
 
+const template = getAppearanceTemplate();
 const invalid = () => remoteFail('remote-state-unconfirmed');
 const check = condition => { if (!condition) invalid(); };
 const nullableHash = value => value === null || isHash(value);
@@ -25,7 +26,7 @@ function asset(value) {
 }
 function manifest(value) {
   const m = pick(value, ['kind', 'schemaVersion', 'templateId', 'assets', 'layers']);
-  check(m.kind === 'unharness-layered-appearance' && m.schemaVersion === 1 && m.templateId === stock.manifest.templateId);
+  check(m.kind === 'unharness-layered-appearance' && m.schemaVersion === 1 && m.templateId === template.id);
   check(Array.isArray(m.assets) && m.assets.length > 0 && m.assets.length <= 64);
   m.assets = m.assets.map(asset);
   const ids = new Set(m.assets.map(a => a.assetId)), used = new Set();
@@ -34,7 +35,7 @@ function manifest(value) {
   for (const role of ['entity', 'background']) {
     layers[role] = pick(layers[role], ['assetId']); check(ids.has(layers[role].assetId)); used.add(layers[role].assetId);
   }
-  const parts = stock.manifest.layers.restraints.map(p => p.partId), seen = new Set();
+  const parts = template.parts.filter(part => part.role === 'restraints').map(part => part.id), seen = new Set();
   check(Array.isArray(layers.restraints) && layers.restraints.length === parts.length);
   layers.restraints = layers.restraints.map(value => {
     const p = pick(value, ['partId', 'assetId']); check(parts.includes(p.partId) && !seen.has(p.partId) && ids.has(p.assetId));
@@ -98,7 +99,7 @@ export function projectArtworkReview(value, binding) {
   check(isHash(v.reviewId) && isHash(v.proposedItemId) && nullableHash(v.expectedStateId) && nullableHash(v.baseItemId)
     && text(v.name) && v.name.trim().length > 0 && text(v.author));
   v.manifest = manifest(v.manifest);
-  const parts = stock.files.map(p => p.partId), assetIds = new Set(v.manifest.assets.map(a => a.assetId));
+  const parts = template.parts.map(part => part.id), assetIds = new Set(v.manifest.assets.map(a => a.assetId));
   check(Array.isArray(v.replacedParts) && v.replacedParts.length > 0 && v.replacedParts.length <= parts.length
     && new Set(v.replacedParts).size === v.replacedParts.length && v.replacedParts.every(p => parts.includes(p)));
   v.replacedParts = [...v.replacedParts];
