@@ -2,6 +2,7 @@
 import { randomBytes } from 'node:crypto';
 import { lstat, readdir, rename } from 'node:fs/promises';
 import { join, dirname, basename } from 'node:path';
+import { assertControlChanges } from '../setup/control-sources.mjs';
 import {
   captureFile,
   equal,
@@ -29,7 +30,9 @@ import {
   loadNormal
 } from './records.mjs';
 import { pathsFor } from './capture.mjs';
+import { applicationFor } from '../apps/index.mjs';
 import { fail, verification } from './errors.mjs';
+import { captureDirectoryIdentity, directoryIdentity, hasVolumeUuid, matchesDirectoryIdentity } from '../platform/directory-identity.mjs';
 let testHook = null;
 // Internal process-local seam: never accepted as service/CLI/browser input.
 export function setSourceTransactionTestHook(hook) {
@@ -111,7 +114,17 @@ export async function acquire(w, recovery = false) {
   };
 }
 export async function checkParents(reg) {
-  for (const b of Object.values(reg.bindings)) await checkBinding(b);
+  const seen = new Set();
+  for (const b of Object.values(reg.bindings)) {
+    const key = JSON.stringify(b);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    await checkBinding(b);
+  }
+}
+async function directoryMatches(path, stat, expected) {
+  return Boolean(expected && stat?.isDirectory() && !stat.isSymbolicLink()
+    && matchesDirectoryIdentity(await captureDirectoryIdentity(path, stat, { persistent: hasVolumeUuid(expected) }), expected));
 }
 export async function assertCurrent(w, expected) {
   await checkParents(w.reg);
@@ -122,10 +135,7 @@ export async function assertCurrent(w, expected) {
       const owned = (w.state.ownedDirs ?? []).find((d) => d.path === path);
       if (
         !owned?.identity ||
-        s.dev !== owned.identity.dev ||
-        s.ino !== owned.identity.ino ||
-        !s.isDirectory() ||
-        s.isSymbolicLink()
+        !await directoryMatches(path, s, owned.identity)
       )
         fail('source-redirection');
     }
@@ -157,18 +167,13 @@ export async function loadPlan(w, id) {
     fail('record-invalid');
   if ((p.snapshotVersion !== undefined && ![1, 2].includes(p.snapshotVersion)) ||
       (w.state.snapshotVersion === 2 && (p.snapshotVersion !== 2 || !p.normalId))) fail('record-invalid');
+  if (p.setupId != null && (typeof p.setupId !== 'string' || !/^[0-9a-f]{64}$/.test(p.setupId))) fail('record-invalid');
   await loadNormal(w.workspace, w.reg, p.normalId ?? w.reg.normalId);
   await loadSnapshot(w.workspace, w.reg, p.beforeId, p.snapshotVersion ?? 1);
   await loadSnapshot(w.workspace, w.reg, p.afterId, p.snapshotVersion ?? 1);
   return p;
 }
-function controlKeys(reg) {
-  return [
-    'config',
-    ...(reg.instructions ? ['override'] : []),
-    ...reg.skills.map((s) => s.id + ':policy')
-  ];
-}
+const controlKeys = (reg) => applicationFor(reg.context).controlKeys(reg);
 function changes(w, before, after) {
   const allowed = controlKeys(w.reg);
   for (const k of Object.keys(before))
@@ -187,6 +192,9 @@ export async function transact(w, plan, planId) {
     fail('stale-plan');
   const before = await loadSnapshot(w.workspace, w.reg, plan.beforeId),
     after = await loadSnapshot(w.workspace, w.reg, plan.afterId);
+  // Forward publications obey today's retained-control rules. A valid older
+  // interrupted transaction still has to be reversible by offline recovery.
+  assertControlChanges({ sources: w.reg.skills, before, after });
   const keys = changes(w, before, after),
     paths = pathsFor(w.reg);
   await assertCurrent(w, before);
@@ -197,6 +205,7 @@ export async function transact(w, plan, planId) {
     scopeId: w.scopeId,
     snapshotId: plan.beforeId,
     preparedMode: w.state.preparedMode,
+    preparedSetupId: w.state.preparedSetupId ?? null,
     revision: w.state.revision
   });
   const nonce = randomBytes(16).toString('hex');
@@ -225,9 +234,16 @@ export async function transact(w, plan, planId) {
   await sourceTransactionHook('journal');
   for (const dir of dirs) {
     if (dir.identity) continue;
+    const parent = w.reg.bindings[dir.key], parentStat = await lstat(parent.path);
+    const parentIdentity = await captureDirectoryIdentity(parent.path, parentStat, { persistent: hasVolumeUuid(parent) });
+    if (dirname(dir.path) !== parent.path || !matchesDirectoryIdentity(parentIdentity, parent)) fail('source-redirection');
     await mkdir(dir.path, { mode: 0o700 });
     const s = await lstat(dir.path);
-    dir.identity = { dev: s.dev, ino: s.ino };
+    if (!s.isDirectory() || s.isSymbolicLink() || s.dev !== parentStat.dev) fail('source-redirection');
+    // Resolve the fallible OS metadata before mkdir. A child on the same
+    // current device inherits that verified volume UUID; record its inode
+    // immediately so a later metadata timeout still has a recovery identity.
+    dir.identity = directoryIdentity(s, parentIdentity.volumeUuid);
     await writeJson(join(w.workspace, 'pending.json'), journal);
     await sourceTransactionHook('directory');
   }
@@ -252,6 +268,7 @@ export async function transact(w, plan, planId) {
   await sourceTransactionHook('before-completion');
   const newState = {
     ...w.state,
+    ...(w.state.scopePreparationRequired === undefined ? {} : { scopePreparationRequired: false }),
     normalId: activeNormalId(w),
     lastRetainedPlanId: null,
     preparation: newPreparation(),
@@ -259,6 +276,7 @@ export async function transact(w, plan, planId) {
     ownedDirs: dirs,
     revision: w.state.revision + 1,
     preparedMode: plan.preparedMode,
+    preparedSetupId: plan.setupId ?? null,
     snapshotId: plan.afterId,
     lastCheckpointId: checkpointId,
     lastPlanId: planId
@@ -330,11 +348,7 @@ async function validateJournal(w, j) {
     const st = await exists(d.path);
     if (
       st &&
-      (!d.identity ||
-        st.dev !== d.identity.dev ||
-        st.ino !== d.identity.ino ||
-        !st.isDirectory() ||
-        st.isSymbolicLink())
+      !await directoryMatches(d.path, st, d.identity)
     )
       fail('journal-invalid');
   }
@@ -366,7 +380,7 @@ async function cleanupDirs(j, desired, paths, recovering) {
   for (const d of j.dirs) {
     const s = await exists(d.path);
     if (!s) continue;
-    if (!d.identity || s.dev !== d.identity.dev || s.ino !== d.identity.ino)
+    if (!await directoryMatches(d.path, s, d.identity))
       fail('journal-invalid');
     if (
       Object.keys(paths).some(
@@ -390,6 +404,14 @@ export async function recoverTransaction(w) {
   if (j.kind === 'unharness-user-source-retained-pending') {
     const { recoverRetainedSettings } = await import('./retained-settings.mjs');
     return recoverRetainedSettings(w, j);
+  }
+  if (j.kind === 'unharness-user-source-setup-pending') {
+    const { recoverSetup } = await import('../setup/recovery.mjs');
+    return recoverSetup(w, j);
+  }
+  if (j.kind === 'unharness-user-source-enrollment-pending') {
+    const { recoverEnrollment } = await import('../setup/enrollment-recovery.mjs');
+    return recoverEnrollment(w, j);
   }
   const { before, after, paths } = await validateJournal(w, j);
   await checkParents(w.reg);
@@ -431,17 +453,13 @@ export async function recoverTransaction(w) {
     if (!current) continue;
     await canonical(d.path);
     if (
-      !d.identity ||
-      !current.isDirectory() ||
-      current.isSymbolicLink() ||
-      current.dev !== d.identity.dev ||
-      current.ino !== d.identity.ino
+      !await directoryMatches(d.path, current, d.identity)
     )
       fail('journal-invalid');
     recoveredState.ownedDirs.push({
       key: d.key,
       path: d.path,
-      identity: { dev: d.identity.dev, ino: d.identity.ino }
+      identity: { ...d.identity }
     });
   }
   validateState(w.reg, recoveredState);

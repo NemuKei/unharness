@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from 'node:util';
 import { dirname } from 'node:path';
-import { loadRecord } from '../sources/records.mjs';
+import { loadRecord, loadSnapshot, scopeWorkspace } from '../sources/records.mjs';
 import { validUtc } from '../sources/observation-record.mjs';
 import { exactKeys } from '../comparisons/assessment.mjs';
 import { validateDeclaration } from './declaration.mjs';
@@ -55,10 +55,15 @@ export async function loadStartReview(w, reviewId, checkChunks = true) {
   try {
     if (!hash(reviewId)) invalid();
     const p = await loadRecord(w.workspace, 'input', reviewId);
+    w = scopeWorkspace(w, p.scopeId);
     shape(p, ['kind', 'role', 'schemaVersion', 'scopeId', 'capturedAt', 'declaration', 'manifestId', 'captureGuard', 'selection', 'conditions']);
     if (p.role !== 'start-review' || p.schemaVersion !== 1 || p.scopeId !== w.scopeId || !validUtc(p.capturedAt)
       || !isDeepStrictEqual(p.conditions, START_CONDITIONS)) invalid();
     const declaration = validateDeclaration(p.declaration);
+    if (declaration.comparisonRule) {
+      await loadSnapshot(w.workspace, w.reg, declaration.comparisonRule.baselineSnapshotId);
+      await loadSnapshot(w.workspace, w.reg, declaration.comparisonRule.candidateSnapshotId);
+    }
     shape(p.selection, ['kind', 'gitMetadata', 'ignoredFiles', 'retainedProjectInputs', 'additionalPaths']);
     if (!['directory-working-files', 'git-working-files'].includes(p.selection.kind)
       || p.selection.gitMetadata !== 'excluded' || p.selection.retainedProjectInputs !== 'included'
@@ -86,9 +91,11 @@ export async function loadSavedStart(w, startId, checkChunks = true) {
   try {
     if (!hash(startId)) invalid();
     const p = await loadRecord(w.workspace, 'experiment', startId);
+    w = scopeWorkspace(w, p.scopeId);
     shape(p, ['kind', 'role', 'schemaVersion', 'scopeId', 'reviewId']);
     if (p.role !== 'saved-start' || p.schemaVersion !== 1 || p.scopeId !== w.scopeId || !hash(p.reviewId)) invalid();
     const review = await loadStartReview(w, p.reviewId, checkChunks);
+    if (review.scopeId !== p.scopeId) invalid();
     return { review, summary: { ...savedStartSummary(review, startId), inputIntegrity: checkChunks ? 'verified' : 'not-rechecked' } };
   } catch { invalid(); }
 }

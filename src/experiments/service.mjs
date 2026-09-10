@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from 'node:util';
 import { relative, isAbsolute, sep } from 'node:path';
-import { openWorkspace, record } from '../sources/records.mjs';
+import { openWorkspace, record, loadSnapshot } from '../sources/records.mjs';
 import { acquire, sourceTransactionHook } from '../sources/transaction.mjs';
 import { recordId, readRecord, listRecordPage } from '../core/local-store.mjs';
 import { exactKeys } from '../comparisons/assessment.mjs';
@@ -30,6 +30,12 @@ export async function reviewUserStart(args) {
   request(args, ['declaration'], ['additionalPaths']);
   const declaration = validateDeclaration(args.declaration);
   return locked(args.workspace, async w => {
+    if (declaration.comparisonRule) {
+      try {
+        await loadSnapshot(w.workspace, w.reg, declaration.comparisonRule.baselineSnapshotId);
+        await loadSnapshot(w.workspace, w.reg, declaration.comparisonRule.candidateSnapshotId);
+      } catch { fail('starting-declaration-invalid'); }
+    }
     const project = w.reg.context.project;
     const storeWithinProject = relative(project, w.workspace);
     if (storeWithinProject === '' || storeWithinProject !== '..' && !storeWithinProject.startsWith('..' + sep) && !isAbsolute(storeWithinProject))
@@ -59,7 +65,7 @@ export async function saveUserStart(args) {
   request(args, ['reviewId']);
   return locked(args.workspace, async w => {
     const review = await loadStartReview(w, args.reviewId);
-    const payload = { kind: 'unharness-user-source', role: 'saved-start', schemaVersion: 1, scopeId: w.scopeId, reviewId: review.reviewId };
+    const payload = { kind: 'unharness-user-source', role: 'saved-start', schemaVersion: 1, scopeId: review.scopeId, reviewId: review.reviewId };
     const startId = recordId('experiment', payload);
     let exists = false;
     try { await readRecord({ store: w.workspace, type: 'experiment', id: startId }); exists = true; }

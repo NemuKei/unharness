@@ -1,6 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Hangar } from "./Hangar";
 import { ComparisonWorkbench } from "./ComparisonWorkbench";
+import { SetupHandoff, FreshTaskHandoff } from "./SetupHandoff";
+import { releaseModeDescription } from "./setup";
+import { EnrollmentPanel } from "./EnrollmentPanel";
+import { LocalConnectionPanel } from "./LocalConnectionPanel";
+import { useLocalAppearance } from './useLocalAppearance';
+import { AppearancePanel } from './AppearancePanel';
+import type { ArtworkImageLoader } from './artwork';
 import {
   RestoreAdaptationNotice,
   RetainedReview,
@@ -10,9 +17,12 @@ import { comparisonContextKey } from "./useComparisonController";
 import {
   canObserveTask,
   currentTaskObservation,
+  isClaudeContext,
   modePresentation,
   observationIssueText,
+  sourceHomeOf,
   sourceModes,
+  sourceRuntimeOf,
   taskObservationLabel,
   validTaskId,
 } from "./sources";
@@ -33,6 +43,9 @@ function displayPreference() {
 }
 export function SourceWorkbench() {
   const c = useSourceController();
+  const art = useLocalAppearance(c), artwork = art.view?.selectedItem ?? null;
+  const imageLoader = useMemo<ArtworkImageLoader | undefined>(() => artwork?.kind === 'layered'
+    ? (asset, signal) => art.image(artwork.id, asset, signal, art.key) : undefined, [art.key, artwork?.id, art.image]);
   const [effects, setEffects] = useState(displayPreference);
   const [activeTab, setActiveTab] = useState<"equipment" | "comparison">(
     "equipment",
@@ -41,8 +54,10 @@ export function SourceWorkbench() {
     taskId: string;
     contextKey: string;
   } | null>(null);
-  const presentation = modePresentation[c.selected];
   const source = c.view?.source;
+  const presentation = { ...modePresentation[c.selected], description:
+    releaseModeDescription(c.selected, c.plan ? c.plan.setupId : source?.setup?.setupId,
+      c.plan && c.plan.setupId !== source?.setup?.setupId ? undefined : source?.setup?.schemaVersion) ?? modePresentation[c.selected].description };
   const comparisonKey = comparisonContextKey(c.view);
   const usable =
     !!source &&
@@ -92,6 +107,8 @@ export function SourceWorkbench() {
           比較
         </button>
       </nav>
+      {c.view?.source && <LocalConnectionPanel key={c.view.metadata.launchId + ":" + c.view.metadata.contextId + ":" + c.view.source.registration.scopeId}
+        view={c.view} enabled={c.confirmed && !c.busy} request={c.requestConnection} />}
       {c.syncNotice && <p className={`source-sync-notice muted${c.syncIssue ? "" : " quiet"}`} role="status">{c.syncNotice}</p>}
       <main id="main">
         <div hidden={activeTab !== "comparison"}>
@@ -123,6 +140,8 @@ export function SourceWorkbench() {
             <Hangar
               condition={presentation.scene}
               effects={effects && activeTab === "equipment"}
+              artwork={artwork}
+              imageLoader={imageLoader}
             />
             <p className="scene-caption">
               姿は選択プレビューです。実行中のタスクの状態を表すものではありません。
@@ -131,11 +150,15 @@ export function SourceWorkbench() {
               key={
                 c.selectionKey +
                 ":" +
-                (source?.registration.normalId ?? "setup")
+                (source?.registration.normalId ?? "setup") + ":" + (source?.setup?.setupId ?? "legacy")
               }
               controller={c}
               usable={usable}
             />
+            {source && <AppearancePanel controller={art}/>}
+            {c.view && <SetupHandoff key={c.view.metadata.contextId + ":" + (source?.setup?.setupId ?? "initial")}
+              view={c.view} confirmed={c.confirmed} busy={c.busy} execute={c.executeAuxiliary} />}
+            <EnrollmentPanel key={c.view?.metadata.contextId + ":" + source?.revision} controller={c} />
           </section>
           <aside className="control-column" aria-label="設定と保存">
             <section className="control-section">
@@ -145,7 +168,8 @@ export function SourceWorkbench() {
                   {source &&
                   c.confirmed &&
                   !source.conflict &&
-                  !source.recovery.pending
+                  !source.recovery.pending &&
+                  !source.registration.modeChangeRequired
                     ? "準備済み"
                     : source
                       ? "要確認"
@@ -156,7 +180,7 @@ export function SourceWorkbench() {
                 {source?.recovery.pending
                   ? "変更が中断しています"
                   : source
-                    ? `${!c.confirmed || source.conflict ? "最後に確認した保存状態：" : ""}${modePresentation[source.preparedMode].title}`
+                    ? `${source.registration.modeChangeRequired ? "追加前の最後の準備：" : !c.confirmed || source.conflict ? "最後に確認した保存状態：" : ""}${modePresentation[source.preparedMode].title}`
                     : "通常装備はまだ保存されていません"}
               </p>
               <p className="boundary">
@@ -166,6 +190,11 @@ export function SourceWorkbench() {
                     ? "ファイルの準備と、タスクへの読み込みは別です。使用時は新しいタスクを作成してください。"
                     : "対象を確認し、追加した任意の指示・Skillだけを選んで保存します。"}
               </p>
+              {source?.registration.modeChangeRequired && <p className="scope-enrollment-notice" role="status">
+                Skillの登録範囲が増えました。追加分は保存済みNormalの状態です。
+                {source.setup?.setupRequired ? '先に「設定をAIに相談」で両モードの構成を確認・保存してください。Normalと過去の保存版には戻せます。'
+                  : '使うモードを選び、差分を確認して準備してください。'}
+              </p>}
               <button
                 className="text-button"
                 disabled={c.busy}
@@ -173,6 +202,7 @@ export function SourceWorkbench() {
               >
                 状態を再取得
               </button>
+              {c.view && source && <FreshTaskHandoff view={c.view} disabled={!usable || !!source.registration.modeChangeRequired} />}
               {source?.conflict &&
                 (source.recovery.pending ? (
                   <details>
@@ -293,7 +323,7 @@ export function SourceWorkbench() {
                     この計画で準備する
                   </button>
                 </section>
-                <Save controller={c} usable={usable} />
+                <Save controller={c} usable={usable && !source?.registration.modeChangeRequired} />
               </>
             )}
           </aside>
@@ -320,6 +350,7 @@ export function SourceWorkbench() {
               <h2>お気に入り</h2>
               <span>内容を保存した版</span>
             </div>
+            <p className="muted">保存した時点の構成へ戻せます。旧規則の保存版も、現在の零式の選択で置き換えません。</p>
             <button
               className="secondary"
               disabled={!source || c.busy}
@@ -342,7 +373,7 @@ export function SourceWorkbench() {
                     }
                   >
                     {f.name} · {modePresentation[f.preparedMode].title}
-                    {source &&
+                    {f.addedSourceIds?.length ? ` · 追加したSkill ${f.addedSourceIds.length}件を含む` : source &&
                     f.normalId !== source.registration.activeNormalId
                       ? " · 現在の共通設定を維持"
                       : ""}
@@ -572,27 +603,32 @@ function TaskObservationSection({
 }
 
 function Context({ controller: c }: { controller: Controller }) {
+  if (!c.view) return false;
+  const { application, applicationLabel, context, workspace } = c.view.metadata;
+  const claude = isClaudeContext(context);
   return (
-    c.view && (
-      <dl className="source-context">
-        <div>
-          <dt>Codex home</dt>
-          <dd>{c.view.metadata.context.codexHome}</dd>
-        </div>
-        <div>
-          <dt>プロジェクト</dt>
-          <dd>{c.view.metadata.context.project}</dd>
-        </div>
-        <div>
-          <dt>実行ファイル</dt>
-          <dd>{c.view.metadata.context.executable}</dd>
-        </div>
-        <div>
-          <dt>保存場所</dt>
-          <dd>{c.view.metadata.workspace ?? "未登録"}</dd>
-        </div>
-      </dl>
-    )
+    <dl className="source-context">
+      <div>
+        <dt>アプリ</dt>
+        <dd>{applicationLabel}</dd>
+      </div>
+      <div>
+        <dt>{claude ? "Claude home" : "Codex home"}</dt>
+        <dd>{sourceHomeOf(context)}</dd>
+      </div>
+      <div>
+        <dt>プロジェクト</dt>
+        <dd>{context.project}</dd>
+      </div>
+      <div>
+        <dt>{claude ? "アプリ本体" : "実行ファイル"}</dt>
+        <dd>{sourceRuntimeOf(context)}</dd>
+      </div>
+      <div>
+        <dt>保存場所</dt>
+        <dd>{workspace ?? `未登録（${application}）`}</dd>
+      </div>
+    </dl>
   );
 }
 function SourceDetail({
@@ -743,6 +779,20 @@ function Setup({ controller: c }: { controller: Controller }) {
                 {row.id}: {row.reason}
               </p>
             ))}
+            {/* Sources no mode manages. Shown so "selected extras absent"
+                is never read as covering more than it does. */}
+            {(c.discovery.notices ?? []).map((notice) => (
+              <div className="source-notice" key={notice.id + notice.path}>
+                <p>
+                  {notice.label}
+                  {notice.count > 0 ? `（${notice.count}）` : ""}
+                </p>
+                <p>
+                  <code>{notice.path}</code>
+                </p>
+                <p className="muted">{notice.detail}</p>
+              </div>
+            ))}
           </details>
         )}
         <label className="source-declaration">
@@ -805,7 +855,7 @@ function ModeChoices({
         <div className="source-mode" key={mode}>
           <button
             aria-pressed={c.selected === mode}
-            disabled={!usable}
+            disabled={!usable || (mode !== "normal" && c.view?.source?.setup?.setupRequired)}
             onClick={() => c.choose(mode, custom[mode])}
           >
             <span className="mode-icon" aria-hidden="true">
@@ -816,7 +866,7 @@ function ModeChoices({
               <small>{modePresentation[mode].label}</small>
             </span>
           </button>
-          {mode !== "normal" && c.view?.source && (
+          {mode !== "normal" && c.view?.source && !c.view.source.setup?.setupId && !c.view.source.setup?.setupRequired && (
             <details>
               <summary>対象を調整</summary>
               <p className="muted">
@@ -901,7 +951,8 @@ function Save({
         {c.view?.source &&
         c.confirmed &&
         !c.view.source.conflict &&
-        !c.view.source.recovery.pending
+        !c.view.source.recovery.pending &&
+        !c.view.source.registration.modeChangeRequired
           ? `現在準備した ${modePresentation[c.view.source.preparedMode].title} の内容を保存します。`
           : "ファイル状態を確認してから保存できます。"}
       </p>

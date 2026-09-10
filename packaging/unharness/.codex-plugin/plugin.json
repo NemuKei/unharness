@@ -1,0 +1,36 @@
+{
+  "name": "unharness",
+  "version": "0.0.1",
+  "description": "Save, prepare and compare your local Codex loadouts.",
+  "author": {
+    "name": "DeltaHelm Lab",
+    "url": "https://deltahelmlab.com/"
+  },
+  "homepage": "https://unharness.deltahelmlab.com",
+  "repository": "https://github.com/NemuKei/unharness",
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "local",
+    "harness",
+    "comparison"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Unharness",
+    "shortDescription": "Your local Codex loadouts, ready to compare.",
+    "longDescription": "Save Normal, prepare UNSEAL or TRUEFORM for a fresh task, compare selected work and restore safely. Configuration and saved data stay on your Mac.",
+    "developerName": "DeltaHelm Lab",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://unharness.deltahelmlab.com",
+    "defaultPrompt": [
+      "アンハーネスを開いて",
+      "Unharnessの設定を相談したい"
+    ],
+    "brandColor": "#59D8C5"
+  }
+}

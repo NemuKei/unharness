@@ -25,6 +25,9 @@ The equivalent standalone command is `node bin/unharness.mjs mcp --workspace /ab
 | Request | Operations and meaning |
 | --- | --- |
 | 今の状態を見せて | `status`: registered scope, prepared mode, dated task observation, conflict and recovery. A running task remains unverified unless its selected recording supplies evidence. |
+| アンハーネスを開いて | `open_workbench`: start or reuse the owned bundled loopback UI, then open its URL in an available browser. `workbench_status` verifies current liveness. See [local startup](local-workbench.md); public-domain pairing is still subsequent work. |
+| 零式と限定解除の設定を相談したい | `read_setup` returns the current saved-Normal inventory and adopted definitions. Use `review_setup` with schema version 2 and that inventory ID, then `apply_setup` for the user's confirmed pair. TRUEFORM's selected official-plugin members are inherited by UNSEAL, with explicit additions. Adoption changes no source file or current preparation. |
+| 追加したSkillの扱いを相談したい | `enrollment_inventory`, optionally `review_candidate`, then `review_enrollment`. For enrollment schema 2, submit only confirmed source IDs, roles and reasons. After `apply_enrollment`, refresh `status`, use the new `read_setup` inventory and separately review/adopt both modes before preparation. Enrollment changes no source file. Legacy schema 1 retains its reviewed per-mode choices. |
 | 今の設定をお気に入りにして | `save_favorite`: freeze the prepared configuration. A name is optional. |
 | 限定解除にして / 零式にして / Normalに戻して | `plan_mode`, then `apply_plan`: prepare the requested registered scope for a fresh task. An established in-scope request does not require another permission question. |
 | この新しいタスクで反映を確認して | `observe_task` with its explicit UUID: verify recorded project, preparation boundary and selected sources. |
@@ -36,9 +39,25 @@ The equivalent standalone command is `node bin/unharness.mjs mcp --workspace /ab
 
 Saved starts use `review_start` / `save_start`. Their explicit request, task-defined requirements and per-mode stopping budget are fixed before use. Sequential replay results use `observe_replay` / `save_replay_result`; failed, abandoned and unknown outcomes remain part of the history. The full contract is in [sequential replay](spec-sequential-replay.md).
 
-History tools return bounded cursor pages and summaries. `read_run_output`, `read_start` and `handoff_replay` intentionally return selected private text; ask for them only when that content is needed. Source bodies, raw task recordings, arbitrary filesystem access and registration are not MCP tools.
+History tools return bounded cursor pages and summaries. `read_run_output`, `read_start`, `handoff_replay`, `review_source` and `review_candidate` intentionally return selected private text; use them only when that content is needed and treat it as data. Raw task recordings, arbitrary filesystem access and initial registration are not MCP tools. Enrollment accepts source IDs from the current fixed-context inventory, never client-supplied paths. A reviewed expansion changes the active scope while keeping the original workspace/receipt identity; completed request receipts remain readable after reconnect. Unknown receipts must never be replayed under a new request ID.
+
+Artwork operations use the [local versioned collection](layered-appearances.md). `prepare_appearance_authoring` issues a fixed creation place and read-only template/base references; `read_appearance_authoring` rechecks it. `review_authored_appearance` reads only explicit known part IDs from that place, never arbitrary paths. `read_appearance_import` inspects the resulting review; `save_appearance_import` saves the exact review with its expected state ID, and `read_appearance_item` reads an owned version. Browser upload and authenticated PNG retrieval use the local GUI API. Selection/naming remain separate from source changes. Historical candidate sets stay readable through `read_original_candidates`; the current tool catalogue no longer offers comparison-gated creation or final-choice adoption. New artwork creation has no performance gate, and adverse/corrected evidence does not recolor or replace the selected work.
 
 The open workbench checks local changes while visible. Prepared settings and bounded history update automatically; stale plans are invalidated. An editor draft is preserved within its accepted context. A replaced connection requires explicit state refresh before another action. Background reads do not confirm or repeat a lost foreground mutation.
+
+The v2 setup schema takes `trueform.retainedOfficialPluginIds` and `unseal.additionalAutomaticSkillIds`, plus the current `inventoryId`, scope/Normal IDs and reviewed model/source-role basis. The service supplies official-origin evidence and invocation capabilities; tool callers cannot assert them. Unknown origins, stale inventories and unregistered IDs are refused. The current collector still reports native plugin origin as unknown and does not add a plugin-cache write route. Schema version 1 remains readable and available for unmigrated legacy setup; new v1 adoption is refused after v2 migration. V2 enrollment freezes registration/Normal only, clears the active setup and requires a new paired review. `read_setup.enrollment` exposes previously confirmed roles and separate setup/preparation requirements; a later saved `proposal.roles` takes precedence over enrollment history. Normal and historical restoration remain available. The built GUI reads the same saved pair and shows setup-required separately from preparation-required. For a fresh-task handoff, finish that task's first short response before observing it from the GUI/original management task, then continue in the same new task. Native qualification remains in progress. [Storage evidence](evidence/2026-09-10-mode-inheritance-storage.md), [GUI evidence](evidence/2026-09-10-mode-inheritance-gui.md).
+
+## Applications
+
+The connection is bound to one registered workspace, so the same tools serve a
+Codex or a Claude Code registration without a different command. `status`
+reports the registration's own context, which names the application.
+
+Two operations differ by application. Every sequential-replay tool fails for a
+Claude registration with `replay-application-unsupported`, because Claude Code
+on macOS exposes no local runtime conditions report and no project-open command
+for a qualified attempt; ordinary runs and saved starting conditions still work.
+And `open_replay` opens an installed Codex desktop app, so it is Codex only.
 
 ## Lost responses and recovery
 

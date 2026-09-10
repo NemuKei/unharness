@@ -1,0 +1,11 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "unharness": {
+      "type": "stdio",
+      "command": "./scripts/unharness",
+      "args": ["plugin", "mcp", "--data-directory", "${PLUGIN_DATA}"],
+      "cwd": "${PLUGIN_ROOT}"
+    }
+  }
+}

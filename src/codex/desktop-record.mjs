@@ -1,12 +1,11 @@
-import { lstat, open, readdir } from 'node:fs/promises';
-import { constants } from 'node:fs';
+import { readdir } from 'node:fs/promises';
 import { arch, homedir, platform } from 'node:os';
 import { join } from 'node:path';
 
+import { readRecordFile } from '../sources/record-file.mjs';
+
 import { fixtureMarkers, snapshotDesktopFixture } from './desktop-fixture.mjs';
 
-const MAX_BYTES = 64 * 1024 * 1024;
-const MAX_LINE = 8 * 1024 * 1024;
 const MARKERS = ['fixed', 'procedure', 'skillCatalog', 'skillBody'];
 const SOURCE_KEYS = ['agents_md', 'host_skills', 'skills', 'orchestrator_skills',
   'managed_developer_instructions', 'permissions', 'apps_instructions', 'plugins_instructions'];
@@ -141,45 +140,7 @@ export function summarizeDesktopRecords(records, { expectedCwd, expectedSessionI
   };
 }
 
-export async function readDesktopRecords(session) {
-  let handle;
-  try {
-    // Open once and read a bounded prefix of this inode. A concurrently appended
-    // partial trailing record is ignored and explicitly reported.
-    const selected = await lstat(session);
-    if (!selected.isFile() || selected.isSymbolicLink()) fail('invalid-desktop-record');
-    handle = await open(session, constants.O_RDONLY | (constants.O_NONBLOCK ?? 0) | (constants.O_NOFOLLOW ?? 0));
-    const info = await handle.stat();
-    if (!info.isFile()) fail('invalid-desktop-record');
-    if (info.size > MAX_BYTES) fail('desktop-record-too-large');
-    const buffer = Buffer.alloc(info.size);
-    let offset = 0;
-    while (offset < buffer.length) {
-      const { bytesRead } = await handle.read(buffer, offset, buffer.length - offset, offset);
-      if (bytesRead === 0) fail('desktop-record-changed');
-      offset += bytesRead;
-    }
-    const text = buffer.toString('utf8');
-    const lines = text.split('\n');
-    const tail = lines.pop();
-    let incompleteTrailingLine = false;
-    if (tail) {
-      if (Buffer.byteLength(tail) > MAX_LINE) fail('desktop-record-too-large');
-      // Accept a valid last record without newline; a broken tail may be an
-      // in-progress append. Broken records terminated by newline are errors.
-      try { JSON.parse(tail); lines.push(tail); } catch { incompleteTrailingLine = true; }
-    }
-    const records = lines.filter(line => line.length > 0).map(line => {
-      if (Buffer.byteLength(line) > MAX_LINE) fail('desktop-record-too-large');
-      try { const value = JSON.parse(line); if (!object(value)) fail('invalid-desktop-record'); return value; }
-      catch { fail('invalid-desktop-record'); }
-    });
-    return { records, recordRead: { incompleteTrailingLine, snapshotBytes: info.size } };
-  } catch (error) {
-    const allowed = ['invalid-desktop-record', 'desktop-record-too-large', 'desktop-record-changed'];
-    fail(allowed.includes(error?.kind) ? error.kind : 'desktop-record-read-error');
-  } finally { await handle?.close(); }
-}
+export const readDesktopRecords = readRecordFile;
 
 export async function collectDesktopRecord({ session, fixture, expectedSessionId, notBefore } = {}) {
   try {

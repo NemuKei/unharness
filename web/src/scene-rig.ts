@@ -3,6 +3,8 @@ import type { Renderer, Filter } from "pixi.js";
 import { buildCels, selectCel, sourcePanels } from "./scene-cels";
 import { coreBounds, coreMask, coreNucleus, sourceArms, WORLD } from "./scene-parts";
 import recipe from "../assets/hangar-v4.json";
+import { appearanceDrawing } from "./appearance-drawing";
+import type { AppearanceRecipe, AppearanceTreatment } from "./appearances";
 
 export interface RigTextures { sheet: Texture; empty: Texture }
 
@@ -11,6 +13,7 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
   const baked: Texture[] = [];
   const geometries: MeshGeometry[] = [];
   const filters: Filter[] = [];
+  const armSources: { id: string; texture: Texture; x: number; y: number }[] = [];
   let disposed = false;
   const destroy = () => {
     if (disposed) return;
@@ -50,6 +53,7 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
     const hardwareAlpha = new ColorMatrixFilter();
     hardwareAlpha.matrix = [0,0,0,0,1, 0,0,0,0,1, 0,0,0,0,1, 0,0,0,18,-0.5];
     filters.push(hardwareSeed, hardwareFill, hardwareAlpha);
+    const armPaintings: { stock: Sprite; replacement: Sprite; layer: Container }[] = [];
     const arms = sourceArms.map(source => {
       const xs = source.polygon.filter((_, index) => index % 2 === 0);
       const ys = source.polygon.filter((_, index) => index % 2 === 1);
@@ -69,10 +73,17 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
       cutout.addChild(sprite, matte);
       sprite.setMask({ mask: matte, channel: "alpha" });
       const texture = bake(cutout, bounds);
+      armSources.push({ id: 'arm-' + source.id, texture, x: bounds.x, y: bounds.y });
       const mount = new Container();
       const painted = new Sprite(texture);
       painted.position.set(bounds.x, bounds.y);
       mount.addChild(painted);
+      // A replacement is already a transparent full-canvas PNG. Do not apply
+      // the stock sheet's color-derived cutout or invent new attachment points.
+      const layer = new Container(), replacement = new Sprite(Texture.EMPTY);
+      const clip = new Graphics().poly(source.polygon).fill(0xffffff);
+      layer.addChild(replacement, clip); replacement.mask = clip; layer.visible = false;
+      mount.addChild(layer); armPaintings.push({ stock: painted, replacement, layer });
       mount.pivot.set(source.pivot.x, source.pivot.y);
       stage.addChild(mount);
       return mount;
@@ -121,7 +132,14 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
     // Light follows the original lattice silhouette; the sharp body stays on top.
     const wideRadiance = makeRadiance(20, 2.5, 0x55aaff);
     const closeRadiance = makeRadiance(7, 1.5, 0xc1e7ff);
-    entity.addChild(wideRadiance, closeRadiance, glow, core);
+    const details = new Graphics();
+    entity.addChild(wideRadiance, closeRadiance, glow, core, details);
+    const replacementEntity = new Sprite(Texture.EMPTY);
+    replacementEntity.anchor.set(coreNucleus.x / WORLD, coreNucleus.y / WORLD);
+    replacementEntity.visible = false;
+    entity.addChild(replacementEntity);
+    const appearanceLight = new ColorMatrixFilter(), appearanceMetal = new ColorMatrixFilter();
+    filters.push(appearanceLight, appearanceMetal);
     stage.addChild(entity);
 
     const hardware = new Container({ sortableChildren: true });
@@ -137,6 +155,7 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
       back.tint = 0x586774;
       group.addChild(back);
       const center = { x: source.points.reduce((sum, point) => sum + point.x, 0) / 3, y: source.points.reduce((sum, point) => sum + point.y, 0) / 3 };
+      const sideMeshes: Mesh[] = [];
       const sides = [0, 1, 2].map(edge => {
         const a = source.points[edge];
         const b = source.points[(edge + 1) % 3];
@@ -148,15 +167,18 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
         geometries.push(sideGeometry);
         const side = new Mesh({ texture: normal, geometry: sideGeometry });
         side.tint = 0x788b9a;
-        group.addChild(side);
+        group.addChild(side); sideMeshes.push(side);
         return sideGeometry;
       });
       const mesh = new Mesh({ texture: normal, geometry });
       group.addChild(mesh);
       hardware.addChild(group);
-      return { group, geometry, backGeometry, sides };
+      return { group, geometry, backGeometry, sides, meshes: [back, ...sideMeshes, mesh] };
     });
     stage.addChild(hardware);
+    const assessmentMarks = new Graphics();
+    assessmentMarks.zIndex = 10000;
+    hardware.addChild(assessmentMarks);
 
     const glintSource = new Sprite(normal);
     glintSource.filters = [lightAlpha];
@@ -165,6 +187,12 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
     glint.position.set(363, 374);
     glint.blendMode = "add";
     stage.addChild(glint);
+    const replacementGlintLayer = new Container(), replacementGlint = new Sprite(Texture.EMPTY);
+    const glintClip = new Graphics().rect(198, 354, 330, 40).fill(0xffffff);
+    replacementGlint.blendMode = 'add';
+    replacementGlintLayer.addChild(replacementGlint, glintClip); replacementGlint.mask = glintClip;
+    replacementGlintLayer.visible = false;
+    stage.addChild(replacementGlintLayer);
     const atmosphere = new Container();
     const particles = Array.from({ length: 32 }, (_, index) => {
       const point = new Sprite(Texture.WHITE);
@@ -176,12 +204,115 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
     });
     stage.addChild(atmosphere);
     const cels = buildCels();
-    let shownCel = -1;
+    let shownCel = -1, layered = false;
+    let appearanceKey = '', drawing: ReturnType<typeof appearanceDrawing> | null = null;
+    const drawMarks = () => {
+      assessmentMarks.clear();
+      if (layered || !drawing?.accentAlpha || shownCel < 0) return;
+      for (const panel of cels[shownCel].panels) {
+        const [a, b, c] = panel.screen;
+        const blend = (p: { x: number; y: number }, q: { x: number; y: number }, amount: number) =>
+          ({ x: p.x + (q.x - p.x) * amount, y: p.y + (q.y - p.y) * amount });
+        const left = blend(a, c, 0.75), right = blend(b, c, 0.75);
+        assessmentMarks.poly([left.x, left.y, c.x, c.y, right.x, right.y])
+          .stroke({ color: drawing.accentColor, alpha: drawing.accentAlpha, width: 1.5 });
+      }
+    };
+    const refreshAppearance = () => {
+      details.clear();
+      const shown = layered ? null : drawing;
+      entity.filters = shown ? [appearanceLight] : [];
+      hardware.filters = shown ? [appearanceMetal] : [];
+      glint.filters = shown ? [appearanceLight] : [];
+      if (shown) {
+        appearanceLight.matrix = shown.matrix;
+        appearanceMetal.matrix = shown.metalMatrix;
+        for (const line of shown.lines) details.poly(line).stroke({ color: shown.detailColor, alpha: 0.72, width: 1 });
+      }
+      drawMarks();
+    };
     const updateGeometry = (geometry: MeshGeometry, points: readonly { x: number; y: number }[]) => {
       points.forEach((point, index) => { geometry.positions[index * 2] = point.x; geometry.positions[index * 2 + 1] = point.y; });
       geometry.getAttribute("aPosition").buffer.update();
     };
     return {
+      // Texture ownership stays with Scene. All assignments are synchronous;
+      // no load, crop, mode change or performance input occurs at this boundary.
+      setLayers(replacements: ReadonlyMap<string, Texture> | null) {
+        if (disposed) throw Error('appearance-renderer-unavailable');
+        layered = replacements !== null;
+        const background = replacements?.get('background');
+        base.texture = background ?? textures.empty;
+        base.width = base.height = WORLD;
+        originalFloor.visible = !background;
+        armPaintings.forEach((part, index) => {
+          const replacement = replacements?.get('arm-' + sourceArms[index].id);
+          part.replacement.texture = replacement ?? Texture.EMPTY;
+          part.stock.visible = !replacement; part.layer.visible = !!replacement;
+        });
+        const entityTexture = replacements?.get('entity');
+        replacementEntity.texture = entityTexture ?? Texture.EMPTY;
+        replacementEntity.visible = !!entityTexture;
+        core.visible = glow.visible = !entityTexture;
+        if (entityTexture) wideRadiance.visible = closeRadiance.visible = false;
+        panels.forEach((panel, index) => {
+          const texture = replacements?.get('panel-' + sourcePanels[index].id) ?? normal;
+          panel.meshes.forEach(mesh => { mesh.texture = texture; });
+        });
+        const glintTexture = replacements?.get('glint');
+        replacementGlint.texture = glintTexture ?? Texture.EMPTY;
+        replacementGlintLayer.visible = !!glintTexture; glint.visible = !glintTexture;
+        refreshAppearance();
+      },
+      async exportTemplateLayers() {
+        if (disposed) throw Error('appearance-renderer-unavailable');
+        const sprite = (texture: Texture, x = 0, y = 0) => {
+          const value = new Sprite(texture); value.position.set(x, y); return value;
+        };
+        const factories: { id: string; make: () => Container }[] = [
+          { id: 'background', make: () => {
+            const target = new Container(), plate = sprite(textures.empty);
+            plate.width = plate.height = WORLD;
+            target.addChild(plate, sprite(originalFloor.texture, 0, floorTop)); return target;
+          } },
+          ...armSources.map(part => ({ id: part.id, make: () => {
+            const target = new Container(); target.addChild(sprite(part.texture, part.x, part.y)); return target;
+          } })),
+          { id: 'entity', make: () => {
+            const target = new Container(), halo = sprite(glowTexture, coreBounds.x - margin, coreBounds.y - margin);
+            halo.alpha = 0.7; halo.blendMode = 'add';
+            const body = sprite(coreTexture, coreBounds.x, coreBounds.y); body.blendMode = 'add';
+            target.addChild(halo, body); return target;
+          } },
+          ...sourcePanels.map(part => ({ id: 'panel-' + part.id, make: () => {
+            const target = new Container(), painted = sprite(normal);
+            const mask = new Graphics().poly(part.points.flatMap(point => [point.x, point.y])).fill(0xffffff);
+            target.addChild(painted, mask); painted.mask = mask; return target;
+          } })),
+          { id: 'glint', make: () => {
+            const target = new Container(); target.addChild(sprite(glint.texture, 198, 354)); return target;
+          } },
+        ];
+        const images: { id: string; dataUrl: string }[] = [];
+        for (const item of factories) {
+          if (disposed) throw Error('appearance-renderer-unavailable');
+          const target = item.make();
+          try {
+            const dataUrl = await renderer.extract.base64({ target, frame: new Rectangle(0, 0, WORLD, WORLD),
+              format: 'png', resolution: 1, antialias: false, clearColor: [0, 0, 0, 0] });
+            if (disposed) throw Error('appearance-renderer-unavailable');
+            images.push({ id: item.id, dataUrl });
+          } finally { target.destroy({ children: true, texture: false, textureSource: false }); }
+        }
+        return images;
+      },
+      setAppearance(value: AppearanceRecipe | null, treatment: AppearanceTreatment = 'neutral') {
+        const key = JSON.stringify([value, treatment]);
+        if (key === appearanceKey) return;
+        appearanceKey = key;
+        drawing = value ? appearanceDrawing(value, treatment) : null;
+        refreshAppearance();
+      },
       render(release: number, time: number, effects: boolean) {
         const cel = selectCel(cels, release);
         if (cel.index !== shownCel) {
@@ -202,6 +333,7 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
             arm.rotation = pose.rotation;
           });
           shownCel = cel.index;
+          drawMarks();
         }
         const bob = effects ? Math.sin(time * 0.85) * 2.5 * (1 - Math.min(1, Math.max(0, release - 1))) : 0;
         hardware.y = bob;
@@ -211,12 +343,14 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
         const reveal = Math.max(0, Math.min(1, (release - 1.5) / 0.5));
         const radiance = effects ? reveal * reveal * (3 - 2 * reveal) : 0;
         const breath = 0.88 + Math.sin(time * 0.85) * 0.12;
-        wideRadiance.visible = closeRadiance.visible = radiance > 0;
+        wideRadiance.visible = closeRadiance.visible = !replacementEntity.visible && radiance > 0;
         wideRadiance.alpha = radiance * breath * 0.65;
         closeRadiance.alpha = radiance * breath * 0.65;
         glow.alpha = 0.7 + radiance * 0.3;
         glint.y = 374 + bob;
         glint.alpha = cel.glint * (effects ? 0.80 + Math.sin(time * 1.3) ** 2 * 0.20 : 1);
+        replacementGlintLayer.y = bob;
+        replacementGlintLayer.alpha = glint.alpha;
         atmosphere.visible = effects;
         particles.forEach((point, index) => {
           point.position.set(30 + index * 137 % 665, ((index * 113 - time * (4 + index % 5)) % 650 + 650) % 650 + 30);

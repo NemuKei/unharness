@@ -8,9 +8,21 @@ Try different combinations of skills and instructions on your own work. Find wha
 
 [日本語](README.ja.md)
 
-> **Draft for the intended public release.** Codex inventory, isolated source-control fixtures, local desktop-record diagnostics, and private ordinary-run comparison records are available for feasibility testing. Registered optional-source preparation, recovery and sequential replay through the local workbench have scoped macOS evidence. The registered local MCP endpoint now also has an [actual Mac desktop AI loop](docs/evidence/2026-09-09-ai-desktop-macos.md): save, three modes, fresh observations, comparison, historical favorites and exact Normal restoration, with an open workbench receiving its changes. Complete runtime coverage, performance verdicts and the Mac product finish remain unfinished. Delivery prioritizes the Mac version: Codex core, Claude Code integration, then Mac product finish. Windows remains a later target, with Codex before Claude Code.
+The development build can [open and reuse its local workbench](docs/local-workbench.md) through CLI or MCP. The [plugin connection](docs/plugin-connection.md) can also open the initial Normal-saving screen before registration, using an explicitly selected local context. Public download, the complete onboarding journey and real public-domain connection remain unfinished.
 
-**Free, with no required paid API or hosted backend.** Unharness is designed to run locally with no recurring operator service expense. Your existing AI subscription and usage are separate. Artwork, including three-candidate original forms, and card export have a local route without model calls. See [feasibility and limitations](docs/feasibility.md).
+A [Mac arm64 package candidate](docs/plugin-package.md) includes Node, the UI, MCP and management/setup/authoring Skills. Its [AI-guided installation wrapper](docs/mac-installation.md) has passed native installation and ZIP extraction checks. The integrated candidate also preserves saved Normal, v2 setups, favorites and artwork through [independent recovery after removal with external networking denied](docs/evidence/2026-09-11-final-native-candidate.md). This remains a private candidate, not a published download or a qualified full model-driven journey. The website's installation request and download stay hidden until a verified public release is configured.
+
+> **Draft for the intended public release.** Codex inventory, isolated source-control fixtures, local desktop-record diagnostics, and private ordinary-run comparison records are available for feasibility testing. Registered optional-source preparation, recovery and sequential replay through the local workbench have scoped macOS evidence. The registered local MCP endpoint now also has an [actual Mac desktop AI loop](docs/evidence/2026-09-09-ai-desktop-macos.md): save, three modes, fresh observations, comparison, historical favorites and exact Normal restoration, with an open workbench receiving its changes. Complete runtime coverage, performance verdicts and the Mac product finish remain unfinished. The first Mac release prioritizes Codex Desktop through the complete product experience. Claude Code native qualification is deferred and does not block that release. Windows remains a later target, with Codex before Claude Code. The [Claude Code Mac adapter](docs/claude-macos.md) is now implemented and has [scoped evidence](docs/evidence/2026-09-09-claude-desktop-macos.md) for discovery, three modes, exact restoration, recovery, observation projection and ordinary-run measurement; a fresh native Claude Code task and the native AI connection are still unverified, and sequential replay is unavailable for Claude with a recorded reason.
+
+**Free, with no required paid API or hosted backend.** Unharness is designed to run locally with no recurring operator service expense. Your existing AI subscription and usage are separate. Default artwork, layered composition, image import and card export have a local route without model calls. Optional original-artwork authoring uses your own AI. See [feasibility and limitations](docs/feasibility.md).
+
+**Planned product entry:** ask your AI to open Unharness in its in-app browser at your own domain, while settings and artwork stay on your PC. The plan includes a guided installation/demo, retained Unharness controls in TRUEFORM, and freely created entity/restraint/background layers with performance displayed separately. Public HTTPS connection and the complete native onboarding journey are not yet qualified. See the [Mac product plan](docs/superpowers/plans/2026-09-09-mac-product-experience.md).
+
+The [restricted public connection bridge](docs/domain-connection.md) now has local approval/cancellation, MCP handoff, expiring authorization and durable operation lookup. Its [static public workbench](docs/public-workbench.md) includes the demo, connection UI, artwork import/collection/cards and eleven website-tool adapters under synthetic/HTTP and built-browser tests. Artwork access requires explicit v2 local approval. Publication, real HTTPS-to-loopback permission and native Codex website-tool invocation remain unqualified.
+
+The Codex core now saves reviewed UNSEAL/TRUEFORM presets with model and official-reference provenance, separately from the original Normal. CLI, GUI operations and MCP use the same frozen versions; adoption does not change source files or the current task. The [setup contract](docs/spec-guided-setup.md) records the tested boundary and the remaining onboarding/native checks.
+
+New Skills can be reviewed and added through the local workbench or MCP after a release setup is saved. Enrollment preserves earlier Normal versions and history and changes no configuration file. Under the new rule, review and save both modes for the expanded scope, then prepare the selected mode separately. The workbench shows inherited and additional Skills in the saved pair, with distinct setup and preparation requirements. Older favorites show how added Skills will be included. [Enrollment workflow](docs/spec-guided-setup.md#additive-skill-enrollment), [built GUI checks](docs/evidence/2026-09-10-mode-inheritance-gui.md).
 
 ## Development probe
 
@@ -61,7 +73,7 @@ A [selected real-source Mac check](docs/evidence/2026-09-08-real-source-desktop-
 
 If a later independent Codex setting edit affects only retained configuration, the workbench can now show a value-free **review changes** summary and explicitly record the current settings as a new Normal version. This record-only acceptance does not rewrite managed files. Restoring an older favorite or checkpoint states that it will keep the current common settings and use the saved selected-source state; saving afterward creates a new favorite version. [Native owned-profile and built-browser checks](docs/evidence/2026-09-08-retained-settings-macos.md) cover source preservation, older saved versions and interruption recovery. They do not qualify complete desktop loading or Mac support. See the [workbench runbook](docs/user-source-gui.md) and [retained-settings contract](docs/spec-retained-settings.md).
 
-The same workbench has **Equipment** and **Comparison** tabs. Comparison reviews one explicit Codex task UUID and saves an immutable measurement plus an attributed retrospective assessment. Up to three private records appear in an aligned table and zero-based token chart; saved output opens only through an explicit plain-text action. These ordinary-use records stay neutral and cannot unlock original creation. See the [runbook](docs/user-source-gui.md) and [ordinary-run contract](docs/spec-comparison-records.md).
+The same workbench has **Equipment** and **Comparison** tabs. Comparison reviews one explicit Codex task UUID and saves an immutable measurement plus an attributed retrospective assessment. Up to three private records appear in an aligned table and zero-based token chart; saved output opens only through an explicit plain-text action. These ordinary-use records describe their recorded tasks; original-artwork creation is independent of their assessment. See the [runbook](docs/user-source-gui.md) and [ordinary-run contract](docs/spec-comparison-records.md).
 
 Before a task, the collapsed **save starting conditions** form can now freeze the exact request, declared criteria, stopping budget and original working-file bytes, including uncommitted and binary content. File changes invalidate an unsaved review; saved starts remain immutable. [Mac native/profile and browser evidence](docs/evidence/2026-09-08-starting-conditions-macos.md) covers capture, readback, interruption and scope changes. This [input-capture step](docs/spec-starting-conditions.md) starts no model task.
 
@@ -80,7 +92,7 @@ Here, a **harness** means the surrounding skills, persistent instructions, and a
 ## One small experiment
 
 1. **Save what you have.** Ask “Add my current setup to favorites,” or use the star button.
-2. **Try another mode.** Keep the full loadout, make selected skills manual-only, or strip back the managed extras with Zero mode.
+2. **Try another mode.** Keep your saved Normal, choose a Zero baseline, or add selected procedures on top through Limited release. See the mode targets and current implementation boundary below.
 3. **Start fresh.** Use your selected mode in a new task and record its request and starting conditions.
 4. **Review your actual work.** Inspect the output, changes, time, available usage data, and your notes alongside saved results.
 5. **Keep what fits.** Adjust the combination, save it as a favorite, and use it again. Reload your earlier setup when you want it back.
@@ -89,19 +101,21 @@ The useful result is a choice you can explain for your work. Fewer instructions 
 
 The initial experience runs one selected mode at a time; it does not automatically send your instruction to all three modes. A later matched replay is optional. Different everyday tasks provide observations, not by themselves proof that a mode improved or worsened performance.
 
-Numerical comparisons show the recorded root-response tokens and duration beside attributed checks, ratings and notes. Missing or partial usage remains explicit, and different everyday tasks remain neutral observations. Replay also stays neutral while an applicable performance rule is unfinished; it does not unlock original creation. See [the measurement contract](docs/comparison-metrics.md). Optional grader integration remains planned work.
+Numerical comparisons show the recorded root-response tokens and duration beside attributed checks, ratings and notes. Missing or partial usage remains explicit, and different everyday tasks remain neutral observations. A performance interpretation needs applicable comparison conditions and an explicit rule; it does not control original-artwork creation. See [the measurement contract](docs/comparison-metrics.md). Optional grader integration remains planned work.
 
 ## Three starting modes
 
 | Mode | What it is intended to do |
 | --- | --- |
 | Normal loadout | Use the saved configuration. |
-| Limited release — UNSEAL | Replace selected optional instructions with a fixed minimal guide and make selected enabled user-added skills manual-only. |
-| Zero — TRUEFORM | Stop loading selected user-added optional instructions and skills, plus selected optional steering hooks. |
+| Limited release — UNSEAL | Inherit every optional automatic Skill kept in Zero, then add reviewed external/self-authored Skills. Use the saved minimal guide or no selected additional instructions. |
+| Zero — TRUEFORM | Remove selected optional additional instructions. Keep optional automatic Skills only from user-selected, verified official-marketplace plugins; make other controlled enabled Skills explicitly invocable. |
 
-Keep the task requirements and execution permissions consistent. Show the elements that remain, including the minimal control connection needed to switch back. Availability and exact behavior must be established for each supported tool version.
+**These are the 2026-09-10 targets; the complete behavior is not yet qualified.** Inherited-set calculation, [v2 storage, reviewed enrollment, shared CLI/HTTP/MCP operations and offline cancellation](docs/evidence/2026-09-10-mode-inheritance-storage.md) have synthetic checks. The [built workbench](docs/evidence/2026-09-10-mode-inheritance-gui.md) shows the saved inheritance and requires a separate review of both modes after enrollment, before preparation. Official-plugin verification/control and the native journey still need the [remaining implementation and checks](docs/superpowers/plans/2026-09-10-official-plugin-mode-inheritance.md). Existing v1 presets and favorites keep their recorded meaning. See [the selection and inheritance contract](docs/spec-mode-inheritance.md).
 
-The initial release set includes self-authored and personally added third-party sources, primarily global AGENTS.md / CLAUDE.md and automatic Skill selection. Existing memory and native task-continuity settings stay unchanged. Provider defaults and managed sources remain outside that set. Keep everyday mode selection simple, with optional target customization beneath each release mode. The accepted [mode scope](docs/harness-scope.md) uses a fixed, versioned Unharness-authored guide for selected optional instructions in UNSEAL; it is comparison material based on official guidance, not a universal template.
+Limited release equals the Zero selection plus its own additions; Zero may retain no optional plugin. Official listing identifies provenance, not provider authorship or a performance guarantee. Private/local marketplaces do not qualify merely because they appear in the same browser. Keep required Unharness controls, memory, continuity, task requirements and permissions in both modes, including before Unharness itself is officially listed. Skill manual-only control is not plugin removal or tool disconnection. Normal remains the saved original, not a required superset.
+
+The initial release set includes user-added optional global AGENTS.md / CLAUDE.md and automatic Skill selection. Provider defaults, mandatory project conditions and managed sources remain outside that set. Keep ordinary selection simple and discuss details through the user’s AI. The [mode scope](docs/harness-scope.md) distinguishes current targets from historical conditions; the optional UNSEAL guide is versioned comparison material, not a universal official template. Review changes to Zero together with their Limited-release impact and save a new paired version without applying it or rewriting Normal, favorites or comparisons.
 
 These modes are starting points. A custom combination can be saved as a favorite too.
 
@@ -126,11 +140,11 @@ The visual direction uses a pixel-art machine hangar: the outer equipment opens,
 
 *Original static design concept. The current fixture GUI implements a smaller, explicitly labelled diagnostic flow.*
 
-The local GUI uses PixiJS for the equipment scene and effects, with React and HTML/CSS for controls and readable state. It reuses the original armor, supports and branching core in a 49-cel sequence against fixed architecture. Plates open about their seams, supports withdraw and the core rises; reverse travel follows the same sequence. Foreground idle motion remains continuous, and the fully released entity gains a stronger white-blue radiance when effects are on. All playback is local, with no image generation. Technical recording/ID fields are available in a collapsed development section. See [the rendering design](docs/design.md#selected-rendering-stack) and [bundled artwork](docs/gui-artwork.md). Random appearance assembly and original-form creation remain future work.
+The local GUI uses PixiJS for the equipment scene and effects, with React and HTML/CSS for controls and readable state. It reuses the original armor, supports and branching core in a 49-cel sequence against fixed architecture. Plates open about their seams, supports withdraw and the core rises; reverse travel follows the same sequence. Foreground idle motion remains continuous, and the fully released entity gains a stronger white-blue radiance when effects are on. All playback is local, with no image generation. Technical recording/ID fields are available in a collapsed development section. See [the rendering design](docs/design.md#selected-rendering-stack) and [bundled artwork](docs/gui-artwork.md). The full appearance UI and native original-artwork creation journey remain in progress.
 
 Equipment can also be shown as supportive armor or a resonating frame when a comparison shows it fits the work. Unmeasured setups remain neutral, and the illustration stays separate from the measured result.
 
-Original forms selected from the three-candidate creation flow stay in a reusable appearance collection. Current evidence constrains their active treatment: confirmed adverse performance allows BAD variants, while unknown evidence stays neutral. Previously acquired forms remain owned; choosing a look does not change the actual harness configuration. These collection and assessment features are planned, not implemented.
+Original artwork uses reusable local parts for the AI entity, restraints and background. The [local workbench](docs/layered-appearances.md) reviews chosen PNG parts in three modes, saves versions, reselects earlier work and exports an appearance card with explicitly chosen public text. The approved public workbench now uses those same components through bounded image and collection operations. The bundled authoring Skill can use the private MCP to prepare a creation place and review its selected images; that private location is not exposed publicly. Actual public-origin permission and the complete native creation journey remain unqualified. There is no performance unlock, fixed three-candidate choice or forced BAD treatment; performance is reported separately. Choosing a look never changes the harness. See the [layered appearance contract](docs/personalization.md).
 
 Effects can be turned off without changing the loadout. The state remains readable, and animation settings stay separate from saved harness configurations.
 
@@ -148,17 +162,18 @@ Unharness is being prepared for an open-source release. There is no published in
 
 | Application | macOS | Windows |
 | --- | --- | --- |
-| Codex desktop | Phase 1, current priority | Phase 4, deferred |
-| Claude Code desktop | Phase 2, after Mac Codex | Phase 5, after Windows Codex |
+| Codex desktop | Initial Mac product, current priority | Deferred until after Mac delivery |
+| Claude Code desktop | Adapter retained; native qualification deferred | After Windows Codex |
 
-Phase 3 finishes the Mac product; Phase 6 later reconciles all four combinations. Windows qualification does not block Mac completion. These are delivery targets, not completed compatibility tests. See [delivery](docs/delivery.md) and [compatibility and evidence](docs/compatibility.md).
+The initial Mac completion criteria cover Codex Desktop. Claude Code and Windows qualification follow later; their remaining work does not block that scoped release. These are delivery targets, not completed compatibility tests. See [delivery](docs/delivery.md) and [compatibility and evidence](docs/compatibility.md).
 
-Useful early contributions include reproducible compatibility observations, small comparison examples, feedback on the save–try–compare–restore flow, and documentation improvements. Contributor instructions, the license, and reporting channels will be established in the dedicated repository before public use.
+Useful early contributions include reproducible compatibility observations, small comparison examples, feedback on the save–try–compare–restore flow, and documentation improvements. Unharness uses the [MIT License](LICENSE); bundled third-party components retain their own license notices. Public installation and reporting channels are being prepared. The intended release combines a playable web demo, a usable local plugin, and inspectable implementation and verification records.
 
 ## Documentation
 
 - [Product and positioning](docs/product.md)
 - [Modes and acceptance criteria](docs/spec.md)
+- [Official plugins and inherited modes — planned](docs/spec-mode-inheritance.md)
 - [Architecture](docs/architecture.md)
 - [Delivery and handoff](docs/delivery.md)
 - [Visual direction](docs/design.md)

@@ -12,7 +12,7 @@ const MAX_RECORD_BYTES = 1024 * 1024;
 const MAX_METADATA_BYTES = 64 * 1024;
 const MAX_RECORDS = 1000;
 const RECORD_ID = /^[0-9a-f]{64}$/;
-const OPTIONAL_RECORD_TYPES = new Set(['input', 'experiment']);
+const OPTIONAL_RECORD_TYPES = new Set(['input', 'experiment', 'appearance']);
 const RECORD_TYPES = new Set(['scope', 'favorite', 'checkpoint', 'application', 'observation', ...OPTIONAL_RECORD_TYPES]);
 
 export const LOCAL_STORE_ERROR_KINDS = Object.freeze([

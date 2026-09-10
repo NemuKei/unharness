@@ -1,0 +1,4 @@
+interface:
+  display_name: "Unharness"
+  short_description: "Open and manage local Codex loadouts safely"
+  default_prompt: "Use $unharness to open my local workbench."

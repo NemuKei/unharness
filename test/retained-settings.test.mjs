@@ -8,8 +8,9 @@ import { createOwnedSourceProfile } from '../src/sources/owned-profile.mjs';
 import { openWorkspace, loadSnapshot, loadRecord, readJson, writeJson, record } from '../src/sources/records.mjs';
 import { captureRegistered } from '../src/sources/capture.mjs';
 import { setSourceTransactionTestHook } from '../src/sources/transaction.mjs';
+import { registerLegacySourceProfile } from '../test-support/legacy-source-registration.mjs';
 const test = (name, fn) => nativeTest(name, { skip: process.platform !== 'darwin' }, fn);
-async function setup(t, { absentConfig = false } = {}) {
+async function setup(t, { absentConfig = false, legacyRevision } = {}) {
   const parent = await realpath(await mkdtemp(join(tmpdir(), 'unharness-retained-test-')));
   t.after(() => rm(parent, { recursive: true, force: true }));
   t.after(() => setSourceTransactionTestHook(null));
@@ -17,7 +18,9 @@ async function setup(t, { absentConfig = false } = {}) {
   const configPath = join(owned.context.codexHome, 'config.toml');
   if (absentConfig) await rm(configPath);
   const discovery = await service.discoverUserSources(owned.context);
-  const registered = await service.registerUserSources({ context: owned.context, discoveryId: discovery.discoveryId, instructionsOptional: true, selectedSkillIds: discovery.skills.filter(s => s.eligible).map(s => s.id), userAddedOptional: true });
+  const registered = legacyRevision
+    ? await registerLegacySourceProfile({ parent, context: owned.context, revision: legacyRevision })
+    : await service.registerUserSources({ context: owned.context, discoveryId: discovery.discoveryId, instructionsOptional: true, selectedSkillIds: discovery.skills.filter(s => s.eligible).map(s => s.id), userAddedOptional: true });
   return { ...owned, ...registered, root: parent, configPath, ...(await openWorkspace(registered.workspace)) };
 }
 async function prepare(s, mode) {
@@ -149,16 +152,9 @@ for (const phase of ['retained-journal', 'retained-state']) test(`interruption a
 test('snapshot fence rejects the actual baseline CLI across all restores and a return to registration bytes', async t => {
   const { execFile } = await import('node:child_process');
   const { promisify } = await import('node:util');
-  const { mkdir } = await import('node:fs/promises');
   const exec = promisify(execFile);
-  const s = await setup(t);
-  const baseline = join(s.root, 'baseline');
-  await mkdir(baseline);
-  const archive = join(s.root, 'baseline.tar');
-  // Execute the immutable pre-feature writer, not a hand-written imitation.
-  await exec('git', ['archive', '--format=tar', '--output', archive, '73a75fb', 'src', 'bin', 'package.json']);
-  await exec('tar', ['-xf', archive, '-C', baseline]);
-  const oldCli = async () => exec(process.execPath, [join(baseline, 'bin/unharness.mjs'), 'sources', 'plan', '--json', JSON.stringify({ workspace: s.workspace, mode: 'normal' })]);
+  const s = await setup(t, { legacyRevision: '73a75fb' });
+  const oldCli = async () => exec(process.execPath, [s.legacyCli, 'sources', 'plan', '--json', JSON.stringify({ workspace: s.workspace, mode: 'normal' })]);
   assert.equal(JSON.parse((await oldCli()).stdout).mode, 'normal');
   const f = await service.saveUserFavorite({ workspace: s.workspace, name: 'Baseline' });
   await edit(s);

@@ -1,5 +1,7 @@
 # Local fixture GUI
 
+This is the existing localhost fixture/registered-GUI contract. The [domain-entry contract](spec-domain-entry.md) adds a separately authenticated public-origin route and keeps this local route as an offline fallback. Its CORS permission must not be implemented by removing the local-only checks below. See the [product plan](superpowers/plans/2026-09-09-mac-product-experience.md).
+
 The first GUI connects the existing owned-fixture loadout service to a local browser. It implements the next step in [status.md](status.md), using the [selected PixiJS design](design.md#selected-rendering-stack). It does not expand control to personal settings or claim complete UNSEAL/TRUEFORM support.
 
 This document defines the fixture launch and its routes. The separately launched `--manage-sources` workbench follows the [registered user-source contract](spec-user-sources.md): explicit target declarations, a saved Normal, reviewed next-task preparation and Node-only recovery. It reuses the accepted scene but keeps its controller, records and state separate. The fixture labels and HTTP routes below remain diagnostic contracts.

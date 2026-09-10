@@ -1,6 +1,14 @@
 # Registered user-source modes
 
+This contract is shared by both application adapters. Where it names a Codex
+file, path or native editor below, the Claude Code adapter has its own
+equivalent and its own boundaries; see [claude-macos](claude-macos.md) for the
+Claude source layout, its single instruction file, its central Skill-override
+settings, its settings precedence and the sources it deliberately refuses.
+
 The maintainer approved Normal → minimal guide/manual Skills → selected extras absent on 2026-09-08. This slice implements registered user-source preparation and deterministic recovery. It does not establish desktop-loaded mode verification or change the retained memory/native-continuity policy.
+
+The 2026-09-09 [guided setup extension](spec-guided-setup.md) adds separately saved release presets and reviewed additive Skill enrollment for Codex. Adopted presets determine ordinary release-mode plans; the earlier rules below still describe explicit diagnostic selections and saved historical configurations. Enrollment never rewrites those records. The workbench/API require a separate preparation after a scope expansion and preserve Node-only cancellation and older-writer fencing.
 
 ## Scope
 
@@ -29,6 +37,12 @@ Record the guide ID, content hash, review date and official Codex/Claude guide r
 
 For this initial version, `reviewedOn` is `2026-09-08`; references are `https://learn.chatgpt.com/guides/best-practices` and `https://code.claude.com/docs/en/best-practices`.
 
+The Claude Code adapter writes the same fixed guide into its single user
+instruction file, and the same inert override for TRUEFORM. Its reason differs:
+Claude Code has no base file to fall back to, so the inert content exists to
+keep the file present — Claude Code strips block-level HTML comments before
+injecting a memory file — rather than to prevent a fallback.
+
 TRUEFORM writes a nonempty inert `<!-- -->\n` override when selected global optional instructions should be absent. An empty override would permit fallback. Normal restores the exact original override content or absence; the base AGENTS.md stays unchanged and guarded.
 
 ## Compilation
@@ -53,6 +67,8 @@ Limits: at most 32 selected Skills, 128 KiB per source text and 768 KiB per snap
 
 On macOS, existing writable controls must have the executing effective UID and a reproducible effective/supplementary group. Check this before registration and before actual changed-file publication, including old plans and recovery. Retained read-only dependencies may have other owners. Portable read/plan admission is separate from this native write qualification; missing POSIX identity APIs do not enable publication on an unqualified platform.
 
+New Mac registrations and transaction-owned directories bind persistent volume UUIDs and inode numbers. The OS must report persistent file-ID support; missing metadata is unavailable. Existing device-number/inode records keep their strict original comparison and are never silently re-anchored. Preserve the full identity through journals and Normal recovery. The [directory-identity evidence](evidence/2026-09-11-persistent-mac-directory-identity.md) distinguishes controlled device-number changes from an actual reboot.
+
 ## Plans, application and recovery
 
 Persist a plan with exact before/after files, source dependencies, selected targets, guide identity and expected current state. Return a summary with changed file labels, planned Skill states, retained conditions and next-task requirement. No plan writes managed files.
@@ -60,6 +76,8 @@ Persist a plan with exact before/after files, source dependencies, selected targ
 Apply only that plan identity under an exclusive profile operation lock. Verify registered bindings, expected file contents/metadata and dependencies again. Publish an immutable pre-change checkpoint and a pending journal before the first managed write. Stage complete files on the relevant filesystem; recheck before publication, use exclusive creation for absent targets and preserve supported metadata for replacements. Order disabling configuration before restoring automatic metadata when entering TRUEFORM. Re-read all target files before recording completion.
 
 The journal records both allowed sides of each write. Interruption can leave a before/after mixture and retained stages; a separate Node-only recovery command reverts known changes. Unexpected file bytes, links, metadata or a live/ambiguous lock owner block recovery. Do not delete unfamiliar leftovers, kill another process or silently overwrite independent edits. Recovery may report changed read-only source dependencies while reverting only unchanged control files; it must not claim the exact old favorite is restored in that case.
+
+Forward plans and publication retain the bundled Unharness management Skill and unselected Codex configuration, including MCP connections. The guard checks actual saved file contents even for older favorites or stored plans. A pinned TOML reader is bundled as unchanged JavaScript so inline tables, quoted paths and integer precision remain supported without Codex or `node_modules`; native Codex still prepares edits. This forward guard does not reinterpret or block a valid older interruption journal: offline rollback must remain able to restore its recorded before-state. Product installation and fresh-task evidence remain separate qualification steps.
 
 Normal and saved-favorite restoration use frozen content, including original absence. Keep previous versions. Saving the current prepared configuration is distinct from the automatic checkpoint. A new runtime/source version invalidates dependent classification/plans; old data remains readable. Power loss and hostile mutation of all filesystem ancestors are not a general guarantee; document the exact tested interruption boundary.
 

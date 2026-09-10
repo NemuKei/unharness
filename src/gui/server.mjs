@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { lstat, readFile, readdir, realpath } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { extname, relative, resolve, sep } from 'node:path';
@@ -8,7 +8,9 @@ import { parseStrictJson } from '../core/strict-json.mjs';
 import { createGuiController } from './controller.mjs';
 import { createGuiInventory } from './inventory.mjs';
 import { createSourceController, sourceRequestShape } from './sources.mjs';
-import { USER_SOURCE_ERROR_KINDS } from '../sources/service.mjs';
+import { createRemoteHttp } from './remote-http.mjs';
+import { APPEARANCE_UPLOAD_BODY_LIMIT } from '../appearances/template.mjs';
+import { USER_SOURCE_ERROR_KINDS, APPEARANCE_OPERATIONS, SETUP_OPERATIONS, ENROLLMENT_OPERATIONS } from '../sources/service.mjs';
 
 const MAX_BODY_BYTES = 16 * 1024;
 const MAX_REQUESTS = 1000;
@@ -20,8 +22,9 @@ const COMPARISON_ACTIONS = new Set([
 const STARTING_ACTIONS = new Set(['review-start', 'save-start', 'start', 'starts']);
 const REPLAY_ACTIONS = new Set(['review-replay', 'prepare-replay', 'handoff-replay', 'replay', 'replays', 'cancel-replay',
   'observe-replay', 'save-replay-result', 'replay-result', 'open-replay', 'compare-replays', 'replay-favorite']);
-const CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'";
+const CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'";
 const SAFE_ERRORS = new Set([
+  'gui-recovery-operation-forbidden', 'plugin-recovery-invalid', 'distribution-invalid', 'plugin-binding-invalid', 'plugin-binding-changed',
   ...LOCAL_STORE_ERROR_KINDS, ...USER_SOURCE_ERROR_KINDS, 'gui-source-context-changed',
   'loadout-invalid-reference', 'loadout-invalid-name', 'loadout-invalid-snapshot',
   'loadout-invalid-favorite', 'loadout-invalid-checkpoint', 'loadout-invalid-application',
@@ -54,7 +57,7 @@ function safeError(error) {
 }
 
 function statusFor(kind) {
-  if (kind === 'starting-publication-uncertain' || kind === 'replay-publication-uncertain' || kind === 'replay-desktop-open-uncertain') return 500;
+  if (kind === 'starting-publication-uncertain' || kind === 'replay-publication-uncertain' || kind === 'replay-desktop-open-uncertain' || kind === 'appearance-publication-uncertain' || kind === 'appearance-image-publication-uncertain') return 500;
   if (kind === 'starting-files-changed') return 409;
   if (kind === 'gui-request-forbidden') return 403;
   if (kind === 'gui-request-too-large') return 413;
@@ -152,16 +155,20 @@ async function readJson(request, strict = false, maxBodyBytes = strict ? 64 * 10
   }
 }
 
-export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0, codexHome, manageSources, inventory: inventoryOptions } = {}, {
-  collectInventory,
+export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0, codexHome, manageSources, sourceWorkspace, launchId, recoveryBinding, inventory: inventoryOptions } = {}, {
+  collectInventory, handleControlRequest, remoteNow,
 } = {}) {
   if (!Number.isSafeInteger(port) || port < 0 || port > 65535) {
     throw Object.assign(new Error('gui-invalid-port'), { kind: 'gui-invalid-port' });
   }
   const files = await staticFiles(assetsDirectory);
-  const sourceController = manageSources ? await createSourceController(manageSources) : null;
+  if (recoveryBinding && (manageSources || sourceWorkspace || store || scopeId || inventoryOptions))
+    throw Object.assign(Error('gui-invalid-request'), { kind: 'gui-invalid-request' });
+  const sourceController = recoveryBinding
+    ? await (await import('./recovery.mjs')).createRecoveryController(recoveryBinding, { launchId })
+    : manageSources ? await createSourceController(manageSources, { workspace: sourceWorkspace, launchId }) : null;
   const controller = sourceController ?? await createGuiController({ store, scopeId, codexHome });
-  const kind = sourceController ? 'user-sources' : 'fixture';
+  const kind = recoveryBinding ? 'recovery' : sourceController ? 'user-sources' : 'fixture';
   const inventory = await createGuiInventory(sourceController ? undefined : inventoryOptions, { collect: collectInventory });
   const sockets = new Set();
   let stopping = false;
@@ -169,11 +176,26 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
   const requests = new Map();
   let queue = Promise.resolve();
   let origin;
+  const enqueue = perform => {
+    const run = queue.then(perform);
+    queue = run.then(() => undefined, () => undefined);
+    return run;
+  };
+  const remote = sourceController && !recoveryBinding
+    ? await createRemoteHttp({ controller: sourceController, enqueue, readJson, now: remoteNow }) : null;
 
   const server = createServer(async (request, response) => {
     if (stopping) { response.destroy(); return; }
     try {
       const parsed = new URL(request.url, origin);
+      if (parsed.pathname.startsWith('/_unharness/') && handleControlRequest) {
+        await handleControlRequest(request, response); return;
+      }
+      if (parsed.pathname.startsWith('/remote/')) {
+        if (remote) await remote.publicRequest(request, response, parsed, origin);
+        else sendJson(response, 403, { error: { kind: 'gui-request-forbidden' } });
+        return;
+      }
       const isApi = parsed.pathname.startsWith('/api/');
       if (!isApi) {
         if (!['GET', 'HEAD'].includes(request.method) || parsed.search !== '') {
@@ -202,12 +224,20 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
         return;
       }
 
+      if (remote && parsed.pathname.startsWith('/api/remote/')) {
+        await remote.localRequest(request, response, parsed); return;
+      }
       if (request.method === 'GET') {
         const params = [...parsed.searchParams.keys()];
         if (parsed.pathname === '/api/bootstrap' && params.length === 0) sendJson(response, 200, { token, kind });
         else if (sourceController) {
           if (parsed.pathname === '/api/sources/metadata' && params.length === 0) sendJson(response, 200, await sourceController.metadata());
           else if (parsed.pathname === '/api/sources/state' && params.length === 0) sendJson(response, 200, await sourceController.state());
+          else if (!recoveryBinding && parsed.pathname === '/api/sources/appearance-image' && params.length === 4 && new Set(params).size === 4
+            && params.every(key => ['launchId', 'contextId', 'referenceId', 'assetId'].includes(key))) {
+            const image = await sourceController.image(Object.fromEntries(parsed.searchParams));
+            response.writeHead(200, { ...headers('image/png'), 'Content-Length': image.bytes.length }); response.end(image.bytes);
+          }
           else if (parsed.pathname === '/api/sources/updates' && params.length >= 2 && params.length <= 3
             && new Set(params).size === params.length && params.every(k => ['launchId', 'contextId', 'after'].includes(k)))
             sendJson(response, 200, await sourceController.updates(Object.fromEntries(parsed.searchParams)));
@@ -237,11 +267,12 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
       const starting = sourceRoute && STARTING_ACTIONS.has(action);
       const replay = sourceRoute && REPLAY_ACTIONS.has(action);
       const parsedBody = (sourceRoute ? sourceRequestShape : requestShape)(
-        await readJson(request, sourceRoute && (COMPARISON_ACTIONS.has(action) || starting || replay), starting ? 128 * 1024 : replay ? 65536 : undefined),
+        await readJson(request, !!recoveryBinding || sourceRoute && (COMPARISON_ACTIONS.has(action) || starting || replay || Object.hasOwn(APPEARANCE_OPERATIONS, action) || Object.hasOwn(SETUP_OPERATIONS, action) || Object.hasOwn(ENROLLMENT_OPERATIONS, action)),
+          action === 'review-appearance-import' && sourceRoute && !recoveryBinding ? APPEARANCE_UPLOAD_BODY_LIMIT : starting ? 128 * 1024 : replay ? 65536 : (Object.hasOwn(SETUP_OPERATIONS, action) || Object.hasOwn(ENROLLMENT_OPERATIONS, action)) ? MAX_BODY_BYTES : undefined),
         action,
       );
       if (stopping) { response.destroy(); return; }
-      const fingerprint = canonical({ action, input: parsedBody.input });
+      const fingerprint = createHash('sha256').update(canonical({ action, input: parsedBody.input })).digest('hex');
       const existing = requests.get(parsedBody.requestId);
       if (existing) {
         if (existing.fingerprint !== fingerprint) {
@@ -267,8 +298,7 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
           return { status: statusFor(safe.kind), body: { error: safe } };
         }
       };
-      const run = action === 'inspect' ? execute() : queue.then(execute);
-      if (action !== 'inspect') queue = run.then(() => undefined, () => undefined);
+      const run = action === 'inspect' ? execute() : enqueue(execute);
       requests.set(parsedBody.requestId, { fingerprint, result: run });
       const completed = await run;
       sendJson(response, completed.status, completed.body);
@@ -296,6 +326,10 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
   return {
     server,
     url: origin,
+    requestPublicPairing() {
+      if (!remote || stopping) throw Object.assign(Error('remote-registration-required'), { kind: 'remote-registration-required' });
+      return remote.issueForLauncher();
+    },
     async close() {
       if (closing) return closing;
       stopping = true;
@@ -305,6 +339,9 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
         // idle-HTTP cleanup alone cannot release them. Closing transport never
         // cancels accepted writes: the existing operation queue is drained.
         for (const socket of sockets) socket.destroy();
+        // Remote receipts finish after the underlying source transaction and
+        // remain durable even when all browser transports have disconnected.
+        await remote?.close();
         await queue;
         await stopped;
       })();

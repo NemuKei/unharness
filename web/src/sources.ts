@@ -24,13 +24,38 @@ export const modePresentation: Record<
     scene: "fixed-only",
   },
 };
+export type SourceApplication = "codex" | "claude";
+export type CodexSourceContext = {
+  codexHome: string;
+  project: string;
+  executable: string;
+};
+export type ClaudeSourceContext = {
+  application: "claude";
+  claudeHome: string;
+  project: string;
+  appBundle: string;
+};
+export type SourceContext = CodexSourceContext | ClaudeSourceContext;
 export type SourceMetadata = {
   kind: "user-sources";
+  application: SourceApplication;
+  applicationLabel: string;
   launchId: string;
   contextId: string;
-  context: { codexHome: string; project: string; executable: string };
+  context: SourceContext;
   workspace: string | null;
 };
+export const isClaudeContext = (
+  context: SourceContext,
+): context is ClaudeSourceContext =>
+  (context as ClaudeSourceContext).application === "claude";
+/** The application's own home directory, whatever it calls it. */
+export const sourceHomeOf = (context: SourceContext) =>
+  isClaudeContext(context) ? context.claudeHome : context.codexHome;
+/** The installed application a registration is bound to. */
+export const sourceRuntimeOf = (context: SourceContext) =>
+  isClaudeContext(context) ? context.appBundle : context.executable;
 export type SourceRow = {
   id: string;
   label: string;
@@ -95,12 +120,16 @@ export type SourceState = {
   context: SourceMetadata["context"];
   registration: {
     scopeId: string;
+    rootScopeId?: string;
+    previousScopeIds?: string[];
+    modeChangeRequired?: boolean;
     normalId: string;
     activeNormalId: string;
     sources: SourceRow[];
   };
   preparedMode: SourceMode;
   revision: number;
+  setup?: { setupId: string | null; preparedSetupId: string | null; schemaVersion?: 1 | 2 | null; setupRequired?: boolean };
   preparation: { id: string; preparedAt: string } | null;
   observation: TaskObservation | null;
   observationIssue: string | null;
@@ -141,6 +170,8 @@ type TaskObservationState = Pick<
 >;
 
 export function observationIssueText(issue: string | null) {
+  if (issue === "source-preparation-required")
+    return "追加したSkillを含むモードの準備が必要です。使うモードを選んでから、新しいタスクで確認してください。";
   if (
     issue === "preparation-boundary-unavailable" ||
     issue === "preparation-metadata-invalid"
@@ -155,8 +186,8 @@ export function observationIssueText(issue: string | null) {
   return "タスクの記録はまだ確認していません。";
 }
 
-export function canObserveTask(state: Pick<SourceState, "preparation"> | null) {
-  return !!state?.preparation;
+export function canObserveTask(state: (Pick<SourceState, "preparation"> & Partial<Pick<SourceState, "registration">>) | null) {
+  return !!state?.preparation && !state.registration?.modeChangeRequired;
 }
 
 export function currentTaskObservation(
@@ -194,12 +225,24 @@ export type SourceView = {
   guide: Guide;
   changeVersion?: string | null;
 };
+/** A source no mode manages, reported so an absence claim is not over-read. */
+export type SourceNotice = {
+  id: string;
+  kind: string;
+  label: string;
+  path: string;
+  count: number;
+  detail: string;
+};
 export type Discovery = {
   discoveryId: string;
+  application?: SourceApplication;
+  applicationLabel?: string;
   instructions: SourceRow;
   skills: SourceRow[];
   registrationAvailable: boolean;
   unavailableSources: { id: string; reason: string }[];
+  notices?: SourceNotice[];
   retained: string[];
   limitations: string[];
 };
@@ -209,6 +252,7 @@ export type SourcePlan = {
   mode: SourceMode | "favorite" | "checkpoint";
   preparedMode: SourceMode;
   revision: number;
+  setupId?: string | null;
   selectedIds: string[];
   changedFiles: { id: string; label: string }[];
   skillStates: { id: string; enabled: boolean; manualOnly: boolean }[];
@@ -218,12 +262,12 @@ export type SourcePlan = {
   verification: SourceVerification;
 };
 export type SourcePlanAdaptation = {
-  kind: "retained-settings";
-  sourceType: "favorite" | "checkpoint";
+  sourceType: "favorite" | "checkpoint" | "setup";
   sourceId: string;
   previousNormalId: string;
   normalId: string;
-};
+} & ({ kind: "retained-settings" } | { kind: "source-enrollment"; previousScopeId: string; scopeId: string;
+  addedSourceIds: string[]; addedSourceState: "saved-normal" });
 export type RetainedPlan = {
   planId: string;
   scopeId: string;
@@ -249,6 +293,8 @@ export type SourceFavorite = {
   favoriteId: string;
   normalId: string;
   needsAdaptation: boolean;
+  scopeId?: string;
+  addedSourceIds?: string[];
   name: string;
   preparedMode: SourceMode;
   revision: number;

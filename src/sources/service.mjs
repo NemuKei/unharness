@@ -13,6 +13,7 @@ import {
 import {
   initializeWorkspace,
   openWorkspace,
+  scopeWorkspace,
   activeNormalId,
   loadNormal,
   saveSnapshot,
@@ -31,6 +32,8 @@ import {
   recoverTransaction
 } from './transaction.mjs';
 import { canonical, equal, assertPlanOwnershipChanges } from './platform.mjs';
+import { applicationFor } from '../apps/index.mjs';
+import { requiredControlSources, assertControlPreserved, assertControlChanges } from '../setup/control-sources.mjs';
 import {
   fail,
   privateCall,
@@ -75,6 +78,7 @@ export const registerUserSources = wrap(
       fail('optional-role-required');
     const d = await discoveryCapture(context);
     if (d.discoveryId !== discoveryId) fail('stale-discovery');
+    assertControlPreserved({ selectedIds: selectedSkillIds, control: requiredControlSources(d.skills) });
     if (
       d.unavailableSources.length ||
       (instructionsOptional && !d.instructions.eligible) ||
@@ -116,11 +120,17 @@ export const userSourceState = wrap(async ({ workspace }) => {
     context: w.reg.context,
     registration: {
       scopeId: w.scopeId,
+      rootScopeId: w.rootScopeId,
+      previousScopeIds: w.registrations.slice(1).map(s => s.scopeId),
+      modeChangeRequired: w.state.scopePreparationRequired === true,
       normalId: w.reg.normalId,
       activeNormalId: activeNormalId(w),
       sources: targets(w.reg)
     },
     preparedMode: w.state.preparedMode,
+    setup: { setupId: w.state.setupId ?? null, preparedSetupId: w.state.preparedSetupId ?? null,
+      schemaVersion: w.state.setupSchemaVersion ?? (w.state.setupId ? 1 : null),
+      setupRequired: w.manifestVersion === 2 && !w.state.setupId },
     revision: w.state.revision,
     conflict,
     recovery: {
@@ -143,6 +153,7 @@ function planSummary(plan, planId) {
     skillStates: plan.skillStates,
     guide: plan.guide,
     adaptation: plan.adaptation ?? null,
+    setupId: plan.setupId ?? null,
     retained,
     verification
   };
@@ -156,13 +167,16 @@ async function buildPlan(
     after,
     guide = null,
     skillStates = [],
-    adaptation = null
+    adaptation = null,
+    setupId = null,
+    restoreSourceId = null
   }
 ) {
   if (await pending(w.workspace)) fail('recovery-required');
   if (['unseal', 'trueform'].includes(mode)) await freshCatalog(w.reg);
   const before = await loadSnapshot(w.workspace, w.reg, w.state.snapshotId);
   await assertCurrent(w, before);
+  assertControlChanges({ sources: w.reg.skills, before, after });
   assertPlanOwnershipChanges(before, after);
   const afterId = await saveSnapshot(w.workspace, w.reg, after, w.state.snapshotVersion ?? 1);
   const plan = {
@@ -170,6 +184,8 @@ async function buildPlan(
     normalId: activeNormalId(w),
     snapshotVersion: w.state.snapshotVersion ?? 1,
     adaptation,
+    setupId,
+    ...(restoreSourceId === null ? {} : { restoreSourceId }),
     scopeId: w.scopeId,
     revision: w.state.revision,
     mode,
@@ -183,12 +199,7 @@ async function buildPlan(
       .filter((k) => !equal(before[k], after[k]))
       .map((id) => ({
         id,
-        label:
-          id === 'override'
-            ? 'Global instruction override'
-            : id === 'config'
-              ? 'Skill enablement configuration'
-              : 'Skill invocation policy'
+        label: applicationFor(w.reg.context).changedFileLabel(id)
       }))
   };
   return planSummary(plan, await record(w.workspace, 'application', plan));
@@ -197,6 +208,12 @@ export const planUserMode = wrap(async ({ workspace, mode, selectedIds }) => {
   if (!['normal', 'unseal', 'trueform'].includes(mode)) fail('invalid-request');
   const w = await openWorkspace(workspace),
     all = targets(w.reg);
+  if (w.manifestVersion === 2 && mode !== 'normal' && selectedIds !== undefined) fail('setup-proposal-invalid');
+  if (w.manifestVersion === 2 && mode !== 'normal' && !w.state.setupId) fail('setup-required');
+  if (selectedIds === undefined && mode !== 'normal' && w.state.setupId) {
+    const { savedPresetForMode } = await import('../setup/service.mjs');
+    return buildPlan(w, { mode, ...await savedPresetForMode(w, mode) });
+  }
   const selection =
     selectedIds ??
     (mode === 'normal'
@@ -209,51 +226,19 @@ export const planUserMode = wrap(async ({ workspace, mode, selectedIds }) => {
   )
     fail('invalid-request');
   if (mode === 'normal' && selection.length) fail('invalid-request');
+  assertControlPreserved({ selectedIds: selection, control: requiredControlSources(w.reg.skills) });
   if (selection.some((id) => !all.find((t) => t.id === id).availability[mode]))
     fail('unsupported-source');
-  const normal = await loadNormal(workspace, w.reg, activeNormalId(w)),
-    after = structuredClone(normal);
-  let guide = null;
-  const skillStates = [];
-  if (mode !== 'normal') {
-    if (w.reg.instructions && selection.includes(w.reg.instructions.id)) {
-      const { getMinimalGuide } = await import('./guide.mjs');
-      const fixed = getMinimalGuide();
-      after.override = await targetFile(
-        w.reg,
-        'override',
-        mode === 'unseal' ? fixed.text : '<!-- -->\n',
-        normal
-      );
-      if (mode === 'unseal') {
-        const { text, ...identity } = fixed;
-        guide = identity;
-      }
-    }
-    const skills = w.reg.skills.filter((s) => selection.includes(s.id));
-    for (const s of skills) {
-      skillStates.push({
-        id: s.id,
-        enabled: mode === 'trueform' ? false : s.enabled,
-        manualOnly: mode === 'unseal' && s.enabled
-      });
-      if (mode === 'unseal' && s.enabled) {
-        const { makeManualSkillPolicy } = await import('./skill-policy.mjs');
-        const key = s.id + ':policy';
-        const result = await makeManualSkillPolicy(normal[key]?.text ?? null);
-        after[key] = await targetFile(w.reg, key, result, normal);
-      }
-    }
-    if (mode === 'trueform' && skills.length) {
-      const { disableSkillConfig } = await import('../codex/config-editor.mjs');
-      const result = await disableSkillConfig({
-        configText: normal.config?.text ?? '',
-        skillPaths: skills.map((s) => s.path),
-        executable: w.reg.context.executable
-      });
-      after.config = await targetFile(w.reg, 'config', result.text, normal);
-    }
-  }
+  const normal = await loadNormal(workspace, w.reg, activeNormalId(w));
+  const { after, guide, skillStates } = await applicationFor(
+    w.reg.context
+  ).compile({
+    reg: w.reg,
+    mode,
+    selection,
+    normal,
+    targetFile: (key, text) => targetFile(w.reg, key, text, normal)
+  });
   return buildPlan(w, {
     mode,
     selectedIds: selection,
@@ -295,6 +280,10 @@ export const applyUserPlan = wrap(async ({ workspace, planId }) => {
     );
     if (['unseal', 'trueform'].includes(plan.mode))
       await freshCatalog(current.reg);
+    if (current.manifestVersion === 2) {
+      const { assertV2ApplicationPlan } = await import('../setup/apply-plan.mjs');
+      await assertV2ApplicationPlan(current, plan);
+    }
     return await transact(current, plan, planId);
   } finally {
     await release();
@@ -313,6 +302,7 @@ export const saveUserFavorite = wrap(async ({ workspace, name }) => {
   try {
     w = await openWorkspace(workspace);
     if (await pending(workspace)) fail('recovery-required');
+    if (w.state.scopePreparationRequired) fail('source-preparation-required');
 
     const files = await loadSnapshot(workspace, w.reg, w.state.snapshotId);
     await assertCurrent(w, files);
@@ -323,11 +313,13 @@ export const saveUserFavorite = wrap(async ({ workspace, name }) => {
       name,
       snapshotId: w.state.snapshotId,
       preparedMode: w.state.preparedMode,
+      preparedSetupId: w.state.preparedSetupId ?? null,
       revision: w.state.revision
     });
     return {
       favoriteId,
       name,
+      snapshotId: w.state.snapshotId,
       preparedMode: w.state.preparedMode,
       verification
     };
@@ -342,18 +334,21 @@ export const listUserFavorites = wrap(async ({ workspace, after, limit }) => {
   for (const { id, payload: p } of page.records) {
     if (
       p.kind !== 'unharness-user-source' ||
-      p.role !== 'favorite' ||
-      p.scopeId !== w.scopeId
+      p.role !== 'favorite'
     )
       fail('record-invalid');
-    await loadSnapshot(workspace, w.reg, p.snapshotId);
-    await loadNormal(workspace, w.reg, p.normalId ?? w.reg.normalId);
+    const historical = scopeWorkspace(w, p.scopeId);
+    await loadSnapshot(workspace, historical.reg, p.snapshotId);
+    await loadNormal(workspace, historical.reg, p.normalId ?? historical.reg.normalId);
     if (p.comparisonRunId !== undefined && (typeof p.comparisonRunId !== 'string' || !/^[0-9a-f]{64}$/.test(p.comparisonRunId))) fail('record-invalid');
     favorites.push({
       favoriteId: id,
+      snapshotId: p.snapshotId,
       ...(p.comparisonRunId === undefined ? {} : { comparisonRunId: p.comparisonRunId }),
-      normalId: p.normalId ?? w.reg.normalId,
-      needsAdaptation: (p.normalId ?? w.reg.normalId) !== activeNormalId(w),
+      normalId: p.normalId ?? historical.reg.normalId,
+      needsAdaptation: p.scopeId !== w.scopeId || (p.normalId ?? historical.reg.normalId) !== activeNormalId(w),
+      ...(p.scopeId === w.scopeId ? {} : { scopeId: p.scopeId,
+        addedSourceIds: w.reg.skills.filter(s => !historical.reg.skills.some(h => h.id === s.id)).map(s => s.id) }),
       name: p.name,
       preparedMode: p.preparedMode,
       revision: p.revision
@@ -364,12 +359,15 @@ export const listUserFavorites = wrap(async ({ workspace, after, limit }) => {
 async function restorePlan({ workspace, id, type }) {
   const w = await openWorkspace(workspace),
     r = await loadRecord(workspace, type, id);
-  if (r.role !== type || r.scopeId !== w.scopeId) fail('record-invalid');
+  if (r.role !== type) fail('record-invalid');
+  scopeWorkspace(w, r.scopeId);
   const { adaptRetainedSnapshot } = await import('./retained-settings.mjs');
   const { after, adaptation } = await adaptRetainedSnapshot(w, r, id, type);
   return buildPlan(w, {
     mode: type,
+    restoreSourceId: id,
     adaptation,
+    setupId: r.preparedSetupId ?? null,
     preparedMode: r.preparedMode,
     selectedIds: targets(w.reg).map((s) => s.id),
     after
@@ -417,7 +415,7 @@ export const reviewDiscoveredUserSource = wrap(
 export const locateUserSources = wrap(async ({ context }) => {
   const { contextOf } = await import('./catalog.mjs');
   const bound = await contextOf(context);
-  const owner = ownerPath(bound.codexHome);
+  const owner = ownerPath(applicationFor(bound).home(bound));
   try {
     await lstat(owner);
   } catch (e) {
@@ -433,6 +431,7 @@ export const locateUserSources = wrap(async ({ context }) => {
     return {
       workspace: w.workspace,
       scopeId: w.scopeId,
+      rootScopeId: w.rootScopeId,
       normalId: w.reg.normalId,
       context: w.reg.context,
       recoveryArgv: recoveryArgv(w.workspace)
@@ -481,3 +480,57 @@ export const readUserReplayResult = wrap(async args => (await import('../experim
 export const openUserReplay = wrap(async args => (await import('../experiments/replay-service.mjs')).openUserReplay(args));
 export const compareUserReplayResults = wrap(async args => (await import('../experiments/replay-results.mjs')).compareUserReplayResults(args));
 export const saveUserReplayFavorite = wrap(async args => (await import('../experiments/replay-results.mjs')).saveUserReplayFavorite(args));
+
+export const readUserSetup = wrap(async args => (await import('../setup/service.mjs')).readSetup(args));
+export const reviewUserSetup = wrap(async args => (await import('../setup/service.mjs')).reviewSetup(args));
+export const applyUserSetup = wrap(async args => (await import('../setup/service.mjs')).applySetup(args));
+export const SETUP_OPERATIONS = Object.freeze({ setup: readUserSetup, 'review-setup': reviewUserSetup, 'apply-setup': applyUserSetup });
+
+export const inspectUserEnrollment = wrap(async args => (await import('../setup/enrollment.mjs')).inspectEnrollment(args));
+export const reviewUserEnrollmentCandidate = wrap(async args => (await import('../setup/enrollment.mjs')).reviewEnrollmentCandidate(args));
+export const reviewUserEnrollment = wrap(async args => (await import('../setup/enrollment.mjs')).reviewEnrollment(args));
+export const applyUserEnrollment = wrap(async args => (await import('../setup/enrollment.mjs')).applyEnrollment(args));
+export const ENROLLMENT_OPERATIONS = Object.freeze({ 'enrollment-inventory': inspectUserEnrollment,
+  'review-candidate': reviewUserEnrollmentCandidate, 'review-enrollment': reviewUserEnrollment, 'apply-enrollment': applyUserEnrollment });
+
+const appearanceRead = method => wrap(async args => (await import('../appearances/service.mjs'))[method](args));
+const appearanceMutation = method => wrap(async args => {
+  const result = await (await import('../appearances/service.mjs'))[method](args);
+  return { scopeId: result.scopeId, stateId: result.stateId, selectedItemId: result.state?.selectedItemId ?? null,
+    collectionRevision: result.state?.revision ?? 0,
+    recoveryRequired: result.recoveryRequired, pendingStateId: result.pendingStateId,
+    evidenceStartId: result.state?.evidenceStartId ?? null,
+    ...(result.savedItemId ? { savedItemId: result.savedItemId, reviewId: result.reviewId } : {}) };
+});
+export const readUserAppearance = appearanceRead('readUserAppearanceView');
+export const readUserArtwork = appearanceRead('readUserArtworkView');
+export const readUserArtworkItem = appearanceRead('readUserArtworkItem');
+export const discoverUserAppearance = appearanceMutation('discoverUserAppearance');
+export const selectUserAppearance = appearanceMutation('selectUserAppearance');
+export const renameUserAppearance = appearanceMutation('renameUserAppearance');
+export const setUserAppearanceEvidence = appearanceMutation('setUserAppearanceEvidence');
+export const createUserOriginalAppearance = appearanceMutation('createUserOriginalAppearance');
+export const adoptUserOriginalAppearance = appearanceMutation('adoptUserOriginalAppearance');
+export const recoverUserAppearance = appearanceMutation('recoverUserAppearance');
+export const readUserOriginalCandidates = appearanceRead('readUserOriginalCandidates');
+export const readUserAppearanceItem = appearanceRead('readUserAppearanceItem');
+export const reviewUserAppearanceUpload = appearanceRead('reviewUserAppearanceUpload');
+export const readUserAppearanceImportReview = appearanceRead('readUserAppearanceImportReview');
+export const saveUserAppearanceImport = appearanceMutation('saveUserAppearanceImport');
+export const readUserAppearanceImage = appearanceRead('readUserAppearanceImage');
+const authoringCall = method => wrap(async args => (await import('../appearances/authoring.mjs'))[method](args));
+export const prepareUserAppearanceAuthoring = authoringCall('prepareAppearanceAuthoring');
+export const readUserAppearanceAuthoring = authoringCall('readAppearanceAuthoring');
+export const reviewUserAuthoredAppearance = authoringCall('reviewAuthoredAppearance');
+export const evaluateUserAppearance = wrap(async args => (await import('../appearances/evidence.mjs')).evaluateUserAppearance(args));
+export const APPEARANCE_OPERATIONS = Object.freeze({
+  artwork: readUserArtwork, 'artwork-item': readUserArtworkItem,
+  appearance: readUserAppearance, 'discover-appearance': discoverUserAppearance, 'select-appearance': selectUserAppearance,
+  'name-appearance': renameUserAppearance, 'use-appearance-evidence': setUserAppearanceEvidence,
+  'evaluate-appearance': evaluateUserAppearance, 'original-candidates': readUserOriginalCandidates,
+  'recover-appearance': recoverUserAppearance,
+  'appearance-item': readUserAppearanceItem, 'review-appearance-import': reviewUserAppearanceUpload,
+  'read-appearance-import': readUserAppearanceImportReview, 'save-appearance-import': saveUserAppearanceImport,
+  'prepare-appearance-authoring': prepareUserAppearanceAuthoring, 'read-appearance-authoring': readUserAppearanceAuthoring,
+  'review-authored-appearance': reviewUserAuthoredAppearance,
+});

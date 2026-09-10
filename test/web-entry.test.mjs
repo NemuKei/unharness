@@ -1,0 +1,47 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
+import { publicBrowser, publicBrowserCase } from '../test-support/public-browser.mjs';
+import { PUBLIC_WEB_ORIGIN } from '../src/gui/remote-policy.mjs';
+import { readSourceProfileFiles } from '../src/sources/owned-profile.mjs';
+
+test('public entry, synthetic demo and platform guidance do not connect or change real settings', publicBrowserCase, async t => {
+  const s = await publicBrowser(t, { clipboardFails: true }), { page } = s;
+  await page.goto(PUBLIC_WEB_ORIGIN);
+  await page.getByRole('button', { name: '01 ／ デモ 試してみる 架空の設定で、3つのモードを体験。' }).waitFor();
+  assert.match(await page.title(), /Unharness/); assert.equal(new URL(page.url()).origin, PUBLIC_WEB_ORIGIN);
+  assert.equal(await page.locator('vite-error-overlay').count(), 0);
+  await page.locator('.scene-indicator').filter({ hasText: /静止画表示/ }).waitFor();
+  await s.screenshot('public-entry-desktop.png');
+  await page.setViewportSize({ width: 1280, height: 720 });
+  assert.equal(await page.locator('.entry-choices').evaluate(element => {
+    const box = element.getBoundingClientRect(); return box.top >= 0 && box.bottom <= innerHeight;
+  }), true, 'all three entrances fit the native desktop viewport before scrolling');
+  await s.screenshot('public-entry-short-desktop.png');
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+  await s.screenshot('public-entry-mobile.png');
+  await page.setViewportSize({ width: 1440, height: 1050 });
+  assert.equal(await page.getByRole('link', { name: 'DeltaHelm Lab', exact: true }).getAttribute('href'), 'https://deltahelmlab.com/');
+  await page.getByRole('button', { name: /01.*試してみる/ }).click();
+  for (const name of ['TRUEFORM', 'UNSEAL', 'Normal']) await page.getByRole('button', { name: new RegExp('^' + name) }).click();
+  await page.getByText('このデモは架空のデータです。モードを選んでも、あなたのAI設定は変わりません。', { exact: true }).waitFor();
+  assert.equal((await s.callPageTool('unharness_plan_mode', { mode: 'unseal', requestId: randomUUID() })).ok, false);
+  assert.equal(s.posts.length, 0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+  await s.screenshot('public-demo-mobile.png');
+  await page.getByRole('button', { name: '導入', exact: true }).click();
+  await page.getByRole('heading', { name: 'Mac版の公開配布を準備しています', exact: true }).waitFor();
+  await page.getByLabel('使うOS', { exact: true }).selectOption('windows');
+  await page.getByRole('heading', { name: 'この組み合わせは後続の対応です', exact: true }).waitFor();
+  await page.getByLabel('使うOS', { exact: true }).selectOption('mac');
+  await page.getByLabel('使うAI', { exact: true }).selectOption('claude');
+  await page.getByRole('heading', { name: 'この組み合わせは後続の対応です', exact: true }).waitFor();
+  await page.getByRole('button', { name: '接続して開く', exact: true }).click();
+  await page.getByRole('button', { name: '依頼文をコピー', exact: true }).click();
+  await page.getByText('コピーできませんでした。依頼文を選択してコピーしてください。', { exact: true }).waitFor();
+  assert.equal(await page.getByLabel('AIへの依頼文', { exact: true }).evaluate(e => document.activeElement === e && e.selectionEnd - e.selectionStart === e.value.length), true);
+  assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
+  assert.equal(s.posts.length, 0); assert.deepEqual(s.errors, []); await s.assertNoSecrets();
+});

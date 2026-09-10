@@ -4,6 +4,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { openWorkspace, loadSnapshot, record } from '../sources/records.mjs';
 import { acquire, pending, assertCurrent, sourceTransactionHook } from '../sources/transaction.mjs';
 import { exactKeys } from '../comparisons/assessment.mjs';
+import { applicationFor } from '../apps/index.mjs';
 import { fail, USER_SOURCE_ERROR_KINDS } from '../sources/errors.mjs';
 import { readReplayConditions, compareReplayConditions, replayConditionsIdentity } from '../codex/replay-conditions.mjs';
 import { loadSavedStart, hash, START_CONDITIONS } from './start-records.mjs';
@@ -36,6 +37,7 @@ async function nativeRecord(w, value) {
   return record(w.workspace, 'observation', { role: 'replay-native', schemaVersion: 1, scopeId: w.scopeId, value });
 }
 async function assertReviewCurrent(w, review) {
+  if (review.scopeId !== w.scopeId) fail('replay-preparation-stale');
   await ensureSources(w, review.sourceBinding);
   await assertReplayRepository(review.series.repository);
   await assertReplayRetainedInputs(w, review.retainedGuard);
@@ -66,7 +68,7 @@ async function attemptSummary(w, attempt) {
     if (location.phase === 'created') project = location.project;
     else locationIssue = 'replay-location-incomplete';
   } catch { locationIssue = 'replay-location-invalid'; }
-  return { attemptId: attempt.attemptId, reviewId: attempt.reviewId, startId: attempt.review.startId, scopeId: w.scopeId,
+  return { attemptId: attempt.attemptId, reviewId: attempt.reviewId, startId: attempt.review.startId, scopeId: attempt.scopeId,
     phase: attempt.phase, preparedMode: attempt.review.sourceBinding.preparedMode, snapshotId: attempt.review.sourceBinding.snapshotId,
     createdAt: attempt.createdAt, preparedAt: attempt.preparedAt, readyAt: attempt.readyAt, cancelledAt: attempt.cancelledAt,
     failure: attempt.failure, conditionIssue, locationIssue, project,
@@ -81,11 +83,25 @@ function selected(attempts, id) {
   if (!value) fail('replay-attempt-unavailable');
   return value;
 }
+// Sequential replay needs a runtime-authoritative conditions report and a
+// desktop project-open command. An application without both is refused here,
+// with its own reason, instead of running another application's native path.
+export function assertReplaySupported(w) {
+  const support = applicationFor(w.reg.context).sequentialReplay;
+  if (!support.supported) fail('replay-application-unsupported');
+  return support;
+}
+export function replaySupportOf(w) {
+  return applicationFor(w.reg.context).sequentialReplay;
+}
+
 export async function reviewUserReplay(args) {
   request(args, ['startId']);
   return locked(args.workspace, async w => {
+    assertReplaySupported(w);
     await ensureSources(w);
     const saved = await loadSavedStart(w, args.startId);
+    if (saved.review.scopeId !== w.scopeId) fail('replay-preparation-stale');
     let index = await loadReplayIndex(w);
     await loadReplayAttempts(w, index);
     let seriesId = index.data.series.find(s => s.startId === args.startId)?.seriesId;
@@ -112,6 +128,7 @@ export async function reviewUserReplay(args) {
 export async function prepareUserReplay(args) {
   request(args, ['reviewId']);
   return locked(args.workspace, async w => {
+    assertReplaySupported(w);
     let index = await loadReplayIndex(w), attempts = await loadReplayAttempts(w, index);
     const duplicate = attempts.find(a => a.attemptId === args.reviewId);
     if (duplicate) return { ...await attemptSummary(w, duplicate), duplicate: true };
@@ -159,6 +176,7 @@ export async function handoffUserReplay(args) {
   return locked(args.workspace, w => checkedHandoff(w, args.attemptId));
 }
 async function checkedHandoff(w, attemptId) {
+  assertReplaySupported(w);
     let index = await loadReplayIndex(w), attempts = await loadReplayAttempts(w, index);
     let attempt = selected(attempts, attemptId);
     if (!['prepared', 'ready'].includes(attempt.phase) || index.data.activeAttemptId !== attempt.attemptId) fail('replay-attempt-unavailable');
@@ -196,6 +214,7 @@ async function checkedHandoff(w, attemptId) {
 export async function openUserReplay(args) {
   request(args, ['attemptId']);
   return locked(args.workspace, async w => {
+    assertReplaySupported(w);
     const handoff = await checkedHandoff(w, args.attemptId);
     const { openReplayDesktop } = await import('../codex/replay-desktop.mjs');
     return { ...handoff, ...await openReplayDesktop(w.reg.context, handoff.project) };

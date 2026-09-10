@@ -11,6 +11,7 @@ import {
 import { join, dirname, isAbsolute, relative, resolve } from 'node:path';
 import { createStore, putRecord, readRecord } from '../core/local-store.mjs';
 import { canonical, captureFile, equal } from './platform.mjs';
+import { applicationFor } from '../apps/index.mjs';
 import {
   pathsFor,
   validateFiles,
@@ -19,6 +20,7 @@ import {
   assertRegistrationOwnership
 } from './capture.mjs';
 import { fail } from './errors.mjs';
+import { validDirectoryIdentity } from '../platform/directory-identity.mjs';
 export const newPreparation = () => ({ id: randomBytes(16).toString('hex'), preparedAt: new Date().toISOString() });
 export const ownerPath = (home) => join(home, '.unharness-user-sources');
 export async function readJson(path) {
@@ -72,9 +74,12 @@ export const activeNormalId = (w) => w.state.normalId ?? w.reg.normalId;
 export async function loadNormal(workspace, reg, id = reg.normalId) {
   const normal = await loadSnapshot(workspace, reg, id);
   if (id !== reg.normalId) {
+    // Only the one file that mixes managed and retained settings may differ
+    // between Normal versions; that key is application specific.
+    const skip = applicationFor(reg.context).retainedKey;
     const baseline = await loadSnapshot(workspace, reg, reg.normalId);
     for (const key of Object.keys(baseline))
-      if (key !== 'config' && !equal(normal[key], baseline[key])) fail('record-invalid');
+      if (key !== skip && !equal(normal[key], baseline[key])) fail('record-invalid');
   }
   return normal;
 }
@@ -103,6 +108,10 @@ export function validateState(reg, state) {
   for (const key of ['lastCheckpointId', 'lastPlanId'])
     if (state[key] !== null && !/^[0-9a-f]{64}$/.test(state[key]))
       fail('workspace-invalid');
+  for (const key of ['setupId', 'preparedSetupId', 'scopeId', 'lastEnrollmentReviewId'])
+    if (state[key] != null && (typeof state[key] !== 'string' || !/^[0-9a-f]{64}$/.test(state[key]))) fail('workspace-invalid');
+  if (state.scopePreparationRequired !== undefined && typeof state.scopePreparationRequired !== 'boolean') fail('workspace-invalid');
+  if (state.setupSchemaVersion !== undefined && state.setupSchemaVersion !== 2) fail('workspace-invalid');
   const paths = pathsFor(reg);
   if (
     new Set(state.ownedDirs.map((d) => d.path)).size !== state.ownedDirs.length
@@ -113,15 +122,12 @@ export function validateState(reg, state) {
       !Object.hasOwn(paths, d.key) ||
       d.path !== dirname(paths[d.key]) ||
       !reg.bindings[d.key].missing.includes(d.path) ||
-      !Number.isSafeInteger(d.identity?.dev) ||
-      !Number.isSafeInteger(d.identity?.ino)
+      !validDirectoryIdentity(d.identity)
     )
       fail('workspace-invalid');
 }
-export async function openWorkspace(workspace) {
-  await canonical(workspace);
-  const manifest = await readJson(join(workspace, 'registration.json'));
-  const reg = await loadRecord(workspace, 'scope', manifest.scopeId);
+async function loadRegistration(workspace, scopeId) {
+  const reg = await loadRecord(workspace, 'scope', scopeId);
   if (
     reg.role !== 'registration' ||
     reg.workspace !== workspace ||
@@ -130,17 +136,7 @@ export async function openWorkspace(workspace) {
     reg.skills.length > 32
   )
     fail('workspace-invalid');
-  await canonical(reg.context.codexHome);
-  await canonical(reg.context.project);
-  const owner = ownerPath(reg.context.codexHome);
-  await canonical(owner);
-  const reservation = await readJson(join(owner, 'reservation.json'));
-  if (
-    reservation.workspace !== workspace ||
-    reservation.scopeId !== manifest.scopeId ||
-    reservation.codexHome !== reg.context.codexHome
-  )
-    fail('workspace-invalid');
+  const app = applicationFor(reg.context);
   if (
     reg.skills.some(
       (s) =>
@@ -149,11 +145,12 @@ export async function openWorkspace(workspace) {
         s.id !==
           'skill-' +
             hash({ identity: s.identity, sourceDigest: s.sourceDigest }) ||
-        s.pluginId?.includes('@openai-')
+        app.rejectsRegisteredSkill(s)
     )
   )
     fail('workspace-invalid');
-  if (new Set(reg.skills.map((s) => s.id)).size !== reg.skills.length)
+  if (new Set(reg.skills.map((s) => s.id)).size !== reg.skills.length ||
+      new Set(reg.skills.map((s) => s.path)).size !== reg.skills.length)
     fail('workspace-invalid');
   const expected = Object.keys(pathsFor(reg)).sort();
   if (!equal(Object.keys(reg.bindings ?? {}).sort(), expected))
@@ -164,8 +161,7 @@ export async function openWorkspace(workspace) {
     if (
       !b ||
       !Array.isArray(b.missing) ||
-      !Number.isSafeInteger(b.dev) ||
-      !Number.isSafeInteger(b.ino)
+      !validDirectoryIdentity(b)
     )
       fail('workspace-invalid');
     if (b.missing.length === 0) {
@@ -181,24 +177,93 @@ export async function openWorkspace(workspace) {
       if (rel.startsWith('..') || isAbsolute(rel)) fail('workspace-invalid');
     }
   }
-  const state = await readJson(join(workspace, 'state.json'));
-  await validateStateSnapshots(workspace, reg, state);
   const normal = await loadSnapshot(workspace, reg, reg.normalId);
   for (const s of reg.skills)
-    if (
-      s.sourceDigest !==
-      hash({
-        body: normal[s.id + ':body'],
-        policy: normal[s.id + ':policy'],
-        format: normal[s.id + ':format']
-      })
-    )
+    if (s.sourceDigest !== app.skillSourceDigest(normal, s))
       fail('workspace-invalid');
-  return { workspace, scopeId: manifest.scopeId, reg, state, owner };
+  return reg;
+}
+
+// The original reservation anchors the workspace for its whole lifetime. An
+// additive registration is selected by the same atomic state publication as
+// its snapshots; no multi-file reservation/manifest move is needed.
+export async function loadScopeLineage(workspace, rootScopeId, scopeId) {
+  const registrations = [];
+  let id = scopeId;
+  while (true) {
+    if (!/^[a-f0-9]{64}$/.test(id) || registrations.some(s => s.scopeId === id) || registrations.length > 32) fail('workspace-invalid');
+    const reg = await loadRegistration(workspace, id);
+    registrations.push({ scopeId: id, reg });
+    if (id === rootScopeId) {
+      if (reg.parentScopeId !== undefined || reg.parentNormalId !== undefined) fail('workspace-invalid');
+      break;
+    }
+    if (!/^[a-f0-9]{64}$/.test(reg.parentScopeId) || !/^[a-f0-9]{64}$/.test(reg.parentNormalId)) fail('workspace-invalid');
+    id = reg.parentScopeId;
+  }
+  for (let i = 0; i < registrations.length - 1; i++) {
+    const child = registrations[i].reg, parent = registrations[i + 1].reg;
+    if (!equal(child.context, parent.context) || child.ownedRoot !== parent.ownedRoot || child.version !== parent.version ||
+        !equal(child.instructions, parent.instructions) || child.skills.length <= parent.skills.length ||
+        !equal(child.skills.slice(0, parent.skills.length), parent.skills)) fail('workspace-invalid');
+    const before = await loadNormal(workspace, parent, child.parentNormalId);
+    const after = await loadNormal(workspace, child);
+    for (const key of Object.keys(before))
+      if (!equal(before[key], after[key]) || !equal(parent.bindings[key], child.bindings[key])) fail('workspace-invalid');
+  }
+  return registrations;
+}
+export function scopeWorkspace(w, scopeId) {
+  if (scopeId === w.scopeId) return w;
+  const index = w.registrations?.findIndex(s => s.scopeId === scopeId) ?? -1;
+  const activeIndex = w.registrations?.findIndex(s => s.scopeId === w.scopeId) ?? -1;
+  const historic = w.registrations?.[index];
+  if (!historic || index < activeIndex) fail('record-invalid');
+  return { ...w, ...historic };
+}
+export async function openWorkspace(workspace) {
+  await canonical(workspace);
+  const manifest = await readJson(join(workspace, 'registration.json'));
+  const state = await readJson(join(workspace, 'state.json'));
+  const rootScopeId = workspaceManifestRoot(manifest);
+  const manifestVersion = manifest.schemaVersion ?? 1;
+  if (state.setupSchemaVersion === 2 && manifestVersion !== 2) fail('workspace-invalid');
+  const scopeId = state.scopeId ?? rootScopeId;
+  const registrations = await loadScopeLineage(workspace, rootScopeId, scopeId);
+  const reg = registrations[0].reg;
+  const home = applicationFor(reg.context).home(reg.context);
+  await canonical(home);
+  await canonical(reg.context.project);
+  const owner = ownerPath(home);
+  await canonical(owner);
+  const reservation = await readJson(join(owner, 'reservation.json'));
+  if (reservation.workspace !== workspace || reservation.scopeId !== rootScopeId ||
+      (reservation.home ?? reservation.codexHome) !== home) fail('workspace-invalid');
+  await validateStateSnapshots(workspace, reg, state);
+  return { workspace, scopeId, rootScopeId, manifest, manifestVersion, registrations, reg, state, owner };
+}
+
+// A v2 manifest deliberately has no legacy scopeId. Older writers cannot open
+// it, even if they ignore fields added to mutable state. Immutable scopes,
+// snapshots and the original profile reservation keep their exact identities.
+export function workspaceManifestRoot(manifest) {
+  const v2 = manifest?.schemaVersion === 2;
+  const root = v2 ? manifest.rootScopeId : manifest?.scopeId;
+  if (!manifest || !equal(Object.keys(manifest).sort(), v2 ? ['rootScopeId', 'schemaVersion'] : ['scopeId'])
+    || typeof root !== 'string' || !/^[a-f0-9]{64}$/.test(root)) fail('workspace-invalid');
+  return root;
+}
+
+export function registeredSkill(app, s) {
+  return { id: s.id, sourceDigest: s.sourceDigest, path: s.path, label: s.label,
+    identity: s.identity, pluginId: s.pluginId, enabled: s.enabled, availability: s.availability,
+    ...app.registeredSkillFields(s) };
 }
 export async function initializeWorkspace(d, selected, instructionsOptional) {
   assertRegistrationOwnership(d, selected, instructionsOptional);
-  const owner = ownerPath(d.context.codexHome);
+  const app = applicationFor(d.context);
+  const home = app.home(d.context);
+  const owner = ownerPath(home);
   try {
     await mkdir(owner, { mode: 0o700 });
   } catch (e) {
@@ -206,11 +271,18 @@ export async function initializeWorkspace(d, selected, instructionsOptional) {
     throw e;
   }
   // Reservation directory survives every interrupted initialization.
+  // A Codex reservation keeps its original codexHome field so that a CLI
+  // built before the application seam still validates workspaces this build
+  // creates. New readers use `home`; `application` is additive.
+  const homeFields =
+    app.id === 'codex'
+      ? { application: app.id, home, codexHome: home }
+      : { application: app.id, home };
   await writeJson(
     join(owner, 'initializing.json'),
     {
       kind: 'unharness-user-source-initialization',
-      codexHome: d.context.codexHome,
+      ...homeFields,
       pid: process.pid
     },
     true
@@ -218,16 +290,7 @@ export async function initializeWorkspace(d, selected, instructionsOptional) {
   const { store: workspace } = await createStore({ parent: owner });
   const skills = d.skills
     .filter((s) => selected.includes(s.id))
-    .map((s) => ({
-      id: s.id,
-      sourceDigest: s.sourceDigest,
-      path: s.path,
-      label: s.label,
-      identity: s.identity,
-      pluginId: s.pluginId,
-      enabled: s.enabled,
-      availability: s.availability
-    }));
+    .map(s => registeredSkill(app, s));
   const reg = {
     role: 'registration',
     workspace,
@@ -240,14 +303,13 @@ export async function initializeWorkspace(d, selected, instructionsOptional) {
     normalId: null
   };
   const files = { ...d.files };
-  for (const s of d.skills.filter((s) => selected.includes(s.id))) {
-    files[s.id + ':body'] = s.body;
-    files[s.id + ':policy'] = s.policy;
-    files[s.id + ':format'] = s.format;
-    reg.bindings[s.id + ':body'] = s.binding;
-    reg.bindings[s.id + ':policy'] = s.policyBinding;
-    reg.bindings[s.id + ':format'] = s.formatBinding;
-  }
+  // Each application decides which files back one registered Skill: Codex has
+  // a policy and format sidecar, Claude Code has only the guarded body.
+  for (const s of d.skills.filter((s) => selected.includes(s.id)))
+    for (const [key, { file, binding }] of Object.entries(app.skillFiles(s))) {
+      files[key] = file;
+      reg.bindings[key] = binding;
+    }
   reg.normalId = await saveSnapshot(workspace, reg, files);
   const scopeId = await record(workspace, 'scope', reg);
   await writeJson(join(workspace, 'registration.json'), { scopeId }, true);
@@ -270,7 +332,7 @@ export async function initializeWorkspace(d, selected, instructionsOptional) {
     join(owner, 'reservation.json'),
     {
       kind: 'unharness-user-source-reservation',
-      codexHome: d.context.codexHome,
+      ...homeFields,
       workspace,
       scopeId
     },

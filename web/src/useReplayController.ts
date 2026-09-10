@@ -60,7 +60,7 @@ export function useReplayController(shared: Shared) {
     if (options.preparation && (replayPreparationKey(response.state) !== preparation || replayPreparationKey(view.current) !== preparation)) {
       setState(s => ({ ...s, review: null, handoff: null, notice: "装備の状態が変わりました。再実行の内容を確認し直してください。" })); return null;
     }
-    if (!validReplayResponse(op, response.result, scope, input)) {
+    if (!validReplayResponse(op, response.result, scope, input, view.current?.source?.registration.previousScopeIds)) {
       setState(s => ({ ...s, error: "再実行の応答を確認できません。履歴を読み直してください。", notice: options.afterSaved ? s.notice : "",
         uncertain: isReplayMutation(op) ? op : s.uncertain })); return null;
     }

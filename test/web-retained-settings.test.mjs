@@ -15,6 +15,8 @@ function controllerView({
   return {
     metadata: {
       kind: "user-sources",
+      application: "codex",
+      applicationLabel: "Codex",
       launchId,
       contextId: "a".repeat(64),
       context: {
@@ -190,6 +192,8 @@ test("an uncertain retained acceptance is sent once with only the accepted conte
   );
   const metadata = {
     kind: "user-sources",
+    application: "codex",
+    applicationLabel: "Codex",
     launchId: "launch",
     contextId: "a".repeat(64),
     context: {
@@ -235,6 +239,8 @@ test("controller clears both cached plans after context, scope, revision, or act
   );
   const metadata = {
     kind: "user-sources",
+    application: "codex",
+    applicationLabel: "Codex",
     launchId: "launch",
     contextId: "a".repeat(64),
     context: { codexHome: "/codex", project: "/project", executable: "/codex/bin" },
@@ -428,6 +434,8 @@ test("post-accept favorites adopts completed and context-updated state before li
   );
   const metadata = {
     kind: "user-sources",
+    application: "codex",
+    applicationLabel: "Codex",
     launchId: "launch",
     contextId: "a".repeat(64),
     context: {

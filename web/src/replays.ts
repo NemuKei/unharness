@@ -137,12 +137,14 @@ function matchesRequest(op: string, x: Record<string, unknown>, input: object) {
   return op !== "compare-replays" || !Object.hasOwn(expected, "resultIds") || Array.isArray(x.results) && Array.isArray(expected.resultIds)
     && x.results.length === expected.resultIds.length && x.results.every((r, i) => object(r) && Array.isArray(expected.resultIds) && r.resultId === expected.resultIds[i]);
 }
-export function validReplayResponse(op: string, x: unknown, scopeId: string, input: object = {}): boolean {
-  if (!object(x) || x.scopeId !== scopeId) return false;
+export function validReplayResponse(op: string, x: unknown, scopeId: string, input: object = {}, previousScopeIds: string[] = []): boolean {
+  const scopes = [scopeId, ...previousScopeIds];
+  if (!object(x) || !text(x.scopeId) || !scopes.includes(x.scopeId)
+    || ["review-replay", "replays", "compare-replays", "handoff-replay", "open-replay"].includes(op) && x.scopeId !== scopeId) return false;
   if (!matchesRequest(op, x, input)) return false;
   if (op === "review-replay") return hash(x.reviewId) && hash(x.startId) && x.phase === "reviewed" && mode(x.preparedMode) && declaredBudget(x.budget)
     && count(x.fileCount) && count(x.totalBytes) && Array.isArray(x.changes) && x.changes.every(c => object(c) && text(c.path) && text(c.reason));
-  if (op === "replays") return Array.isArray(x.attempts) && x.attempts.every(a => attempt(a) && object(a) && a.scopeId === scopeId)
+  if (op === "replays") return Array.isArray(x.attempts) && x.attempts.every(a => attempt(a) && object(a) && text(a.scopeId) && scopes.includes(a.scopeId))
     && (x.activeAttemptId === null ? x.activeAttempt === null : hash(x.activeAttemptId) && attempt(x.activeAttempt)
       && object(x.activeAttempt) && x.activeAttempt.scopeId === scopeId && x.activeAttempt.attemptId === x.activeAttemptId)
     && (x.nextCursor === null || hash(x.nextCursor));
@@ -151,7 +153,7 @@ export function validReplayResponse(op: string, x: unknown, scopeId: string, inp
     && (op !== "open-replay" || x.desktopOpenRequested === true && x.taskSubmitted === false && x.desktopHomeVerified === false);
   if (["observe-replay", "save-replay-result", "replay-result"].includes(op)) return result(x, true, op !== "observe-replay");
   if (op === "compare-replays") return Array.isArray(x.results) && x.results.length >= 1 && x.results.length <= 3
-    && x.results.every(r => result(r, false, true) && object(r) && r.scopeId === scopeId) && x.assessment === "neutral" && x.creationEligible === false
+    && x.results.every(r => result(r, false, true) && object(r) && text(r.scopeId) && scopes.includes(r.scopeId)) && x.assessment === "neutral" && x.creationEligible === false
     && object(x.aggregate) && strings(x.aggregate.reasons) && count(x.aggregate.recordCount) && count(x.aggregate.acceptedCount)
     && nullableCount(x.aggregate.totalTokens) && nullableMetric(x.aggregate.tokensPerAcceptedRun);
   if (op === "replay-favorite") return hash(x.favoriteId) && typeof x.name === "string" && mode(x.preparedMode);

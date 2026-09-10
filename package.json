@@ -1,6 +1,7 @@
 {
   "name": "unharness",
   "version": "0.0.1",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "engines": {
@@ -11,14 +12,17 @@
     "inspect": "node bin/unharness.mjs inspect",
     "check": "tsc -p web/tsconfig.json --noEmit && node --disallow-code-generation-from-strings web/checks/pixi-csp.check.mjs",
     "build": "vite build",
+    "build:site": "vite build --config vite.site.config.mjs",
     "gui": "node bin/unharness.mjs gui --demo"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.0.0",
     "node-diff3": "3.1.2",
     "pixi.js": "8.20.1",
+    "pngjs": "7.0.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "twitter-text": "3.1.0",
     "yaml": "2.9.0",
     "zod": "4.3.6"
   },
@@ -27,6 +31,7 @@
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",
     "@vitejs/plugin-react": "6.1.1",
+    "smol-toml": "1.8.0",
     "typescript": "7.0.2",
     "vite": "8.2.2"
   }

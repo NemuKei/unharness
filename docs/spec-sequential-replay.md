@@ -70,7 +70,7 @@ The handoff proves the frozen files at its real check time. Native task recordin
 
 An immutable result review stores a bounded answer, measurement, request/source qualification, recording digest, source/read issues and outcome manifest. Raw native chat/history is not copied into it. Assessments accept only the frozen criterion IDs; labels, critical flags and rating anchors come from the declaration. Unknown ratings, failed/abandoned outcomes and attributed amendments remain versioned. Recording a result closes that attempt's active slot. Repeating the same save returns the same result; an amendment must identify the current prior result, and cancellation cannot replace a recorded outcome.
 
-Acceptance requires the reported/critical checks, qualified task evidence, source/read availability and the declared recorded-turn/token budget. Recorded root-response coverage is explicit, with unknown child completeness. No usage for one selected turn leaves the combined total unknown instead of silently omitting that turn. Each result remains neutral and creation-ineligible pending an applicable comparison rule. Missing or corrupt optional outcome data does not block configuration status or offline recovery.
+Acceptance requires the reported/critical checks, qualified task evidence, source/read availability and the declared recorded-turn/token budget. Recorded root-response coverage is explicit, with unknown child completeness. No usage for one selected turn leaves the combined total unknown instead of silently omitting that turn. A result needs an applicable comparison rule for a performance interpretation. Existing creation-eligibility projections are legacy metadata and must not gate the newly adopted free-artwork workflow. Missing or corrupt optional outcome data does not block configuration status or offline recovery.
 
 ## Shared interfaces and display
 
@@ -79,6 +79,22 @@ The registered service owns review/prepare/read/list/handoff/open/observe/cancel
 Comparison accepts up to three distinct result IDs and omits private request/answer bodies from its table response. Distinct task/attempt identity, non-overlapping recorded task timelines, one saved start and Normal version, compatible known runtime conditions, qualified evidence and recorded budget/usage coverage are prerequisites for a combined total. A cancelled task may still be running; cancellation alone does not establish sequential execution. Failed outcomes contribute recorded cost when otherwise comparable. A historical favorite uses the immutable attempt's source snapshot and mode without applying configuration. These operations never infer a favorable/adverse performance verdict.
 
 The Comparison screen adds the next action to a saved start, with one active attempt and its immutable history. Keep source-controller context binding, one operation lock, explicit uncertain-write states, stale-response rejection, effects-off operation and narrow-screen readability. Equipment and offline configuration recovery remain usable when a replay list or detail read fails.
+
+## Application availability
+
+A qualified attempt needs two things from the application: a
+runtime-authoritative report of the resolved configuration layers, Skill
+catalog and hooks before the task starts, and a command that opens one specific
+project as a fresh task. Codex provides both through its local app server and
+`codex app <project>`.
+
+Claude Code on macOS provides neither: it ships inside the desktop bundle with
+no CLI and no local read-only RPC. Every replay operation therefore fails for a
+Claude registration with `replay-application-unsupported`, carrying that reason.
+Saved starting conditions are application neutral and remain available, as do
+ordinary recorded runs and their comparison. Substituting a weaker preflight
+would produce a different comparison product under the same name, so the
+refusal is deliberate rather than a gap to fill later without new evidence.
 
 ## Acceptance
 

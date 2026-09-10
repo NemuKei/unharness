@@ -1,16 +1,18 @@
 # Build cards and X sharing
 
-Agreed direction recorded on 2026-09-06. The maintainer approved making it easy to post an adopted original form to X, with Unharness free to use and no recurring operator service expense. Card rendering, candidate selection, and sharing are not implemented. This does not change the Codex-first delivery order or require an Unharness cloud service.
+Sharing direction recorded on 2026-09-06 and refined on 2026-09-09 for freely selected layered artwork. The maintainer approved making it easy to post an adopted original form to X, with Unharness free to use and no recurring operator service expense. The local appearance-only card, PNG download and explicit X preparation flow are implemented with [scoped UI evidence](evidence/2026-09-10-artwork-ui.md). Comparison-bearing cards, reusable artwork packs and public discovery remain later extensions. This does not change the Codex-first delivery order or require an Unharness cloud service.
+
+The implemented card asks for public names separately, begins with blank name/author fields and freezes one selected artwork version. Changing public fields invalidates the previous export immediately. Failed image decoding or canvas readback leaves no downloadable placeholder. The official `twitter-text` parser is pinned for Japanese/emoji/link-aware draft validation. Clipboard and composer results are reported separately; only explicit user actions copy or open anything. The approved public repository URL is still unset, so development drafts omit it.
 
 ## The flow to share
 
-Complete a comparable trial → meet an appearance-change condition → optionally create candidates → select and save one → preview a build card → copy its PNG to the clipboard and open X's composer with editable template text and the public OSS link → paste and post in X.
+Select prepared artwork or a locally saved original → preview an appearance card → optionally add a separately supported comparison summary → copy its PNG to the clipboard and open X's composer with editable text and a configured public link → paste and post in X.
 
-The adopted [appearance rule](personalization.md#choosing-a-form-and-limiting-remakes) is three candidates followed by one final choice. Creating or sharing art is optional. The user can save a card with prepared artwork too, but only a qualifying, evidence-backed result receives an achievement claim.
+The [appearance contract](personalization.md#creation-and-revisions) allows voluntary creation, revision and selection without performance gates or a fixed candidate count. An appearance-only card needs no comparison. Any optional performance claim still requires applicable evidence; artwork itself never supplies that claim.
 
 ## The card
 
-Lead with the selected entity and its loadout so the discovery is worth showing. Keep a short, readable record of what was learned:
+An appearance-only card leads with the composed artwork and optional public name/author attribution. It does not require a loadout, task or performance record. If the user chooses to include a comparison, add a short, readable record of what was learned:
 
 - the user's chosen display name and selected form;
 - the tested mode or favorite and app/model conditions;
@@ -23,11 +25,17 @@ Render values and captions from the comparison record. Generated artwork must no
 
 The export preview lets the user select public fields and edit display names. Do not automatically include private project names, local paths, raw instructions, memory, conversations, or secret configuration values. The exported card is an immutable view of its selected appearance and evidence; later runs do not rewrite a card already exported.
 
-An appearance can come from the reusable collection. For a current-result card, its GOOD/BAD/neutral treatment follows that result's applicable assessment and cannot be changed to imply a better outcome. A historical collection card can show the form as previously earned, with the historical context visible; it does not certify the current loadout. Unmatched everyday runs must not be presented as a controlled performance improvement.
+An appearance can come from the reusable collection. The chosen artwork is independent of the assessment. A current-result card reports that result in separate numbers/text, including adverse or unknown outcomes, without forcing a different image. A historical card identifies the selected result's historical context and does not certify the current loadout. Unmatched everyday runs must not be presented as a controlled performance improvement.
 
 A card image is not a restorable favorite. A separately selected, sanitized configuration recipe may help others reproduce a comparison, but portable compatibility and permitted content must be checked. The base sharing flow does not upload that recipe or private evidence to a public host.
 
 Start with a readable PNG and editable post text. A short release animation or before/after clip can be explored later. Keep useful conditions legible at a typical social-feed size; provide a text description of the image for the user to use as alt text.
+
+## Later reusable artwork sharing
+
+After local creation, import and reuse work, consider a pack containing the selected entity, restraint and background images, template version, placement data, author information and declared reuse conditions. Let a recipient inspect and preview it before saving a local copy. Unknown templates or missing assets do not authorize replacing the recipient's current work.
+
+Keep image/card sharing separate from reusable parts and from a possible public gallery. A gallery, public hosting, submission handling and running costs need their own later decision. Packs must not contain executable code, Skill bodies, private harness configuration, memory, raw chats, credentials or local paths. Image cards and future pack metadata can include a small reviewed author/site attribution; the actual name and URL must be supplied before publication.
 
 ## Initial X handoff
 
@@ -43,7 +51,7 @@ Keep “画像を保存” as a local fallback for unsupported clipboard access,
 
 Browser clipboard writing requires a supported secure context and applicable interaction/permission conditions. [Clipboard.write](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/write) supports PNG data on supporting browsers, and [window.open](https://developer.mozilla.org/en-US/docs/Web/API/Window/open) is subject to user-gesture and popup rules. Pre-rendering alone does not guarantee both operations succeed in one click: implementation must verify activation/focus behavior, asynchronous completion, and fallback behavior in the supported browsers on both OSes. An AI request can prepare the share preview; it must not claim that a background request performed a browser clipboard write without observing the actual result.
 
-## Template text and the OSS link
+## Template text and public links
 
 Use a short editable template, for example:
 
@@ -58,7 +66,7 @@ Unharnessでハーネスを試着。
 
 These braces describe template fields, not text to ship unchanged. Include only selected public names and a benefit statement justified by the exported comparison. Omit optional empty lines and keep the actual composed post within X's current text limit, accounting for URLs and hashtags. Keep the OSS link in the default public-release template while allowing the author to edit the final draft.
 
-The canonical public repository URL belongs to project release metadata. There is currently no Git remote/public repository URL configured, so do not invent a GitHub owner, expose a private remote, or populate the template with a local path. Until the real public URL is available, omit that line from any usable draft and identify the missing release metadata in development. Never use the local app's location as a default sharing URL.
+The canonical public repository URL belongs to project release metadata. Development has a private Git remote, but no public repository URL has been selected for the release. Do not expose the private remote as a public sharing destination or populate the template with a local path. Until an approved public URL is available, omit that line from usable drafts and identify the missing release metadata in development. Never use the local app's location as a default sharing URL.
 
 [X's Web Intent documentation](https://docs.x.com/x-for-websites/post-button/guides/web-intent) lists text, URL, hashtag, and related-account parameters; it provides no local-image attachment parameter. Therefore the basic intent handoff cannot preattach the exported PNG. [The Web Intents overview](https://docs.x.com/x-for-websites/web-intents/overview) describes this route without a separate developer app authorization, although the author still uses their X account to publish.
 

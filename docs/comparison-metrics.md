@@ -52,6 +52,29 @@ Retain reported breakdowns separately. Do not add cached input on top of input o
 
 Treat monetary estimates separately from token counts. A subscription plan's usage cannot automatically be translated into an exact per-task price.
 
+## Claude Code usage evidence
+
+Claude Code 2.1.260 records usage per API request, and several `assistant`
+records can belong to one request and repeat its `usage`. Usage is therefore
+attributed once per `requestId`; a repeat with different numbers is a
+`response-replay-conflict` that withholds every total rather than charging
+twice. In a real 1,066-record recording this collapsed 371 assistant records to
+191 charged requests.
+
+The recorded usage carries `input_tokens`, `cache_read_input_tokens`,
+`cache_creation_input_tokens`, `output_tokens` and
+`output_tokens_details.thinking_tokens` — and **no total**. `totalTokens`
+therefore stays null with `response-usage-missing-field`, and availability is
+`partial`. Deriving a sum would publish this parser's arithmetic under a field
+name that means a recorded value for the Codex parser, so the four component
+counters compare exactly and the total stays unknown. A `user` record starts a
+new turn only when it is a human prompt; tool results share the record type and
+are not turn boundaries.
+
+Each application parser declares the runtime versions it qualifies. A
+measurement may not claim a version its own parser has not been checked
+against, and adding an application never loosens another one's admission.
+
 ## Output quality
 
 For coding tasks, start with explicit acceptance checks: requested behavior, relevant tests, retained behavior, and required constraints. Add a small review scorecard only for qualities the executable checks cannot capture.
@@ -70,7 +93,7 @@ This follows [OpenAI's evaluation guidance](https://developers.openai.com/api/do
 - Keep collection coverage and failed runs visible. Report a missing metric as unknown rather than zero.
 - Save the exact loadout version, scoring version, comparison conditions, and supporting results with a favorite so a later rerun can be interpreted.
 
-The [accepted harness scope](harness-scope.md) preserves existing memory and native task-continuity settings in every initial mode. The [personalization proposal](personalization.md#keep-personalization-out-of-uncontrolled-comparisons) lets memories inform task and scorecard preparation, then freezes the declared criteria. Record observable memory conditions and input versions; unchanged settings do not prove unchanged memory contents. If earlier trials can feed later trials through background memory updates, record that limitation instead of claiming identical inputs. Memory is not an initial varied harness component. Appearance generation stays outside candidate tasks and its usage is separate overhead.
+The [accepted harness scope](harness-scope.md) preserves existing memory and native task-continuity settings in every initial mode. The [personalization proposal](personalization.md#useful-memory-stays-separate) lets memories inform task and scorecard preparation, then freezes the declared criteria. Record observable memory conditions and input versions; unchanged settings do not prove unchanged memory contents. If earlier trials can feed later trials through background memory updates, record that limitation instead of claiming identical inputs. Memory is not an initial varied harness component. Appearance generation stays outside candidate tasks and its usage is separate overhead.
 
 The product should let a user inspect tradeoffs such as similar quality with fewer tokens, better quality with more work, or no meaningful difference. It need not reduce every task to one “strength” number.
 
@@ -80,11 +103,11 @@ The Comparison tab in the same hangar GUI shows selected saved results with acce
 
 The implemented aggregate preserves the service meanings: `recordCount` counts selected saved versions, `distinctTaskCount` counts task UUIDs and `acceptedCount` counts versions that pass the derived acceptance rule. Failed and abandoned spending remains in a calculable numerator. Overlapping task versions, partial/unavailable totals and overflow make the total/ratio null with fixed reasons; zero accepted versions keep a known total but have no ratio. The UI never recomputes a more favorable denominator.
 
-The maintainer also wants helpful harnesses to be expressible as supportive or resonating equipment. Derive such an optional visual assessment from the stated comparison and user priorities, retaining a neutral appearance for unmeasured or inconclusive setups. It is presentation metadata, not evidence on its own and not a configuration change.
+The 2026-09-09 appearance revision separates artwork from assessment. Supportive or resonating equipment can be freely chosen as a visual motif; it is not evidence that a configuration performs better.
 
-When applicable evidence establishes adverse performance, restrict active visuals to BAD-compatible variants from the [appearance collection](personalization.md#collection-ownership-and-current-presentation), with prepared BAD artwork as fallback. Do not delete previously acquired items. The assessment is scoped to the app/model, loadout version, task criteria, baseline, and evidence; it is not a permanent judgment attached to the mode name. Missing or incomparable observations do not meet the adverse-state rule. Selecting a skin cannot override the classification.
+Report favorable, adverse or unknown performance separately from the [appearance collection](personalization.md#collection-ownership-and-current-presentation). Keep the chosen image unchanged and retain all works. The assessment remains scoped to the app/model, loadout version, task criteria, baseline and evidence; selecting a skin does not change that assessment.
 
-A qualifying result can unlock an optional original-appearance creation action. Its [eligibility rule](personalization.md#original-creation-unlocked-by-comparison-evidence) must be fixed before inspecting candidate results and reference the exact comparison/loadout versions. Required quality, sufficient observations for the chosen rule, and coverage of the claimed benefit determine eligibility; token reduction alone does not. Thresholds and repeat counts remain task-specific design work. The same gate applies to GUI and AI requests, and generation usage remains separate from benchmark usage.
+[Original creation and revision](personalization.md#creation-and-revisions) need no comparison qualification. Performance claims still require declared rules, exact comparison/loadout versions, required quality, enough observations and coverage of the claimed benefit; token reduction alone is insufficient. Preserve the earlier evidence resolver for such scoped analysis and historical records, while removing its use as a creative gate. Generation usage remains separate from benchmark usage.
 
 ## Delivery order
 

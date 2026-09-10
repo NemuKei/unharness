@@ -214,6 +214,7 @@ export function isComparisonMutation(action: string) {
 }
 
 export const aggregateReasonLabels: Record<string, string> = {
+  "different-source-scopes": "登録した指示・Skillの範囲が異なるため、まとめて効率を評価できません。",
   "overlapping-task-records":
     "同じタスクの版またはカットオフが重なっているため、独立した標本として合計しません。",
   "usage-unavailable-or-partial":

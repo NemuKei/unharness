@@ -3,19 +3,21 @@ import type { Api } from "./api";
 import { sameSourceContext, validateSourceMetadata } from "./source-operations.ts";
 import { validReplayResponse } from "./replays.ts";
 import type { ReplayPage } from "./replays";
-import type { SourceMetadata, SourceView, SourceFavoritePage } from "./sources";
+import type { SourceApplication, SourceMetadata, SourceView, SourceFavoritePage } from "./sources";
 import type { RunPage } from "./comparisons";
 import type { StartingPage } from "./starting-conditions";
 import { validateMeasurement } from "../../src/comparisons/measurement.mjs";
 import { validateAssessment, deriveAcceptance } from "../../src/comparisons/assessment.mjs";
+import { validAppearanceView } from "./appearances.ts";
+import type { AppearanceView } from "./appearances";
 
 export type HistorySlice<T> = { data: T; error: null } | { data: null; error: { kind: string } };
 export type SourceUpdate = {
   status: "updated"; metadata: SourceMetadata; token: string;
-  versions: Record<"source" | "favorites" | "runs" | "starts" | "replays", string>;
+  versions: Record<"source" | "favorites" | "runs" | "starts" | "replays" | "appearance", string>;
   view: SourceView; retryRequired: boolean;
   history: null | { favorites: HistorySlice<SourceFavoritePage>; runs: HistorySlice<RunPage>;
-    starts: HistorySlice<StartingPage>; replays: HistorySlice<ReplayPage> };
+    starts: HistorySlice<StartingPage>; replays: HistorySlice<ReplayPage>; appearance: HistorySlice<AppearanceView> };
 };
 export type SourceUpdateResponse = SourceUpdate
   | { status: "unchanged"; metadata: SourceMetadata; token: string }
@@ -36,14 +38,24 @@ const verification = (v: unknown) => object(v) && v.runtimeStateVerified === fal
 const invalid = () => { throw new ApiError("invalid-response"); };
 const fieldsMatch = (value: unknown, expected: Record<string, unknown>) => object(value)
   && Object.entries(expected).every(([key, item]) => value[key] === item);
-function observation(v: unknown, scopeId: string) {
+// Each application records its own runtime identity: Codex reports one CLI
+// version, Claude Code reports the runtime read from the recording plus the
+// desktop bundle version its plan depended on. The shared fields are the same.
+function observedVersions(conditions: Record<string, unknown>, application: SourceApplication) {
+  return application === "claude"
+    ? Object.hasOwn(conditions, "runtimeVersion") &&
+        [conditions.runtimeVersion, conditions.desktopVersion].every(maybeText)
+    : Object.hasOwn(conditions, "codexVersion") && maybeText(conditions.codexVersion);
+}
+function observation(v: unknown, scopeId: string, application: SourceApplication) {
   if (v === null) return true;
   return object(v) && v.scopeId === scopeId && hash(v.observationId) && text(v.taskId) && hash(v.snapshotId)
     && maybeText(v.preparationId) && mode(v.preparedMode) && time(v.observedAt)
     && oneOf(v.status, ["matched-record", "not-matched-record", "unqualified-record", "unknown-record"])
     && strings(v.reasons) && Array.isArray(v.sources) && v.sources.every(s => object(s) && text(s.sourceId)
       && text(s.category) && text(s.expected) && text(s.recorded) && text(s.status))
-    && object(v.conditions) && [v.conditions.codexVersion, v.conditions.model, v.conditions.reasoningEffort].every(maybeText)
+    && object(v.conditions) && observedVersions(v.conditions, application)
+    && [v.conditions.model, v.conditions.reasoningEffort].every(maybeText)
     && maybeHash(v.conditions.executionPolicyDigest) && maybeHash(v.conditions.projectInstructionsDigest)
     && typeof v.conditions.memoryGuidanceRecorded === "boolean" && verification(v.verification);
 }
@@ -55,14 +67,21 @@ function sourceView(value: unknown, metadata: SourceMetadata): value is SourceVi
   if (s === null) return metadata.workspace === null;
   if (!metadata.workspace || !object(s) || !mode(s.preparedMode) || !count(s.revision) || !object(s.registration)
     || !hash(s.registration.scopeId) || !hash(s.registration.normalId) || !hash(s.registration.activeNormalId)
+    || !(s.registration.rootScopeId === undefined || hash(s.registration.rootScopeId))
+    || !(s.registration.modeChangeRequired === undefined || typeof s.registration.modeChangeRequired === "boolean")
+    || !(s.registration.previousScopeIds === undefined || Array.isArray(s.registration.previousScopeIds)
+      && s.registration.previousScopeIds.length <= 32 && s.registration.previousScopeIds.every(hash)
+      && new Set(s.registration.previousScopeIds).size === s.registration.previousScopeIds.length
+      && !s.registration.previousScopeIds.includes(s.registration.scopeId))
     || !Array.isArray(s.registration.sources) || s.registration.sources.length > 33
     || !s.registration.sources.every(row => object(row) && text(row.id) && text(row.label) && text(row.path)
       && object(row.availability) && [row.availability.normal, row.availability.unseal, row.availability.trueform].every(v => typeof v === "boolean"))
     || !fieldsMatch(s.context, metadata.context)
+    || !(s.setup === undefined || object(s.setup) && maybeHash(s.setup.setupId) && maybeHash(s.setup.preparedSetupId))
     || !(s.conflict === null || object(s.conflict) && text(s.conflict.kind)) || !object(s.recovery)
     || typeof s.recovery.pending !== "boolean" || !maybeHash(s.recovery.lastCheckpointId) || !strings(s.recovery.argv)
     || !(s.preparation === null || object(s.preparation) && text(s.preparation.id) && time(s.preparation.preparedAt))
-    || !maybeText(s.observationIssue) || !observation(s.observation, s.registration.scopeId) || !verification(s.verification)) return false;
+    || !maybeText(s.observationIssue) || !observation(s.observation, s.registration.scopeId, metadata.application) || !verification(s.verification)) return false;
   return true;
 }
 function page(value: unknown, key: string, valid: (row: unknown) => boolean) {
@@ -70,12 +89,14 @@ function page(value: unknown, key: string, valid: (row: unknown) => boolean) {
 }
 function favoritePage(value: unknown) {
   return page(value, "favorites", f => object(f) && hash(f.favoriteId) && hash(f.normalId) && mode(f.preparedMode)
-    && text(f.name) && count(f.revision) && typeof f.needsAdaptation === "boolean");
+    && text(f.name) && count(f.revision) && typeof f.needsAdaptation === "boolean"
+    && (f.addedSourceIds === undefined || Array.isArray(f.addedSourceIds) && f.addedSourceIds.length <= 32
+      && f.addedSourceIds.every(id => text(id) && /^skill-[a-f0-9]{64}$/.test(id))));
 }
-function runPage(value: unknown, scopeId: string) {
+function runPage(value: unknown, scopes: string[]) {
   return page(value, "runs", r => {
     try {
-      if (!object(r) || r.scopeId !== scopeId || !hash(r.runId) || !hash(r.reviewId) || !time(r.capturedAt)
+      if (!object(r) || !text(r.scopeId) || !scopes.includes(r.scopeId) || !hash(r.runId) || !hash(r.reviewId) || !time(r.capturedAt)
         || !maybeText(r.title) || !maybeHash(r.previousRunId) || r.measurementKind !== "observational" || !object(r.collectedOn)
         || ![r.collectedOn.platform, r.collectedOn.kernelRelease, r.collectedOn.architecture, r.collectedOn.nodeVersion].every(text)
         || !object(r.source) || !maybeText(r.source.issue) || !verification(r.verification)) return false;
@@ -83,15 +104,15 @@ function runPage(value: unknown, scopeId: string) {
       const acceptance = deriveAcceptance(r.assessment);
       if (!fieldsMatch(r.acceptance, acceptance)) return false;
       const a = r.source.association, o = r.source.observation;
-      if (a !== null && (!object(a) || a.scopeId !== scopeId || !mode(a.preparedMode) || !hash(a.snapshotId)
+      if (a !== null && (!object(a) || a.scopeId !== r.scopeId || !mode(a.preparedMode) || !hash(a.snapshotId)
         || !hash(a.normalId) || !count(a.revision) || !maybeText(a.preparationId) || a.coverage !== "initial-turn-only")) return false;
       return o === null || object(o) && hash(o.observationId) && time(o.observedAt) && strings(o.reasons)
         && oneOf(o.status, ["matched-record", "not-matched-record", "unqualified-record", "unknown-record"]);
     } catch { return false; }
   });
 }
-function startPage(value: unknown, scopeId: string) {
-  return page(value, "starts", s => object(s) && s.scopeId === scopeId && hash(s.startId) && hash(s.reviewId)
+function startPage(value: unknown, scopes: string[]) {
+  return page(value, "starts", s => object(s) && text(s.scopeId) && scopes.includes(s.scopeId) && hash(s.startId) && hash(s.reviewId)
     && time(s.frozenAt) && maybeText(s.title) && count(s.fileCount) && count(s.totalBytes) && count(s.absentCount)
     && count(s.requestBytes) && object(s.criteria) && Array.isArray(s.criteria.requirements) && Array.isArray(s.criteria.ratings)
     && s.criteria.requirements.every(r => object(r) && text(r.id) && text(r.label) && typeof r.critical === "boolean")
@@ -119,7 +140,7 @@ export function validateSourceUpdate(value: unknown, accepted: SourceView, after
   }
   const rawVersions = value.versions;
   if (value.status !== "updated" || !hash(value.token) || !object(rawVersions)
-    || Object.keys(rawVersions).length !== 5 || !["source", "favorites", "runs", "starts", "replays"].every(k => hash(rawVersions[k]))
+    || Object.keys(rawVersions).length !== 6 || !["source", "favorites", "runs", "starts", "replays", "appearance"].every(k => hash(rawVersions[k]))
     || !sourceView(value.view, metadata) || value.view.changeVersion !== rawVersions.source
     || value.view.source?.registration.scopeId !== accepted.source?.registration.scopeId) return invalid();
   const versions = rawVersions as SourceUpdate["versions"];
@@ -129,10 +150,12 @@ export function validateSourceUpdate(value: unknown, accepted: SourceView, after
   }
   if (!object(value.history)) return invalid();
   const scope = value.view.source.registration.scopeId;
+  const previousScopes = value.view.source.registration.previousScopeIds ?? [], scopes = [scope, ...previousScopes];
   const rows = { favorites: slice<SourceFavoritePage>(value.history.favorites, favoritePage),
-    runs: slice<RunPage>(value.history.runs, data => runPage(data, scope)),
-    starts: slice<StartingPage>(value.history.starts, data => startPage(data, scope)),
-    replays: slice<ReplayPage>(value.history.replays, data => validReplayResponse("replays", data, scope)) };
+    runs: slice<RunPage>(value.history.runs, data => runPage(data, scopes)),
+    starts: slice<StartingPage>(value.history.starts, data => startPage(data, scopes)),
+    replays: slice<ReplayPage>(value.history.replays, data => validReplayResponse("replays", data, scope, {}, previousScopes)),
+    appearance: slice<AppearanceView>(value.history.appearance, data => validAppearanceView(data, scope, previousScopes)) };
   return { status: "updated", metadata, token: value.token, versions, view: value.view, history: rows,
     retryRequired: Object.values(rows).some(row => row.error !== null) };
 }

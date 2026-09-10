@@ -151,6 +151,8 @@ test("source actions retain the UI accepted metadata after failed reads and neve
   );
   let metadata = {
     kind: "user-sources",
+    application: "codex",
+    applicationLabel: "Codex",
     launchId: "launch-one",
     contextId: "a".repeat(64),
     context: { codexHome: "/home", project: "/project", executable: "codex" },
@@ -235,4 +237,48 @@ test("source actions retain the UI accepted metadata after failed reads and neve
     kind: "invalid-response",
   });
   assert.equal(posts, 2);
+});
+
+test("source metadata admits each application's own launch identity and rejects a mixed one", async () => {
+  const { validateSourceMetadata, sameSourceContext } = await import(
+    "../src/source-operations.ts"
+  );
+  const base = {
+    kind: "user-sources",
+    launchId: "launch",
+    contextId: "b".repeat(64),
+    workspace: null,
+  };
+  const codex = {
+    ...base,
+    application: "codex",
+    applicationLabel: "Codex",
+    context: { codexHome: "/home", project: "/project", executable: "codex" },
+  };
+  const claude = {
+    ...base,
+    application: "claude",
+    applicationLabel: "Claude Code",
+    context: {
+      application: "claude",
+      claudeHome: "/home/.claude",
+      project: "/project",
+      appBundle: "/Applications/Claude.app",
+    },
+  };
+  assert.equal(validateSourceMetadata(codex), codex);
+  assert.equal(validateSourceMetadata(claude), claude);
+  // Two applications never look like the same launch, and neither accepts the
+  // other's identity fields.
+  assert.equal(sameSourceContext(codex, claude), false);
+  assert.equal(sameSourceContext(claude, { ...claude }), true);
+  for (const invalid of [
+    { ...claude, context: codex.context },
+    { ...codex, context: claude.context },
+    { ...claude, application: "codex" },
+    { ...claude, applicationLabel: "" },
+    { ...codex, application: "other" },
+    { ...claude, context: { ...claude.context, appBundle: "" } },
+  ])
+    assert.throws(() => validateSourceMetadata(invalid), { kind: "invalid-response" });
 });

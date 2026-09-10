@@ -1,5 +1,6 @@
 import { exactKeys, boundedText } from '../comparisons/assessment.mjs';
 import { fail } from '../sources/errors.mjs';
+import { validateComparisonRule } from '../appearances/comparison-rule.mjs';
 
 const kind = 'starting-declaration-invalid';
 const id = value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(value);
@@ -9,7 +10,7 @@ function text(value, limit, multiline = false) {
   return value;
 }
 export function validateDeclaration(value) {
-  exactKeys(value, ['request', 'requirements', 'ratings', 'budget'], ['title'], kind);
+  exactKeys(value, ['request', 'requirements', 'ratings', 'budget'], ['title', 'comparisonRule'], kind);
   const request = text(value.request, 16384, true);
   if (Buffer.byteLength(request) > 65536) fail(kind);
   if (!Array.isArray(value.requirements) || !value.requirements.length || value.requirements.length > 24
@@ -34,5 +35,6 @@ export function validateDeclaration(value) {
     || !Number.isInteger(maxTurnsPerAttempt) || maxTurnsPerAttempt < 1 || maxTurnsPerAttempt > 100
     || (maxRecordedTokens !== null && (!Number.isSafeInteger(maxRecordedTokens) || maxRecordedTokens < 1))) fail(kind);
   return { request, requirements, ratings, budget: { maxAttempts, maxTurnsPerAttempt, maxRecordedTokens },
+    ...(Object.hasOwn(value, 'comparisonRule') ? { comparisonRule: validateComparisonRule(value.comparisonRule, value.budget) } : {}),
     ...(Object.hasOwn(value, 'title') ? { title: text(value.title, 120) } : {}) };
 }

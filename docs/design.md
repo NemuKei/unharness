@@ -62,7 +62,7 @@ On 2026-09-07 the maintainer accepted the combined mechanical motion and final r
 
 ## Everyday controls and development details
 
-Keep ordinary use to a mode choice. The accepted [scope refinement](harness-scope.md) centers on self-authored/personally added instructions and automatic Skills, with optional hooks secondary. Memory and native task-continuity remain in the common environment. When real-source registration/control exists, place a small **対象を調整** disclosure beneath each release mode; show eligible items and the resulting plan only when opened. Keep paths, IDs and unsupported-source diagnostics secondary. The current read-only inventory uses this hierarchy by showing the three candidate source categories first and collapsing retained information. It does not expose nonfunctional per-item release controls.
+Keep ordinary use to a mode choice. The accepted [scope refinement](harness-scope.md) centers on self-authored/personally added instructions and automatic Skills, with optional hooks secondary. Memory and native task-continuity remain in the common environment. When real-source registration/control exists, place **設定をAIに相談** near the modes and keep detailed customization in the user's AI conversation; show the resulting saved proposal concisely. Keep paths, IDs and unsupported-source diagnostics secondary. The current read-only inventory uses this hierarchy by showing the three candidate source categories first and collapsing retained information. It does not expose nonfunctional per-item release controls.
 
 The visible lower interface centers on favorites and returning to a recorded pre-change setting, with short explanations of what each operation does. Older recovery points remain available in an expandable history. Task UUIDs, project paths, manual recording checks and CLI recovery coordinates belong in a closed development-details section. Record/plan identifiers remain available when their details are expanded.
 
@@ -81,15 +81,21 @@ The generated concepts include detail that needs UI refinement, especially statu
 
 ## Equipment can support the AI
 
-The maintainer added that a harness which performs well should have a visual identity beyond restraint. Treat equipment as neutral before evaluation. A configuration that fits the current task can appear as supporting armor, an amplifying frame, or a luminous ring resonating with the AI entity.
+Supportive armor, an amplifying frame and a resonating ring remain possible visual motifs. On 2026-09-09 the maintainer separated appearance from performance: choosing one of these motifs does not require a favorable comparison and does not certify that a configuration performs better.
 
 The release sequence still reveals the entity, while reloading a useful favorite can assemble supportive equipment around it. This gives both taking equipment off and putting it back on a satisfying visual role. UNSEAL and TRUEFORM remain the same configuration modes; visual assessment does not introduce a fourth mode or alter settings.
 
-Any appearance tied to measured performance must refer to the particular comparison conditions and the user's quality/efficiency priorities. Unknown or insufficient evidence gets a neutral appearance. Do not equate lower token use alone with a better loadout, or depict every equipped state as a worse AI. An optional “resonance” appearance is a design proposal, not a current measured outcome or a newly finalized product label.
+Measured performance is displayed separately with its comparison conditions and quality/efficiency priorities. Unknown evidence remains unknown in that display; it does not replace the selected artwork. Do not equate lower token use alone with a better loadout or use equipment style as a performance verdict.
 
 Keep the evidence label visible and let users turn the effect off. Judge outputs without mode art when using blind comparison so the artwork does not predetermine the rating.
 
-Acquired original forms remain reusable in a collection. Separate ownership from the active visual treatment: a confirmed adverse result permits only BAD-compatible images for the applicable context, while unknown evidence uses neutral art. The preferred approach gives a collected item neutral/GOOD/BAD treatments of the same identity, with prepared BAD art available when a treatment is missing. Keep all acquired items and their history. See [the collection rules](personalization.md#collection-ownership-and-current-presentation). Collection choice changes the appearance, not the underlying harness configuration.
+Original forms remain freely reusable in a local collection, including when a comparison is adverse or unknown. Do not force BAD art or block another compatible image. Preserve prior items and their history. See [the collection rules](personalization.md#collection-ownership-and-current-presentation). Collection choice changes appearance, not the harness or its evaluation.
+
+## Layered original template
+
+The accepted original-artwork structure is AI entity, restraints and background. Use the current 724×724 scene as the first versioned template, with common coordinates, anchors, known moving restraint parts and front/back order. The three logical groups can use more than three PNGs where the mechanism needs separate pieces. Users can replace one group and keep the prepared others.
+
+The authoring Skill supplies guides and separate-part output, then previews Normal, UNSEAL and TRUEFORM before local import. Reuse the accepted mechanism for compatible parts; do not infer a new rig or physically interchangeable frames from arbitrary full-scene images. Free artwork creation does not change the state-evidence rules or the effects-off contract. See [the layered plan](superpowers/plans/2026-09-09-layered-originals.md).
 
 ## Comparison inside the same GUI
 
@@ -113,10 +119,10 @@ The maintainer prefers a random discovery over a taste-optimized appearance. The
 
 Prepared sprites, code-drawn pixel grids, and optional image-model generation are distinct creation routes. Pixel art does not require an image model. The [appearance and memory proposal](personalization.md) defines these routes, reproducible local selection, optional creation skills, and benchmark separation. Random visual rarity is independent of measured performance. The GUI animates fixed bundled reference art; random assembly, the collection runtime and distribution skill remain unimplemented.
 
-## A comparison can unlock an original form
+## Freely create an original form
 
-The maintainer proposed making an original-creation button available only after the performance conditions for an appearance change are met. Show a concise explanation of the achieved condition and an optional action such as “この装備の姿を作る”. Preserve the entity's identity while letting its equipment, light, and form evolve with creative variation. The [eligibility proposal](personalization.md#original-creation-unlocked-by-comparison-evidence) binds that action to a specific tested loadout and its evidence; no particular mode automatically qualifies.
+Offer **オリジナルイメージを作成** independently of comparison results or the selected mode. The user's AI and bundled authoring Skill discuss desired parts and reference images, use the layer template and show composed previews. **作品を読み込む** stores the chosen local assets; **コレクション** reuses previous work. See [creation and revisions](personalization.md#creation-and-revisions).
 
-Keep using the prepared artwork until the user requests creation and chooses a preview. Preserve created art with the favorite/card and its historical evidence even if later conditions change; current performance claims need current evidence. Effects remain optional, and the achievement does not depend on having an image-generation tool.
+Keep the current artwork during creation, cancellation or failure. The user can revise or choose another version without a fixed candidate count or final-choice lock. Preserve prior artwork and any historical evidence, while displaying current performance separately. Effects and image-generation tools remain optional.
 
-The adopted selection rule is three candidates and one final form, with technical retry handled separately from creative rerolls. The standard route composes/draws these candidates locally with no model or service charge; authoring through the user's existing AI is optional. After adoption, offer a [build-card preview and X handoff](build-cards.md) with “画像をコピーしてXへ”: copy the PNG to the clipboard and open X with editable template text and the public OSS link. The user pastes and posts there. Preserve image-save and separate open-X fallbacks when browser capabilities prevent the combined action.
+After local save/reuse works, continue the [build-card and sharing plan](build-cards.md). A card may show only the selected appearance and small author/site attribution, or include a separately justified comparison summary. Preserve local image-save and manual X handoff; sharing a reusable layer pack or building a public gallery is later design work.

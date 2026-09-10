@@ -26,6 +26,13 @@ const fields = {
   plan: [["mode"], ["selectedIds"]],
   "plan-retained": [[], []],
   "accept-retained": [["planId"], []],
+  setup: [[], []],
+  "review-setup": [["proposal"], []],
+  "apply-setup": [["reviewId"], []],
+  "enrollment-inventory": [[], []],
+  "review-candidate": [["discoveryId", "sourceId"], []],
+  "review-enrollment": [["discoveryId", "additions"], []],
+  "apply-enrollment": [["reviewId"], []],
   apply: [["planId"], []],
   save: [[], ["name"]],
   favorites: [[], ["after"]],
@@ -56,6 +63,23 @@ const fields = {
   "open-replay": [["attemptId"], []],
   "compare-replays": [["resultIds"], []],
   "replay-favorite": [["resultId"], ["name"]],
+  appearance: [[], ["after"]],
+  artwork: [[], ["after"]],
+  "artwork-item": [["itemId"], []],
+  "discover-appearance": [[], ["expectedStateId"]],
+  "select-appearance": [["itemId", "expectedStateId"], []],
+  "name-appearance": [["itemId", "expectedStateId", "name"], []],
+  "use-appearance-evidence": [["startId", "expectedStateId"], []],
+  "evaluate-appearance": [["startId"], []],
+  "original-candidates": [["achievementId"], []],
+  "recover-appearance": [[], []],
+  "appearance-item": [["itemId"], []],
+  "review-appearance-import": [["importId", "expectedStateId", "manifest", "files"], []],
+  "read-appearance-import": [["reviewId"], []],
+  "save-appearance-import": [["reviewId", "expectedStateId"], []],
+  "prepare-appearance-authoring": [["creationId", "baseItemId"], []],
+  "read-appearance-authoring": [["authoringId"], []],
+  "review-authored-appearance": [["authoringId", "importId", "expectedStateId", "name", "author", "partIds"], []],
 };
 export function sourceRequestShape(body, action) {
   const schema = Object.hasOwn(fields, action) ? fields[action] : null;
@@ -89,9 +113,14 @@ export function sourceRequestShape(body, action) {
     "resultReviewId",
     "resultId",
     "previousResultId",
+    "itemId", "expectedStateId", "achievementId", "candidateId", "authoringId", "baseItemId",
   ])
-    if (Object.hasOwn(input, key) && !id(input[key]))
+    if (Object.hasOwn(input, key) && !id(input[key])
+      && !(key === 'expectedStateId' && input[key] === null && ['review-appearance-import', 'save-appearance-import', 'review-authored-appearance'].includes(action))
+      && !(key === 'baseItemId' && input[key] === null && action === 'prepare-appearance-authoring'))
       fail("gui-invalid-request");
+  for (const key of ['importId', 'creationId']) if (Object.hasOwn(input, key) && (typeof input[key] !== 'string'
+    || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(input[key]))) fail('gui-invalid-request');
   if (
     Object.hasOwn(input, "taskId") &&
     (typeof input.taskId !== "string" ||
@@ -125,6 +154,10 @@ export function sourceRequestShape(body, action) {
   )
     fail("gui-invalid-request");
   if (Object.hasOwn(input, "declaration") && (!input.declaration || typeof input.declaration !== "object" || Array.isArray(input.declaration)))
+    fail("gui-invalid-request");
+  if (Object.hasOwn(input, "proposal") && (!input.proposal || typeof input.proposal !== "object" || Array.isArray(input.proposal)))
+    fail("gui-invalid-request");
+  if (Object.hasOwn(input, "additions") && (!Array.isArray(input.additions) || !input.additions.length || input.additions.length > 32))
     fail("gui-invalid-request");
   if (Object.hasOwn(input, "additionalPaths") && (!Array.isArray(input.additionalPaths) || input.additionalPaths.length > 2048
     || input.additionalPaths.some(path => typeof path !== "string" || Buffer.byteLength(path) > 1024)))
@@ -164,14 +197,20 @@ export function sourceRequestShape(body, action) {
   return { requestId, input: { launchId, contextId, ...input } };
 }
 
-export async function createSourceController(context, { workspace: selectedWorkspace } = {}) {
+export async function createSourceController(input, { workspace: selectedWorkspace, launchId = randomUUID() } = {}) {
+  if (typeof launchId !== "string" || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(launchId)) fail("gui-invalid-request");
   // The service locator validates canonical roots without native discovery.
-  context = { ...context, executable: context.executable ?? "codex" };
+  const { applicationFor } = await import("../apps/index.mjs");
+  const app = applicationFor(input);
+  const context =
+    app.id === "codex"
+      ? { ...input, executable: input.executable ?? "codex" }
+      : input;
   let located = await service.locateUserSources({ context });
   if (selectedWorkspace !== undefined && (!located || located.workspace !== selectedWorkspace)) fail("source-session-changed");
-  const selectedScope = selectedWorkspace !== undefined ? located.scopeId : null;
-  const launchId = randomUUID();
-  const roots = [context.codexHome, context.project, ...(selectedWorkspace === undefined ? [] : [selectedWorkspace])];
+  let pinnedScope = located?.rootScopeId ?? null;
+  let pinnedWorkspace = located?.workspace ?? null;
+  const roots = [app.home(context), context.project, ...(pinnedWorkspace === null ? [] : [pinnedWorkspace])];
   const identities = await Promise.all(roots.map((path) => lstat(path)));
   async function metadata() {
     for (let index = 0; index < roots.length; index++) {
@@ -186,11 +225,20 @@ export async function createSourceController(context, { workspace: selectedWorks
     }
     located = await service.locateUserSources({ context });
     const workspace = located?.workspace ?? null;
-    if (selectedWorkspace !== undefined && (workspace !== selectedWorkspace || located?.scopeId !== selectedScope)) fail("source-session-changed");
+    if (pinnedWorkspace !== null && (workspace !== pinnedWorkspace || located?.rootScopeId !== pinnedScope)) fail("gui-source-context-changed");
+    if (pinnedWorkspace === null && located) {
+      const candidate = located, identity = await lstat(candidate.workspace);
+      if (pinnedWorkspace === null) {
+        roots.push(candidate.workspace);
+        identities.push(identity);
+        pinnedWorkspace = candidate.workspace;
+        pinnedScope = candidate.rootScopeId;
+      } else if (pinnedWorkspace !== candidate.workspace || pinnedScope !== candidate.rootScopeId) fail("gui-source-context-changed");
+    }
     const contextId = createHash("sha256")
       .update(JSON.stringify({ context, workspace, scopeId: located?.scopeId ?? null }))
       .digest("hex");
-    return { kind: "user-sources", launchId, contextId, context, workspace };
+    return { kind: "user-sources", application: app.id, applicationLabel: app.label, launchId, contextId, context, workspace };
   }
   async function state() {
     const meta = await metadata();
@@ -208,6 +256,17 @@ export async function createSourceController(context, { workspace: selectedWorks
   return {
     metadata,
     state,
+    async image(input) {
+      if (!input || typeof input !== 'object' || Array.isArray(input)
+        || Object.keys(input).length !== 4 || !['launchId', 'contextId', 'referenceId', 'assetId'].every(key => Object.hasOwn(input, key))
+        || ![input.contextId, input.referenceId, input.assetId].every(id)) fail('gui-invalid-request');
+      const meta = await metadata();
+      if (input.launchId !== meta.launchId || input.contextId !== meta.contextId || !meta.workspace) fail('gui-source-context-changed');
+      const image = await service.readUserAppearanceImage({ workspace: meta.workspace, referenceId: input.referenceId, assetId: input.assetId });
+      const after = await metadata();
+      if (after.contextId !== meta.contextId || after.workspace !== meta.workspace) fail('gui-source-context-changed');
+      return image;
+    },
     async updates(input) {
       if (!input || typeof input !== "object" || Array.isArray(input)
         || Object.keys(input).some(k => !["launchId", "contextId", "after"].includes(k))
@@ -238,6 +297,12 @@ export async function createSourceController(context, { workspace: selectedWorks
         return service.reviewDiscoveredUserSource({ context, ...input });
       if (!located) fail("workspace-invalid");
       const workspace = located.workspace;
+      if (Object.hasOwn(service.SETUP_OPERATIONS, action))
+        return service.SETUP_OPERATIONS[action]({ workspace, ...input });
+      if (Object.hasOwn(service.ENROLLMENT_OPERATIONS, action))
+        return service.ENROLLMENT_OPERATIONS[action]({ workspace, ...input });
+      if (Object.hasOwn(service.APPEARANCE_OPERATIONS, action))
+        return service.APPEARANCE_OPERATIONS[action]({ workspace, ...input });
       if (action === "review") {
         if (input.discoveryId !== undefined) fail("gui-invalid-request");
         return service.reviewUserSource({ workspace, ...input });

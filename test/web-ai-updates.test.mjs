@@ -8,6 +8,7 @@ import { startGuiServer } from '../src/gui/server.mjs';
 import { aiProfile } from '../test-support/ai-profile.mjs';
 import { fixtureAiClient } from '../test-support/ai-client.mjs';
 import { replayRecording } from '../test-support/replay-recording.mjs';
+import { readSourceProfileFiles } from '../src/sources/owned-profile.mjs';
 
 const browserCase = { timeout: 45000, skip: process.platform !== 'darwin' ? 'Mac AI browser qualification'
   : !process.env.UNHARNESS_PLAYWRIGHT_MODULE && 'Browser plugin not available; set UNHARNESS_PLAYWRIGHT_MODULE for built Playwright checks' };
@@ -182,8 +183,42 @@ test('a same-port replacement stays unaccepted until the user refreshes the new 
   const before = s.posts.length;
   await page.getByRole('button', { name: '状態を再取得', exact: true }).click();
   await page.getByRole('button', { name: /TRUEFORM/ }).and(page.locator(':enabled')).waitFor();
-  assert.equal(s.posts.length, before);
+  assert.equal(s.posts.slice(before).every(path => path === '/api/sources/artwork'), true,
+    'explicit refresh may read the new appearance but cannot submit a mutation');
+  assert.deepEqual(await readSourceProfileFiles(second.context), second.originalFiles);
   await s.tab('比較'); await page.getByText('実行前に条件を保存', { exact: true }).click();
   assert.equal(await page.getByLabel('依頼文', { exact: true }).inputValue(), '');
+  assert.deepEqual(s.errors, []);
+});
+
+test('an appearance refresh crossing a server replacement cannot accept the new context implicitly', browserCase, async t => {
+  const s = await setup(t), { page } = s;
+  let count = 0, release;
+  const blocked = new Promise(resolve => { release = resolve; });
+  let noticed;
+  const backgroundBootstrap = new Promise(resolve => { noticed = resolve; });
+  await page.route('**/api/bootstrap', async route => {
+    // App kind and the initial source view are the first two bootstraps.
+    if (++count === 3) { noticed(); await blocked; }
+    await route.continue();
+  });
+  t.after(() => release());
+  await page.goto(s.gui.url); await s.expectMode('Normal'); await backgroundBootstrap;
+  const second = await aiProfile(t, { skills: false });
+  await s.gui.close();
+  const replacement = await startGuiServer({ manageSources: second.context, assetsDirectory: resolve('dist'), port: Number(new URL(s.gui.url).port) });
+  t.after(() => replacement.close()); release();
+  try { await page.getByText('接続先が変わりました。「状態を再取得」で対象を確認してください。', { exact: true }).waitFor(); }
+  catch (error) {
+    t.diagnostic(JSON.stringify({ sync: await page.locator('.source-sync-notice').allTextContents(),
+      statuses: await page.getByRole('status').allTextContents(), posts: s.posts,
+      disabled: await page.getByRole('button', { name: /TRUEFORM/ }).isDisabled(), bootstrapCount: count }));
+    throw error;
+  }
+  assert.equal(await page.getByRole('button', { name: /TRUEFORM/ }).isDisabled(), true);
+  assert.equal(s.posts.length, 0, 'the held background read must not post into the replacement context');
+  assert.deepEqual(await readSourceProfileFiles(second.context), second.originalFiles);
+  await page.getByRole('button', { name: '状態を再取得', exact: true }).click();
+  await page.getByRole('button', { name: /TRUEFORM/ }).and(page.locator(':enabled')).waitFor();
   assert.deepEqual(s.errors, []);
 });

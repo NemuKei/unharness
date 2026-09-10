@@ -1,7 +1,8 @@
 import { isAbsolute, win32 } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 
-import { diff3Merge } from 'node-diff3';
+import { diff3Merge, diffIndices } from 'node-diff3';
+import { preservesTomlComments } from './toml-comments.mjs';
 
 import {
   configTransformFailed as failed,
@@ -15,6 +16,22 @@ function lineBuffer(text) {
   const lines = text.match(/[^\r\n]*(?:\r\n|\r|\n)|[^\r\n]+$/g) ?? [];
   if (lines.length > 4096) throw failed();
   return lines;
+}
+
+function deletionUnion(conflict) {
+  const removed = new Set();
+  for (const side of [conflict.a, conflict.b]) {
+    const edits = diffIndices(conflict.o, side);
+    // Adjacent deletions can overlap on a separator line. Never guess how to
+    // combine inserted/replaced text; the native partition proof below is still
+    // mandatory even for a union of deletions.
+    if (edits.some(edit => edit.buffer2[1] !== 0)) throw failed();
+    for (const edit of edits) {
+      const [start, length] = edit.buffer1;
+      for (let i = start; i < start + length; i++) removed.add(i);
+    }
+  }
+  return conflict.o.filter((_, i) => !removed.has(i));
 }
 
 function validateProvableValues(value) {
@@ -75,8 +92,8 @@ export async function mergeRetainedConfig(args) {
     const targetLines = lineBuffer(targetText);
     const currentLines = lineBuffer(currentText);
     const chunks = diff3Merge(targetLines, baseLines, currentLines);
-    if (chunks.some(chunk => chunk.conflict)) throw failed();
-    const text = chunks.flatMap(chunk => chunk.ok).join('');
+    const text = chunks.flatMap(chunk => chunk.conflict ? deletionUnion(chunk.conflict) : chunk.ok).join('');
+    if (chunks.some(chunk => chunk.conflict) && !preservesTomlComments(currentText, text)) throw failed();
     if (Buffer.byteLength(text, 'utf8') > MAX_CONFIG_BYTES || lineBuffer(text).length > 4096) throw failed();
 
     const nativeArgs = { executable, executableArgs, timeoutMs };

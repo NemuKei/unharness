@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from 'node:util';
 import { recordId } from '../core/local-store.mjs';
-import { openWorkspace, record } from '../sources/records.mjs';
+import { openWorkspace, record, scopeWorkspace } from '../sources/records.mjs';
 import { exactKeys, boundedText } from '../comparisons/assessment.mjs';
 import { sumCounters } from '../comparisons/measurement.mjs';
 import { validUuid } from '../sources/observation-record.mjs';
@@ -8,6 +8,7 @@ import { fail, verification, USER_SOURCE_ERROR_KINDS } from '../sources/errors.m
 import { sourceTransactionHook } from '../sources/transaction.mjs';
 import { findCurrentDesktopSession, readDesktopRecords } from '../codex/desktop-record.mjs';
 import { projectReplayTask } from '../codex/replay-observation.mjs';
+import { assertReplaySupported } from './replay-service.mjs';
 import { loadReplayIndex } from './replay-index.mjs';
 import { loadReplayAttempts, loadReplayNative } from './replay-records.mjs';
 import { withReplayLock, assertReplayReviewCurrent, transitionReplay, replayStatePayload } from './replay-service.mjs';
@@ -27,6 +28,7 @@ async function sourceIssue(w, review) {
   catch (e) { return USER_SOURCE_ERROR_KINDS.includes(e.kind) ? e.kind : 'operation-failed'; }
 }
 async function bindingFor(w, attempt, taskId, read, observedAt) {
+  w = scopeWorkspace(w, attempt.scopeId);
   const native = await loadReplayNative(w, attempt.nativeId, attempt.review.project);
   const manifest = await readStartingManifest({ store: w.workspace, manifestId: attempt.review.variant.manifestId, withBytes: true });
   const global = attempt.review.snapshot.override?.text.trim() ? attempt.review.snapshot.override.text : attempt.review.snapshot.base?.text ?? '';
@@ -93,6 +95,7 @@ export async function observeUserReplay(args) {
   if (!hash(args.attemptId) || !validUuid(args.taskId)) fail('invalid-request');
   const taskId = args.taskId.toLowerCase();
   return withReplayLock(args.workspace, async w => {
+    assertReplaySupported(w);
     const index = await loadReplayIndex(w), attempt = selected(await loadReplayAttempts(w, index), args.attemptId);
     if (!['ready', 'cancelled'].includes(attempt.phase) || !attempt.readyAt) fail('replay-attempt-unavailable');
     let read = { records: [], recordRead: { incompleteTrailingLine: false, snapshotBytes: 0 } }, readIssue = null;
@@ -103,7 +106,7 @@ export async function observeUserReplay(args) {
     const binding = await bindingFor(w, attempt, taskId, read, capturedAt);
     const projection = projectReplayTask(read.records, binding);
     if (readIssue) { projection.measurement = null; projection.outputText = null; }
-    const payload = { role: 'replay-result-review', schemaVersion: 1, scopeId: w.scopeId, attemptId: attempt.attemptId,
+    const payload = { role: 'replay-result-review', schemaVersion: 1, scopeId: attempt.scopeId, attemptId: attempt.attemptId,
       attemptStateId: attempt.stateId, taskId, capturedAt, recordRead: read.recordRead,
       recordingDigest: readIssue ? null : digestBytes(Buffer.from(JSON.stringify(read.records))), readIssue,
       sourceIssue: firstIssue ?? await sourceIssue(w, attempt.review), ...projection, files };
@@ -130,7 +133,7 @@ export async function saveUserReplayResult(args) {
     const expanded = assessReplay(args.assessment, review.attempt.review.saved.review.declaration);
     const assessment = { ...expanded, requirements: expanded.requirements.map(({ id, result }) => ({ id, result })),
       ratings: expanded.ratings.map(({ id, score, reason }) => ({ id, score, reason })) };
-    const payload = { kind: 'unharness-user-source', role: 'replay-result', schemaVersion: 1, scopeId: w.scopeId,
+    const payload = { kind: 'unharness-user-source', role: 'replay-result', schemaVersion: 1, scopeId: review.scopeId,
       attemptId: review.attemptId, resultReviewId: review.resultReviewId, assessment, previousResultId: args.previousResultId ?? null };
     const resultId = recordId('application', payload), index = await loadReplayIndex(w);
     const attempt = selected(await loadReplayAttempts(w, index), review.attemptId);
@@ -180,6 +183,7 @@ export async function compareUserReplayResults(args) {
     if (a && b && a.from < b.to && b.from < a.to) add('overlapping-task-timelines');
   }
   if (new Set(results.map(r => r.startId)).size !== 1) add('different-starts');
+  if (new Set(results.map(r => r.scopeId)).size !== 1) add('different-source-scopes');
   if (new Set(loaded.map(r => r.review.attempt.review.sourceBinding.normalId)).size !== 1) add('different-normal-versions');
   for (const field of ['model', 'reasoningEffort', 'executionPolicyDigest']) {
     const values = results.map(r => r.measurement?.conditions[field] ?? null);
@@ -204,9 +208,9 @@ export async function saveUserReplayFavorite(args) {
     const { review } = await loadReplayResult(w, args.resultId);
     if (review.qualification.status !== 'matched-record' || review.readIssue || review.sourceIssue) fail('replay-result-unavailable');
     const binding = review.attempt.review.sourceBinding;
-    const favoriteId = await record(w.workspace, 'favorite', { role: 'favorite', scopeId: w.scopeId, name,
+    const favoriteId = await record(w.workspace, 'favorite', { role: 'favorite', scopeId: review.scopeId, name,
       snapshotId: binding.snapshotId, normalId: binding.normalId, preparedMode: binding.preparedMode,
       revision: binding.revision, replayResultId: args.resultId });
-    return { scopeId: w.scopeId, favoriteId, name, preparedMode: binding.preparedMode, replayResultId: args.resultId, verification: { ...verification } };
+    return { scopeId: review.scopeId, favoriteId, name, preparedMode: binding.preparedMode, replayResultId: args.resultId, verification: { ...verification } };
   });
 }

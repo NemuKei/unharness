@@ -1,6 +1,25 @@
 .source-workbench details {
   margin-top: 12px;
 }
+.local-connection { padding: 0 36px 12px; }
+.connection-review { max-width: 860px; padding: 20px; margin-top: 14px; border: 1px solid var(--line); background: #0d171e; }
+.connection-review h2 { font-size: 19px; margin: 0; }
+.connection-review h2:focus { outline: none; }
+.connection-review .source-context { margin-top: 18px; font-size: 13px; }
+.connection-review .connection-origin { font-size: 16px; color: var(--text); }
+.connection-link { margin-top: 18px; }
+.connection-link > a { display: inline-flex; align-items: center; text-decoration: none; }
+.connection-review label { display: block; font-size: 13px; }
+.connection-review textarea, .connection-review input { display: block; width: 100%; margin-top: 7px; padding: 10px;
+  border: 1px solid var(--line); background: #080f13; color: inherit; font: 12px/1.6 ui-monospace, monospace; }
+.connection-review textarea { resize: vertical; overflow-wrap: anywhere; }
+.public-operation-lookup { border-top: 1px solid var(--line); padding-top: 12px; }
+@media (max-width: 600px) {
+  .local-connection { padding: 0 18px 12px; }
+  .connection-review { padding: 16px; }
+  .connection-review .section-heading { flex-direction: column; align-items: start; gap: 8px; }
+  .connection-review .primary { font-size: 15px; min-height: 48px; }
+}
 .source-workbench summary {
   cursor: pointer;
   color: var(--muted);
@@ -597,3 +616,40 @@
 @media (max-width: 620px) { .replay-summary { grid-template-columns: 1fr; } .replay-actions > button { width: 100%; } .replay-history li { align-items: flex-start; flex-direction: column; } }
 .source-sync-notice { margin: 0; padding: .5rem clamp(14px, 3vw, 38px); font-size: .85rem; overflow-wrap: anywhere; }
 .source-sync-notice.quiet { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+.source-notice {
+  margin: 0.4rem 0 0.6rem;
+  padding-left: 0.6rem;
+  border-left: 2px solid var(--line, rgba(255, 255, 255, 0.18));
+}
+.source-notice p {
+  margin: 0.1rem 0;
+}
+.source-notice code {
+  overflow-wrap: anywhere;
+}
+.setup-handoff { margin-top: 1rem; }
+.setup-handoff > button { width: 100%; }
+.setup-saved { font-size: .85rem; line-height: 1.6; }
+.setup-conversation fieldset { display: grid; gap: .7rem; margin: 1rem 0; padding: .8rem; border: 1px solid var(--line, #d9dde1); border-radius: .5rem; }
+.setup-conversation fieldset label { display: flex; align-items: baseline; gap: .5rem; }
+.setup-conversation input[type="radio"] { width: 1rem; min-width: 1rem; height: 1rem; flex: 0 0 1rem; padding: 0; margin: 0; accent-color: var(--red); }
+.setup-conversation fieldset label span { min-width: 0; line-height: 1.6; }
+.setup-prompt label { display: grid; gap: .5rem; font-size: .85rem; }
+.setup-prompt textarea { display: block; box-sizing: border-box; width: 100%; min-width: 0; resize: vertical; font: inherit; line-height: 1.65; padding: .65rem; margin: .3rem 0 .65rem; }
+.fresh-task-handoff { margin-top: .85rem; }
+.enrollment-panel > summary { cursor: pointer; font-weight: 600; padding-block: .45rem; }
+.enrollment-panel > p, .enrollment-review p { line-height: 1.65; }
+.enrollment-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: .5rem; margin-block: 1rem; max-width: 100%; }
+.enrollment-form select, .enrollment-form textarea { width: 100%; max-width: 100%; min-width: 0; font: inherit; color: inherit; background: var(--surface, #171d28); padding: .7rem; border: 1px solid var(--line, #303849); border-radius: .35rem; }
+.enrollment-form label { margin-top: .4rem; }
+.enrollment-ai, .enrollment-review { margin-top: 1rem; }
+.scope-enrollment-notice, .enrollment-review { border-left: 3px solid var(--accent, #e54f5d); padding-left: 1rem; line-height: 1.7; }
+.saved-setup-summary { margin-block: 1rem; padding: 1rem; border: 1px solid var(--line, #303849); border-radius: .5rem; line-height: 1.65; overflow-wrap: anywhere; }
+.setup-inheritance-lists { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.setup-inheritance-lists h3 { margin-top: 0; font-size: .95rem; }
+.setup-inheritance-lists ul, .setup-eligibility ul { padding-left: 1.2rem; }
+.setup-skill-counts > div { margin-block: .8rem; }
+.setup-skill-counts dt { font-weight: 600; }
+.setup-skill-counts dd { margin: .3rem 0 0; font-size: .85rem; }
+@media (max-width: 600px) { .setup-inheritance-lists { grid-template-columns: minmax(0, 1fr); } }

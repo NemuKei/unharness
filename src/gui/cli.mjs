@@ -16,6 +16,7 @@ export const GUI_USAGE = `Usage:
   node bin/unharness.mjs gui --demo [--parent <existing-directory>] [--port <0..65535>]
   node bin/unharness.mjs gui --store <store> --scope <hash> [--port <0..65535>]
   node bin/unharness.mjs gui --manage-sources --codex-home <directory> --project <directory> [--codex <native-executable>] [--port <0..65535>]
+  node bin/unharness.mjs gui --manage-sources --app claude --claude-home <directory> --project <directory> --app-bundle <application> [--port <0..65535>]
   node bin/unharness.mjs gui --help
 
 Optional read-only inventory: --inspect-cwd <directory> [--codex <native-executable>]
@@ -33,7 +34,8 @@ function parse(argv) {
       seen.add(flag); values[flag === '--demo' ? 'demo' : 'manageSources'] = true; index += 1; continue;
     }
     const key = new Map([['--parent', 'parent'], ['--store', 'store'], ['--scope', 'scopeId'], ['--port', 'port'],
-      ['--codex-home', 'codexHome'], ['--project', 'project'], ['--inspect-cwd', 'inspectCwd'], ['--codex', 'executable']]).get(flag);
+      ['--codex-home', 'codexHome'], ['--project', 'project'], ['--inspect-cwd', 'inspectCwd'], ['--codex', 'executable'],
+      ['--app', 'app'], ['--claude-home', 'claudeHome'], ['--app-bundle', 'appBundle']]).get(flag);
     const value = argv[index + 1];
     if (!key || value === undefined || value.length === 0 || seen.has(flag)) return null;
     seen.add(flag); values[key] = value; index += 2;
@@ -41,11 +43,19 @@ function parse(argv) {
   if (!/^\d+$/.test(String(values.port))) return null;
   values.port = Number(values.port);
   if (!Number.isSafeInteger(values.port) || values.port < 0 || values.port > 65535) return null;
+  const app = values.app ?? 'codex';
+  if (!['codex', 'claude'].includes(app)) return null;
   if (values.manageSources) {
-    if (!values.codexHome || !values.project || values.demo || values.store || values.scopeId || values.parent || values.inspectCwd) return null;
+    if (!values.project || values.demo || values.store || values.scopeId || values.parent || values.inspectCwd) return null;
+    // Each application requires exactly its own launch identity; a flag from
+    // the other application is a usage error rather than a silent default.
+    if (app === 'codex') {
+      if (!values.codexHome || values.claudeHome || values.appBundle) return null;
+    } else if (!values.claudeHome || !values.appBundle || values.codexHome || values.executable) return null;
+    values.app = app;
     return values;
   }
-  if (values.codexHome || values.project) return null;
+  if (values.codexHome || values.project || values.claudeHome || values.appBundle || values.app) return null;
   if (values.executable !== undefined && values.inspectCwd === undefined) return null;
   if (values.demo) {
     if (values.store !== undefined || values.scopeId !== undefined) return null;
@@ -105,10 +115,14 @@ export async function guiMain(argv, {
     catch { throw Object.assign(new Error('gui-build-missing'), { kind: 'gui-build-missing' }); }
     if (!index.isFile() || index.isSymbolicLink()) throw Object.assign(new Error('gui-build-missing'), { kind: 'gui-build-missing' });
     if (options.manageSources) {
-      const context = { codexHome: resolve(options.codexHome), project: resolve(options.project), executable: options.executable ?? 'codex' };
+      const context = options.app === 'claude'
+        ? { application: 'claude', claudeHome: resolve(options.claudeHome), project: resolve(options.project), appBundle: resolve(options.appBundle) }
+        : { codexHome: resolve(options.codexHome), project: resolve(options.project), executable: options.executable ?? 'codex' };
       running = await startServer({ manageSources: context, assetsDirectory, port: options.port });
-      const resumeArgv = [ENTRY_POINT, 'gui', '--manage-sources', '--codex-home', context.codexHome, '--project', context.project, '--codex', context.executable];
-      stdout.write(`${JSON.stringify({ schemaVersion: 1, kind: 'user-sources', url: running.url, context, resumeArgv })}\n`);
+      const resumeArgv = options.app === 'claude'
+        ? [ENTRY_POINT, 'gui', '--manage-sources', '--app', 'claude', '--claude-home', context.claudeHome, '--project', context.project, '--app-bundle', context.appBundle]
+        : [ENTRY_POINT, 'gui', '--manage-sources', '--codex-home', context.codexHome, '--project', context.project, '--codex', context.executable];
+      stdout.write(`${JSON.stringify({ schemaVersion: 1, kind: 'user-sources', application: options.app, url: running.url, context, resumeArgv })}\n`);
       stop = async () => { process.off('SIGINT', stop); process.off('SIGTERM', stop); try { await running.close(); } catch {} };
       process.once('SIGINT', stop); process.once('SIGTERM', stop);
       return 0;
