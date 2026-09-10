@@ -82,6 +82,8 @@ test('UNSEAL inherits TRUEFORM and adds only the reviewed extras', () => {
 
 ## タスク3: 新形式と旧版の復帰を分離する
 
+2026-09-10に[保存処理の合成検証](../../evidence/2026-09-10-mode-inheritance-storage.md)を追加した。v2の内部インベントリー、両方の凍結版、採用時・新規準備時の内容照合、旧writerを拒否するworkspace形式と中断時の二つの記録の復旧まで実装した。従来のsnapshot形式・Normal・過去の復帰先は維持している。次のタスク4〜6と、公式プラグインの実機資格は未完了であり、Mac完成とは扱わない。
+
 **ファイル:** 変更`src/setup/preset.mjs`・`src/setup/records.mjs`・`src/setup/service.mjs`・`src/sources/records.mjs`・`src/sources/retained-settings.mjs`。テスト`test/setup-preset.test.mjs`・`test/setup-migration.test.mjs`・`test/control-recovery.test.mjs`。
 
 **境界:** v2提案は既存の`scopeId`・`normalId`・`basis`・`roles`に、現在の`inventoryId`、`trueform.retainedOfficialPluginIds`、`unseal.instructions`、`unseal.additionalAutomaticSkillIds`を持つ。公式資格と展開後の一覧はサービスが同じインベントリーから固定する。v1の独立リストとv2を同じ意味で読むことはしない。`reviewSetup`・`applySetup`・`readSetup`・`savedPresetForMode`の既存の操作分離は維持する。

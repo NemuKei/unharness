@@ -354,6 +354,19 @@ export const application = {
         after[key] = await targetFile(key, result);
       }
     }
+    if (releasePreset?.automaticSkillIds) {
+      const { readSkillInvocationPolicy, makeAutomaticSkillPolicy } = await import('../sources/skill-policy.mjs');
+      for (const s of reg.skills.filter(s => releasePreset.automaticSkillIds.includes(s.id) && s.enabled)) {
+        const key = s.id + ':policy';
+        if (!await readSkillInvocationPolicy(normal[key]?.text ?? null))
+          after[key] = await targetFile(key, await makeAutomaticSkillPolicy(normal[key]?.text ?? null));
+      }
+      // v1 records describe only released targets. v2 records describe every
+      // optional registered Skill, including retained and disabled members.
+      skillStates.splice(0, skillStates.length, ...reg.skills.filter(s => selection.includes(s.id)
+        || releasePreset.automaticSkillIds.includes(s.id)).map(s => ({ id: s.id, enabled: s.enabled,
+        manualOnly: s.enabled && !releasePreset.automaticSkillIds.includes(s.id) })));
+    }
     if (!manualOnly && skills.length) {
       const { disableSkillConfig } = await import('../codex/config-editor.mjs');
       const result = await disableSkillConfig({

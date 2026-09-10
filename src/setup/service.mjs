@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { exactKeys } from '../comparisons/assessment.mjs';
-import { openWorkspace, activeNormalId, loadNormal, loadSnapshot, saveSnapshot, record, writeJson, unlink } from '../sources/records.mjs';
+import { openWorkspace, activeNormalId, loadNormal, loadSnapshot, saveSnapshot, record, readJson, writeJson, unlink } from '../sources/records.mjs';
 import { acquire, pending, assertCurrent, sourceTransactionHook } from '../sources/transaction.mjs';
 import { freshCatalog, targetFile } from '../sources/capture.mjs';
 import { equal, assertPlanOwnershipChanges } from '../sources/platform.mjs';
@@ -9,6 +9,7 @@ import { fail, verification } from '../sources/errors.mjs';
 import { assertControlChanges } from './control-sources.mjs';
 import { validatePresetProposal, compileReleasePreset } from './preset.mjs';
 import { setupScope, loadSetupReview, loadSetup, setupReviewSummary, assertReviewCurrent, adoptedState } from './records.mjs';
+import { captureSetupInventory } from './inventory-capture.mjs';
 
 const request = (args, fields) => exactKeys(args, ['workspace', ...fields], [], 'invalid-request');
 async function locked(workspace, action) {
@@ -22,18 +23,19 @@ async function locked(workspace, action) {
 }
 async function assertUnchanged(w) {
   const current = await openWorkspace(w.workspace);
-  if (current.scopeId !== w.scopeId || !equal(current.reg, w.reg) || !equal(current.state, w.state)) fail('stale-plan');
+  if (current.scopeId !== w.scopeId || !equal(current.reg, w.reg) || !equal(current.state, w.state)
+    || !equal(current.manifest, w.manifest)) fail('stale-plan');
   await assertCurrent(w, await loadSnapshot(w.workspace, w.reg, w.state.snapshotId));
 }
 
 // Shared by a setup review and the proposed next registration. Callers hold the
 // profile lock and recheck the real registered files before publication.
-export async function freezePresets(w, proposal) {
+export async function freezePresets(w, proposal, inventory) {
   const app = applicationFor(w.reg.context);
   if (!app.supportsReleasePresets) fail('setup-application-unsupported');
   const scope = setupScope(w);
   if (proposal.basis.runtimeVersion !== null && proposal.basis.runtimeVersion !== w.reg.version) fail('stale-discovery');
-  const options = Object.fromEntries(['unseal', 'trueform'].map(mode => [mode, compileReleasePreset(proposal, mode, scope)]));
+  const options = Object.fromEntries(['unseal', 'trueform'].map(mode => [mode, compileReleasePreset(proposal, mode, scope, inventory)]));
   const normal = await loadNormal(w.workspace, w.reg, activeNormalId(w)), presets = {};
   for (const mode of ['unseal', 'trueform']) {
     const result = await app.compile({ reg: w.reg, mode, normal, selection: options[mode].selection,
@@ -54,16 +56,18 @@ export async function reviewSetup(args) {
     const app = applicationFor(w.reg.context);
     if (!app.supportsReleasePresets) fail('setup-application-unsupported');
     const scope = setupScope(w), proposal = validatePresetProposal(args.proposal, scope);
+    if (w.manifestVersion === 2 && proposal.schemaVersion !== 2) fail('setup-upgrade-required');
     if (proposal.basis.runtimeVersion !== null && proposal.basis.runtimeVersion !== w.reg.version) fail('stale-discovery');
     await assertUnchanged(w);
     await freshCatalog(w.reg);
-    const presets = await freezePresets(w, proposal);
+    const inventory = proposal.schemaVersion === 2 ? await captureSetupInventory(w) : undefined;
+    const presets = await freezePresets(w, proposal, inventory);
     await sourceTransactionHook('setup-review-compiled');
     await freshCatalog(w.reg);
     await assertUnchanged(w);
-    const reviewId = await record(w.workspace, 'input', { role: 'setup-review', schemaVersion: 1,
+    const reviewId = await record(w.workspace, 'input', { role: 'setup-review', schemaVersion: proposal.schemaVersion,
       scopeId: w.scopeId, normalId: activeNormalId(w), revision: w.state.revision, beforeId: w.state.snapshotId,
-      previousSetupId: w.state.setupId ?? null, proposal, presets });
+      previousSetupId: w.state.setupId ?? null, proposal, presets, ...(inventory ? { inventory } : {}) });
     return { ...setupReviewSummary(await loadSetupReview(w, reviewId)), verification };
   });
 }
@@ -72,27 +76,46 @@ export async function applySetup(args) {
   request(args, ['reviewId']);
   return locked(args.workspace, async w => {
     const p = await loadSetupReview(w, args.reviewId), existing = await loadSetup(w);
+    if (w.manifestVersion === 2 && p.schemaVersion !== 2) fail('setup-upgrade-required');
     await assertUnchanged(w);
+    if (p.schemaVersion === 2) {
+      const { assertFrozenPreset } = await import('./frozen-preset.mjs');
+      for (const mode of ['unseal', 'trueform']) await assertFrozenPreset(w, p, mode);
+    }
     if (existing?.review.reviewId === p.reviewId) return result(w, existing.setupId, p, true);
     assertReviewCurrent(w, p);
     if (!applicationFor(w.reg.context).supportsReleasePresets) fail('setup-application-unsupported');
+    if (p.schemaVersion === 2 && !equal(await captureSetupInventory(w), p.inventory)) fail('stale-discovery');
     for (const mode of ['unseal', 'trueform']) {
-      compileReleasePreset(p.proposal, mode, setupScope(w));
+      compileReleasePreset(p.proposal, mode, setupScope(w), p.inventory);
       assertControlChanges({ sources: w.reg.skills,
         before: await loadNormal(w.workspace, w.reg, p.normalId),
         after: await loadSnapshot(w.workspace, w.reg, p.presets[mode].snapshotId) });
     }
     await freshCatalog(w.reg);
-    const setupId = await record(w.workspace, 'application', { role: 'release-setup', schemaVersion: 1,
+    const setupId = await record(w.workspace, 'application', { role: 'release-setup', schemaVersion: p.schemaVersion,
       scopeId: w.scopeId, reviewId: p.reviewId });
-    const afterState = adoptedState(w.state, setupId);
+    const afterState = adoptedState(w.state, setupId, p.schemaVersion);
+    const afterManifest = { schemaVersion: 2, rootScopeId: w.rootScopeId };
     const journal = { kind: 'unharness-user-source-setup-pending', scopeId: w.scopeId,
-      setupId, beforeState: w.state, afterState };
+      setupId, beforeState: w.state, afterState,
+      ...(p.schemaVersion === 2 ? { schemaVersion: 2, beforeManifest: w.manifest, afterManifest } : {}) };
     await writeJson(join(w.workspace, 'pending.json'), journal, true);
     await sourceTransactionHook('setup-journal');
     await assertUnchanged(w);
+    if (p.schemaVersion === 2) {
+      await writeJson(join(w.workspace, 'registration.json'), afterManifest);
+      await sourceTransactionHook('setup-manifest');
+      await assertUnchanged({ ...w, manifest: afterManifest });
+      if (!equal(await readJson(join(w.workspace, 'pending.json')), journal)) fail('journal-invalid');
+    }
     await writeJson(join(w.workspace, 'state.json'), afterState);
     await sourceTransactionHook('setup-state');
+    if (p.schemaVersion === 2) {
+      const current = await openWorkspace(w.workspace);
+      if (!equal(current.manifest, afterManifest) || !equal(current.state, afterState)
+        || !equal(await readJson(join(w.workspace, 'pending.json')), journal)) fail('journal-invalid');
+    }
     await unlink(join(w.workspace, 'pending.json'));
     return result({ ...w, state: afterState }, setupId, p, false);
   });
@@ -104,10 +127,15 @@ const result = (w, setupId, p, duplicate) => ({ setupId, reviewId: p.reviewId, n
 export async function readSetup(args) {
   request(args, []);
   const w = await openWorkspace(args.workspace), saved = await loadSetup(w);
+  let inventory = null, inventoryError = null;
+  if (applicationFor(w.reg.context).supportsReleasePresets) {
+    try { inventory = await captureSetupInventory(w); }
+    catch (e) { inventoryError = e.kind === 'setup-inventory-unavailable' ? e.kind : 'setup-inventory-invalid'; }
+  }
   return { scopeId: w.scopeId, normalId: activeNormalId(w), setupId: saved?.setupId ?? null,
     preparedSetupId: w.state.preparedSetupId ?? null,
     review: saved ? setupReviewSummary(saved.review) : null,
-    proposal: saved?.review.proposal ?? null, verification };
+    proposal: saved?.review.proposal ?? null, inventory, inventoryError, verification };
 }
 
 // The caller is already planning a mode within the registered workspace. This
@@ -116,7 +144,12 @@ export async function savedPresetForMode(w, mode) {
   const saved = await loadSetup(w);
   if (!saved || !['unseal', 'trueform'].includes(mode)) return null;
   const p = saved.review;
-  compileReleasePreset(p.proposal, mode, setupScope(w, p.normalId));
+  if (w.manifestVersion === 2 && p.schemaVersion !== 2) fail('setup-upgrade-required');
+  compileReleasePreset(p.proposal, mode, setupScope(w, p.normalId), p.inventory);
+  if (p.schemaVersion === 2) {
+    const { assertFrozenPreset } = await import('./frozen-preset.mjs');
+    await assertFrozenPreset(w, p, mode);
+  }
   const { adaptRetainedSnapshot } = await import('../sources/retained-settings.mjs');
   const preset = p.presets[mode];
   const { after, adaptation } = await adaptRetainedSnapshot(w, { normalId: p.normalId, snapshotId: preset.snapshotId }, saved.setupId, 'setup');

@@ -110,6 +110,7 @@ export function validateState(reg, state) {
   for (const key of ['setupId', 'preparedSetupId', 'scopeId', 'lastEnrollmentReviewId'])
     if (state[key] != null && (typeof state[key] !== 'string' || !/^[0-9a-f]{64}$/.test(state[key]))) fail('workspace-invalid');
   if (state.scopePreparationRequired !== undefined && typeof state.scopePreparationRequired !== 'boolean') fail('workspace-invalid');
+  if (state.setupSchemaVersion !== undefined && state.setupSchemaVersion !== 2) fail('workspace-invalid');
   const paths = pathsFor(reg);
   if (
     new Set(state.ownedDirs.map((d) => d.path)).size !== state.ownedDirs.length
@@ -225,8 +226,11 @@ export async function openWorkspace(workspace) {
   await canonical(workspace);
   const manifest = await readJson(join(workspace, 'registration.json'));
   const state = await readJson(join(workspace, 'state.json'));
-  const scopeId = state.scopeId ?? manifest.scopeId;
-  const registrations = await loadScopeLineage(workspace, manifest.scopeId, scopeId);
+  const rootScopeId = workspaceManifestRoot(manifest);
+  const manifestVersion = manifest.schemaVersion ?? 1;
+  if (state.setupSchemaVersion === 2 && manifestVersion !== 2) fail('workspace-invalid');
+  const scopeId = state.scopeId ?? rootScopeId;
+  const registrations = await loadScopeLineage(workspace, rootScopeId, scopeId);
   const reg = registrations[0].reg;
   const home = applicationFor(reg.context).home(reg.context);
   await canonical(home);
@@ -234,10 +238,21 @@ export async function openWorkspace(workspace) {
   const owner = ownerPath(home);
   await canonical(owner);
   const reservation = await readJson(join(owner, 'reservation.json'));
-  if (reservation.workspace !== workspace || reservation.scopeId !== manifest.scopeId ||
+  if (reservation.workspace !== workspace || reservation.scopeId !== rootScopeId ||
       (reservation.home ?? reservation.codexHome) !== home) fail('workspace-invalid');
   await validateStateSnapshots(workspace, reg, state);
-  return { workspace, scopeId, rootScopeId: manifest.scopeId, registrations, reg, state, owner };
+  return { workspace, scopeId, rootScopeId, manifest, manifestVersion, registrations, reg, state, owner };
+}
+
+// A v2 manifest deliberately has no legacy scopeId. Older writers cannot open
+// it, even if they ignore fields added to mutable state. Immutable scopes,
+// snapshots and the original profile reservation keep their exact identities.
+export function workspaceManifestRoot(manifest) {
+  const v2 = manifest?.schemaVersion === 2;
+  const root = v2 ? manifest.rootScopeId : manifest?.scopeId;
+  if (!manifest || !equal(Object.keys(manifest).sort(), v2 ? ['rootScopeId', 'schemaVersion'] : ['scopeId'])
+    || typeof root !== 'string' || !/^[a-f0-9]{64}$/.test(root)) fail('workspace-invalid');
+  return root;
 }
 
 export function registeredSkill(app, s) {

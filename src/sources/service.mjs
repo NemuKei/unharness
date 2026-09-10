@@ -204,6 +204,8 @@ export const planUserMode = wrap(async ({ workspace, mode, selectedIds }) => {
   if (!['normal', 'unseal', 'trueform'].includes(mode)) fail('invalid-request');
   const w = await openWorkspace(workspace),
     all = targets(w.reg);
+  if (w.manifestVersion === 2 && mode !== 'normal' && selectedIds !== undefined) fail('setup-proposal-invalid');
+  if (w.manifestVersion === 2 && mode !== 'normal' && !w.state.setupId) fail('setup-required');
   if (selectedIds === undefined && mode !== 'normal' && w.state.setupId) {
     const { savedPresetForMode } = await import('../setup/service.mjs');
     return buildPlan(w, { mode, ...await savedPresetForMode(w, mode) });

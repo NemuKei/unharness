@@ -9,6 +9,10 @@ import { fail, verification } from '../sources/errors.mjs';
 import { loadSetup, assertReviewCurrent, adoptedState } from './records.mjs';
 
 export async function recoverSetup(w, j) {
+  if (j.schemaVersion === 2) {
+    const { recoverInheritedSetup } = await import('./inheritance-recovery.mjs');
+    return recoverInheritedSetup(w, j);
+  }
   try {
     exactKeys(j, ['kind', 'scopeId', 'setupId', 'beforeState', 'afterState'], [], 'journal-invalid');
     if (j.kind !== 'unharness-user-source-setup-pending' || j.scopeId !== w.scopeId) fail('journal-invalid');

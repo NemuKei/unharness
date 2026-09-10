@@ -3,6 +3,8 @@ import { exactKeys, boundedText } from '../comparisons/assessment.mjs';
 import { validUtc } from '../sources/observation-record.mjs';
 import { fail } from '../sources/errors.mjs';
 import { requiredControlSources, assertControlPreserved } from './control-sources.mjs';
+import { validateSetupInventory } from './inventory.mjs';
+import { resolveModeSkillSets } from './mode-inheritance.mjs';
 
 const kind = 'setup-proposal-invalid';
 const hash = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
@@ -22,8 +24,10 @@ function references(value) {
 export function validatePresetProposal(value, scope) {
   try {
     recordId('input', value);
-    shape(value, ['schemaVersion', 'scopeId', 'normalId', 'basis', 'roles', 'unseal', 'trueform']);
-    if (value.schemaVersion !== 1 || !hash(value.scopeId) || value.scopeId !== scope.scopeId
+    shape(value, ['schemaVersion', 'scopeId', 'normalId', 'basis', 'roles', 'unseal', 'trueform',
+      ...(value.schemaVersion === 2 ? ['inventoryId'] : [])]);
+    if (![1, 2].includes(value.schemaVersion) || value.schemaVersion === 2 && !hash(value.inventoryId)
+      || !hash(value.scopeId) || value.scopeId !== scope.scopeId
       || !hash(value.normalId) || value.normalId !== scope.normalId) fail(kind);
     const basis = value.basis;
     shape(basis, ['application', 'modelId', 'modelSource', 'desktopVersion', 'runtimeVersion', 'references', 'rationale']);
@@ -41,12 +45,20 @@ export function validatePresetProposal(value, scope) {
       if (!ids.includes(role.sourceId) || !['self', 'external', 'unknown'].includes(role.origin)) fail(kind);
       text(role.reason, 600, true);
     }
-    shape(value.unseal, ['instructions', 'automaticSkillIds']);
-    shape(value.trueform, ['automaticExternalSkillIds']);
+    const v2 = value.schemaVersion === 2;
+    shape(value.unseal, ['instructions', v2 ? 'additionalAutomaticSkillIds' : 'automaticSkillIds']);
+    shape(value.trueform, [v2 ? 'retainedOfficialPluginIds' : 'automaticExternalSkillIds']);
     if (!['minimal', 'none'].includes(value.unseal.instructions) || !scope.instructions && value.unseal.instructions !== 'none') fail(kind);
-    for (const [list, externalOnly] of [[value.unseal.automaticSkillIds, false], [value.trueform.automaticExternalSkillIds, true]]) {
+    const selections = v2 ? [[value.unseal.additionalAutomaticSkillIds, false]]
+      : [[value.unseal.automaticSkillIds, false], [value.trueform.automaticExternalSkillIds, true]];
+    for (const [list, externalOnly] of selections) {
       if (!Array.isArray(list) || list.length > ids.length || new Set(list).size !== list.length
         || list.some(id => !ids.includes(id) || externalOnly && value.roles.find(r => r.sourceId === id).origin !== 'external')) fail(kind);
+    }
+    if (v2) {
+      const list = value.trueform.retainedOfficialPluginIds;
+      if (!Array.isArray(list) || list.length > 32 || new Set(list).size !== list.length
+        || list.some(id => typeof id !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._@~-]{0,255}$/.test(id))) fail(kind);
     }
     return structuredClone(value);
   } catch { fail(kind); }
@@ -55,10 +67,11 @@ export function validatePresetProposal(value, scope) {
 // Only the local service loads an approved stored proposal for this compiler.
 // Source roles and model references supplied by an AI are proposal data, not
 // approval, and this pure function cannot enroll sources or change files.
-export function compileReleasePreset(value, mode, scope) {
+export function compileReleasePreset(value, mode, scope, inventory) {
   const proposal = validatePresetProposal(value, scope);
   if (!['unseal', 'trueform'].includes(mode)) fail(kind);
   if (proposal.roles.some(r => r.origin === 'unknown')) fail('setup-roles-unconfirmed');
+  if (proposal.schemaVersion === 2) return compileInheritedPreset(proposal, mode, scope, inventory);
   const automatic = new Set(mode === 'unseal' ? proposal.unseal.automaticSkillIds : proposal.trueform.automaticExternalSkillIds);
   const manual = scope.skills.filter(s => !automatic.has(s.id));
   assertControlPreserved({ selectedIds: manual.map(s => s.id), control: requiredControlSources(scope.skills) });
@@ -69,4 +82,19 @@ export function compileReleasePreset(value, mode, scope) {
   return { instructionStyle, skillRelease: 'manual-only', selection: [
     ...(scope.instructions ? [scope.instructions.id] : []), ...manual.map(s => s.id),
   ] };
+}
+
+function compileInheritedPreset(proposal, mode, scope, inventory) {
+  const frozen = validateSetupInventory(inventory, scope);
+  if (proposal.inventoryId !== frozen.inventoryId) fail('stale-discovery');
+  const inheritance = resolveModeSkillSets({ skills: frozen.skills, plugins: frozen.plugins,
+    retainedOfficialPluginIds: proposal.trueform.retainedOfficialPluginIds,
+    additionalAutomaticSkillIds: proposal.unseal.additionalAutomaticSkillIds });
+  const automaticSkillIds = mode === 'unseal' ? inheritance.unsealAutomaticSkillIds : inheritance.trueformAutomaticSkillIds;
+  const manual = frozen.skills.filter(s => !s.requiredControl && !automaticSkillIds.includes(s.id));
+  const instructionStyle = mode === 'unseal' ? proposal.unseal.instructions : 'none';
+  if (scope.instructions && !scope.instructions.availability[instructionStyle === 'minimal' ? 'unseal' : 'trueform'])
+    fail('setup-manual-control-unavailable');
+  return { instructionStyle, skillRelease: 'manual-only', automaticSkillIds, inheritance,
+    selection: [...(scope.instructions ? [scope.instructions.id] : []), ...manual.map(s => s.id)] };
 }

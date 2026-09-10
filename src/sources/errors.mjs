@@ -1,5 +1,8 @@
 export const USER_SOURCE_ERROR_KINDS = Object.freeze([
   'setup-proposal-invalid',
+  'setup-inventory-invalid',
+  'setup-inventory-unavailable',
+  'setup-upgrade-required',
   'setup-roles-unconfirmed',
   'setup-manual-control-unavailable',
   'setup-automatic-control-unavailable',
