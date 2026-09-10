@@ -1,6 +1,6 @@
 # Mac plugin assembly
 
-The development package combines the built local interface, deterministic core/MCP, management, setup and original-authoring Skills, locked production dependencies and an official Node runtime. It currently targets **macOS arm64**. Native update/removal/reinstall and [independent recovery](plugin-recovery.md) have scoped evidence. The [integrated private candidate](evidence/2026-09-11-final-native-candidate.md) now has an [AI-guided installable wrapper](mac-installation.md), native v2/artwork checks and recovery after removal with external networking denied. Public download and the complete model-driven journey remain in progress under the [plugin contract](spec-plugin-distribution.md).
+The development package combines the built local interface, deterministic core/MCP, management, setup and original-authoring Skills, locked production dependencies and an official Node runtime. It currently targets **macOS arm64**. Native update/removal/reinstall and [independent recovery](plugin-recovery.md) have scoped evidence. The [integrated private candidate](evidence/2026-09-11-final-native-candidate.md) now has an [AI-guided installable wrapper](mac-installation.md), native v2/artwork checks and recovery after removal with external networking denied. The [0.0.1 development preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.1) is now publicly downloadable; the complete model-driven journey remains in progress under the [plugin contract](spec-plugin-distribution.md).
 
 ## Maintainer build
 

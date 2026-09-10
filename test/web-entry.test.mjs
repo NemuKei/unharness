@@ -32,7 +32,7 @@ test('public entry, synthetic demo and platform guidance do not connect or chang
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   await s.screenshot('public-demo-mobile.png');
   await page.getByRole('button', { name: '導入', exact: true }).click();
-  await page.getByRole('heading', { name: 'Mac版の公開配布を準備しています', exact: true }).waitFor();
+  await page.getByRole('heading', { name: /^(Mac版の公開配布を準備しています|Codexに導入を頼む)$/ }).waitFor();
   await page.getByLabel('使うOS', { exact: true }).selectOption('windows');
   await page.getByRole('heading', { name: 'この組み合わせは後続の対応です', exact: true }).waitFor();
   await page.getByLabel('使うOS', { exact: true }).selectOption('mac');

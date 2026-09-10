@@ -26,7 +26,7 @@ export function PublicEntry({ choose }: { choose: (page: "demo" | "install" | "c
     <section className="entry-art" aria-label="標準外観のプレビュー"><Hangar condition="baseline" effects={false}/><p className="scene-caption">見た目は自由に。性能は、実際の仕事で比べる。</p></section>
     <nav className="entry-choices" aria-label="Unharnessの入口">
       <button onClick={() => choose("demo")}><span>01 ／ デモ</span><strong>試してみる</strong><small>架空の設定で、3つのモードを体験。</small></button>
-      <button onClick={() => choose("install")}><span>02 ／ 導入</span><strong>自分のAIに導入する</strong><small>MacのCodexから。配布の準備状況を確認。</small></button>
+      <button onClick={() => choose("install")}><span>02 ／ 導入</span><strong>自分のAIに導入する</strong><small>{siteConfig.macCodexRelease ? "MacのCodexへ。導入をAIに頼めます。" : "MacのCodexから。配布の準備状況を確認。"}</small></button>
       <button onClick={() => choose("connect")}><span>03 ／ 導入済み</span><strong>接続して開く</strong><small>ローカルで許可して、登録済みの設定へ。</small></button>
     </nav>
     <p className="entry-note">軽い構成が、いつもよいとは限りません。ふだんの構成をNormalに保存して、戻せる状態で比べます。</p>
