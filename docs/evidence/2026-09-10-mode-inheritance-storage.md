@@ -43,4 +43,18 @@ The actual source writer from commit `0857aea` was separately exported into a pr
 
 ## Remaining qualification
 
-This slice does not qualify official-plugin provenance, automatic-only native plugin control, v2 additive enrollment, the MCP proposal schema, the setup UI, the distribution/recovery package upgrade journey or a new Mac desktop task. Those remain in the [implementation plan](../superpowers/plans/2026-09-10-official-plugin-mode-inheritance.md). No complete mode, runtime or Mac-release support claim follows from these checks.
+This slice does not qualify official-plugin provenance, automatic-only native plugin control, v2 additive enrollment, the setup UI, the distribution/recovery package upgrade journey or a new Mac desktop task. Those remain in the [implementation plan](../superpowers/plans/2026-09-10-official-plugin-mode-inheritance.md). No complete mode, runtime or Mac-release support claim follows from these checks.
+
+## CLI, authenticated HTTP and MCP follow-up
+
+The v2 MCP proposal schema is connected to the same service. The [entry-point tests](../../test/setup-inheritance-entrypoints.test.mjs) compare the inventory and exact review ID across CLI, authenticated HTTP and a real stdio MCP client. They adopt by MCP, prepare by the HTTP operation API, restore Normal by MCP, and retrieve the same operation receipt after a repeated request. Stale inventory IDs, invented official-plugin IDs, supplied evidence and legacy independent lists are rejected, with source files unchanged before explicit preparation.
+
+`node --test test/setup-inheritance-entrypoints.test.mjs test/setup-entrypoints.test.mjs test/ai-server.test.mjs` passed **18 tests, 0 failures, 0 skips**. The MCP request tests failed on the absent v2 schema before implementation. This covers transport/service behavior; it does not validate a rendered browser flow or native desktop model tool use.
+
+## Applying a stored plan
+
+A subsequent independent review identified a second byte-substitution boundary: a stored application plan could be rehashed with its `afterId` pointing at Normal, after the preset itself had passed verification. Seven altered-plan cases reproduced the problem in the actual service before the fix. The [application check](../../src/setup/apply-plan.mjs) now runs inside the source lock before a v2 workspace publishes a plan. It compares the selected mode, active Normal, setup, source selection, metadata, adapted bytes and actual changed-file list.
+
+New historical restore plans also retain their favorite/checkpoint source ID. The same forward boundary derives those plans from that historical record, using Node-only retained-settings composition; it does not inject the latest v2 preset. Merely changing a release plan's `mode` to `favorite` or `normal` cannot skip the check. The offline journal reader and cancellation paths keep their earlier dependency boundary.
+
+The regression cases reject altered output bytes, absent or substituted setup IDs, mode/prepared-mode disagreement, missing selections, guide/Skill-state disagreement and false change lists. The existing retained-Normal and Node-only historical restore/cancellation cases continue to pass.

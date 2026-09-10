@@ -40,3 +40,13 @@ The investigation made no direct cache edits and did not restore or modify the h
 - Establish automatic-only control for a registered plugin Skill while preserving explicit invocation, MCP, hooks, permissions and provider-owned files.
 - Implement and test the fail-closed provenance projection, then derived inheritance and versioned storage. Synthetic positive fixtures will prove only that logic, not native official provenance.
 - Continue the independent domain, art and installation work when those capability questions require external support or a product decision. Keep the new official-plugin policy unqualified until its own acceptance evidence exists.
+
+## Follow-up source review and scope clarification
+
+The same-day independent review was checked against the published source at `3d2ee51ca2d5db578f328aa75e20aa22c0197c9a`. [SkillConfig](https://github.com/openai/codex/blob/3d2ee51ca2d5db578f328aa75e20aa22c0197c9a/codex-rs/config/src/skills_config.rs) has path/name selectors and enablement, consistent with the generated native types above. This supports the recorded lack of a qualified user-side invocation override in the inspected route; it is not proof that no other route exists.
+
+[Remote installed-plugin synchronization](https://github.com/openai/codex/blob/3d2ee51ca2d5db578f328aa75e20aa22c0197c9a/codex-rs/core-plugins/src/remote/remote_installed_plugin_sync.rs) can persist a remote ID and continue without downloading a bundle when the active local version matches the remote release version. A remote ID therefore must not be described as a download or full-content attestation. This is a source-level observation, not a reproduced Mac exploit or permission to inspect personal credentials.
+
+The accepted [provenance contract](../spec-mode-inheritance.md) binds the host's public listing and installed state to the exact reviewed local Skill content revision. It does not require an independent proof that every file matches a public distribution digest. The earlier absence of a complete remote digest remains an observation, but does not by itself make official origin unknown. Current eligibility is still unqualified because the stable product-facing listing/install/local mapping has not been established. Invocation-change capability remains a separate unresolved condition.
+
+The documented `plugin/skill/read` can be investigated as an additional Markdown comparison. Its generated parameters have no version selector, so a match cannot establish a full package or an exact installed release, and a mismatch can reflect an upstream version difference. That optional native call has not been executed in this evidence run. No new cache or configuration operation was performed for this follow-up review.

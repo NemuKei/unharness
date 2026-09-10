@@ -204,6 +204,28 @@ test('forward planning rechecks frozen invocation capability facts against the r
   assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
 });
 
+for (const field of ['afterId', 'setupId', 'otherSetupId', 'preparedMode', 'mode', 'normalMode', 'selectedIds', 'guide', 'skillStates', 'changedFiles'])
+  test(`v2 application rejects a rehashed plan with substituted ${field}`, mac, async t => {
+    const s = await fixture(t); await adopt(s);
+    const before = await openWorkspace(s.workspace), files = await readSourceProfileFiles(s.context);
+    const plan = await sources.planUserMode({ workspace: s.workspace, mode: 'trueform' });
+    const payload = await loadRecord(s.workspace, 'application', plan.planId);
+    if (field === 'afterId') payload.afterId = s.normalId;
+    else if (field === 'setupId') payload.setupId = null;
+    else if (field === 'otherSetupId') payload.setupId = 'f'.repeat(64);
+    else if (field === 'preparedMode') payload.preparedMode = 'normal';
+    else if (field === 'mode') payload.mode = 'favorite';
+    else if (field === 'normalMode') payload.mode = 'normal';
+    else if (field === 'selectedIds') payload.selectedIds = [];
+    else if (field === 'guide') payload.guide = { id: 'invented-guide' };
+    else if (field === 'skillStates') payload.skillStates = [];
+    else payload.changedFiles = [];
+    const planId = await record(s.workspace, 'application', payload);
+    await assert.rejects(sources.applyUserPlan({ workspace: s.workspace, planId }), { kind: 'setup-record-invalid' });
+    assert.deepEqual((await openWorkspace(s.workspace)).state, before.state);
+    assert.deepEqual(await readSourceProfileFiles(s.context), files);
+  });
+
 test('a retained-only Normal update does not replace the earlier frozen mode inventory', mac, async t => {
   const s = await fixture(t); await adopt(s);
   const saved = await readSetup({ workspace: s.workspace });

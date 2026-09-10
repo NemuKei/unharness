@@ -166,7 +166,8 @@ async function buildPlan(
     guide = null,
     skillStates = [],
     adaptation = null,
-    setupId = null
+    setupId = null,
+    restoreSourceId = null
   }
 ) {
   if (await pending(w.workspace)) fail('recovery-required');
@@ -182,6 +183,7 @@ async function buildPlan(
     snapshotVersion: w.state.snapshotVersion ?? 1,
     adaptation,
     setupId,
+    ...(restoreSourceId === null ? {} : { restoreSourceId }),
     scopeId: w.scopeId,
     revision: w.state.revision,
     mode,
@@ -276,6 +278,10 @@ export const applyUserPlan = wrap(async ({ workspace, planId }) => {
     );
     if (['unseal', 'trueform'].includes(plan.mode))
       await freshCatalog(current.reg);
+    if (current.manifestVersion === 2) {
+      const { assertV2ApplicationPlan } = await import('../setup/apply-plan.mjs');
+      await assertV2ApplicationPlan(current, plan);
+    }
     return await transact(current, plan, planId);
   } finally {
     await release();
@@ -355,6 +361,7 @@ async function restorePlan({ workspace, id, type }) {
   const { after, adaptation } = await adaptRetainedSnapshot(w, r, id, type);
   return buildPlan(w, {
     mode: type,
+    restoreSourceId: id,
     adaptation,
     setupId: r.preparedSetupId ?? null,
     preparedMode: r.preparedMode,
