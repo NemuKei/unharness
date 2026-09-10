@@ -1,0 +1,6 @@
+interface:
+  display_name: "オリジナルイメージを作成"
+  short_description: "Unharnessの本体・拘束具・背景を、希望に合わせて別レイヤーで制作"
+  default_prompt: "$unharness-original を使い、既に伝えた希望を引き継いでUnharnessの外観を作成・修正してください。未指定の素材は保持し、PNGの制作とローカルでの読込・保存を分けてください。"
+policy:
+  allow_implicit_invocation: false
