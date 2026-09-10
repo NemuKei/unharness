@@ -15,11 +15,13 @@ function failure(response, error, cors) {
 export async function createRemoteHttp({ controller, enqueue, readJson, now }) {
   const remote = await createRemoteController({ controller, enqueue, now });
   const localRequests = new Map();
+  // One large upload across all public connections, including its queued work.
+  let uploading = false;
   return {
     // Called before the ordinary local API branch. It never falls through to a
     // local controller or returns its raw state, metadata or service result.
     async publicRequest(request, response, url, loopbackOrigin) {
-      let cors = {};
+      let cors = {}, ownsUpload = false;
       try {
         cors = remoteHttpPolicy(request, { loopbackOrigin, webOrigin: remote.webOrigin });
         const match = /^\/remote\/v2\/([a-z-]+)$/.exec(url.pathname);
@@ -32,6 +34,10 @@ export async function createRemoteHttp({ controller, enqueue, readJson, now }) {
         // OPTIONS has no bearer by design; redeem stays a small unauthenticated
         // exchange. Every other route authenticates before readJson allocates.
         if (operation !== 'redeem') await remote.authenticate(authorization);
+        if (operation === 'review-appearance-import') {
+          if (uploading) remoteFail('remote-capacity');
+          uploading = true; ownsUpload = true;
+        }
         const input = await readJson(request, true, operation === 'review-appearance-import' ? REMOTE_UPLOAD_BODY_LIMIT : MAX_BODY_BYTES);
         const result = operation === 'redeem' ? await remote.redeem(input, request.headers.origin)
           : await remote.request(operation, input, authorization);
@@ -39,7 +45,8 @@ export async function createRemoteHttp({ controller, enqueue, readJson, now }) {
           response.writeHead(200, { ...cors, 'Content-Type': 'image/png', 'Content-Length': result.bytes.length });
           response.end(result.bytes);
         } else send(response, 200, result, cors);
-      } catch (error) { failure(response, error, cors); }
+      } catch (error) { if (!response.destroyed) failure(response, error, cors); }
+      finally { if (ownsUpload) uploading = false; }
     },
     // The caller must complete the existing local Host/origin/client/token
     // checks first. Public sessions cannot issue or approve a connection.

@@ -86,6 +86,13 @@ test('v2 real PNG review/save/reselect uses the same core and never reselects on
   const item = (await s.remote('artwork-item', { itemId: first.saved.savedItemId })).data;
   assert.deepEqual(Object.keys(item).sort(), ['scopeId','collectionScopeId','stateId','item'].sort());
   assert.equal(item.item.name, 'Owned renamed image');
+  const resetInput = { requestId: randomUUID(), itemId: first.saved.savedItemId, expectedStateId: item.stateId, name: '' };
+  const resetResponse = await s.remote('name-appearance', resetInput), reset = success(resetResponse);
+  const resetItem = (await s.remote('artwork-item', { itemId: first.saved.savedItemId })).data;
+  assert.equal(resetItem.item.name, null, 'empty name restores the core automatic-name presentation');
+  assert.equal(resetItem.stateId, reset.stateId);
+  assert.equal(reset.selectedItemId, first.saved.savedItemId);
+  assert.deepEqual((await s.remote('name-appearance', resetInput)).data, resetResponse.data);
   for (const forbidden of ['acquisition', 'evidenceStartId', 'authoringPath', 'rawState']) assert.ok(!JSON.stringify(item).includes('"' + forbidden + '"'));
   const claim = await readFile(join(s.workspace, 'ai-requests', first.reviewInput.requestId, 'request.json'), 'utf8');
   assert.ok(claim.length < 1024 && !claim.includes('base64'));
@@ -149,7 +156,9 @@ test('interrupted image publication retains its receipt and recovers through the
   assert.equal(recovered.selectedItemId, review.proposedItemId); assert.equal(recovered.recoveryRequired, false);
   assert.deepEqual((await s.remote('save-appearance-import', input)).data, interrupted.data, 'the old failure is a receipt, not a fresh execution');
   assert.deepEqual((await s.remote('operation-status', { requestId: input.requestId })).data, interrupted.data);
-  assert.equal((await s.remote('artwork', { after: null })).data.itemCount, 1);
+  const collection = (await s.remote('artwork', { after: null })).data;
+  assert.equal(collection.itemCount, 2, 'first save retains the prepared item and adds one layered item');
+  assert.deepEqual(collection.collection.filter(item => item.kind === 'layered').map(item => item.id), [review.proposedItemId]);
   assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
 });
 

@@ -103,7 +103,7 @@ export function remoteRequestShape(operation, value) {
   if (operation === 'artwork' && !optionalHash(value.after)) remoteFail('remote-invalid-request');
   if (keys[operation].includes('expectedStateId') && !(isHash(value.expectedStateId)
     || value.expectedStateId === null && ['review-appearance-import', 'save-appearance-import'].includes(operation))) remoteFail('remote-invalid-request');
-  if (operation === 'name-appearance' && !text(value.name)) remoteFail('remote-invalid-request');
+  if (operation === 'name-appearance' && !text(value.name, true)) remoteFail('remote-invalid-request');
   if (operation === 'review-appearance-import') {
     if (!isUuid(value.importId)) remoteFail('remote-invalid-request');
     uploadShape(value);
