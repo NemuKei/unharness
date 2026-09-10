@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import type { LocalConnectionAction } from "./local-connection";
-import { Api } from "./api";
+import { Api, ApiError } from "./api";
 import {
   initialSourceControllerState,
   planResponseApplies,
@@ -366,7 +366,10 @@ export function useSourceController() {
   async function executeComparison<T>(
     action: string,
     input: object,
+    acceptChangedContext = true,
   ): Promise<AuxiliarySourceOperationResult<T>> {
+    if (!acceptChangedContext && contextBlocked.current)
+      return { status: "failed", error: new ApiError("gui-source-context-changed") };
     if (lock.current || !view)
       return { status: "failed", error: new Error("source-busy") };
     lock.current = true;
@@ -374,14 +377,17 @@ export function useSourceController() {
     setBusy(true);
     try {
       const response = await sourceOperation<T>(api, view.metadata, action, input);
+      if (!acceptChangedContext && (response.status === "context-updated"
+        || !sameSourceContext(view.metadata, response.state.metadata)
+        || view.source?.registration.scopeId !== response.state.source?.registration.scopeId)) {
+        contextBlocked.current = true;
+        setSyncError("接続先が変わりました。「状態を再取得」で対象を確認してください。");
+        return { status: "context-updated", state: response.state };
+      }
       if (response.status === "context-updated") {
         accept(response.state);
         setSelected(response.state.source?.preparedMode ?? "normal");
-        dispatch({
-          type: "set-notice",
-          notice:
-            "接続先が変わりました。比較記録をクリアしたため、対象を確認してください。",
-        });
+        dispatch({ type: "set-notice", notice: "接続先が変わりました。比較記録をクリアしたため、対象を確認してください。" });
         return response;
       }
       accept(response.state);
@@ -392,6 +398,24 @@ export function useSourceController() {
       lock.current = false;
       setBusy(false);
     }
+  }
+  async function readArtwork<T>(action: string, input: object): Promise<AuxiliarySourceOperationResult<T>> {
+    const accepted = latest.current.view, generation = foregroundGeneration.current;
+    if (!accepted || contextBlocked.current) return { status: 'failed', error: new ApiError('gui-source-context-changed') };
+    try {
+      // Read-only artwork cannot disable mode controls or accept a different
+      // source context. The server still serializes its deterministic operation.
+      const response = await sourceOperation<T>(api, accepted.metadata, action, input);
+      if (response.status === 'context-updated' || !sameSourceContext(accepted.metadata, response.state.metadata)
+        || accepted.source?.registration.scopeId !== response.state.source?.registration.scopeId) {
+        if (canAcceptSourceUpdate(accepted, latest.current.view, generation, foregroundGeneration.current)) {
+          contextBlocked.current = true;
+          setSyncError('接続先が変わりました。「状態を再取得」で対象を確認してください。');
+        }
+        return { status: 'context-updated', state: response.state };
+      }
+      return response;
+    } catch (error) { return { status: 'failed', error }; }
   }
   return {
     recoveryResult,
@@ -416,7 +440,13 @@ export function useSourceController() {
     choose,
     loadFavorites,
     executeComparison,
-    executeAuxiliary: executeComparison,
+    executeAuxiliary: <T,>(action: string, input: object) => ['artwork', 'artwork-item', 'read-appearance-import'].includes(action)
+      ? readArtwork<T>(action, input) : executeComparison<T>(action, input, false),
+    artworkImage: (referenceId: string, asset: { assetId: string; bytes: number }, signal: AbortSignal) => {
+      if (!view?.source || !confirmed) return Promise.reject(new ApiError('gui-source-context-changed'));
+      const params = new URLSearchParams({ launchId: view.metadata.launchId, contextId: view.metadata.contextId, referenceId, assetId: asset.assetId });
+      return api.image('/sources/appearance-image?' + params, asset.bytes, signal);
+    },
     requestConnection,
     setDiscovery,
     setReview,

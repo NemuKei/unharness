@@ -1,6 +1,14 @@
 # Local artwork reviews and versions
 
-The [layered appearance contract](personalization.md) now has a local import/storage API, a replacement-layer renderer and a bundled [authoring Skill](../skills/unharness-original/SKILL.md). The import/collection panels, public-page image permission and final native journey are still being integrated.
+The [layered appearance contract](personalization.md) now has a local import/storage API, a replacement-layer renderer, import/collection panels, image cards and a bundled [authoring Skill](../skills/unharness-original/SKILL.md). Public-page image permission and the complete native installation/creation journey are still being integrated.
+
+## Local screen
+
+The Equipment tab has a small appearance area. “オリジナルイメージを作成” prepares a copyable request for the user's AI. “作品を読み込む” accepts an entity, a background and explicitly mapped restraint parts. It reviews all three poses before enabling save, using the current layered version or an explicitly chosen standard base. A legacy recipe remains in the collection and requires an explicit standard-base choice for a new layered work.
+
+The collection shows version names and static thumbnails through one offscreen renderer, then lets the user select an older work. One damaged image does not stop later thumbnails. No mode configuration is prepared by image review, selection or card creation. Read-only artwork requests do not disable mode controls or accept a replacement source context; a changed context requires explicit confirmation through the source refresh action. Accepted artwork writes retain their original operation ID when the response is uncertain.
+
+“画像カード” renders a local 1200×820 PNG from the selected version's three poses. Public name/author fields start empty, and no performance or configuration information is included. The card has a download, PNG clipboard action, editable X draft, explicit composer link and separate text-copy fallbacks. See [the card contract](build-cards.md) and [UI evidence](evidence/2026-09-10-artwork-ui.md).
 
 An import names the fixed `templateId`, an owned layered `baseItemId` or `null` for standard parts, a display name/author and explicit `{partId, fileId}` replacements. Only the chosen PNG bytes enter the import. Unspecified parts retain their exact base version. A recipe from the earlier format stays selectable; it is not silently converted into guessed image parts.
 

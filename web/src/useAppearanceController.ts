@@ -1,117 +1,182 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError } from './api';
-import { comparisonContextKey } from './useComparisonController';
-import { mergeHistoryRows } from './source-updates';
-import { appearanceErrorMessage, validAppearanceView, validAppearanceReceipt, validOriginalCandidates } from './appearances';
-import type { AppearanceView, AppearancePresentation, OriginalCandidates } from './appearances';
-import type { useSourceController } from './useSourceController';
+import { appearanceErrorMessage } from './appearances';
+import { validArtworkItem, validArtworkView, validArtworkReview, validArtworkReceipt } from './artwork';
+import type { ArtworkAction, ArtworkItem, ArtworkPort, ArtworkReceipt, ArtworkReview, ArtworkUpload, ArtworkView } from './artwork';
+import type { LayerAsset } from './appearance-layers';
 
-type Shared = ReturnType<typeof useSourceController>;
-type State = { key: string; view: AppearanceView | null; candidates: OriginalCandidates | null;
-  error: string; notice: string; uncertain: boolean; busy: boolean };
-const initial = (key: string): State => ({ key, view: null, candidates: null, error: '', notice: '', uncertain: false, busy: false });
-export function useAppearanceController(shared: Shared) {
-  const key = comparisonContextKey(shared.view), keyRef = useRef(key), sharedRef = useRef(shared);
-  keyRef.current = key; sharedRef.current = shared;
-  const [state, setState] = useState(() => initial(key));
-  const stateRef = useRef(state); stateRef.current = state;
-  const working = useRef(false), generation = useRef(0), initialized = useRef('');
-  const updateSignature = useRef('');
-  const current = state.key === key ? state : initial(key);
-  useEffect(() => { ++generation.current; initialized.current = ''; updateSignature.current = ''; setState({ ...initial(key), busy: working.current }); }, [key]);
-  useEffect(() => {
-    const update = shared.externalUpdate, slice = update?.history?.appearance;
-    if (!update || !slice || working.current || comparisonContextKey(update.view) !== keyRef.current) return;
-    const signature = JSON.stringify([keyRef.current, update.versions.appearance, slice.error?.kind]);
-    if (signature === updateSignature.current) return;
-    updateSignature.current = signature;
-    setState(old => {
-      if (old.key !== keyRef.current) return old;
-      if (slice.error) return { ...old, error: appearanceErrorMessage(new ApiError(slice.error.kind)) };
-      if (old.view && Date.parse(old.view.assessmentCheckedAt) > Date.parse(slice.data.assessmentCheckedAt)) return old;
-      return { ...old, view: { ...slice.data, collection: mergeHistoryRows(old.view?.collection ?? [], slice.data.collection, 'id') }, error: '' };
-    });
-  }, [shared.externalUpdate, current.busy]);
-
-  async function perform(action: string, input: object, requestKey: string) {
-    const response = await sharedRef.current.executeComparison<unknown>(action, input);
-    if (keyRef.current !== requestKey || response.status === 'context-updated') return null;
-    if (response.status === 'failed') throw response.error;
-    const scope = response.state.source?.registration.scopeId;
-    if (!scope || comparisonContextKey(response.state) !== requestKey) return null;
-    const previousScopes = response.state.source?.registration.previousScopeIds;
-    const valid = action === 'appearance' ? validAppearanceView(response.result, scope, previousScopes)
-      : action === 'original-candidates' ? validOriginalCandidates(response.result, scope, previousScopes)
-        : validAppearanceReceipt(response.result, scope);
-    if (!valid) throw new ApiError('invalid-response');
-    return response.result;
+type Pending = { key: string; action: ArtworkAction; input: Record<string, unknown>; requestId: string; expectedItemId?: string };
+type State = { key: string; view: ArtworkView | null; review: ArtworkReview | null; error: string; notice: string;
+  busy: boolean; confirmed: boolean; uncertain: boolean; operationId: string | null; lastReceipt: ArtworkReceipt | null };
+const initial = (key: string): State => ({ key, view: null, review: null, error: '', notice: '', busy: false,
+  confirmed: false, uncertain: false, operationId: null, lastReceipt: null });
+const changed = () => new ApiError('gui-source-context-changed');
+function matchesUpload(review: ArtworkReview, input: Record<string, unknown>) {
+  const upload = input as ArtworkUpload, manifest = upload.manifest;
+  if (!manifest || !Array.isArray(manifest.parts) || !Array.isArray(upload.files)) return false;
+  const sameIds = (a: unknown[], b: unknown[]) => a.length === b.length && JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
+  return review.expectedStateId === upload.expectedStateId && review.baseItemId === manifest.baseItemId
+    && review.manifest.templateId === manifest.templateId && review.name === manifest.name.trim() && review.author === manifest.author.trim()
+    && sameIds(review.replacedParts, manifest.parts.map(part => part.partId))
+    && sameIds(review.images.map(file => file.fileId), upload.files.map(file => file.fileId));
+}
+export function useAppearanceController(port: ArtworkPort, externalVersion = '') {
+  const portRef = useRef(port); portRef.current = port;
+  const [state, setState] = useState(() => initial(port.key)), stateRef = useRef(state); stateRef.current = state;
+  const working = useRef(false), generation = useRef(0), loadedKey = useRef(''), observedVersion = useRef('');
+  const idleWaiter = useRef<(() => void) | null>(null), waiting = useRef(false), alive = useRef(true);
+  const [queued, setQueued] = useState(false);
+  const pending = useRef<Pending | null>(null), items = useRef(new Map<string, ArtworkItem>());
+  const current = state.key === port.key ? state : initial(port.key);
+  function wakeWaiting() {
+    if ((!working.current && !portRef.current.busy) || !portRef.current.enabled || !alive.current) {
+      const resolve = idleWaiter.current; idleWaiter.current = null; resolve?.();
+    }
   }
-  async function action(name: string, input: object = {}, mutate = false) {
-    if (working.current || !sharedRef.current.view?.source) return false;
-    working.current = true;
-    const requestKey = keyRef.current, requestGeneration = ++generation.current;
-    const applies = () => requestKey === keyRef.current && requestGeneration === generation.current;
-    setState(old => ({ ...old, error: '', busy: true }));
-    try {
-      const result = await perform(name, input, requestKey);
-      if (!result || !applies()) return false;
-      if (name === 'appearance') {
-        const view = result as AppearanceView;
-        setState(old => ({ ...old, view: { ...view, collection: 'after' in input ? mergeHistoryRows(old.view?.collection ?? [], view.collection, 'id') : view.collection }, error: '' }));
-      } else if (name === 'original-candidates') {
-        const candidates = result as OriginalCandidates;
-        if (!('achievementId' in input) || candidates.achievement.achievementId !== input.achievementId) throw new ApiError('invalid-response');
-        setState(old => ({ ...old, candidates }));
-      } else {
-        setState(old => ({ ...old, uncertain: false, notice: name === 'adopt-original' ? 'この姿をコレクションに保存しました。今回の採用は確定済みです。'
-          : name === 'create-original' ? '3つの候補を保存しました。好きな1つを選べます。'
-            : name === 'use-appearance-evidence' ? 'この比較を外観の評価に使用します。適用できる範囲は評価欄で確認できます。'
-              : '外観の保存状態を更新しました。装備の設定は変えていません。' }));
-        try {
-          const view = await perform('appearance', {}, requestKey) as AppearanceView | null;
-          if (view && applies()) setState(old => ({ ...old, view, error: '' }));
-        } catch {
-          if (applies()) setState(old => ({ ...old, error: '保存は確認済みです。外観の表示を読み直してください。' }));
+  useEffect(wakeWaiting, [port.busy, port.enabled, current.busy]);
+  useEffect(() => { alive.current = true; return () => { alive.current = false; wakeWaiting(); }; }, []);
+  useEffect(() => {
+    ++generation.current; loadedKey.current = ''; observedVersion.current = ''; items.current.clear();
+    pending.current = null; setState({ ...initial(port.key), busy: working.current });
+    const resolve = idleWaiter.current; idleWaiter.current = null; resolve?.();
+  }, [port.key]);
+  async function call(action: ArtworkAction, input: Record<string, unknown>, key: string, requestId: string = crypto.randomUUID()) {
+    const target = portRef.current;
+    if (!target.enabled || !target.scopeId || target.key !== key) throw changed();
+    const result = await target.execute(action, input, requestId);
+    if (portRef.current.key !== key || !portRef.current.enabled) throw changed();
+    const valid = action === 'artwork' ? validArtworkView(result, target.scopeId, target.collectionScopeIds)
+      : ['review-appearance-import', 'read-appearance-import'].includes(action) ? validArtworkReview(result, target.scopeId, target.collectionScopeIds)
+        : action === 'artwork-item' ? result !== null && typeof result === 'object' && 'scopeId' in result && result.scopeId === target.scopeId
+          && 'collectionScopeId' in result && target.collectionScopeIds.includes(String(result.collectionScopeId))
+          && 'item' in result && validArtworkItem(result.item)
+          : validArtworkReceipt(result, target.scopeId);
+    if (!valid) throw new ApiError('invalid-response', undefined, 'uncertain');
+    return result;
+  }
+  async function readView(key: string, after?: string) {
+    let view = await call('artwork', after ? { after } : {}, key) as ArtworkView;
+    const before = stateRef.current.key === key ? stateRef.current.view : null;
+    if (after && before && before.collectionRevision !== view.collectionRevision) {
+      view = await call('artwork', {}, key) as ArtworkView; after = undefined;
+    }
+    setState(old => {
+      if (old.key !== key || old.view && old.view.collectionRevision > view.collectionRevision) return old;
+      const collection = after && old.view?.collectionRevision === view.collectionRevision
+        ? [...new Map([...old.view.collection, ...view.collection].map(row => [row.id, row])).values()] : view.collection;
+      return { ...old, view: { ...view, collection }, confirmed: true };
+    });
+    if (view.selectedItem) items.current.set(view.selectedItem.id, view.selectedItem);
+    return view;
+  }
+  async function run(action: ArtworkAction, input: Record<string, unknown> = {}, write = false, retry = false) {
+    const target = portRef.current, key = target.key;
+    if (!target.enabled || waiting.current) return false;
+    if (working.current || target.busy) {
+      if (!write) return false;
+      // A refresh can start between the pointer event and React disabling a button.
+      // Keep that one explicit action and its reviewed input until the shared queue is free.
+      waiting.current = true; setQueued(true);
+      try {
+        while (working.current || portRef.current.busy) {
+          await new Promise<void>(resolve => { idleWaiter.current = resolve; wakeWaiting(); });
+          if (!alive.current || portRef.current.key !== key || !portRef.current.enabled) return false;
         }
+      } finally { waiting.current = false; setQueued(false); }
+    }
+    if (!alive.current || portRef.current.key !== key || !portRef.current.enabled) return false;
+    if (write && pending.current && !retry && action !== 'recover-appearance') return false;
+    const activeReview = stateRef.current.review;
+    const command: Pending = retry && pending.current ? pending.current : { key, action, input, requestId: crypto.randomUUID(),
+      ...(action === 'save-appearance-import' && activeReview && activeReview.reviewId === input.reviewId
+        ? { expectedItemId: activeReview.proposedItemId } : {}) };
+    if (command.key !== key) return false;
+    working.current = true;
+    const epoch = ++generation.current, applies = () => key === portRef.current.key && epoch === generation.current;
+    if (write) pending.current = command;
+    setState(old => ({ ...old, busy: true, error: '', ...(write ? { operationId: command.requestId } : {}) }));
+    try {
+      if (action === 'artwork') {
+        await readView(key, typeof input.after === 'string' ? input.after : undefined);
+        if (applies()) setState(old => ({ ...old, error: '' }));
+        return applies();
       }
+      const result = await call(command.action, command.input, key, command.requestId);
+      if (!applies()) return false;
+      if (['review-appearance-import', 'read-appearance-import'].includes(command.action)) {
+        const review = result as ArtworkReview;
+        if (command.action === 'read-appearance-import' && review.reviewId !== command.input.reviewId) throw new ApiError('invalid-response', undefined, 'uncertain');
+        if (command.action === 'review-appearance-import' && !matchesUpload(review, command.input)) throw new ApiError('invalid-response', undefined, 'uncertain');
+        setState(old => ({ ...old, review, error: '', notice: '', uncertain: false }));
+      } else {
+        const receipt = result as ArtworkReceipt;
+        if (command.action === 'save-appearance-import' && (receipt.reviewId !== command.input.reviewId || !receipt.savedItemId
+          || command.expectedItemId && receipt.savedItemId !== command.expectedItemId)) throw new ApiError('invalid-response', undefined, 'uncertain');
+        if (command.action === 'select-appearance' && receipt.selectedItemId !== command.input.itemId) throw new ApiError('invalid-response', undefined, 'uncertain');
+        setState(old => ({ ...old, uncertain: false, lastReceipt: receipt, notice: command.action === 'save-appearance-import'
+          ? '作品をコレクションに保存しました。' : command.action === 'recover-appearance' ? '作品の保存を再開しました。'
+            : command.action === 'select-appearance' ? 'この作品を選びました。' : '作品の名前を保存しました。' }));
+        try { await readView(key); }
+        catch { if (applies()) setState(old => ({ ...old, confirmed: false, error: '保存は確認できました。外観の表示を読み直してください。' })); }
+      }
+      pending.current = null;
       return true;
     } catch (error) {
-      if (applies()) setState(old => ({ ...old, error: appearanceErrorMessage(error),
-        uncertain: mutate && (error instanceof ApiError ? error.disposition === 'uncertain' : !(error instanceof Error && error.message === 'source-busy')) }));
+      if (applies()) {
+        const uncertain = write && (!(error instanceof ApiError) || error.disposition === 'uncertain');
+        if (!uncertain) pending.current = null;
+        setState(old => ({ ...old, error: appearanceErrorMessage(error), uncertain,
+          ...(action === 'artwork' ? { confirmed: false } : {}) }));
+      }
       return false;
     } finally {
       working.current = false;
       setState(old => ({ ...old, busy: false }));
+      wakeWaiting();
     }
   }
   useEffect(() => {
-    const view = current.view;
-    if (!view || view.stateId !== null || view.recoveryRequired || !shared.confirmed || shared.busy || initialized.current === key) return;
-    initialized.current = key;
-    void action('discover-appearance', {}, true);
-  }, [key, current.view?.stateId, current.view?.recoveryRequired, shared.confirmed, shared.busy]);
-  function edit(name: string, input: object = {}) {
-    const view = stateRef.current.key === keyRef.current ? stateRef.current.view : null;
-    if (!view?.stateId) return Promise.resolve(false);
-    return action(name, { ...input, expectedStateId: view.stateId }, true);
+    if (port.enabled && !port.busy && !working.current && !waiting.current && loadedKey.current !== port.key) {
+      loadedKey.current = port.key; void run('artwork');
+    }
+  }, [port.key, port.enabled, current.busy, port.busy]);
+  useEffect(() => {
+    if (!externalVersion || !port.enabled || port.busy || working.current || waiting.current || observedVersion.current === externalVersion) return;
+    observedVersion.current = externalVersion; void run('artwork');
+  }, [externalVersion, port.key, port.enabled, current.busy, port.busy]);
+  const image = useCallback(async (referenceId: string, asset: LayerAsset, signal: AbortSignal, key = portRef.current.key) => {
+    const target = portRef.current;
+    if (target.key !== key || !target.enabled || signal.aborted) throw changed();
+    const blob = await target.image(referenceId, asset, signal);
+    if (portRef.current.key !== key || !portRef.current.enabled || signal.aborted) throw changed();
+    return blob;
+  }, []);
+  async function item(itemId: string) {
+    if (portRef.current.key !== port.key) throw changed();
+    const key = portRef.current.key, cached = items.current.get(itemId);
+    if (cached) return cached;
+    const response = await call('artwork-item', { itemId }, key) as { item: ArtworkItem };
+    if (response.item.id !== itemId) throw new ApiError('invalid-response');
+    if (key !== portRef.current.key) throw changed();
+    items.current.set(itemId, response.item); return response.item;
   }
-  let presentation: AppearancePresentation | null = current.view?.presentation ?? null;
-  if (presentation && (current.view?.preparedRevision !== shared.view?.source?.revision || shared.selected !== presentation.mode
-    || !shared.confirmed || shared.view?.source?.conflict || shared.view?.source?.recovery.pending)) {
-    presentation = { ...presentation, assessment: 'unknown',
-      treatment: 'neutral', allowedTreatments: ['neutral'], reason: 'preview-or-unconfirmed-settings' };
+  function edit(action: ArtworkAction, input: Record<string, unknown>) {
+    if (portRef.current.key !== port.key) return Promise.resolve(false);
+    const view = stateRef.current.key === portRef.current.key ? stateRef.current.view : null;
+    if (!view) return Promise.resolve(false);
+    return run(action, { ...input, expectedStateId: view.stateId }, true);
   }
-  return { ...current, presentation, busy: current.busy || shared.busy,
-    load: (after?: string) => action('appearance', after ? { after } : {}),
-    discover: () => current.view?.stateId ? edit('discover-appearance') : action('discover-appearance', {}, true),
+  return { ...current, enabled: port.enabled, busy: current.busy || port.busy || queued,
+    mutating: queued || current.busy && pending.current !== null, image, item,
+    load: (after?: string) => portRef.current.key === port.key ? run('artwork', after ? { after } : {}) : Promise.resolve(false),
+    reviewUpload: (upload: ArtworkUpload) => portRef.current.key === port.key ? run('review-appearance-import', upload, true) : Promise.resolve(false),
+    readReview: (reviewId: string) => portRef.current.key === port.key ? run('read-appearance-import', { reviewId }) : Promise.resolve(false),
+    saveReview: () => current.review && portRef.current.key === port.key ? run('save-appearance-import', { reviewId: current.review.reviewId, expectedStateId: current.review.expectedStateId }, true) : Promise.resolve(false),
     select: (itemId: string) => edit('select-appearance', { itemId }),
     rename: (itemId: string, name: string) => edit('name-appearance', { itemId, name }),
-    useEvidence: (startId: string) => edit('use-appearance-evidence', { startId }),
-    create: () => current.view?.evidence?.achievementId ? edit('create-original', {
-      startId: current.view.evidence.startId, achievementId: current.view.evidence.achievementId }) : Promise.resolve(false),
-    readCandidates: (achievementId: string) => action('original-candidates', { achievementId }),
-    adopt: (achievementId: string, candidateId: string) => edit('adopt-original', { achievementId, candidateId }),
-    recover: () => action('recover-appearance', {}, true),
-    closeCandidates: () => setState(old => ({ ...old, candidates: null })),
+    recover: () => portRef.current.key === port.key ? run('recover-appearance', {}, true) : Promise.resolve(false),
+    retry: () => pending.current && portRef.current.key === port.key ? run(pending.current.action, pending.current.input, true, true) : Promise.resolve(false),
+    clearReview: () => { if (portRef.current.key === port.key) setState(old => ({ ...old, review: null })); },
   };
 }
+export type AppearanceController = ReturnType<typeof useAppearanceController>;
