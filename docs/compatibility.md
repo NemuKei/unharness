@@ -62,6 +62,8 @@ observation.
 
 ## What to record for a real test
 
+The [persistent-directory checks](evidence/2026-09-11-persistent-mac-directory-identity.md) verify new Mac source/plugin/recovery identities against real volume UUIDs with a controlled device-number change. They also cover wrong UUIDs, strict legacy records, previous-writer rejection and interrupted Normal recovery. They do not establish actual reboot/remount or replay-location qualification, and do not migrate an existing personal registration.
+
 - Tested source revision and local changes, if any.
 - OS and architecture; desktop and runtime versions; native, WSL, local, or remote execution.
 - Which managed sources were discovered and how their effective precedence was determined.

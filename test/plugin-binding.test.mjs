@@ -106,3 +106,42 @@ test('a replacement native data directory cannot reconnect an existing binding s
   const newSession = await openPluginBinding({ dataDirectory: p.dataDirectory });
   assert.equal((await newSession.read()).bindingId, original.bindingId);
 });
+
+test('a persistent Mac plugin identity and its hash survive device-number-only changes', { skip: process.platform !== 'darwin' }, async t => {
+  const { captureDirectoryIdentity } = await import('../src/platform/directory-identity.mjs');
+  const { identity } = await import('../src/setup/connection-records.mjs');
+  const { hash } = await import('../src/sources/hash.mjs');
+  const p = await fixture(t);
+  const stat = await lstat(p.context.codexHome);
+  const native = await captureDirectoryIdentity(p.context.codexHome, stat);
+  const before = identity({ ...native, dev: stat.dev }), later = identity({ ...native, dev: stat.dev + 1 });
+  assert.deepEqual(later, before);
+  assert.equal(hash(later), hash(before));
+  assert.notDeepEqual(identity({ ...native, ino: native.ino + 1 }), before);
+});
+
+test('legacy plugin configuration stays immutable and still refuses an unexplained device change', async t => {
+  const { configurePlugin, openPluginBinding } = await import('../src/setup/plugin-binding.mjs');
+  const { hash } = await import('../src/sources/hash.mjs');
+  const p = await fixture(t);
+  const configured = await configurePlugin({ dataDirectory: p.dataDirectory, context: p.context });
+  const contextPath = join(configured.directory, 'plugin-context.json');
+  const pointerPath = join(p.dataDirectory, 'unharness/connection.json');
+  const legacy = JSON.parse(await readFile(contextPath, 'utf8'));
+  for (const [key, path] of [['home', p.context.codexHome], ['project', p.context.project], ['directory', configured.directory]]) {
+    const stat = await lstat(path);
+    legacy[key] = { dev: String(stat.dev), ino: String(stat.ino) };
+  }
+  const pointer = JSON.parse(await readFile(pointerPath, 'utf8'));
+  pointer.bindingId = hash(legacy);
+  const original = JSON.stringify(legacy);
+  await writeFile(contextPath, original); await writeFile(pointerPath, JSON.stringify(pointer));
+  assert.equal((await configurePlugin({ dataDirectory: p.dataDirectory, context: p.context })).bindingId, pointer.bindingId);
+  assert.equal(await readFile(contextPath, 'utf8'), original);
+  legacy.home.dev = String(Number(legacy.home.dev) + 1);
+  pointer.bindingId = hash(legacy);
+  const changed = JSON.stringify(legacy);
+  await writeFile(contextPath, changed); await writeFile(pointerPath, JSON.stringify(pointer));
+  await assert.rejects((await openPluginBinding({ dataDirectory: p.dataDirectory })).read(), { kind: 'plugin-binding-changed' });
+  assert.equal(await readFile(contextPath, 'utf8'), changed);
+});

@@ -1,6 +1,8 @@
 # Project status
 
-Updated: 2026-09-10.
+Updated: 2026-09-11.
+
+The [persistent Mac directory fix](evidence/2026-09-11-persistent-mac-directory-identity.md) now keeps new source, plugin and recovery identities stable when only the filesystem device number changes, while refusing wrong volumes and preserving strict legacy records. Interrupted directory creation and metadata-timeout recovery return exact Normal in owned fixtures. Type/CSP/both builds and the full Node run pass: 1,022 passed, 0 failed, 59 skipped. Basic CLI status/configuration also starts without image-decoding dependencies again. Actual reboot/remount, legacy personal-registration recovery, denied-network GUI recovery and the final public/native product journey remain unqualified.
 
 The [native v2/artwork package checkpoint](evidence/2026-09-10-native-package-v2.md) now covers three installed Skills and 62 native MCP tools, initial Normal saving in the Codex in-app browser, empty-official v2 setup, PNG previews/save and collection selection, an update retaining those records, an old Normal favorite, and independent recovery after plugin removal. Native rendering exposed a shared-Pixi-pool teardown bug; the corrected package passed four native reselections, with 41 affected checks and both builds passing. The owned profile ended at Normal without conflict or pending recovery. Actual Desktop model tasks, nonempty official-plugin control, public HTTPS and the end-user distribution remain unqualified.
 

@@ -19,7 +19,7 @@ async function imageDirectory(w, create = false) {
   try { await lstat(directory); } catch (error) { if (error.code !== 'ENOENT') throw error; exists = false; }
   if (!exists) { if (!create) return null; await mkdir(directory, { mode: 0o700 }); }
   await canonical(directory);
-  const binding = await parentBinding(join(directory, 'scope.json'));
+  const binding = await parentBinding(join(directory, 'scope.json'), { persistent: false });
   const markerPath = join(directory, 'scope.json'), expected = Buffer.from(JSON.stringify({ kind: 'unharness-image-store', schemaVersion: 1, scopeId }));
   let marker = await captureFileBytes(markerPath, 1024);
   if (!marker && create) {

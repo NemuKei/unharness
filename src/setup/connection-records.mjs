@@ -5,23 +5,30 @@ import { link, lstat, mkdir, open, realpath, unlink } from 'node:fs/promises';
 import { isAbsolute, join, resolve } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 import { parseStrictJson } from '../core/strict-json.mjs';
+import { captureDirectoryIdentity, hasVolumeUuid, validVolumeUuid } from '../platform/directory-identity.mjs';
 
 export const bindingFail = kind => { throw Object.assign(new Error(kind), { kind }); };
-export const identity = stat => ({ dev: String(stat.dev), ino: String(stat.ino) });
+export function identity(stat) {
+  if (hasVolumeUuid(stat)) {
+    if (!validVolumeUuid(stat.volumeUuid)) bindingFail('plugin-binding-invalid');
+    return { volumeUuid: stat.volumeUuid, ino: String(stat.ino) };
+  }
+  return { dev: String(stat.dev), ino: String(stat.ino) };
+}
 const same = (a, b) => a && b && isDeepStrictEqual(identity(a), identity(b));
 async function stat(path) {
   try { return await lstat(path); } catch (e) { if (e.code === 'ENOENT') return null; throw e; }
 }
-export async function connectionDirectory(path, { create = false, privateMode = true } = {}) {
+export async function connectionDirectory(path, { create = false, privateMode = true, persistent = false } = {}) {
   if (typeof path !== 'string' || !isAbsolute(path) || resolve(path) !== path) bindingFail('plugin-binding-invalid');
   if (create) try { await mkdir(path, { mode: 0o700 }); } catch (e) { if (e.code !== 'EEXIST') throw e; }
   const now = await stat(path);
   if (!now?.isDirectory() || now.isSymbolicLink() || await realpath(path) !== path
     || process.platform !== 'win32' && (now.mode & (privateMode ? 0o077 : 0o022) || now.uid !== process.geteuid())) bindingFail('plugin-binding-invalid');
-  return { path, identity: identity(now) };
+  return { path, identity: identity(await captureDirectoryIdentity(path, now, { persistent })) };
 }
 export async function checkDirectory(directory, options) {
-  const now = await connectionDirectory(directory.path, options);
+  const now = await connectionDirectory(directory.path, { ...options, persistent: hasVolumeUuid(directory.identity) });
   if (!isDeepStrictEqual(now.identity, directory.identity)) bindingFail('plugin-binding-changed');
 }
 export async function readConnectionRecord(directory, name) {

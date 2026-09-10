@@ -32,7 +32,7 @@ async function location(w, value, authoringId) {
   await canonical(w.workspace);
   const directory = join(w.workspace, 'appearance-authoring-' + authoringId);
   await canonical(directory);
-  const binding = await parentBinding(join(directory, 'authoring.json'));
+  const binding = await parentBinding(join(directory, 'authoring.json'), { persistent: false });
   const marker = await captureFileBytes(join(directory, 'authoring.json'), 4096);
   if (!marker || !marker.bytes.equals(markerBytes(value))) invalid();
   await checkBinding(binding);

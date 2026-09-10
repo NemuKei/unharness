@@ -3,18 +3,28 @@ import { isDeepStrictEqual } from 'node:util';
 import { resolveWorkbenchTarget } from '../gui/launch-target.mjs';
 import { hash } from '../sources/hash.mjs';
 import { bindingFail, connectionDirectory, checkDirectory, readConnectionRecord, publishConnectionRecord } from './connection-records.mjs';
+import { hasVolumeUuid, validVolumeUuid } from '../platform/directory-identity.mjs';
 
 const HASH = /^[a-f0-9]{64}$/;
 const exact = (value, keys) => value && !Array.isArray(value) && typeof value === 'object'
   && Object.keys(value).sort().join() === keys.sort().join();
-const validIdentity = value => exact(value, ['dev', 'ino']) && Object.values(value).every(v => typeof v === 'string' && /^\d{1,30}$/.test(v));
+const numberString = value => typeof value === 'string' && /^\d{1,30}$/.test(value);
+const validIdentity = value => hasVolumeUuid(value)
+  ? exact(value, ['volumeUuid', 'ino']) && validVolumeUuid(value.volumeUuid) && numberString(value.ino)
+  : exact(value, ['dev', 'ino']) && numberString(value.dev) && numberString(value.ino);
 const contextName = 'plugin-context.json', scopeName = 'plugin-scope.json', pointerName = 'connection.json';
 
 async function configuration(target) {
   const homePath = target.application === 'codex' ? target.context.codexHome : target.context.claudeHome;
-  const home = await connectionDirectory(homePath, { privateMode: false });
-  const project = await connectionDirectory(target.context.project, { privateMode: false });
-  const directory = await connectionDirectory(target.directory, { create: true });
+  const authority = await connectionDirectory(target.directory, { create: true });
+  const previous = await readConnectionRecord(authority, contextName);
+  if (previous) validateConfiguration(previous);
+  // Retain an existing record's format and hash. A legacy record does not gain
+  // proof of its old volume merely because the new runtime can read today's UUID.
+  const legacy = key => Boolean(previous && !hasVolumeUuid(previous[key]));
+  const home = await connectionDirectory(homePath, { privateMode: false, persistent: !legacy('home') });
+  const project = await connectionDirectory(target.context.project, { privateMode: false, persistent: !legacy('project') });
+  const directory = legacy('directory') ? authority : await connectionDirectory(target.directory, { persistent: true });
   return { kind: 'unharness-plugin-context', schemaVersion: 1, contextKey: target.contextKey,
     context: target.context, home: home.identity, project: project.identity, directory: directory.identity };
 }
@@ -36,7 +46,7 @@ async function pinScope(directory, target) {
     if (previous) bindingFail('plugin-binding-changed');
     return;
   }
-  const workspace = await connectionDirectory(target.workspace);
+  const workspace = await connectionDirectory(target.workspace, { persistent: !previous || hasVolumeUuid(previous.identity) });
   const value = { kind: 'unharness-plugin-scope', schemaVersion: 1, contextKey: target.contextKey,
     workspace: target.workspace, rootScopeId: target.rootScopeId, identity: workspace.identity };
   await publishConnectionRecord(directory, scopeName, value);

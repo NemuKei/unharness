@@ -13,16 +13,18 @@ import { captureRegistered } from '../src/sources/capture.mjs';
 import { setSourceTransactionTestHook } from '../src/sources/transaction.mjs';
 import { reviewSetup, applySetup } from '../src/setup/service.mjs';
 import { replayRecording } from '../test-support/replay-recording.mjs';
+import { registerLegacySourceProfile } from '../test-support/legacy-source-registration.mjs';
 const enrollment = await import('../src/setup/enrollment.mjs').catch(e => { if (e.code === 'ERR_MODULE_NOT_FOUND') return {}; throw e; });
 const test = (name, fn) => nativeTest(name, { skip: process.platform !== 'darwin' }, fn);
 
-async function fixture(t, { setup = true, skills = true } = {}) {
+async function fixture(t, { setup = true, skills = true, legacyRevision } = {}) {
   const parent = await realpath(await mkdtemp(join(tmpdir(), 'unharness-enrollment-test-')));
   t.after(async () => { setSourceTransactionTestHook(null); await rm(parent, { recursive: true, force: true }); });
   const owned = await createOwnedSourceProfile({ parent, executable: resolve('test-support/user-source-server.mjs') });
   const d = await sources.discoverUserSources(owned.context);
-  const r = await sources.registerUserSources({ context: owned.context, discoveryId: d.discoveryId,
-    instructionsOptional: true, selectedSkillIds: skills ? d.skills.filter(s => s.eligible).map(s => s.id) : [], userAddedOptional: true });
+  const r = legacyRevision ? await registerLegacySourceProfile({ parent, context: owned.context, revision: legacyRevision, skills })
+    : await sources.registerUserSources({ context: owned.context, discoveryId: d.discoveryId,
+      instructionsOptional: true, selectedSkillIds: skills ? d.skills.filter(s => s.eligible).map(s => s.id) : [], userAddedOptional: true });
   const w = await openWorkspace(r.workspace);
   const proposal = { schemaVersion: 1, scopeId: r.scopeId, normalId: r.normalId,
     basis: { application: 'codex', modelId: 'gpt-6-astra', modelSource: 'user-specified', desktopVersion: null, runtimeVersion: '0.153.4',
@@ -221,13 +223,10 @@ test('historical runs, replay results, saved requests and the appearance collect
 });
 
 test('multiple enrollments preserve the ancestry and an actual previous writer refuses the expanded target set', async t => {
-  const s = await fixture(t), old = await sources.saveUserFavorite({ workspace: s.workspace, name: 'Original favorite' });
-  const baseline = join(s.parent, 'previous-writer');
-  await mkdir(baseline);
-  const exec = promisify(execFile), archive = join(s.parent, 'previous-writer.tar');
-  await exec('git', ['archive', 'e26a49f18e5acf3e918c3169d53dcd987dd58163', '-o', archive, 'src', 'bin', 'package.json']);
-  await exec('tar', ['-xf', archive, '-C', baseline]);
-  const oldCli = () => exec(process.execPath, [join(baseline, 'bin/unharness.mjs'), 'sources', 'plan', '--json',
+  const s = await fixture(t, { legacyRevision: 'e26a49f18e5acf3e918c3169d53dcd987dd58163' });
+  const old = await sources.saveUserFavorite({ workspace: s.workspace, name: 'Original favorite' });
+  const exec = promisify(execFile);
+  const oldCli = () => exec(process.execPath, [s.legacyCli, 'sources', 'plan', '--json',
     JSON.stringify({ workspace: s.workspace, mode: 'normal' })]);
   assert.equal(JSON.parse((await oldCli()).stdout).mode, 'normal');
   const added = [];

@@ -7,6 +7,7 @@ import { readDistribution, distributionFile } from './distribution.mjs';
 import { openPluginBinding, openSavedPluginBinding } from './plugin-binding.mjs';
 import { connectionDirectory, checkDirectory, readConnectionRecord, publishConnectionRecord, bindingFail } from './connection-records.mjs';
 import { acquire } from '../sources/transaction.mjs';
+import { hasVolumeUuid } from '../platform/directory-identity.mjs';
 
 const HASH = /^[a-f0-9]{64}$/;
 const exact = (v, keys) => v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).sort().join() === keys.sort().join();
@@ -39,7 +40,7 @@ async function readInstallation(directory, selection) {
     || record.kind !== 'unharness-plugin-recovery' || record.schemaVersion !== 1
     || record.bindingId !== selection.bindingId || record.distributionId !== selection.distributionId
     || typeof record.attempt !== 'string' || !/^copy-[A-Za-z0-9_-]{6,20}$/.test(record.attempt)) bindingFail('plugin-recovery-invalid');
-  const attempt = await connectionDirectory(join(directory.path, record.attempt));
+  const attempt = await connectionDirectory(join(directory.path, record.attempt), { persistent: hasVolumeUuid(record.identity) });
   if (!isDeepStrictEqual(attempt.identity, record.identity)) bindingFail('plugin-recovery-invalid');
   const root = join(attempt.path, 'package'), distribution = await readDistribution(root);
   if (distribution.id !== selection.distributionId) bindingFail('plugin-recovery-invalid');
@@ -63,7 +64,7 @@ export async function preparePluginRecovery({ dataDirectory, distributionRoot })
     // directory; it cannot overwrite an independently edited or incomplete copy.
     const attemptPath = await mkdtemp(join(directory.path, 'copy-'));
     await chmod(attemptPath, 0o700);
-    const attempt = await connectionDirectory(attemptPath), root = join(attemptPath, 'package');
+    const attempt = await connectionDirectory(attemptPath, { persistent: true }), root = join(attemptPath, 'package');
     await cp(distributionRoot, root, { recursive: true, errorOnExist: true, force: false, dereference: false });
     await chmod(root, 0o700);
     if ((await readDistribution(root)).id !== distribution.id || (await readDistribution(distributionRoot)).id !== distribution.id)

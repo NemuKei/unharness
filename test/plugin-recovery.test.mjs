@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile, readFile, rm, rename, lstat, chmod } from 'node:fs/promises';
+import fs from 'node:fs/promises';
+import { syncBuiltinESMExports } from 'node:module';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { execFile } from 'node:child_process';
@@ -47,6 +49,44 @@ test('versioned recovery survives native data and package removal, and reuses an
   assert.equal(target.rootScopeId, p.scopeId);
   assert.deepEqual(await readFile(join(p.workspace, 'state.json')), before);
   assert.deepEqual(await readSourceProfileFiles(p.context), p.originalFiles);
+});
+
+test('new plugin and recovery sessions restore Normal after directory device numbers change', { skip: process.platform !== 'darwin' }, async t => {
+  const { openPluginBinding } = await import('../src/setup/plugin-binding.mjs');
+  const { preparePluginRecovery, openRecoveryBinding } = await import('../src/setup/plugin-recovery.mjs');
+  const p = await fixture(t);
+  const installed = await preparePluginRecovery({ dataDirectory: p.dataDirectory, distributionRoot: p.root });
+  const release = await planUserMode({ workspace: p.workspace, mode: 'unseal' });
+  await applyUserPlan({ workspace: p.workspace, planId: release.planId });
+  const paths = [join(p.bound.directory, 'plugin-context.json'), join(p.bound.directory, 'plugin-scope.json'),
+    join(p.bound.directory, 'recovery', installed.distributionId + '.json')];
+  const records = await Promise.all(paths.map(path => readFile(path)));
+  const originalLstat = fs.lstat;
+  let changedReads = 0;
+  try {
+    // Only directory device numbers change. UUIDs, inode numbers, file stats,
+    // actual files and all other metadata remain native. These top-level cases
+    // run sequentially; restore the shim before fixture cleanup or another case.
+    fs.lstat = async (...args) => {
+      const stat = await originalLstat(...args);
+      if (stat.isDirectory()) { stat.dev += typeof stat.dev === 'bigint' ? 1000n : 1000; changedReads++; }
+      return stat;
+    };
+    syncBuiltinESMExports();
+    const reopened = await (await openPluginBinding({ dataDirectory: p.dataDirectory })).read();
+    assert.equal(reopened.bindingId, p.bound.bindingId);
+    const recovery = await (await openRecoveryBinding(installed.selection)).read();
+    assert.equal(recovery.recovery.distributionId, installed.distributionId);
+    assert.deepEqual(await preparePluginRecovery({ dataDirectory: p.dataDirectory, distributionRoot: p.root }), installed);
+    const normal = await planUserMode({ workspace: p.workspace, mode: 'normal' });
+    await applyUserPlan({ workspace: p.workspace, planId: normal.planId });
+    assert.deepEqual(await readSourceProfileFiles(p.context), p.originalFiles);
+    assert.deepEqual(await Promise.all(paths.map(path => readFile(path))), records);
+    assert.ok(changedReads > 0);
+  } finally {
+    fs.lstat = originalLstat;
+    syncBuiltinESMExports();
+  }
 });
 
 test('edited recovery files and replaced binding directories are preserved and refused', async t => {
