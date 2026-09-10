@@ -13,6 +13,11 @@ test('public entry, synthetic demo and platform guidance do not connect or chang
   assert.equal(await page.locator('vite-error-overlay').count(), 0);
   await page.locator('.scene-indicator').filter({ hasText: /静止画表示/ }).waitFor();
   await s.screenshot('public-entry-desktop.png');
+  await page.setViewportSize({ width: 1280, height: 720 });
+  assert.equal(await page.locator('.entry-choices').evaluate(element => {
+    const box = element.getBoundingClientRect(); return box.top >= 0 && box.bottom <= innerHeight;
+  }), true, 'all three entrances fit the native desktop viewport before scrolling');
+  await s.screenshot('public-entry-short-desktop.png');
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   await s.screenshot('public-entry-mobile.png');
