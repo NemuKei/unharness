@@ -3,6 +3,8 @@ import type { Renderer, Filter } from "pixi.js";
 import { buildCels, selectCel, sourcePanels } from "./scene-cels";
 import { coreBounds, coreMask, coreNucleus, sourceArms, WORLD } from "./scene-parts";
 import recipe from "../assets/hangar-v4.json";
+import { appearanceDrawing } from "./appearance-drawing";
+import type { AppearanceRecipe, AppearanceTreatment } from "./appearances";
 
 export interface RigTextures { sheet: Texture; empty: Texture }
 
@@ -123,7 +125,10 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
     // Light follows the original lattice silhouette; the sharp body stays on top.
     const wideRadiance = makeRadiance(20, 2.5, 0x55aaff);
     const closeRadiance = makeRadiance(7, 1.5, 0xc1e7ff);
-    entity.addChild(wideRadiance, closeRadiance, glow, core);
+    const details = new Graphics();
+    entity.addChild(wideRadiance, closeRadiance, glow, core, details);
+    const appearanceLight = new ColorMatrixFilter(), appearanceMetal = new ColorMatrixFilter();
+    filters.push(appearanceLight, appearanceMetal);
     stage.addChild(entity);
 
     const hardware = new Container({ sortableChildren: true });
@@ -159,6 +164,9 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
       return { group, geometry, backGeometry, sides };
     });
     stage.addChild(hardware);
+    const assessmentMarks = new Graphics();
+    assessmentMarks.zIndex = 10000;
+    hardware.addChild(assessmentMarks);
 
     const glintSource = new Sprite(normal);
     glintSource.filters = [lightAlpha];
@@ -179,6 +187,19 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
     stage.addChild(atmosphere);
     const cels = buildCels();
     let shownCel = -1;
+    let appearanceKey = '', drawing: ReturnType<typeof appearanceDrawing> | null = null;
+    const drawMarks = () => {
+      assessmentMarks.clear();
+      if (!drawing?.accentAlpha || shownCel < 0) return;
+      for (const panel of cels[shownCel].panels) {
+        const [a, b, c] = panel.screen;
+        const blend = (p: { x: number; y: number }, q: { x: number; y: number }, amount: number) =>
+          ({ x: p.x + (q.x - p.x) * amount, y: p.y + (q.y - p.y) * amount });
+        const left = blend(a, c, 0.75), right = blend(b, c, 0.75);
+        assessmentMarks.poly([left.x, left.y, c.x, c.y, right.x, right.y])
+          .stroke({ color: drawing.accentColor, alpha: drawing.accentAlpha, width: 1.5 });
+      }
+    };
     const updateGeometry = (geometry: MeshGeometry, points: readonly { x: number; y: number }[]) => {
       points.forEach((point, index) => { geometry.positions[index * 2] = point.x; geometry.positions[index * 2 + 1] = point.y; });
       geometry.getAttribute("aPosition").buffer.update();
@@ -224,6 +245,22 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
         }
         return images;
       },
+      setAppearance(value: AppearanceRecipe | null, treatment: AppearanceTreatment = 'neutral') {
+        const key = JSON.stringify([value, treatment]);
+        if (key === appearanceKey) return;
+        appearanceKey = key;
+        drawing = value ? appearanceDrawing(value, treatment) : null;
+        details.clear();
+        entity.filters = drawing ? [appearanceLight] : [];
+        hardware.filters = drawing ? [appearanceMetal] : [];
+        glint.filters = drawing ? [appearanceLight] : [];
+        if (drawing) {
+          appearanceLight.matrix = drawing.matrix;
+          appearanceMetal.matrix = drawing.metalMatrix;
+          for (const line of drawing.lines) details.poly(line).stroke({ color: drawing.detailColor, alpha: 0.72, width: 1 });
+        }
+        drawMarks();
+      },
       render(release: number, time: number, effects: boolean) {
         const cel = selectCel(cels, release);
         if (cel.index !== shownCel) {
@@ -244,6 +281,7 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
             arm.rotation = pose.rotation;
           });
           shownCel = cel.index;
+          drawMarks();
         }
         const bob = effects ? Math.sin(time * 0.85) * 2.5 * (1 - Math.min(1, Math.max(0, release - 1))) : 0;
         hardware.y = bob;

@@ -195,3 +195,36 @@ test('a second appearance writer cannot create another identity while the first 
   assert.equal(result.state.items.length, 1);
   assert.deepEqual(await appearances.discoverUserAppearance({ workspace }), result);
 });
+
+test('appearance names change display metadata only and use the reviewed state', mac, async t => {
+  const { workspace } = await fixture(t), first = await appearances.discoverUserAppearance({ workspace });
+  assert.equal(typeof appearances.renameUserAppearance, 'function');
+  const named = await appearances.renameUserAppearance({ workspace, itemId: first.state.selectedItemId,
+    expectedStateId: first.stateId, name: 'My local form' });
+  assert.equal(named.state.items[0].name, 'My local form');
+  assert.equal(named.state.selectedItemId, first.state.selectedItemId);
+  assert.deepEqual(named.state.items[0].recipe, first.state.items[0].recipe);
+  await assert.rejects(appearances.renameUserAppearance({ workspace, itemId: first.state.selectedItemId,
+    expectedStateId: first.stateId, name: 'A stale edit' }), { kind: 'appearance-state-conflict' });
+  const cleared = await appearances.renameUserAppearance({ workspace, itemId: first.state.selectedItemId,
+    expectedStateId: named.stateId, name: '' });
+  assert.equal(Object.hasOwn(cleared.state.items[0], 'name'), false);
+  assert.equal(cleared.state.selectedItemId, first.state.selectedItemId);
+});
+
+test('public appearance views paginate collection metadata and disclose no candidates until explicitly requested', mac, async t => {
+  const { workspace } = await fixture(t);
+  assert.equal(typeof appearances.readUserAppearanceView, 'function');
+  const empty = await appearances.readUserAppearanceView({ workspace });
+  assert.equal(empty.selectedItem, null); assert.equal(empty.presentation, null);
+  const first = await appearances.discoverUserAppearance({ workspace });
+  const view = await appearances.readUserAppearanceView({ workspace });
+  assert.equal(view.selectedItem.id, first.state.selectedItemId);
+  assert.equal(view.presentation.treatment, 'neutral');
+  assert.equal(view.evidenceStartId, null); assert.equal(view.creationAvailable, true);
+  assert.equal(view.collection.length, 1); assert.equal(view.nextCursor, null);
+  assert.equal(Object.hasOwn(view.collection[0], 'recipe'), false);
+  assert.equal(Object.hasOwn(view, 'state'), false);
+  await assert.rejects(appearances.readUserAppearanceView({ workspace, after: '8'.repeat(64) }), { kind: 'appearance-not-owned' });
+  await assert.rejects(appearances.readUserAppearanceView({ workspace, treatment: 'good' }), { kind: 'invalid-request' });
+});

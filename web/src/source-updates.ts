@@ -8,14 +8,16 @@ import type { RunPage } from "./comparisons";
 import type { StartingPage } from "./starting-conditions";
 import { validateMeasurement } from "../../src/comparisons/measurement.mjs";
 import { validateAssessment, deriveAcceptance } from "../../src/comparisons/assessment.mjs";
+import { validAppearanceView } from "./appearances.ts";
+import type { AppearanceView } from "./appearances";
 
 export type HistorySlice<T> = { data: T; error: null } | { data: null; error: { kind: string } };
 export type SourceUpdate = {
   status: "updated"; metadata: SourceMetadata; token: string;
-  versions: Record<"source" | "favorites" | "runs" | "starts" | "replays", string>;
+  versions: Record<"source" | "favorites" | "runs" | "starts" | "replays" | "appearance", string>;
   view: SourceView; retryRequired: boolean;
   history: null | { favorites: HistorySlice<SourceFavoritePage>; runs: HistorySlice<RunPage>;
-    starts: HistorySlice<StartingPage>; replays: HistorySlice<ReplayPage> };
+    starts: HistorySlice<StartingPage>; replays: HistorySlice<ReplayPage>; appearance: HistorySlice<AppearanceView> };
 };
 export type SourceUpdateResponse = SourceUpdate
   | { status: "unchanged"; metadata: SourceMetadata; token: string }
@@ -138,7 +140,7 @@ export function validateSourceUpdate(value: unknown, accepted: SourceView, after
   }
   const rawVersions = value.versions;
   if (value.status !== "updated" || !hash(value.token) || !object(rawVersions)
-    || Object.keys(rawVersions).length !== 5 || !["source", "favorites", "runs", "starts", "replays"].every(k => hash(rawVersions[k]))
+    || Object.keys(rawVersions).length !== 6 || !["source", "favorites", "runs", "starts", "replays", "appearance"].every(k => hash(rawVersions[k]))
     || !sourceView(value.view, metadata) || value.view.changeVersion !== rawVersions.source
     || value.view.source?.registration.scopeId !== accepted.source?.registration.scopeId) return invalid();
   const versions = rawVersions as SourceUpdate["versions"];
@@ -152,7 +154,8 @@ export function validateSourceUpdate(value: unknown, accepted: SourceView, after
   const rows = { favorites: slice<SourceFavoritePage>(value.history.favorites, favoritePage),
     runs: slice<RunPage>(value.history.runs, data => runPage(data, scopes)),
     starts: slice<StartingPage>(value.history.starts, data => startPage(data, scopes)),
-    replays: slice<ReplayPage>(value.history.replays, data => validReplayResponse("replays", data, scope, {}, previousScopes)) };
+    replays: slice<ReplayPage>(value.history.replays, data => validReplayResponse("replays", data, scope, {}, previousScopes)),
+    appearance: slice<AppearanceView>(value.history.appearance, data => validAppearanceView(data, scope, previousScopes)) };
   return { status: "updated", metadata, token: value.token, versions, view: value.view, history: rows,
     retryRequired: Object.values(rows).some(row => row.error !== null) };
 }

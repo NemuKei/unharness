@@ -108,6 +108,12 @@ test('canonical complete evidence qualifies exactly the declared pair without ca
 
 test('latest corrections include failed work and invalidate a favorable achievement without a new creative identity', mac, async t => {
   const f = await fixture(t), saved = await complete(f), before = await evaluate(f), last = saved.at(-1);
+  assert.equal(typeof appearances.setUserAppearanceEvidence, 'function');
+  const first = await appearances.discoverUserAppearance({ workspace: f.workspace });
+  const selectedEvidence = await appearances.setUserAppearanceEvidence({ workspace: f.workspace, startId: f.startId,
+    expectedStateId: first.stateId });
+  const beforeView = await appearances.readUserAppearanceView({ workspace: f.workspace });
+  assert.equal(beforeView.creationAvailable, true); assert.equal(beforeView.presentation.treatment, 'neutral');
   const corrected = await results.saveUserReplayResult({ workspace: f.workspace, resultReviewId: last.resultReviewId,
     previousResultId: last.resultId, assessment: { ...assessment, outcome: 'failed', requirements: [{ id: 'correct', result: 'fail' }] } });
   const after = await evaluate(f);
@@ -118,6 +124,18 @@ test('latest corrections include failed work and invalidate a favorable achievem
   assert.equal(after.achievementId, before.achievementId);
   assert.notEqual(after.context.evidenceVersion, before.context.evidenceVersion);
   assert.ok(after.resultIds.includes(corrected.resultId)); assert.ok(!after.resultIds.includes(last.resultId));
+  const afterView = await appearances.readUserAppearanceView({ workspace: f.workspace });
+  assert.equal(afterView.creationAvailable, true); assert.equal(afterView.presentation.treatment, 'neutral');
+  assert.deepEqual(afterView.presentation.recipe, beforeView.presentation.recipe);
+  assert.equal(afterView.presentation.itemId, beforeView.presentation.itemId);
+  const another = await appearances.discoverUserAppearance({ workspace: f.workspace, expectedStateId: selectedEvidence.stateId });
+  assert.equal((await appearances.readUserAppearanceView({ workspace: f.workspace })).presentation.treatment, 'neutral');
+  await appearances.selectUserAppearance({ workspace: f.workspace, itemId: first.state.selectedItemId, expectedStateId: another.stateId });
+  assert.equal((await appearances.readUserAppearanceView({ workspace: f.workspace })).presentation.treatment, 'neutral');
+  await mode(f, 'normal');
+  const changed = await appearances.readUserAppearanceView({ workspace: f.workspace });
+  assert.equal(changed.presentation.treatment, 'neutral'); assert.equal(changed.evidence.assessment, 'adverse');
+  assert.equal(changed.creationAvailable, true);
 });
 
 test('unknown grading and an overfilled observation set remain neutral instead of cherry-picking a win', mac, async t => {
@@ -230,4 +248,22 @@ test('a late independent source edit blocks creation and keeps that edit and the
   setSourceTransactionTestHook(null);
   assert.equal(await readFile(path, 'utf8'), independent);
   assert.deepEqual(await appearances.readUserAppearance({ workspace: f.workspace }), first);
+});
+
+test('a later observed task makes earlier evidence inapplicable while keeping the same neutral artwork', mac, async t => {
+  const f = await fixture(t); await complete(f);
+  const first = await appearances.discoverUserAppearance({ workspace: f.workspace });
+  await appearances.setUserAppearanceEvidence({ workspace: f.workspace, startId: f.startId, expectedStateId: first.stateId });
+  assert.equal((await appearances.readUserAppearanceView({ workspace: f.workspace })).presentation.treatment, 'neutral');
+  const taskId = randomUUID();
+  const override = await readFile(join(f.context.codexHome, 'AGENTS.override.md'), 'utf8');
+  const rows = replayRecording({ taskId, project: f.context.project, model: 'a-different-model',
+    createdAt: new Date(Date.now() - 25).toISOString(),
+    instructions: override.trim() + '\n\n--- project-doc ---\n\n# Required project instructions' });
+  await writeFile(join(f.context.codexHome, 'sessions', 'rollout-' + taskId + '.jsonl'), rows.map(r => JSON.stringify(r)).join('\n') + '\n');
+  const observed = await sources.observeUserTask({ workspace: f.workspace, taskId });
+  assert.equal(observed.status, 'matched-record');
+  const changed = await appearances.readUserAppearanceView({ workspace: f.workspace });
+  assert.equal(changed.presentation.treatment, 'neutral'); assert.equal(changed.creationAvailable, true);
+  assert.equal(changed.evidence.assessment, 'favorable');
 });

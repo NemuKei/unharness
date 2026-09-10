@@ -1,27 +1,45 @@
 import { randomBytes } from 'node:crypto';
 import { exactKeys } from '../comparisons/assessment.mjs';
 import { openWorkspace } from '../sources/records.mjs';
-import { acquire, pending, sourceTransactionHook } from '../sources/transaction.mjs';
+import { sourceTransactionHook } from '../sources/transaction.mjs';
 import { fail } from '../sources/errors.mjs';
-import { initializeAppearance, discoverPrepared, selectOwned, beginOriginal, adoptOriginal } from './lifecycle.mjs';
+import { initializeAppearance, discoverPrepared, selectOwned, beginOriginal, adoptOriginal, renameAppearance, useAppearanceEvidence } from './lifecycle.mjs';
 import { readAppearanceStore, appearanceStoreSummary, publishAppearanceState, recoverAppearanceStore } from './store.mjs';
 import { resolveAppearanceEvidence, assertAppearanceEvidenceCurrent } from './evidence.mjs';
+import { appearanceView } from './view.mjs';
+import { withAppearanceWorkspace as locked } from './workspace.mjs';
+export { reviewAppearanceUpload as reviewUserAppearanceUpload, readAppearanceImportReview as readUserAppearanceImportReview,
+  saveAppearanceImport as saveUserAppearanceImport, readAppearanceReferencedImage as readUserAppearanceImage } from './import.mjs';
 
 const hash = value => typeof value === 'string' && /^[0-9a-f]{64}$/.test(value);
 const request = (args, required = [], optional = []) => exactKeys(args, ['workspace', ...required], optional, 'invalid-request');
-async function locked(workspace, action, recovery = false) {
-  const initial = await openWorkspace(workspace), release = await acquire(initial, recovery);
-  try {
-    if (await pending(workspace)) fail('recovery-required');
-    const w = await openWorkspace(workspace);
-    if (w.scopeId !== initial.scopeId) fail('workspace-invalid');
-    return await action(w);
-  } finally { await release(); }
-}
 export async function readUserAppearance(args) {
   request(args);
   const w = await openWorkspace(args.workspace);
   return appearanceStoreSummary(w, await readAppearanceStore(w));
+}
+export async function readUserAppearanceView(args) {
+  request(args, [], ['after']);
+  if (args.after !== undefined && !hash(args.after)) fail('invalid-request');
+  const w = await openWorkspace(args.workspace);
+  return appearanceView(w, await readAppearanceStore(w), args.after);
+}
+export async function readUserAppearanceItem(args) {
+  request(args, ['itemId']);
+  if (!hash(args.itemId)) fail('invalid-request');
+  const w = await openWorkspace(args.workspace), stored = await readAppearanceStore(w);
+  const item = stored.state?.items.find(item => item.id === args.itemId);
+  if (!item) fail('appearance-not-owned');
+  return { scopeId: w.scopeId, collectionScopeId: w.rootScopeId ?? w.scopeId, stateId: stored.stateId, item };
+}
+export async function readUserOriginalCandidates(args) {
+  request(args, ['achievementId']);
+  if (!hash(args.achievementId)) fail('invalid-request');
+  const w = await openWorkspace(args.workspace), stored = await readAppearanceStore(w);
+  const achievement = stored.state?.achievements.find(a => a.achievementId === args.achievementId);
+  if (!achievement) fail('appearance-candidate-unavailable');
+  return { scopeId: w.scopeId, collectionScopeId: w.rootScopeId ?? w.scopeId, stateId: stored.stateId, recoveryRequired: stored.journal !== null,
+    achievement, evidenceTiming: 'at-creation' };
 }
 export async function discoverUserAppearance(args) {
   request(args, [], ['expectedStateId']);
@@ -51,6 +69,29 @@ export async function selectUserAppearance(args) {
 export async function recoverUserAppearance(args) {
   request(args);
   return locked(args.workspace, async w => appearanceStoreSummary(w, await recoverAppearanceStore(w)), true);
+}
+async function editAppearance(args, edit) {
+  return locked(args.workspace, async w => {
+    const before = await readAppearanceStore(w);
+    if (before.journal) fail('appearance-recovery-required');
+    if (!before.state || args.expectedStateId !== before.stateId) fail('appearance-state-conflict');
+    const next = await edit(w, before.state);
+    if (next.revision === before.state.revision) return appearanceStoreSummary(w, before);
+    return appearanceStoreSummary(w, await publishAppearanceState(w, before, next));
+  });
+}
+export async function renameUserAppearance(args) {
+  request(args, ['itemId', 'expectedStateId', 'name']);
+  if (!hash(args.itemId) || !hash(args.expectedStateId)) fail('invalid-request');
+  return editAppearance(args, (_w, state) => renameAppearance(state, args.itemId, args.name));
+}
+export async function setUserAppearanceEvidence(args) {
+  request(args, ['startId', 'expectedStateId']);
+  if (!hash(args.startId) || !hash(args.expectedStateId)) fail('invalid-request');
+  return editAppearance(args, async (w, state) => {
+    await resolveAppearanceEvidence(w, args.startId);
+    return useAppearanceEvidence(state, args.startId);
+  });
 }
 
 export async function createUserOriginalAppearance(args) {

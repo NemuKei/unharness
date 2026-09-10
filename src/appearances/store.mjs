@@ -6,7 +6,7 @@ import { captureFileBytes, defaultMetadata, writeCompleteBytes, publish, unlink,
 import { sourceTransactionHook } from '../sources/transaction.mjs';
 import { exactKeys } from '../comparisons/assessment.mjs';
 import { fail } from '../sources/errors.mjs';
-import { validateAppearanceState } from './lifecycle.mjs';
+import { validateAppearanceState, validateLegacyAppearanceState } from './lifecycle.mjs';
 
 const LIMIT = 1024 * 1024;
 const shape = (value, keys) => exactKeys(value, keys, [], 'appearance-record-invalid');
@@ -29,6 +29,13 @@ async function loadState(w, stateId) {
   try {
     const value = validateAppearanceState(await readRecord({ store: w.workspace, type: 'appearance', id: stateId }));
     if (value.scopeId !== w.scopeId) invalid();
+    if (value.schemaVersion === 2 && value.legacyStateId) {
+      const legacy = validateLegacyAppearanceState(await readRecord({ store: w.workspace, type: 'appearance', id: value.legacyStateId }));
+      const identity = ({ id, recipe, acquisition }) => ({ id, recipe, acquisition });
+      if (legacy.scopeId !== w.scopeId || legacy.revision >= value.revision
+        || !isDeepStrictEqual(legacy.items.map(identity), value.items.slice(0, legacy.items.length).map(identity))
+        || !isDeepStrictEqual(legacy.achievements, value.achievements)) invalid();
+    }
     return value;
   } catch { invalid(); }
 }

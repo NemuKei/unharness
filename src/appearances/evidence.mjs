@@ -2,7 +2,8 @@ import { isDeepStrictEqual } from 'node:util';
 import { recordId } from '../core/local-store.mjs';
 import { exactKeys } from '../comparisons/assessment.mjs';
 import { sumCounters } from '../comparisons/measurement.mjs';
-import { openWorkspace } from '../sources/records.mjs';
+import { openWorkspace, loadRecord } from '../sources/records.mjs';
+import { currentObservation } from '../sources/observation-record.mjs';
 import { acquire } from '../sources/transaction.mjs';
 import { fail } from '../sources/errors.mjs';
 import { loadSavedStart, hash } from '../experiments/start-records.mjs';
@@ -119,6 +120,15 @@ export async function assertAppearanceEvidenceCurrent(w, evidence) {
   if (!candidate) fail('appearance-ineligible');
   const review = candidate.review.attempt.review, binding = replaySourceBinding(w);
   if (binding.normalId !== review.sourceBinding.normalId) fail('appearance-ineligible');
+  if (w.state.lastObservationId) {
+    const latest = await currentObservation(w, loadRecord, { conflict: null, pending: false });
+    const observed = latest.observation, measured = candidate.summary.measurement;
+    if (!observed || latest.observationIssue || observed.status !== 'matched-record'
+      || `${observed.application ?? 'codex'}-desktop` !== measured.app
+      || (observed.conditions.runtimeVersion ?? observed.conditions.codexVersion) !== measured.runtimeVersion
+      || ['model', 'reasoningEffort', 'executionPolicyDigest'].some(key => observed.conditions[key] !== measured.conditions[key]))
+      fail('appearance-ineligible');
+  }
   // Selecting the same exact configuration later may have a new preparation
   // revision. Verify its bytes, retained inputs and native conditions again;
   // a revision counter alone neither invalidates nor qualifies an achievement.

@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readStockAppearance } from '../src/appearances/stock.mjs';
+import { recordId } from '../src/core/local-store.mjs';
 const lifecycle = await import('../src/appearances/lifecycle.mjs').catch(e => {
   if (e.code === 'ERR_MODULE_NOT_FOUND') return {};
   throw e;
@@ -87,9 +89,9 @@ test('adoption is final for that achievement, while collection selection never r
   assert.deepEqual(pending.achievements[0].adoptedCandidateId, null);
 });
 
-test('applicable adverse evidence requires BAD, while unrelated or stale evidence remains neutral', () => {
+test('applicable evidence changes the assessment text without changing the chosen appearance', () => {
   const state = initial(), current = { ...context, mode: 'unseal' };
-  for (const [assessment, treatment] of [['favorable', 'good'], ['adverse', 'bad'], ['unknown', 'neutral']]) {
+  for (const [assessment, treatment] of [['favorable', 'neutral'], ['adverse', 'neutral'], ['unknown', 'neutral']]) {
     const view = lifecycle.presentAppearance(state, current, { context, assessment });
     assert.equal(view.treatment, treatment);
     assert.equal(view.mode, 'unseal');
@@ -138,17 +140,36 @@ test('missing current model or loadout evidence remains neutral instead of break
   }
 });
 
-test('a collected item missing the adverse treatment uses a BAD fallback without losing ownership', () => {
+test('a collected item remains selected when an adverse treatment is absent', () => {
   const state = initial();
   state.items[0].recipe.treatments = ['neutral', 'good'];
   state.items[0].id = recipe.appearanceRecipeId(state.items[0].recipe);
   state.selectedItemId = state.items[0].id;
   const before = structuredClone(state);
   const view = lifecycle.presentAppearance(state, { ...context, mode: 'unseal' }, { context, assessment: 'adverse' });
-  assert.equal(view.fallback, true);
-  assert.equal(view.treatment, 'bad');
-  assert.deepEqual(view.allowedTreatments, ['bad']);
+  assert.equal(view.fallback, false);
+  assert.equal(view.treatment, 'neutral');
+  assert.deepEqual(view.allowedTreatments, ['neutral']);
   assert.equal(view.mode, 'unseal');
-  assert.ok(view.recipe.treatments.includes('bad'));
+  assert.deepEqual(view.recipe, state.items[0].recipe);
   assert.deepEqual(state, before);
+});
+
+test('the layered state preserves every legacy candidate and rejects legacy writers', async () => {
+  const pending = lifecycle.beginOriginal(initial(), decision, nextSeed);
+  const legacy = lifecycle.adoptOriginal(pending, decision.achievementId, pending.achievements[0].candidates[1].id);
+  const before = structuredClone(legacy);
+  const item = { kind: 'layered', reviewId: 'e'.repeat(64), requestId: '12345678-1234-1234-1234-123456789abc', parentItemId: null,
+    manifest: (await readStockAppearance()).manifest, name: 'Freely selected version', author: '' };
+  item.id = lifecycle.layeredItemId(item);
+  const next = lifecycle.appendLayeredAppearance(legacy, scope, item);
+  assert.equal(next.legacyStateId, recordId('appearance', before));
+  assert.deepEqual(next.achievements, before.achievements);
+  assert.deepEqual(next.items.slice(0, before.items.length), before.items);
+  assert.deepEqual(legacy, before);
+  assert.throws(() => lifecycle.validateLegacyAppearanceState(next), { kind: 'appearance-state-invalid' });
+  assert.throws(() => lifecycle.adoptOriginal(next, decision.achievementId, pending.achievements[0].candidates[0].id), { kind: 'appearance-legacy-operation-unavailable' });
+  const selected = lifecycle.selectOwned(next, before.selectedItemId);
+  assert.equal(selected.selectedItemId, before.selectedItemId);
+  assert.deepEqual(selected.items, next.items);
 });

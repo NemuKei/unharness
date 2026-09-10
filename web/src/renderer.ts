@@ -6,9 +6,11 @@ import recipe from "../assets/hangar-v4.json";
 import { createReleaseMotion } from "./scene-motion";
 import { createHangarRig } from "./scene-rig";
 import type { FixtureCase } from "./types";
+import type { AppearanceRecipe, AppearanceTreatment } from "./appearances";
 
 export interface Scene {
   setCondition: (condition: FixtureCase, immediate?: boolean) => void;
+  setAppearance: (recipe: AppearanceRecipe | null, treatment?: AppearanceTreatment) => void;
   setEffects: (enabled: boolean) => void;
   setVisible: (visible: boolean) => void;
   snapshot: () => Promise<string>;
@@ -104,6 +106,13 @@ export async function createScene(
     app.canvas.setAttribute("aria-hidden", "true");
     host.append(app.canvas);
     const scene: Scene = {
+      setAppearance(value, treatment = 'neutral') {
+        if (disposed) return;
+        rig!.setAppearance(value, treatment);
+        host.dataset.appearance = value?.seed ?? 'baseline';
+        host.dataset.treatment = treatment;
+        drawNow();
+      },
       setCondition(condition, immediate = false) {
         if (disposed) return;
         motion.retarget(condition, elapsed);
@@ -142,4 +151,24 @@ export async function createScene(
     dispose();
     throw error;
   }
+}
+
+export async function renderAppearancePreviews(
+  variants: Array<{ id: string; recipe: AppearanceRecipe }>, condition: FixtureCase, treatment: AppearanceTreatment, signal: AbortSignal,
+) {
+  if (variants.length < 1 || variants.length > 3) throw new Error('appearance-render-invalid');
+  const host = document.createElement('div'), scene = await createScene(host, signal);
+  if (!scene) return [];
+  try {
+    scene.setEffects(false); scene.setCondition(condition, true);
+    const images: Array<{ id: string; url: string }> = [];
+    for (const variant of variants) {
+      if (signal.aborted) return [];
+      scene.setAppearance(variant.recipe, treatment);
+      const url = await scene.snapshot();
+      if (signal.aborted) return [];
+      images.push({ id: variant.id, url });
+    }
+    return images;
+  } finally { scene.destroy(); }
 }

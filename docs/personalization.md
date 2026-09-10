@@ -2,7 +2,7 @@
 
 Direction updated on 2026-09-09. The maintainer replaced performance-gated original creation, a fixed set of three candidates and forced GOOD/BAD treatments with freely created and selected original artwork. The user's AI helps discuss and make the images; Unharness imports and stores them locally. The accepted logical parts are **AI entity, restraints and background**. The [implementation plan](superpowers/plans/2026-09-09-layered-originals.md) follows this contract.
 
-This is the new product contract. The earlier implemented lifecycle and its historical records are described in [spec-appearances.md](spec-appearances.md); they still require migration. Updating this document does not change already running GUIs or personal settings.
+This is the new product contract. The earlier lifecycle and its historical records are described in [spec-appearances.md](spec-appearances.md). The [local import and versioned collection API](layered-appearances.md) now preserves that history in appearance state version 2; the replacement-layer UI and native qualification are still being integrated. Updating these documents does not change already running GUIs or personal settings.
 
 ## Experience
 

@@ -63,6 +63,18 @@ const fields = {
   "open-replay": [["attemptId"], []],
   "compare-replays": [["resultIds"], []],
   "replay-favorite": [["resultId"], ["name"]],
+  appearance: [[], ["after"]],
+  "discover-appearance": [[], ["expectedStateId"]],
+  "select-appearance": [["itemId", "expectedStateId"], []],
+  "name-appearance": [["itemId", "expectedStateId", "name"], []],
+  "use-appearance-evidence": [["startId", "expectedStateId"], []],
+  "evaluate-appearance": [["startId"], []],
+  "original-candidates": [["achievementId"], []],
+  "recover-appearance": [[], []],
+  "appearance-item": [["itemId"], []],
+  "review-appearance-import": [["importId", "expectedStateId", "manifest", "files"], []],
+  "read-appearance-import": [["reviewId"], []],
+  "save-appearance-import": [["reviewId", "expectedStateId"], []],
 };
 export function sourceRequestShape(body, action) {
   const schema = Object.hasOwn(fields, action) ? fields[action] : null;
@@ -96,9 +108,13 @@ export function sourceRequestShape(body, action) {
     "resultReviewId",
     "resultId",
     "previousResultId",
+    "itemId", "expectedStateId", "achievementId", "candidateId",
   ])
-    if (Object.hasOwn(input, key) && !id(input[key]))
+    if (Object.hasOwn(input, key) && !id(input[key])
+      && !(key === 'expectedStateId' && input[key] === null && ['review-appearance-import', 'save-appearance-import'].includes(action)))
       fail("gui-invalid-request");
+  if (Object.hasOwn(input, 'importId') && (typeof input.importId !== 'string'
+    || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(input.importId))) fail('gui-invalid-request');
   if (
     Object.hasOwn(input, "taskId") &&
     (typeof input.taskId !== "string" ||
@@ -234,6 +250,17 @@ export async function createSourceController(input, { workspace: selectedWorkspa
   return {
     metadata,
     state,
+    async image(input) {
+      if (!input || typeof input !== 'object' || Array.isArray(input)
+        || Object.keys(input).length !== 4 || !['launchId', 'contextId', 'referenceId', 'assetId'].every(key => Object.hasOwn(input, key))
+        || ![input.contextId, input.referenceId, input.assetId].every(id)) fail('gui-invalid-request');
+      const meta = await metadata();
+      if (input.launchId !== meta.launchId || input.contextId !== meta.contextId || !meta.workspace) fail('gui-source-context-changed');
+      const image = await service.readUserAppearanceImage({ workspace: meta.workspace, referenceId: input.referenceId, assetId: input.assetId });
+      const after = await metadata();
+      if (after.contextId !== meta.contextId || after.workspace !== meta.workspace) fail('gui-source-context-changed');
+      return image;
+    },
     async updates(input) {
       if (!input || typeof input !== "object" || Array.isArray(input)
         || Object.keys(input).some(k => !["launchId", "contextId", "after"].includes(k))
@@ -268,6 +295,8 @@ export async function createSourceController(input, { workspace: selectedWorkspa
         return service.SETUP_OPERATIONS[action]({ workspace, ...input });
       if (Object.hasOwn(service.ENROLLMENT_OPERATIONS, action))
         return service.ENROLLMENT_OPERATIONS[action]({ workspace, ...input });
+      if (Object.hasOwn(service.APPEARANCE_OPERATIONS, action))
+        return service.APPEARANCE_OPERATIONS[action]({ workspace, ...input });
       if (action === "review") {
         if (input.discoveryId !== undefined) fail("gui-invalid-request");
         return service.reviewUserSource({ workspace, ...input });

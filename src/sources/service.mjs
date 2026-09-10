@@ -319,6 +319,7 @@ export const saveUserFavorite = wrap(async ({ workspace, name }) => {
     return {
       favoriteId,
       name,
+      snapshotId: w.state.snapshotId,
       preparedMode: w.state.preparedMode,
       verification
     };
@@ -342,6 +343,7 @@ export const listUserFavorites = wrap(async ({ workspace, after, limit }) => {
     if (p.comparisonRunId !== undefined && (typeof p.comparisonRunId !== 'string' || !/^[0-9a-f]{64}$/.test(p.comparisonRunId))) fail('record-invalid');
     favorites.push({
       favoriteId: id,
+      snapshotId: p.snapshotId,
       ...(p.comparisonRunId === undefined ? {} : { comparisonRunId: p.comparisonRunId }),
       normalId: p.normalId ?? historical.reg.normalId,
       needsAdaptation: p.scopeId !== w.scopeId || (p.normalId ?? historical.reg.normalId) !== activeNormalId(w),
@@ -490,3 +492,35 @@ export const reviewUserEnrollment = wrap(async args => (await import('../setup/e
 export const applyUserEnrollment = wrap(async args => (await import('../setup/enrollment.mjs')).applyEnrollment(args));
 export const ENROLLMENT_OPERATIONS = Object.freeze({ 'enrollment-inventory': inspectUserEnrollment,
   'review-candidate': reviewUserEnrollmentCandidate, 'review-enrollment': reviewUserEnrollment, 'apply-enrollment': applyUserEnrollment });
+
+const appearanceRead = method => wrap(async args => (await import('../appearances/service.mjs'))[method](args));
+const appearanceMutation = method => wrap(async args => {
+  const result = await (await import('../appearances/service.mjs'))[method](args);
+  return { scopeId: result.scopeId, stateId: result.stateId, selectedItemId: result.state?.selectedItemId ?? null,
+    recoveryRequired: result.recoveryRequired, pendingStateId: result.pendingStateId,
+    evidenceStartId: result.state?.evidenceStartId ?? null,
+    ...(result.savedItemId ? { savedItemId: result.savedItemId, reviewId: result.reviewId } : {}) };
+});
+export const readUserAppearance = appearanceRead('readUserAppearanceView');
+export const discoverUserAppearance = appearanceMutation('discoverUserAppearance');
+export const selectUserAppearance = appearanceMutation('selectUserAppearance');
+export const renameUserAppearance = appearanceMutation('renameUserAppearance');
+export const setUserAppearanceEvidence = appearanceMutation('setUserAppearanceEvidence');
+export const createUserOriginalAppearance = appearanceMutation('createUserOriginalAppearance');
+export const adoptUserOriginalAppearance = appearanceMutation('adoptUserOriginalAppearance');
+export const recoverUserAppearance = appearanceMutation('recoverUserAppearance');
+export const readUserOriginalCandidates = appearanceRead('readUserOriginalCandidates');
+export const readUserAppearanceItem = appearanceRead('readUserAppearanceItem');
+export const reviewUserAppearanceUpload = appearanceRead('reviewUserAppearanceUpload');
+export const readUserAppearanceImportReview = appearanceRead('readUserAppearanceImportReview');
+export const saveUserAppearanceImport = appearanceMutation('saveUserAppearanceImport');
+export const readUserAppearanceImage = appearanceRead('readUserAppearanceImage');
+export const evaluateUserAppearance = wrap(async args => (await import('../appearances/evidence.mjs')).evaluateUserAppearance(args));
+export const APPEARANCE_OPERATIONS = Object.freeze({
+  appearance: readUserAppearance, 'discover-appearance': discoverUserAppearance, 'select-appearance': selectUserAppearance,
+  'name-appearance': renameUserAppearance, 'use-appearance-evidence': setUserAppearanceEvidence,
+  'evaluate-appearance': evaluateUserAppearance, 'original-candidates': readUserOriginalCandidates,
+  'recover-appearance': recoverUserAppearance,
+  'appearance-item': readUserAppearanceItem, 'review-appearance-import': reviewUserAppearanceUpload,
+  'read-appearance-import': readUserAppearanceImportReview, 'save-appearance-import': saveUserAppearanceImport,
+});

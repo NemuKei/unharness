@@ -2,12 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import artwork from "../assets/hangar-states-v1.png";
 import type { FixtureCase } from "./types";
 import type { Scene } from "./renderer";
+import type { AppearancePresentation } from "./appearances";
 export function Hangar({
   condition,
   effects,
+  appearance = null,
 }: {
   condition: FixtureCase;
   effects: boolean;
+  appearance?: AppearancePresentation | null;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const scene = useRef<Scene | null>(null);
@@ -15,6 +18,8 @@ export function Hangar({
   conditionRef.current = condition;
   const effectsRef = useRef(effects);
   effectsRef.current = effects;
+  const appearanceRef = useRef(appearance);
+  appearanceRef.current = appearance;
   const [graphicsState, setGraphicsState] = useState<
     "loading" | "ready" | "failed"
   >("loading");
@@ -47,6 +52,7 @@ export function Hangar({
           return;
         }
         scene.current = renderer;
+        renderer.setAppearance(appearanceRef.current?.recipe ?? null, appearanceRef.current?.treatment);
         renderer.setCondition(conditionRef.current, true);
         syncPlayback();
         setGraphicsState("ready");
@@ -71,9 +77,12 @@ export function Hangar({
         !matchMedia("(prefers-reduced-motion: reduce)").matches,
     );
   }, [effects]);
+  useEffect(() => {
+    scene.current?.setAppearance(appearance?.recipe ?? null, appearance?.treatment);
+  }, [appearance]);
   return (
     <div className="hangar-scene">
-      <div className={`static-scene frame-${condition}`} aria-hidden="true">
+      <div className={`static-scene frame-${condition}`} aria-hidden="true" hidden={appearance !== null && graphicsState === 'failed'}>
         <img src={artwork} alt="" />
       </div>
       <div className="pixi-host" ref={host} />

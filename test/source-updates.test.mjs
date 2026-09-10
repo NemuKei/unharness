@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile, writeFile, rename, symlink, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, rename, symlink, mkdir, lstat, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { connect } from 'node:net';
@@ -20,18 +20,38 @@ async function setup(t) {
 
 test('registered update snapshots are read-only, bounded summaries and unchanged polls return no history', async t => {
   const s = await setup(t), before = await readFile(join(s.workspace, 'state.json'));
+  const appearanceRecordsBefore = await readdir(join(s.workspace, 'records', 'appearance'));
   const first = await s.updates();
   assert.equal(first.status, 'updated');
   assert.equal(first.view.source.preparedMode, 'normal');
   assert.match(first.token, /^[a-f0-9]{64}$/);
-  assert.deepEqual(Object.keys(first.versions).sort(), ['favorites', 'replays', 'runs', 'source', 'starts']);
+  assert.deepEqual(Object.keys(first.versions).sort(), ['appearance', 'favorites', 'replays', 'runs', 'source', 'starts']);
   assert.equal(first.view.changeVersion, first.versions.source);
   assert.deepEqual(first.history.favorites.data.favorites, []);
   assert.equal(first.history.replays.data.activeAttemptId, null);
+  assert.equal(first.history.appearance.data.stateId, null);
+  assert.equal(first.history.appearance.data.itemCount, 0);
+  assert.deepEqual(first.history.appearance.data.collection, []);
   assert.equal(first.view.source.verification.runtimeStateVerified, false);
   assert.ok(!JSON.stringify(first).includes('PRIVATE_TEST'));
   assert.deepEqual(await s.updates(first.token), { status: 'unchanged', metadata: s.metadata, token: first.token });
   assert.deepEqual(await readFile(join(s.workspace, 'state.json')), before);
+  for (const path of ['appearance-index.json', 'appearance-initialized.json'])
+    await assert.rejects(lstat(join(s.workspace, path)), { code: 'ENOENT' });
+  assert.deepEqual(await readdir(join(s.workspace, 'records', 'appearance')), appearanceRecordsBefore);
+});
+
+test('an appearance publication updates the open GUI without changing source preparation', async t => {
+  const s = await setup(t), first = await s.updates();
+  await service.discoverUserAppearance({ workspace: s.workspace });
+  const second = await s.updates(first.token);
+  assert.equal(second.status, 'updated');
+  assert.notEqual(second.versions.appearance, first.versions.appearance);
+  assert.equal(second.versions.source, first.versions.source);
+  assert.equal(second.versions.favorites, first.versions.favorites);
+  assert.equal(second.history.appearance.data.itemCount, 1);
+  assert.equal(second.history.appearance.data.selectedItem.id, second.history.appearance.data.collection[0].id);
+  assert.deepEqual(await s.updates(second.token), { status: 'unchanged', metadata: s.metadata, token: second.token });
 });
 
 test('source changes and favorite publications update their own versions for the same open GUI', async t => {

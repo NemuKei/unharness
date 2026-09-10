@@ -46,7 +46,7 @@ for (const protocols of [undefined, ['2025-11-25']]) test(`official stdio client
   const names = tools.map(tool => tool.name);
   for (const name of ['status', 'operation_status', 'plan_mode', 'apply_plan', 'save_favorite', 'recover', 'observe_task', 'compare_runs', 'review_start', 'handoff_replay', 'save_replay_favorite'])
     assert.ok(names.includes(name), name);
-  assert.ok(!names.some(name => /register|discover|source_body/.test(name)));
+  assert.ok(!names.some(name => /register|source_body/.test(name) || /discover/.test(name) && name !== 'discover_appearance'));
   for (const tool of tools) {
     assert.equal(tool.inputSchema.additionalProperties, false, tool.name);
     assert.equal(tool.outputSchema.type, 'object', tool.name);

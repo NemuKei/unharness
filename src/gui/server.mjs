@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { lstat, readFile, readdir, realpath } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { extname, relative, resolve, sep } from 'node:path';
@@ -9,7 +9,8 @@ import { createGuiController } from './controller.mjs';
 import { createGuiInventory } from './inventory.mjs';
 import { createSourceController, sourceRequestShape } from './sources.mjs';
 import { createRemoteHttp } from './remote-http.mjs';
-import { USER_SOURCE_ERROR_KINDS, SETUP_OPERATIONS, ENROLLMENT_OPERATIONS } from '../sources/service.mjs';
+import { APPEARANCE_UPLOAD_BODY_LIMIT } from '../appearances/import.mjs';
+import { USER_SOURCE_ERROR_KINDS, APPEARANCE_OPERATIONS, SETUP_OPERATIONS, ENROLLMENT_OPERATIONS } from '../sources/service.mjs';
 
 const MAX_BODY_BYTES = 16 * 1024;
 const MAX_REQUESTS = 1000;
@@ -21,7 +22,7 @@ const COMPARISON_ACTIONS = new Set([
 const STARTING_ACTIONS = new Set(['review-start', 'save-start', 'start', 'starts']);
 const REPLAY_ACTIONS = new Set(['review-replay', 'prepare-replay', 'handoff-replay', 'replay', 'replays', 'cancel-replay',
   'observe-replay', 'save-replay-result', 'replay-result', 'open-replay', 'compare-replays', 'replay-favorite']);
-const CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'";
+const CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'";
 const SAFE_ERRORS = new Set([
   'gui-recovery-operation-forbidden', 'plugin-recovery-invalid', 'distribution-invalid', 'plugin-binding-invalid', 'plugin-binding-changed',
   ...LOCAL_STORE_ERROR_KINDS, ...USER_SOURCE_ERROR_KINDS, 'gui-source-context-changed',
@@ -56,7 +57,7 @@ function safeError(error) {
 }
 
 function statusFor(kind) {
-  if (kind === 'starting-publication-uncertain' || kind === 'replay-publication-uncertain' || kind === 'replay-desktop-open-uncertain') return 500;
+  if (kind === 'starting-publication-uncertain' || kind === 'replay-publication-uncertain' || kind === 'replay-desktop-open-uncertain' || kind === 'appearance-publication-uncertain' || kind === 'appearance-image-publication-uncertain') return 500;
   if (kind === 'starting-files-changed') return 409;
   if (kind === 'gui-request-forbidden') return 403;
   if (kind === 'gui-request-too-large') return 413;
@@ -232,6 +233,11 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
         else if (sourceController) {
           if (parsed.pathname === '/api/sources/metadata' && params.length === 0) sendJson(response, 200, await sourceController.metadata());
           else if (parsed.pathname === '/api/sources/state' && params.length === 0) sendJson(response, 200, await sourceController.state());
+          else if (!recoveryBinding && parsed.pathname === '/api/sources/appearance-image' && params.length === 4 && new Set(params).size === 4
+            && params.every(key => ['launchId', 'contextId', 'referenceId', 'assetId'].includes(key))) {
+            const image = await sourceController.image(Object.fromEntries(parsed.searchParams));
+            response.writeHead(200, { ...headers('image/png'), 'Content-Length': image.bytes.length }); response.end(image.bytes);
+          }
           else if (parsed.pathname === '/api/sources/updates' && params.length >= 2 && params.length <= 3
             && new Set(params).size === params.length && params.every(k => ['launchId', 'contextId', 'after'].includes(k)))
             sendJson(response, 200, await sourceController.updates(Object.fromEntries(parsed.searchParams)));
@@ -261,11 +267,12 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
       const starting = sourceRoute && STARTING_ACTIONS.has(action);
       const replay = sourceRoute && REPLAY_ACTIONS.has(action);
       const parsedBody = (sourceRoute ? sourceRequestShape : requestShape)(
-        await readJson(request, !!recoveryBinding || sourceRoute && (COMPARISON_ACTIONS.has(action) || starting || replay || Object.hasOwn(SETUP_OPERATIONS, action) || Object.hasOwn(ENROLLMENT_OPERATIONS, action)), starting ? 128 * 1024 : replay ? 65536 : (Object.hasOwn(SETUP_OPERATIONS, action) || Object.hasOwn(ENROLLMENT_OPERATIONS, action)) ? MAX_BODY_BYTES : undefined),
+        await readJson(request, !!recoveryBinding || sourceRoute && (COMPARISON_ACTIONS.has(action) || starting || replay || Object.hasOwn(APPEARANCE_OPERATIONS, action) || Object.hasOwn(SETUP_OPERATIONS, action) || Object.hasOwn(ENROLLMENT_OPERATIONS, action)),
+          action === 'review-appearance-import' && sourceRoute && !recoveryBinding ? APPEARANCE_UPLOAD_BODY_LIMIT : starting ? 128 * 1024 : replay ? 65536 : (Object.hasOwn(SETUP_OPERATIONS, action) || Object.hasOwn(ENROLLMENT_OPERATIONS, action)) ? MAX_BODY_BYTES : undefined),
         action,
       );
       if (stopping) { response.destroy(); return; }
-      const fingerprint = canonical({ action, input: parsedBody.input });
+      const fingerprint = createHash('sha256').update(canonical({ action, input: parsedBody.input })).digest('hex');
       const existing = requests.get(parsedBody.requestId);
       if (existing) {
         if (existing.fingerprint !== fingerprint) {
