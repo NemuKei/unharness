@@ -12,7 +12,7 @@ export const publicBrowserCase = { timeout: 60000, skip: !process.env.UNHARNESS_
 
 /** Browser UI qualification with a synthetic HTTPS origin and routed transport.
  * This does not qualify real public TLS or local-network permission. */
-export async function publicBrowser(t, { clipboardFails = false } = {}) {
+export async function publicBrowser(t, { clipboardFails = false, siteAssetsDirectory = resolve('site-dist') } = {}) {
   const cleanups = [], p = await aiProfile({ after: fn => cleanups.push(fn) });
   const assetsDirectory = resolve('dist');
   let time = Date.now(), dropApply = false;
@@ -37,7 +37,7 @@ export async function publicBrowser(t, { clipboardFails = false } = {}) {
     } });
   });
   if (clipboardFails) await browserContext.addInitScript(() => Object.defineProperty(navigator.clipboard, 'writeText', { value: async () => { throw Error('Synthetic clipboard failure'); } }));
-  const siteRoot = resolve('site-dist');
+  const siteRoot = resolve(siteAssetsDirectory);
   const requests = [], posts = [], errors = [], httpErrors = [], secrets = new Set();
   await browserContext.route(PUBLIC_WEB_ORIGIN + '/**', async route => {
     const url = new URL(route.request().url()), path = resolve(siteRoot, '.' + (url.pathname === '/' ? '/index.html' : decodeURIComponent(url.pathname)));
