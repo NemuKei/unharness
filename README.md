@@ -90,7 +90,7 @@ Here, a **harness** means the surrounding skills, persistent instructions, and a
 ## One small experiment
 
 1. **Save what you have.** Ask “Add my current setup to favorites,” or use the star button.
-2. **Try another mode.** Keep the full loadout, make selected skills manual-only, or strip back the managed extras with Zero mode.
+2. **Try another mode.** Keep your saved Normal, choose a Zero baseline, or add selected procedures on top through Limited release. See the mode targets and current implementation boundary below.
 3. **Start fresh.** Use your selected mode in a new task and record its request and starting conditions.
 4. **Review your actual work.** Inspect the output, changes, time, available usage data, and your notes alongside saved results.
 5. **Keep what fits.** Adjust the combination, save it as a favorite, and use it again. Reload your earlier setup when you want it back.
@@ -106,12 +106,14 @@ Numerical comparisons show the recorded root-response tokens and duration beside
 | Mode | What it is intended to do |
 | --- | --- |
 | Normal loadout | Use the saved configuration. |
-| Limited release — UNSEAL | Replace selected optional instructions with a fixed minimal guide and make selected enabled user-added skills manual-only. |
-| Zero — TRUEFORM | Stop loading selected user-added optional instructions and skills, plus selected optional steering hooks. |
+| Limited release — UNSEAL | Inherit every optional automatic Skill kept in Zero, then add reviewed external/self-authored Skills. Use the saved minimal guide or no selected additional instructions. |
+| Zero — TRUEFORM | Remove selected optional additional instructions. Keep optional automatic Skills only from user-selected, verified official-marketplace plugins; make other controlled enabled Skills explicitly invocable. |
 
-Keep the task requirements and execution permissions consistent. Show the elements that remain, including the minimal control connection needed to switch back. Availability and exact behavior must be established for each supported tool version.
+**These are the 2026-09-10 targets, not newly implemented behavior.** Official-plugin verification and inherited presets need the [versioned implementation and native checks](docs/superpowers/plans/2026-09-10-official-plugin-mode-inheritance.md). Existing v1 presets and favorites keep their recorded meaning. See [the selection and inheritance contract](docs/spec-mode-inheritance.md).
 
-The initial release set includes self-authored and personally added third-party sources, primarily global AGENTS.md / CLAUDE.md and automatic Skill selection. Existing memory and native task-continuity settings stay unchanged. Provider defaults and managed sources remain outside that set. Keep everyday mode selection simple, with optional target customization beneath each release mode. The accepted [mode scope](docs/harness-scope.md) uses a fixed, versioned Unharness-authored guide for selected optional instructions in UNSEAL; it is comparison material based on official guidance, not a universal template.
+Limited release equals the Zero selection plus its own additions; Zero may retain no optional plugin. Official listing identifies provenance, not provider authorship or a performance guarantee. Private/local marketplaces do not qualify merely because they appear in the same browser. Keep required Unharness controls, memory, continuity, task requirements and permissions in both modes, including before Unharness itself is officially listed. Skill manual-only control is not plugin removal or tool disconnection. Normal remains the saved original, not a required superset.
+
+The initial release set includes user-added optional global AGENTS.md / CLAUDE.md and automatic Skill selection. Provider defaults, mandatory project conditions and managed sources remain outside that set. Keep ordinary selection simple and discuss details through the user’s AI. The [mode scope](docs/harness-scope.md) distinguishes current targets from historical conditions; the optional UNSEAL guide is versioned comparison material, not a universal official template. Review changes to Zero together with their Limited-release impact and save a new paired version without applying it or rewriting Normal, favorites or comparisons.
 
 These modes are starting points. A custom combination can be saved as a favorite too.
 
@@ -169,6 +171,7 @@ Useful early contributions include reproducible compatibility observations, smal
 
 - [Product and positioning](docs/product.md)
 - [Modes and acceptance criteria](docs/spec.md)
+- [Official plugins and inherited modes — planned](docs/spec-mode-inheritance.md)
 - [Architecture](docs/architecture.md)
 - [Delivery and handoff](docs/delivery.md)
 - [Visual direction](docs/design.md)
