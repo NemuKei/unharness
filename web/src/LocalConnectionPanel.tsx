@@ -56,7 +56,7 @@ export function LocalConnectionPanel({ view, enabled, request }: {
         setPairing(details); setNow(Date.now()); setError("");
         const write = pendingRef.current;
         if (write?.input.pairingId === pairingId && ((write.action === "approve" && ["approved", "connected"].includes(details.status))
-          || (write.action === "cancel" && details.status === "unavailable"))) setPending(null);
+          || (["approve", "cancel"].includes(write.action) && ["expired", "unavailable"].includes(details.status)))) setPending(null);
       } catch {
         if (!stopped && before === epoch.current && !locked.current) { setPairing(null); setError("接続状態を確認できません。接続用リンクと許可操作を停止しています。"); }
       } finally { polling = false; }

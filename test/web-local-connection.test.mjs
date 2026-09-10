@@ -130,3 +130,20 @@ test('unconfirmed polling hides the approved link and fresh state must restore i
   assert.equal(await page.getByRole('heading', { name: 'このMacへの接続許可' }).count(), 0);
   assert.deepEqual(s.errors, []);
 });
+
+test('expiry while approval is dispatched ends pending verification without issuing a replacement automatically', browserCase, async t => {
+  const s = await setup(t), { page } = s, ticket = await s.gui.requestPublicPairing();
+  await page.goto(s.gui.url + '/#pairing=' + ticket.pairingId);
+  await page.getByRole('button', { name: 'このサイトへの接続を許可', exact: true }).waitFor();
+  await page.route('**/api/remote/approve', async route => { s.advance(PAIRING_TTL_MS); await route.continue(); });
+  await page.getByRole('button', { name: 'このサイトへの接続を許可', exact: true }).click();
+  await page.getByText('期限切れ', { exact: true }).waitFor();
+  await page.getByRole('button', { name: '接続許可を確認する', exact: true }).waitFor();
+  assert.equal(await page.getByRole('button', { name: '同じ操作の結果を確認', exact: true }).count(), 0);
+  assert.equal(s.posts.filter(r => r.path === '/api/remote/issue').length, 0);
+  assert.equal((await s.remote('redeem', { ticket: ticket.ticket, launchId: ticket.launchId, protocolVersion: 1 })).status, 401);
+  await page.getByRole('button', { name: '接続許可を確認する', exact: true }).click();
+  await page.getByRole('button', { name: 'このサイトへの接続を許可', exact: true }).waitFor();
+  assert.equal(s.posts.filter(r => r.path === '/api/remote/issue').length, 1);
+  assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
+});
