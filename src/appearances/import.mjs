@@ -94,8 +94,14 @@ async function loadReview(w, reviewId) {
 }
 function reviewSummary(w, reviewId, value) {
   return { scopeId: w.scopeId, collectionScopeId: value.scopeId, reviewId, expectedStateId: value.expectedStateId,
+    proposedItemId: importedItem(reviewId, value).id,
     baseItemId: value.baseItemId, name: value.name, author: value.author, manifest: value.manifest,
     replacedParts: value.replacedParts, images: value.images };
+}
+function importedItem(reviewId, value) {
+  const item = { kind: 'layered', reviewId, requestId: value.requestId, parentItemId: value.baseItemId,
+    manifest: value.manifest, name: value.name, author: value.author };
+  return { ...item, id: layeredItemId(item) };
 }
 async function verifiedImages(w, manifest) {
   for (const asset of manifest.assets) {
@@ -173,9 +179,7 @@ export async function saveAppearanceImport(args) {
     if (existing) return { ...appearanceStoreSummary(w, before), savedItemId: existing.id, reviewId: args.reviewId };
     if (before.stateId !== args.expectedStateId) fail('appearance-state-conflict');
     await verifiedImages(w, reviewed.manifest);
-    const item = { kind: 'layered', reviewId: args.reviewId, requestId: reviewed.requestId, parentItemId: reviewed.baseItemId,
-      manifest: reviewed.manifest, name: reviewed.name, author: reviewed.author };
-    item.id = layeredItemId(item);
+    const item = importedItem(args.reviewId, reviewed);
     const state = appendLayeredAppearance(before.state, w.rootScopeId ?? w.scopeId, item);
     const saved = await publishAppearanceState(w, before, state);
     return { ...appearanceStoreSummary(w, saved), savedItemId: item.id, reviewId: args.reviewId };

@@ -6,7 +6,7 @@ import { fail } from '../sources/errors.mjs';
 import { initializeAppearance, discoverPrepared, selectOwned, beginOriginal, adoptOriginal, renameAppearance, useAppearanceEvidence } from './lifecycle.mjs';
 import { readAppearanceStore, appearanceStoreSummary, publishAppearanceState, recoverAppearanceStore } from './store.mjs';
 import { resolveAppearanceEvidence, assertAppearanceEvidenceCurrent } from './evidence.mjs';
-import { appearanceView } from './view.mjs';
+import { appearanceView, artworkView, artworkItem } from './view.mjs';
 import { withAppearanceWorkspace as locked } from './workspace.mjs';
 export { reviewAppearanceUpload as reviewUserAppearanceUpload, readAppearanceImportReview as readUserAppearanceImportReview,
   saveAppearanceImport as saveUserAppearanceImport, readAppearanceReferencedImage as readUserAppearanceImage } from './import.mjs';
@@ -31,6 +31,16 @@ export async function readUserAppearanceItem(args) {
   const item = stored.state?.items.find(item => item.id === args.itemId);
   if (!item) fail('appearance-not-owned');
   return { scopeId: w.scopeId, collectionScopeId: w.rootScopeId ?? w.scopeId, stateId: stored.stateId, item };
+}
+export async function readUserArtworkView(args) {
+  request(args, [], ['after']);
+  if (args.after !== undefined && !hash(args.after)) fail('invalid-request');
+  const w = await openWorkspace(args.workspace);
+  return artworkView(w, await readAppearanceStore(w), args.after);
+}
+export async function readUserArtworkItem(args) {
+  const result = await readUserAppearanceItem(args);
+  return { ...result, item: artworkItem(result.item) };
 }
 export async function readUserOriginalCandidates(args) {
   request(args, ['achievementId']);

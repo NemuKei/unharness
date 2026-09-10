@@ -144,7 +144,7 @@ The local GUI uses PixiJS for the equipment scene and effects, with React and HT
 
 Equipment can also be shown as supportive armor or a resonating frame when a comparison shows it fits the work. Unmeasured setups remain neutral, and the illustration stays separate from the measured result.
 
-Original artwork uses reusable local parts for the AI entity, restraints and background. The [local import and versioned collection API](docs/layered-appearances.md) now reviews PNGs, saves selected parts and preserves earlier work; the bundled authoring Skill is available in source. The replacement-layer UI and native creation journey are still being integrated. There is no performance unlock, fixed three-candidate choice or forced BAD treatment; performance is reported separately. Choosing a look never changes the harness. See the [layered appearance contract](docs/personalization.md).
+Original artwork uses reusable local parts for the AI entity, restraints and background. The [local import and versioned collection API](docs/layered-appearances.md) reviews PNGs, saves selected parts and preserves earlier work. The bundled authoring Skill can use the private MCP to prepare a creation place and review its selected images; the replacement renderer is implemented. The complete UI and native creation journey are still being integrated. There is no performance unlock, fixed three-candidate choice or forced BAD treatment; performance is reported separately. Choosing a look never changes the harness. See the [layered appearance contract](docs/personalization.md).
 
 Effects can be turned off without changing the loadout. The state remains readable, and animation settings stay separate from saved harness configurations.
 

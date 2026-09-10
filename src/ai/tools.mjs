@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getAppearanceTemplate } from '../appearances/template.mjs';
 
 const id = z.string().regex(/^[a-f0-9]{64}$/);
 const uuid = z.string().regex(/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/);
@@ -124,6 +125,10 @@ export const AI_TOOLS = Object.freeze([
   tool('discover_appearance', 'discover-appearance', 'Discover one local prepared appearance without a model call or personal data. Omit expectedStateId only for idempotent first discovery; an explicit new discovery supplies the reviewed state ID.', { expectedStateId: id.optional() }, true),
   tool('select_appearance', 'select-appearance', 'Select an already owned artwork version without changing configuration or comparison results. Performance never forces a different appearance.', { itemId: id, expectedStateId: id }, true),
   tool('read_appearance_item', 'appearance-item', 'Read one owned artwork version and its immutable image references. Does not select it or return configuration or image bytes.', { itemId: id }),
+  tool('prepare_appearance_authoring', 'prepare-appearance-authoring', 'Issue a local place for explicitly requested artwork creation. Use a new creation UUID and an exact owned layered baseItemId, or null for standard parts. Returned referenceFiles are read only; write replacement PNGs only to the returned files paths. Does not create an image or save/select a work.', { creationId: uuid, baseItemId: id.nullable() }, true),
+  tool('read_appearance_authoring', 'read-appearance-authoring', 'Recheck an issued local artwork place and its exact reference images. A historical preparation receipt does not prove the place is still intact. Returns local paths only within this private connection.', { authoringId: id }),
+  tool('review_authored_appearance', 'review-authored-appearance', 'Review explicit PNG parts from an issued creation place. Accepts known part IDs, never paths. Retains that place\'s exact base version and preserves original files. Creates a review; show its composition before save_appearance_import.', { authoringId: id, importId: uuid, expectedStateId: id.nullable(), name: text(80),
+    author: z.string().max(80).regex(/^[^\u0000-\u001f\u007f-\u009f]*$/), partIds: z.array(z.enum(getAppearanceTemplate().parts.map(p => p.id))).min(1).max(13) }, true),
   tool('read_appearance_import', 'read-appearance-import', 'Read a locally reviewed image import and the parts it replaces. This is a preview, not a saved or selected artwork.', { reviewId: id }),
   tool('save_appearance_import', 'save-appearance-import', 'Save the exact reviewed local image version after the user chooses it. Supply its expectedStateId (null for an empty collection). Performance is independent; a duplicate save retains its original version and does not reselect it after a later choice.', { reviewId: id, expectedStateId: id.nullable() }, true),
   tool('name_appearance', 'name-appearance', 'Set a local display name without changing recipe or achievement identity; an empty name restores its automatic label.', { itemId: id, expectedStateId: id, name: z.string().max(80).regex(/^[^\u0000-\u001f\u007f-\u009f]*$/) }, true),

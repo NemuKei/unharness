@@ -69,7 +69,12 @@ test('the main Skill links one local reference instead of inventing an import to
     assert.ok(url.href.startsWith(new URL('skills/unharness-original/', root).href));
     assert.ok((await stat(url)).isFile());
   }
-  required(section(body, '引き渡しと報告'), [/import用MCP.*まだない/, /tool名.*捏造しない/, /自動送信.*しない/]);
+  required(section(body, '引き渡しと報告'), [/今の接続.*tool一覧.*schema.*確認/, /tool名.*捏造しない/, /自動送信.*しない/]);
+  const tools = await text(new URL('src/ai/tools.mjs', root));
+  for (const name of ['prepare_appearance_authoring', 'read_appearance_authoring', 'review_authored_appearance', 'read_appearance_import', 'save_appearance_import']) {
+    assert.ok(body.includes('`' + name + '`'));
+    assert.ok(tools.includes("tool('" + name + "'"));
+  }
   assert.doesNotMatch(body, /`(?:import_appearance|save_appearance|reviewAppearanceImport|saveAppearanceImport)\s*\(/);
 });
 

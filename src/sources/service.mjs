@@ -497,11 +497,14 @@ const appearanceRead = method => wrap(async args => (await import('../appearance
 const appearanceMutation = method => wrap(async args => {
   const result = await (await import('../appearances/service.mjs'))[method](args);
   return { scopeId: result.scopeId, stateId: result.stateId, selectedItemId: result.state?.selectedItemId ?? null,
+    collectionRevision: result.state?.revision ?? 0,
     recoveryRequired: result.recoveryRequired, pendingStateId: result.pendingStateId,
     evidenceStartId: result.state?.evidenceStartId ?? null,
     ...(result.savedItemId ? { savedItemId: result.savedItemId, reviewId: result.reviewId } : {}) };
 });
 export const readUserAppearance = appearanceRead('readUserAppearanceView');
+export const readUserArtwork = appearanceRead('readUserArtworkView');
+export const readUserArtworkItem = appearanceRead('readUserArtworkItem');
 export const discoverUserAppearance = appearanceMutation('discoverUserAppearance');
 export const selectUserAppearance = appearanceMutation('selectUserAppearance');
 export const renameUserAppearance = appearanceMutation('renameUserAppearance');
@@ -515,12 +518,19 @@ export const reviewUserAppearanceUpload = appearanceRead('reviewUserAppearanceUp
 export const readUserAppearanceImportReview = appearanceRead('readUserAppearanceImportReview');
 export const saveUserAppearanceImport = appearanceMutation('saveUserAppearanceImport');
 export const readUserAppearanceImage = appearanceRead('readUserAppearanceImage');
+const authoringCall = method => wrap(async args => (await import('../appearances/authoring.mjs'))[method](args));
+export const prepareUserAppearanceAuthoring = authoringCall('prepareAppearanceAuthoring');
+export const readUserAppearanceAuthoring = authoringCall('readAppearanceAuthoring');
+export const reviewUserAuthoredAppearance = authoringCall('reviewAuthoredAppearance');
 export const evaluateUserAppearance = wrap(async args => (await import('../appearances/evidence.mjs')).evaluateUserAppearance(args));
 export const APPEARANCE_OPERATIONS = Object.freeze({
+  artwork: readUserArtwork, 'artwork-item': readUserArtworkItem,
   appearance: readUserAppearance, 'discover-appearance': discoverUserAppearance, 'select-appearance': selectUserAppearance,
   'name-appearance': renameUserAppearance, 'use-appearance-evidence': setUserAppearanceEvidence,
   'evaluate-appearance': evaluateUserAppearance, 'original-candidates': readUserOriginalCandidates,
   'recover-appearance': recoverUserAppearance,
   'appearance-item': readUserAppearanceItem, 'review-appearance-import': reviewUserAppearanceUpload,
   'read-appearance-import': readUserAppearanceImportReview, 'save-appearance-import': saveUserAppearanceImport,
+  'prepare-appearance-authoring': prepareUserAppearanceAuthoring, 'read-appearance-authoring': readUserAppearanceAuthoring,
+  'review-authored-appearance': reviewUserAuthoredAppearance,
 });

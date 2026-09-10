@@ -1,6 +1,6 @@
 # Local artwork reviews and versions
 
-The [layered appearance contract](personalization.md) now has a local import/storage API and a bundled [authoring Skill](../skills/unharness-original/SKILL.md). The product's replacement-layer renderer, import/collection panels, public-page image permission and final native journey are still being integrated.
+The [layered appearance contract](personalization.md) now has a local import/storage API, a replacement-layer renderer and a bundled [authoring Skill](../skills/unharness-original/SKILL.md). The import/collection panels, public-page image permission and final native journey are still being integrated.
 
 An import names the fixed `templateId`, an owned layered `baseItemId` or `null` for standard parts, a display name/author and explicit `{partId, fileId}` replacements. Only the chosen PNG bytes enter the import. Unspecified parts retain their exact base version. A recipe from the earlier format stays selectable; it is not silently converted into guessed image parts.
 
@@ -20,6 +20,10 @@ Applicable favorable, adverse, unknown and corrected evidence changes only asses
 - `appearance-item` / MCP `read_appearance_item`: read one owned version's metadata and manifest.
 - `GET /api/sources/appearance-image`: fetch a PNG only after local Host/origin/client/token and launch/context checks. The asset must belong to the selected immutable item/review reference. The route accepts IDs, never paths.
 - Existing appearance read, selection, naming, evidence reading and journal recovery use the same collection.
+
+The local MCP also provides `prepare_appearance_authoring` and `read_appearance_authoring`. An issued place has a scoped immutable identity, exact PNG output names, read-only template/base-image references and an ownership marker; reopening never replaces draft images. `review_authored_appearance` captures only explicitly selected known part IDs from that place and calls the same import reviewer. It accepts no filesystem path. A removed or independently edited ownership marker is refused, and a historical receipt does not prove the creation place is still intact. The source files and original draft PNGs remain unchanged by review/save.
+
+An import review reports the deterministic `proposedItemId` for checking the later save receipt; that ID is not proof of a saved or selected work. The `artwork` and `artwork-item` projections contain appearance metadata and image references only. They omit private acquisition, comparison, configuration and task information. These projections prepare a restricted public boundary without granting public access themselves.
 
 The public bridge still exposes only its separately approved mode/status operations. Local image routes do not accept its public-page credentials or origin. Public artwork access needs an explicit protocol/permission extension and its own verification before it is available.
 

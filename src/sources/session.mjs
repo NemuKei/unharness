@@ -64,6 +64,8 @@ const fields = {
   "compare-replays": [["resultIds"], []],
   "replay-favorite": [["resultId"], ["name"]],
   appearance: [[], ["after"]],
+  artwork: [[], ["after"]],
+  "artwork-item": [["itemId"], []],
   "discover-appearance": [[], ["expectedStateId"]],
   "select-appearance": [["itemId", "expectedStateId"], []],
   "name-appearance": [["itemId", "expectedStateId", "name"], []],
@@ -75,6 +77,9 @@ const fields = {
   "review-appearance-import": [["importId", "expectedStateId", "manifest", "files"], []],
   "read-appearance-import": [["reviewId"], []],
   "save-appearance-import": [["reviewId", "expectedStateId"], []],
+  "prepare-appearance-authoring": [["creationId", "baseItemId"], []],
+  "read-appearance-authoring": [["authoringId"], []],
+  "review-authored-appearance": [["authoringId", "importId", "expectedStateId", "name", "author", "partIds"], []],
 };
 export function sourceRequestShape(body, action) {
   const schema = Object.hasOwn(fields, action) ? fields[action] : null;
@@ -108,13 +113,14 @@ export function sourceRequestShape(body, action) {
     "resultReviewId",
     "resultId",
     "previousResultId",
-    "itemId", "expectedStateId", "achievementId", "candidateId",
+    "itemId", "expectedStateId", "achievementId", "candidateId", "authoringId", "baseItemId",
   ])
     if (Object.hasOwn(input, key) && !id(input[key])
-      && !(key === 'expectedStateId' && input[key] === null && ['review-appearance-import', 'save-appearance-import'].includes(action)))
+      && !(key === 'expectedStateId' && input[key] === null && ['review-appearance-import', 'save-appearance-import', 'review-authored-appearance'].includes(action))
+      && !(key === 'baseItemId' && input[key] === null && action === 'prepare-appearance-authoring'))
       fail("gui-invalid-request");
-  if (Object.hasOwn(input, 'importId') && (typeof input.importId !== 'string'
-    || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(input.importId))) fail('gui-invalid-request');
+  for (const key of ['importId', 'creationId']) if (Object.hasOwn(input, key) && (typeof input[key] !== 'string'
+    || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(input[key]))) fail('gui-invalid-request');
   if (
     Object.hasOwn(input, "taskId") &&
     (typeof input.taskId !== "string" ||

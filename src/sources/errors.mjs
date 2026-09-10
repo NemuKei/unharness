@@ -26,6 +26,7 @@ export const USER_SOURCE_ERROR_KINDS = Object.freeze([
   'appearance-image-publication-uncertain',
   'appearance-import-invalid',
   'appearance-legacy-operation-unavailable',
+  'appearance-authoring-invalid',
   'appearance-state-invalid',
   'appearance-record-invalid',
   'appearance-state-conflict',
