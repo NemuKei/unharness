@@ -13,7 +13,7 @@ export const distributionFail = () => { throw Object.assign(Error('distribution-
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 const exact = (v, keys) => v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).sort().join() === keys.sort().join();
 const same = (a, b) => a.dev === b.dev && a.ino === b.ino;
-const roots = new Set(['plugin.json', '.codex-plugin', 'mcp.json', 'skills', 'scripts', 'runtime', 'bin', 'src', 'dist',
+const roots = new Set(['plugin.json', '.codex-plugin', 'mcp.json', 'skills', 'scripts', 'runtime', 'bin', 'src', 'dist', 'assets',
   'node_modules', 'package.json', 'package-lock.json', 'README.md', 'README.ja.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'docs']);
 const required = ['plugin.json', '.codex-plugin/plugin.json', 'mcp.json', 'skills/unharness/SKILL.md', 'scripts/unharness',
   'bin/unharness.mjs', 'dist/index.html', 'runtime/bin/node', 'runtime/LICENSE', 'package.json', 'LICENSE'];
@@ -76,6 +76,8 @@ async function filesIn(root) {
   }
   await visit(root, '');
   if (!same(rootIdentity, await rootDirectory(root)) || required.some(path => !files.some(file => file.path === path))) distributionFail();
+  if (files.some(file => file.path === 'src/appearances/stock.mjs')
+    && !files.some(file => file.path === 'assets/appearance-templates/hangar-layered-v1/stock.json')) distributionFail();
   return files.sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
 }
 async function versionOf(root) {

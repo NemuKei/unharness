@@ -11,6 +11,7 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
   const baked: Texture[] = [];
   const geometries: MeshGeometry[] = [];
   const filters: Filter[] = [];
+  const armSources: { id: string; texture: Texture; x: number; y: number }[] = [];
   let disposed = false;
   const destroy = () => {
     if (disposed) return;
@@ -69,6 +70,7 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
       cutout.addChild(sprite, matte);
       sprite.setMask({ mask: matte, channel: "alpha" });
       const texture = bake(cutout, bounds);
+      armSources.push({ id: 'arm-' + source.id, texture, x: bounds.x, y: bounds.y });
       const mount = new Container();
       const painted = new Sprite(texture);
       painted.position.set(bounds.x, bounds.y);
@@ -182,6 +184,46 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
       geometry.getAttribute("aPosition").buffer.update();
     };
     return {
+      async exportTemplateLayers() {
+        if (disposed) throw Error('appearance-renderer-unavailable');
+        const sprite = (texture: Texture, x = 0, y = 0) => {
+          const value = new Sprite(texture); value.position.set(x, y); return value;
+        };
+        const factories: { id: string; make: () => Container }[] = [
+          { id: 'background', make: () => {
+            const target = new Container(), plate = sprite(textures.empty);
+            plate.width = plate.height = WORLD;
+            target.addChild(plate, sprite(originalFloor.texture, 0, floorTop)); return target;
+          } },
+          ...armSources.map(part => ({ id: part.id, make: () => {
+            const target = new Container(); target.addChild(sprite(part.texture, part.x, part.y)); return target;
+          } })),
+          { id: 'entity', make: () => {
+            const target = new Container(), halo = sprite(glowTexture, coreBounds.x - margin, coreBounds.y - margin);
+            halo.alpha = 0.7; halo.blendMode = 'add';
+            const body = sprite(coreTexture, coreBounds.x, coreBounds.y); body.blendMode = 'add';
+            target.addChild(halo, body); return target;
+          } },
+          ...sourcePanels.map(part => ({ id: 'panel-' + part.id, make: () => {
+            const target = new Container(), painted = sprite(normal);
+            const mask = new Graphics().poly(part.points.flatMap(point => [point.x, point.y])).fill(0xffffff);
+            target.addChild(painted, mask); painted.mask = mask; return target;
+          } })),
+          { id: 'glint', make: () => {
+            const target = new Container(); target.addChild(sprite(glint.texture, 198, 354)); return target;
+          } },
+        ];
+        const images: { id: string; dataUrl: string }[] = [];
+        for (const item of factories) {
+          const target = item.make();
+          try {
+            const dataUrl = await renderer.extract.base64({ target, frame: new Rectangle(0, 0, WORLD, WORLD),
+              format: 'png', resolution: 1, antialias: false, clearColor: [0, 0, 0, 0] });
+            images.push({ id: item.id, dataUrl });
+          } finally { target.destroy({ children: true, texture: false, textureSource: false }); }
+        }
+        return images;
+      },
       render(release: number, time: number, effects: boolean) {
         const cel = selectCel(cels, release);
         if (cel.index !== shownCel) {

@@ -38,7 +38,7 @@ export async function buildPlugin({ output, runtimeArchive }) {
   await mkdir(output, { mode: 0o700 });
   const staging = await realpath(await mkdtemp(join(tmpdir(), 'unharness-runtime-extract-')));
   try {
-    for (const name of ['bin', 'src', 'skills', 'dist', 'docs', 'package.json', 'package-lock.json', 'README.md', 'README.ja.md', 'LICENSE'])
+    for (const name of ['bin', 'src', 'skills', 'dist', 'assets', 'docs', 'package.json', 'package-lock.json', 'README.md', 'README.ja.md', 'LICENSE'])
       await cp(join(root, name), join(output, name), { recursive: true, errorOnExist: true, force: false });
     for (const name of ['plugin.json', 'mcp.json', '.codex-plugin'])
       await cp(join(root, 'packaging', 'unharness', name), join(output, name), { recursive: true, errorOnExist: true, force: false });

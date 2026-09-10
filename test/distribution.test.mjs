@@ -64,3 +64,16 @@ test('mixed plugin versions, private payloads and unsupported manifest versions 
   await writeFile(join(valid, 'distribution.json'), JSON.stringify(manifest));
   await assert.rejects(readDistribution(valid), { kind: 'distribution-invalid' });
 });
+
+test('bundles that include the layer loader require its stock index without invalidating earlier bundles', async t => {
+  const { indexDistribution, readDistribution } = await import('../src/setup/distribution.mjs');
+  const root = await fixture(t);
+  await mkdir(join(root, 'src/appearances'), { recursive: true });
+  await writeFile(join(root, 'src/appearances/stock.mjs'), '// synthetic loader');
+  await assert.rejects(indexDistribution(root, { platform: 'darwin-arm64', sourceRevision: null, sourceDirty: true }), { kind: 'distribution-invalid' });
+  await mkdir(join(root, 'assets/appearance-templates/hangar-layered-v1'), { recursive: true });
+  await writeFile(join(root, 'assets/appearance-templates/hangar-layered-v1/stock.json'), '{}');
+  await indexDistribution(root, { platform: 'darwin-arm64', sourceRevision: null, sourceDirty: true });
+  const result = await readDistribution(root);
+  assert.ok(result.manifest.files.some(file => file.path.endsWith('/stock.json')));
+});

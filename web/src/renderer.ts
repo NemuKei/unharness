@@ -1,5 +1,5 @@
 import "./pixi-csp";
-import { Application, Texture } from "pixi.js";
+import { Application, Rectangle, Texture } from "pixi.js";
 import artworkUrl from "../assets/hangar-states-v1.png";
 import emptyUrl from "../assets/hangar-empty-v4.png";
 import recipe from "../assets/hangar-v4.json";
@@ -11,6 +11,8 @@ export interface Scene {
   setCondition: (condition: FixtureCase, immediate?: boolean) => void;
   setEffects: (enabled: boolean) => void;
   setVisible: (visible: boolean) => void;
+  snapshot: () => Promise<string>;
+  templateLayers: () => Promise<{ id: string; dataUrl: string }[]>;
   destroy: () => void;
 }
 
@@ -120,6 +122,15 @@ export async function createScene(
         visible = nextVisible;
         if (visible) drawNow();
         syncTicker();
+      },
+      async snapshot() {
+        if (disposed) throw new Error('appearance-render-unavailable');
+        drawNow();
+        return app.renderer.extract.base64({ target: app.stage, frame: new Rectangle(0, 0, recipe.worldSize, recipe.worldSize), format: 'png', resolution: 1 });
+      },
+      templateLayers() {
+        if (disposed) throw new Error('appearance-render-unavailable');
+        return rig!.exportTemplateLayers();
       },
       destroy: dispose,
     };
