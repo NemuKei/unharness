@@ -28,12 +28,12 @@ function frontmatter(body) {
   // A deliberately restricted scalar form, not a replacement YAML parser.
   // This Skill needs no tags, anchors, tool grants or executable frontmatter.
   const entries = match[1].split('\n').map(line => {
-    const field = /^(name|description|disable-model-invocation): (.+)$/.exec(line);
-    assert.ok(field, 'Only the three explicit scalar metadata fields are needed');
+    const field = /^(name|description): (.+)$/.exec(line);
+    assert.ok(field, 'Only the two shared scalar metadata fields are needed');
     return [field[1], field[2]];
   });
   assert.equal(new Set(entries.map(([key]) => key)).size, entries.length);
-  assert.equal(entries.length, 3);
+  assert.equal(entries.length, 2);
   return Object.fromEntries(entries);
 }
 function referenceContract(body) {
@@ -45,7 +45,6 @@ function referenceContract(body) {
 test('original authoring is an explicitly invoked Skill with bounded scalar metadata', async () => {
   const body = await skill(), fields = frontmatter(body);
   assert.equal(fields.name, 'unharness-original');
-  assert.equal(fields['disable-model-invocation'], 'true');
   assert.match(fields.description, /^Use when the user explicitly requests/);
   assert.ok(fields.description.length <= 500);
   assert.ok(body.split('\n').length < 130);
