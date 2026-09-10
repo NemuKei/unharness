@@ -8,7 +8,8 @@ type Handoff = { protocolVersion: 1; port: number; launchId: string; ticket: str
 export type ConnectionHandoff = { kind: "none" } | { kind: "invalid"; reason: string } | { kind: "ready"; handoff: Handoff };
 export type ConnectionPhase = "disconnected" | "pairing" | "connected" | "expired" | "incompatible" | "unknown";
 export type PublicOperation = { requestId: string; operation: "plan" | "apply"; connectionId: string; receipt: PublicReceipt | null; error: string | null };
-type Command = { requestId: string; operation: "plan" | "apply"; subject: string; mode: SourceMode; revision: number; connectionId: string };
+type Command = { requestId: string; operation: "plan" | "apply"; subject: string; mode: SourceMode; revision: number; connectionId: string;
+  confirmedReceipt?: Extract<PublicReceipt, { state: "completed" }> };
 export type ConnectionSnapshot = {
   phase: ConnectionPhase; connection: ConnectionSummary | null; state: PublicSourceState | null;
   plan: PublicPlanReceipt | null; lastOperation: PublicOperation | null; busy: boolean; error: string | null;
@@ -46,6 +47,7 @@ export class PublicConnection {
   #handoff: Handoff | null = null; #token: string | null = null; #loopback: string | null = null;
   #grant: ConnectionSummary | null = null; #epoch = 0; #readGeneration = 0;
   #lastCommand: Command | null = null; #receiptGeneration = 0;
+  #requestInputs = new Map<string, string>();
   #active: { operation: "plan" | "apply"; subject: string; requestId: string; promise: Promise<PublicReceipt> } | null = null;
   constructor({ pageOrigin, handoff = { kind: "none" }, fetcher = (...args) => globalThis.fetch(...args), now = Date.now }: {
     pageOrigin: string; handoff?: ConnectionHandoff; fetcher?: typeof fetch; now?: () => number;
@@ -59,6 +61,7 @@ export class PublicConnection {
   }
   acceptHandoff(value: ConnectionHandoff) {
     ++this.#epoch; ++this.#readGeneration; this.#token = null; this.#grant = null; this.#loopback = null; this.#handoff = null;
+    this.#requestInputs.clear();
     if (value.kind === "ready") this.#handoff = value.handoff;
     this.#set({ phase: value.kind === "ready" ? "pairing" : value.kind === "none" ? "disconnected"
       : value.reason === "remote-incompatible" ? "incompatible" : "unknown",
@@ -162,6 +165,12 @@ export class PublicConnection {
       const body = operation === "plan" ? { requestId: id, mode: subject, expectedRevision: current.revision } : { requestId: id, planRequestId: subject };
       const command: Command = { requestId: id, operation, subject, mode: operation === "plan" ? subject as SourceMode : plan!.result.data.mode,
         revision: current.revision, connectionId: grant.connectionId };
+      // Failure receipts have no mode/revision fields. Never reuse an issued
+      // UUID for different input and then mistake its old failure for this call.
+      const fingerprint = JSON.stringify([operation, subject, command.mode, command.revision, command.connectionId]);
+      const priorInput = this.#requestInputs.get(id);
+      if (priorInput !== undefined && priorInput !== fingerprint) fail("remote-operation-conflict");
+      this.#requestInputs.set(id, fingerprint);
       this.#lastCommand = command;
       const before = this.#epoch; ++this.#readGeneration; ++this.#receiptGeneration;
       this.#set({ busy: true, error: null, plan: operation === "plan" ? null : plan,
@@ -170,7 +179,8 @@ export class PublicConnection {
         try {
           const receipt = readPublicReceipt(await this.#post(loopback, operation, body, token), id, grant.target.scopeId);
           this.#checkReceipt(receipt, command); ++this.#receiptGeneration;
-          if (this.#view.lastOperation?.requestId === id) this.#set({ lastOperation: { requestId: id, operation, connectionId: grant.connectionId, receipt, error: null } });
+          if (this.#view.lastOperation?.requestId === id && this.#view.lastOperation.connectionId === grant.connectionId)
+            this.#set({ lastOperation: { requestId: id, operation, connectionId: grant.connectionId, receipt, error: null } });
           if (before === this.#epoch) {
             this.tick();
             if (this.#grant) this.#set({ state: operation === "apply" || receipt.state !== "completed" || !receipt.result.ok ? null : this.#view.state,
@@ -179,8 +189,16 @@ export class PublicConnection {
           return receipt;
         } catch (error) {
           ++this.#receiptGeneration;
-          if (this.#view.lastOperation?.requestId === id) this.#set({ lastOperation: { requestId: id, operation, connectionId: grant.connectionId, receipt: null, error: errorKind(error) } });
-          if (before === this.#epoch) this.#failed(error);
+          // A validated terminal lookup belongs to this exact dispatched
+          // command, including a saved failure. A late transport error cannot
+          // erase it or tell the original caller a contradictory outcome.
+          const receipt = command.confirmedReceipt ?? null;
+          if (this.#view.lastOperation?.requestId === id && this.#view.lastOperation.connectionId === grant.connectionId)
+            this.#set({ lastOperation: { requestId: id, operation, connectionId: grant.connectionId, receipt,
+              error: receipt ? null : errorKind(error) } });
+          // Preserve the historical result without reconfirming the connection.
+          if (before === this.#epoch) { this.tick(); this.#failed(error); }
+          if (receipt) return receipt;
           throw error;
         } finally { this.#active = null; this.#set({ busy: false }); }
       })();
@@ -193,10 +211,14 @@ export class PublicConnection {
   async operationStatus(requestId: string) {
     if (!isConnectionId(requestId)) fail("remote-invalid-request");
     const { grant, token, loopback } = this.#authority(), before = this.#epoch, read = ++this.#receiptGeneration;
+    const command = this.#lastCommand;
     try {
       const receipt = readPublicReceipt(await this.#post(loopback, "operation-status", { requestId }, token), requestId, grant.target.scopeId);
-      const last = this.#view.lastOperation, command = this.#lastCommand;
-      if (command?.requestId === requestId && command.connectionId === grant.connectionId) this.#checkReceipt(receipt, command);
+      if (command?.requestId === requestId && command.connectionId === grant.connectionId) {
+        this.#checkReceipt(receipt, command);
+        if (receipt.state === "completed") command.confirmedReceipt ??= receipt;
+      }
+      const last = this.#view.lastOperation;
       if (before === this.#epoch && read === this.#receiptGeneration && last?.requestId === requestId && last.connectionId === grant.connectionId) {
         const current = this.#view.state;
         this.#set({ lastOperation: { ...last, receipt, error: null },
