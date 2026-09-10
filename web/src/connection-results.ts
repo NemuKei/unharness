@@ -23,15 +23,17 @@ export type PublicPlanReceipt = { requestId: string; operation: "plan"; state: "
 export type PublicApplyReceipt = { requestId: string; operation: "apply"; state: "completed"; result: { ok: true; data: PublicApplyData } };
 export type PublicReceipt = PublicPlanReceipt | PublicApplyReceipt
   | { requestId: string; operation: "plan" | "apply"; state: "completed"; result: FailedResult }
+  | { requestId: string; operation: "plan" | "apply"; state: "running" }
   | { requestId: string; operation: "plan" | "apply"; state: "unconfirmed" }
   | { requestId: string; operation: null; state: "not-found" };
 export function readPublicReceipt(value: unknown, requestId: string, scopeId: string): PublicReceipt {
   const v = connectionRecord(value);
   if (v.requestId !== requestId || !isConnectionId(requestId)) throw Error("invalid-connection-response");
-  if (v.state === "not-found" || v.state === "unconfirmed") {
+  if (v.state === "not-found" || v.state === "running" || v.state === "unconfirmed") {
     connectionFields(v, ["requestId", "operation", "state"]);
     if (v.state === "not-found" && v.operation === null) return { requestId, operation: null, state: "not-found" };
-    if (v.state === "unconfirmed" && (v.operation === "plan" || v.operation === "apply")) return { requestId, operation: v.operation, state: "unconfirmed" };
+    if ((v.state === "running" || v.state === "unconfirmed") && (v.operation === "plan" || v.operation === "apply"))
+      return { requestId, operation: v.operation, state: v.state };
     throw Error("invalid-connection-response");
   }
   connectionFields(v, ["requestId", "operation", "state", "result"]);

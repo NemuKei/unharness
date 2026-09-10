@@ -61,11 +61,13 @@ export class PublicConnection {
   }
   acceptHandoff(value: ConnectionHandoff) {
     ++this.#epoch; ++this.#readGeneration; this.#token = null; this.#grant = null; this.#loopback = null; this.#handoff = null;
+    // Abandon only the connection attempt. Accepted writes keep their own
+    // busy boundary and must settle normally even after this handoff changes.
     this.#requestInputs.clear();
     if (value.kind === "ready") this.#handoff = value.handoff;
     this.#set({ phase: value.kind === "ready" ? "pairing" : value.kind === "none" ? "disconnected"
       : value.reason === "remote-incompatible" ? "incompatible" : "unknown",
-      connection: null, state: null, plan: null, error: value.kind === "invalid" ? value.reason : null });
+      connection: null, state: null, plan: null, busy: this.#active !== null, error: value.kind === "invalid" ? value.reason : null });
   }
   disconnect() { this.acceptHandoff({ kind: "none" }); }
   tick() {
@@ -109,7 +111,9 @@ export class PublicConnection {
     this.#handoff = null; this.#set({ busy: true, phase: "pairing", error: null });
     const loopback = `http://127.0.0.1:${handoff.port}`;
     try {
-      const raw = connectionRecord(await this.#post(loopback, "redeem", { ticket: handoff.ticket, launchId: handoff.launchId, protocolVersion: 1 }));
+      const response = await this.#post(loopback, "redeem", { ticket: handoff.ticket, launchId: handoff.launchId, protocolVersion: 1 });
+      if (before !== this.#epoch) return;
+      const raw = connectionRecord(response);
       if (raw.protocolVersion !== 1) fail("remote-incompatible");
       const { token, ...rest } = raw, grant = readConnectionSummary(rest);
       if (!isConnectionHash(token) || grant.launchId !== handoff.launchId) fail("remote-connection-changed");
@@ -118,8 +122,10 @@ export class PublicConnection {
       this.#token = token; this.#grant = grant; this.#loopback = loopback;
       this.#set({ phase: "connected", connection: grant, busy: false });
       await this.refresh();
-    } catch (error) { if (before === this.#epoch) this.#failed(error); throw error; }
-    finally { if (before === this.#epoch) this.#set({ busy: false }); }
+    } catch (error) {
+      if (before !== this.#epoch) return; // A superseded attempt cannot report against the new connection.
+      this.#failed(error); throw error;
+    } finally { if (before === this.#epoch) this.#set({ busy: this.#active !== null }); }
   }
   async refresh() {
     if (this.#active) fail("remote-operation-in-progress");
@@ -155,6 +161,7 @@ export class PublicConnection {
     }
     try {
       const { grant, token, loopback } = this.#authority(), current = this.#view.state;
+      if (this.#view.lastOperation?.receipt?.state === "running") fail("remote-operation-in-progress");
       if (this.#view.lastOperation && this.#view.lastOperation.receipt?.state !== "completed") fail("remote-operation-unconfirmed");
       if (!current || this.#view.phase !== "connected") fail("remote-state-unconfirmed");
       if (current.conflict || current.recoveryPending) fail(current.conflict ? "source-conflict" : "recovery-required");
@@ -177,8 +184,10 @@ export class PublicConnection {
         lastOperation: { requestId: id, operation, connectionId: grant.connectionId, receipt: null, error: null } });
       const promise = (async () => {
         try {
-          const receipt = readPublicReceipt(await this.#post(loopback, operation, body, token), id, grant.target.scopeId);
+          let receipt = readPublicReceipt(await this.#post(loopback, operation, body, token), id, grant.target.scopeId);
           this.#checkReceipt(receipt, command); ++this.#receiptGeneration;
+          if (receipt.state === "completed") command.confirmedReceipt ??= receipt;
+          if (receipt.state === "running" && command.confirmedReceipt) receipt = command.confirmedReceipt;
           if (this.#view.lastOperation?.requestId === id && this.#view.lastOperation.connectionId === grant.connectionId)
             this.#set({ lastOperation: { requestId: id, operation, connectionId: grant.connectionId, receipt, error: null } });
           if (before === this.#epoch) {
@@ -213,10 +222,13 @@ export class PublicConnection {
     const { grant, token, loopback } = this.#authority(), before = this.#epoch, read = ++this.#receiptGeneration;
     const command = this.#lastCommand;
     try {
-      const receipt = readPublicReceipt(await this.#post(loopback, "operation-status", { requestId }, token), requestId, grant.target.scopeId);
+      let receipt = readPublicReceipt(await this.#post(loopback, "operation-status", { requestId }, token), requestId, grant.target.scopeId);
       if (command?.requestId === requestId && command.connectionId === grant.connectionId) {
         this.#checkReceipt(receipt, command);
         if (receipt.state === "completed") command.confirmedReceipt ??= receipt;
+        // Progress can arrive after a terminal result. It cannot undo that
+        // same command's verified outcome, including a durable failure.
+        if (receipt.state === "running" && command.confirmedReceipt) receipt = command.confirmedReceipt;
       }
       const last = this.#view.lastOperation;
       if (before === this.#epoch && read === this.#receiptGeneration && last?.requestId === requestId && last.connectionId === grant.connectionId) {
