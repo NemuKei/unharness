@@ -1,6 +1,6 @@
 # Mac plugin assembly
 
-The development package combines the built local interface, deterministic core/MCP, management and setup Skills, locked production dependencies and an official Node runtime. It currently targets **macOS arm64**. Native update/removal/reinstall and [independent recovery](plugin-recovery.md) have scoped evidence. The end-user installer, public download and appearance-authoring Skill remain in progress under the [plugin contract](spec-plugin-distribution.md).
+The development package combines the built local interface, deterministic core/MCP, management, setup and original-authoring Skills, locked production dependencies and an official Node runtime. It currently targets **macOS arm64**. Native update/removal/reinstall and [independent recovery](plugin-recovery.md) have scoped evidence. The [v2/artwork package checkpoint](evidence/2026-09-10-native-package-v2.md) adds actual in-app saving and version selection. The end-user installer, public download and complete model-driven journey remain in progress under the [plugin contract](spec-plugin-distribution.md).
 
 ## Maintainer build
 
@@ -25,3 +25,5 @@ Native cache installation does not become the home of Normal, setup versions, fa
 ## Verified so far
 
 The [Mac package evidence](evidence/2026-09-09-plugin-package-macos.md) covers the official runtime hash/signature, package/Skill validators, native marketplace installation, MCP calls, initial saving in the Codex in-app browser, three-mode input catalog checks, exact Normal restoration and unchanged installed-package integrity. [Update and recovery evidence](evidence/2026-09-09-plugin-recovery-macos.md) covers the subsequent native lifecycle. A complete natural-language onboarding journey, public-domain pairing and downloaded-package launch remain unverified.
+
+The [subsequent v2/artwork check](evidence/2026-09-10-native-package-v2.md) covers all three bundled Skills, native MCP authoring operations, in-app file selection and three-mode previews, saved setup and collection preservation through an update, old Normal favorite restoration, and recovery after native removal. The official-plugin selection was empty and no model turn was submitted.
