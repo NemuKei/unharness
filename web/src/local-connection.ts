@@ -31,13 +31,14 @@ export function readLocalPairing(value: unknown, view: SourceView, pairingId: st
     binding = readConnectionBinding(v);
   }
   if (binding.launchId !== view.metadata.launchId || binding.target.application !== view.metadata.application
-    || binding.target.scopeId !== view.source?.registration.scopeId) throw Error("remote-connection-changed");
+    || binding.target.scopeId !== view.source?.registration.scopeId
+    || binding.target.collectionScopeId !== (view.source?.registration.rootScopeId ?? view.source?.registration.scopeId)) throw Error("remote-connection-changed");
   return v.status === "connected" ? { pairingId, status: "connected", connection: binding as ConnectionSummary }
     : { pairingId, status: v.status as "approved" | "awaiting-approval", ticket: v.ticket as string, ...binding };
 }
 export function publicPairingUrl(pairing: LocalPairing, origin: string, now = Date.now()): string | null {
   const port = loopbackPort(origin);
   if (pairing.status !== "approved" || pairing.expiresAt <= now || !port) return null;
-  const fragment = new URLSearchParams({ unharness: "1", port, launch: pairing.launchId, ticket: pairing.ticket });
+  const fragment = new URLSearchParams({ unharness: "2", port, launch: pairing.launchId, ticket: pairing.ticket });
   return PUBLIC_WEB_ORIGIN + "/#" + fragment;
 }

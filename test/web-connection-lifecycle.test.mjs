@@ -16,10 +16,10 @@ function fixture(t) {
   function handoff() {
     const launchId = randomUUID(), ticket = randomUUID().replaceAll('-', '').repeat(2);
     const token = randomUUID().replaceAll('-', '').repeat(2);
-    const grant = { protocolVersion: 1, launchId, webOrigin: PUBLIC_WEB_ORIGIN, expiresAt: time + 600000,
-      target: { application: 'codex', scopeId: 'a'.repeat(64) }, operations: [...CONNECTION_OPERATIONS], connectionId: randomUUID() };
+    const grant = { protocolVersion: 2, launchId, webOrigin: PUBLIC_WEB_ORIGIN, expiresAt: time + 600000,
+      target: { application: 'codex', scopeId: 'a'.repeat(64), collectionScopeId: 'a'.repeat(64) }, operations: [...CONNECTION_OPERATIONS], connectionId: randomUUID() };
     sessions.set(ticket, { token, grant });
-    return { kind: 'ready', handoff: { protocolVersion: 1, port: 43210, launchId, ticket } };
+    return { kind: 'ready', handoff: { protocolVersion: 2, port: 43210, launchId, ticket } };
   }
   const first = handoff();
   const c = new PublicConnection({ pageOrigin: PUBLIC_WEB_ORIGIN, handoff: first, now: () => time,

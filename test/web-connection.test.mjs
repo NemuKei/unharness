@@ -11,8 +11,9 @@ import { readSourceProfileFiles } from '../src/sources/owned-profile.mjs';
 import { setupProfile } from '../test-support/setup-profile.mjs';
 import { reviewSetup, applySetup } from '../src/setup/service.mjs';
 import { consumeConnectionHandoff, PublicConnection } from '../web/src/connection.ts';
+import { CONNECTION_OPERATIONS } from '../web/src/connection-contract.ts';
 
-const readyUrl = ({ port = '45678', launchId = randomUUID(), ticket = 'b'.repeat(64), version = '1' } = {}) =>
+const readyUrl = ({ port = '45678', launchId = randomUUID(), ticket = 'b'.repeat(64), version = '2' } = {}) =>
   PUBLIC_WEB_ORIGIN + '/#' + new URLSearchParams({ unharness: version, port, launch: launchId, ticket });
 
 test('handoff fragments are removed before validation and never allow arbitrary URLs or origins', () => {
@@ -25,7 +26,8 @@ test('handoff fragments are removed before validation and never allow arbitrary 
     const cleaned = []; assert.equal(consumeConnectionHandoff(value, v => cleaned.push(v)).kind, 'invalid');
     assert.equal(cleaned.length, 1); assert.ok(!cleaned[0].includes('#'));
   }
-  assert.equal(consumeConnectionHandoff(readyUrl({ version: '2' }), () => {}).reason, 'remote-incompatible');
+  for (const version of ['1', '3'])
+    assert.equal(consumeConnectionHandoff(readyUrl({ version }), () => {}).reason, 'remote-incompatible');
   assert.equal(consumeConnectionHandoff(PUBLIC_WEB_ORIGIN + '/#demo', () => assert.fail('ordinary anchor is retained')).kind, 'none');
 });
 
@@ -64,7 +66,7 @@ test('the public client connects only on request and prepares all three modes th
   }
   assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
   for (const call of s.calls) {
-    assert.match(call.url, /^http:\/\/127\.0\.0\.1:\d+\/remote\/v1\/(redeem|status|plan|apply)$/);
+    assert.match(call.url, /^http:\/\/127\.0\.0\.1:\d+\/remote\/v2\/(redeem|status|plan|apply)$/);
     assert.equal(call.options.credentials, 'omit'); assert.equal(call.options.mode, 'cors');
     assert.equal(call.options.redirect, 'error'); assert.equal(call.options.referrerPolicy, 'no-referrer');
     assert.equal(call.options.cache, 'no-store');
@@ -162,7 +164,7 @@ test('AI adoption of a new saved setup invalidates the public plan through the s
 test('a different protocol version stops the connection with a distinct incompatible state', async t => {
   const s = await setup(t), c = s.client;
   s.intercept(async (url, options, response) => {
-    const value = await response.json(); if (url.endsWith('/redeem')) value.protocolVersion = 2;
+    const value = await response.json(); if (url.endsWith('/redeem')) value.protocolVersion = 1;
     return Response.json(value);
   });
   await assert.rejects(c.connect(), { kind: 'remote-incompatible' });
@@ -182,9 +184,9 @@ function receiptOrderFixture(failed = false) {
       const action = new URL(url).pathname.split('/').at(-1), input = JSON.parse(options.body);
       let result;
       if (action === 'redeem') {
-        connection = { protocolVersion: 1, connectionId: randomUUID(), launchId: input.launchId,
+        connection = { protocolVersion: 2, connectionId: randomUUID(), launchId: input.launchId,
           expiresAt: time + CONNECTION_TTL_MS, webOrigin: PUBLIC_WEB_ORIGIN,
-          target: { application: 'codex', scopeId }, operations: ['status', 'plan', 'apply', 'operation-status'] };
+          target: { application: 'codex', scopeId, collectionScopeId: scopeId }, operations: [...CONNECTION_OPERATIONS] };
         result = { ...connection, token: 'c'.repeat(64) };
       } else if (action === 'status') {
         result = { connection, state: { scopeId, revision, preparedMode: mode, setupRequired: false,
