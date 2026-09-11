@@ -41,7 +41,7 @@ export async function inspectEnrollment(args) {
   const summary = discoverySummary(d);
   return { scopeId: w.scopeId, normalId: activeNormalId(w), revision: w.state.revision, discoveryId: d.discoveryId,
     registeredCount: w.reg.skills.length, limit: 32, setupRequired: !w.state.setupId,
-    enrollmentSchemaVersion: w.manifestVersion === 2 ? 2 : 1,
+    enrollmentSchemaVersion: w.manifestVersion,
     candidates: summary.skills.filter(s => !w.reg.skills.some(r => r.path === s.path)),
     unavailableSources: summary.unavailableSources, notices: summary.notices, retained: summary.retained, verification };
 }
@@ -59,7 +59,7 @@ export async function reviewEnrollment(args) {
     const saved = await loadSetup(w);
     if (!saved) fail('setup-required');
     const schemaVersion = saved.review.schemaVersion;
-    if (w.manifestVersion === 2 && schemaVersion !== 2) fail('setup-upgrade-required');
+    if (schemaVersion < w.manifestVersion) fail('setup-upgrade-required');
     const additions = validateAdditions(args.additions, schemaVersion);
     if (w.reg.skills.length + additions.length > 32) fail('enrollment-source-limit');
     const app = applicationFor(w.reg.context);
@@ -72,7 +72,7 @@ export async function reviewEnrollment(args) {
     const selected = additions.map(a => d.skills.find(s => s.id === a.sourceId));
     if (d.unavailableSources.length || selected.some(s => !s?.eligible || w.reg.skills.some(r => r.path === s.path))) fail('unsupported-source');
     assertRegistrationOwnership(d, additions.map(a => a.sourceId), false);
-    const { rebindReviewId: previousRebindReviewId, ...previousRegistration } = w.reg;
+    const { rebindReviewId: previousRebindReviewId, pluginEnrollmentReviewId: previousPluginEnrollmentReviewId, ...previousRegistration } = w.reg;
     const reg = { ...previousRegistration, role: 'registration', parentScopeId: w.scopeId, parentNormalId: activeNormalId(w),
       skills: [...w.reg.skills, ...selected.map(s => registeredSkill(app, s))], bindings: { ...w.reg.bindings }, normalId: null };
     const normal = await loadNormal(w.workspace, w.reg, activeNormalId(w));
@@ -111,7 +111,7 @@ export async function applyEnrollment(args) {
   if (process.platform !== 'darwin') fail('unsupported-platform');
   return locked(args.workspace, async w => {
     const p = await loadEnrollmentReview(w, args.reviewId);
-    if (w.manifestVersion === 2 && p.schemaVersion !== 2) fail('setup-upgrade-required');
+    if (p.schemaVersion < w.manifestVersion) fail('setup-upgrade-required');
     await current(w);
     if (w.state.lastEnrollmentReviewId === p.reviewId && w.scopeId === p.nextScopeId) return result(w, p, true);
     assertEnrollmentCurrent(w, p);

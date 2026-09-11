@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "unharness",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Save, prepare and compare your local Codex loadouts.",
   "author": {
     "name": "DeltaHelm Lab",

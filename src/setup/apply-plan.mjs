@@ -30,6 +30,7 @@ export async function assertV2ApplicationPlan(w, plan) {
   if (!['favorite', 'checkpoint'].includes(plan.mode) && plan.restoreSourceId != null) fail('setup-record-invalid');
   for (const key of ['selectedIds', 'preparedMode', 'setupId', 'guide', 'skillStates', 'adaptation'])
     if (!equal(plan[key] ?? null, expected[key] ?? null)) fail('setup-record-invalid');
+  if (w.manifestVersion === 3 && !equal(plan.pluginStates, expected.pluginStates ?? [])) fail('setup-record-invalid');
   const before = await loadSnapshot(w.workspace, w.reg, plan.beforeId);
   const after = await loadSnapshot(w.workspace, w.reg, plan.afterId);
   const changed = Object.keys(before).filter(key => !equal(before[key], expected.after[key]))

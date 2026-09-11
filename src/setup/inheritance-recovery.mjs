@@ -12,16 +12,17 @@ import { loadSetup, assertReviewCurrent, adoptedState } from './records.mjs';
 export async function recoverInheritedSetup(w, j) {
   try {
     exactKeys(j, ['kind', 'schemaVersion', 'scopeId', 'setupId', 'beforeState', 'afterState', 'beforeManifest', 'afterManifest'], [], 'journal-invalid');
-    if (j.kind !== 'unharness-user-source-setup-pending' || j.schemaVersion !== 2 || j.scopeId !== w.scopeId
+    if (j.kind !== 'unharness-user-source-setup-pending' || ![2, 3].includes(j.schemaVersion) || j.scopeId !== w.scopeId
       || workspaceManifestRoot(j.beforeManifest) !== w.rootScopeId
-      || !equal(j.afterManifest, { schemaVersion: 2, rootScopeId: w.rootScopeId })
-      || j.beforeState.setupSchemaVersion === 2 && j.beforeManifest.schemaVersion !== 2) fail('journal-invalid');
+      || !equal(j.afterManifest, { schemaVersion: j.schemaVersion, rootScopeId: w.rootScopeId })
+      || (j.beforeState.setupSchemaVersion ?? 1) > (j.beforeManifest.schemaVersion ?? 1)
+      || (j.beforeManifest.schemaVersion ?? 1) > j.schemaVersion) fail('journal-invalid');
     await validateStateSnapshots(w.workspace, w.reg, j.beforeState);
     await validateStateSnapshots(w.workspace, w.reg, j.afterState);
     const saved = await loadSetup(w, j.setupId);
-    if (saved.review.schemaVersion !== 2) fail('journal-invalid');
+    if (saved.review.schemaVersion !== j.schemaVersion) fail('journal-invalid');
     assertReviewCurrent({ ...w, state: j.beforeState }, saved.review);
-    if (!equal(j.afterState, adoptedState(j.beforeState, j.setupId, 2))
+    if (!equal(j.afterState, adoptedState(j.beforeState, j.setupId, j.schemaVersion))
       || ![j.beforeState, j.afterState].some(s => equal(s, w.state))
       || ![j.beforeManifest, j.afterManifest].some(m => equal(m, w.manifest))) fail('journal-invalid');
   } catch { fail('journal-invalid'); }

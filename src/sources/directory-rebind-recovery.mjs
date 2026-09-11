@@ -6,7 +6,7 @@ import { exactKeys } from '../comparisons/assessment.mjs';
 import { readJson, writeJson, unlink, loadScopeLineage, validateStateSnapshots } from './records.mjs';
 import { equal } from './platform.mjs';
 import { fail, verification } from './errors.mjs';
-import { loadDirectoryRebindReview, reboundRegistration, reboundState } from './directory-rebind-records.mjs';
+import { loadDirectoryRebindReview, reboundRegistration, reboundState, reboundManifest } from './directory-rebind-records.mjs';
 
 export async function recoverDirectoryRebind(w, j) {
   try {
@@ -16,7 +16,7 @@ export async function recoverDirectoryRebind(w, j) {
     const reg = reboundRegistration(p.before.reg, p, p.reviewId);
     const child = (await loadScopeLineage(w.workspace, w.rootScopeId, j.nextScopeId))[0];
     if (j.scopeId !== p.scopeId || !equal(j.beforeState, p.beforeState) || !equal(j.beforeManifest, p.beforeManifest)
-      || !equal(j.afterManifest, { schemaVersion: 2, rootScopeId: w.rootScopeId })
+      || !equal(j.afterManifest, reboundManifest(p))
       || !equal(child.reg, reg) || !equal(j.afterState, reboundState(j.beforeState, p, j.nextScopeId, j.afterState.preparation))
       || ![j.beforeState, j.afterState].some(s => equal(s, w.state))
       || ![j.beforeManifest, j.afterManifest].some(m => equal(m, w.manifest))) fail('journal-invalid');

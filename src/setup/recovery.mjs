@@ -9,7 +9,7 @@ import { fail, verification } from '../sources/errors.mjs';
 import { loadSetup, assertReviewCurrent, adoptedState } from './records.mjs';
 
 export async function recoverSetup(w, j) {
-  if (j.schemaVersion === 2) {
+  if ([2, 3].includes(j.schemaVersion)) {
     const { recoverInheritedSetup } = await import('./inheritance-recovery.mjs');
     return recoverInheritedSetup(w, j);
   }

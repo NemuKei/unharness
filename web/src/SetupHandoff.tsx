@@ -65,7 +65,7 @@ export function SetupHandoff({ view, confirmed, busy, execute }: { view: SourceV
       {configured && <>
         <button type="button" className="secondary" aria-disabled={busy} aria-busy={busy} onClick={() => { if (!busy) void readSaved(); }}>保存した2構成を確認</button>
         {readError && <p role="alert">{readError}</p>}
-        {saved?.key === key && <SavedSetupSummary data={saved.data} sources={view.source!.registration.sources} />}
+        {saved?.key === key && <SavedSetupSummary data={saved.data} sources={view.source!.registration.sources} plugins={view.source!.registration.plugins} />}
       </>}
       <fieldset>
         <legend>相談を始める構成</legend>

@@ -72,6 +72,17 @@ export type SourceVerification = {
   sourceCoverage: "unknown";
   nextTaskRequired: true;
 };
+export type PluginFeatures = { skills: number; mcpServers: number; hooks: number; apps: number; appTemplates: number; scheduledTasks: number | null };
+export type RegisteredPlugin = { id: string; label: string; normalEnabled: boolean;
+  eligibility: 'official-confirmed' | 'not-official' | 'unknown'; sourceRevision: string;
+  wholePluginControl: boolean; requiredControl: boolean; origin: 'self' | 'external'; features: PluginFeatures; checkedAt: string };
+export type PluginState = { pluginId: string; state: 'normal' | 'disabled'; enabled: boolean };
+export type PluginObservation = { pluginId: string; dependencyId: string; sourceRevision: string;
+  expectedEnabled: boolean | null; configuration: 'saved-snapshot' | 'unavailable'; features: PluginFeatures;
+  skillCatalog: { fieldPresent: boolean; available: boolean; expectedCount: number; matchedCount: number | null; identityConflict: boolean | null };
+  inputStatus: 'matched' | 'not-matched' | 'unknown'; runtimeStatus: 'unknown' };
+export type PluginCoverage = { scope: 'initial-recorded-inputs'; inputStatus: 'matched' | 'not-matched' | 'unknown';
+  runtimeStatus: 'unknown'; skillCatalogSource: 'initial-world-state-host-skills'; unobservedComponents: string[] };
 export type TaskObservationStatus =
   | "matched-record"
   | "not-matched-record"
@@ -86,6 +97,8 @@ export type TaskObservation = {
   preparedMode: SourceMode;
   observedAt: string;
   status: TaskObservationStatus;
+  plugins?: PluginObservation[];
+  coverage?: PluginCoverage;
   reasons: string[];
   sources: Array<{
     sourceId: string;
@@ -126,10 +139,11 @@ export type SourceState = {
     normalId: string;
     activeNormalId: string;
     sources: SourceRow[];
+    plugins?: RegisteredPlugin[];
   };
   preparedMode: SourceMode;
   revision: number;
-  setup?: { setupId: string | null; preparedSetupId: string | null; schemaVersion?: 1 | 2 | null; setupRequired?: boolean };
+  setup?: { setupId: string | null; preparedSetupId: string | null; schemaVersion?: 1 | 2 | 3 | null; setupRequired?: boolean };
   preparation: { id: string; preparedAt: string } | null;
   observation: TaskObservation | null;
   observationIssue: string | null;
@@ -256,6 +270,7 @@ export type SourcePlan = {
   selectedIds: string[];
   changedFiles: { id: string; label: string }[];
   skillStates: { id: string; enabled: boolean; manualOnly: boolean }[];
+  pluginStates?: PluginState[];
   guide: Omit<Guide, "text"> | null;
   adaptation: SourcePlanAdaptation | null;
   retained: string[];
@@ -268,7 +283,7 @@ export type SourcePlanAdaptation = {
   normalId: string;
 } & ({ kind: "retained-settings" } | { kind: "directory-rebind"; previousScopeId: string; scopeId: string }
   | { kind: "source-enrollment"; previousScopeId: string; scopeId: string;
-  addedSourceIds: string[]; addedSourceState: "saved-normal" });
+  addedSourceIds: string[]; addedSourceState: "saved-normal"; addedPluginIds?: string[]; addedPluginState?: 'saved-normal' });
 export type RetainedPlan = {
   planId: string;
   scopeId: string;
@@ -296,6 +311,7 @@ export type SourceFavorite = {
   needsAdaptation: boolean;
   scopeId?: string;
   addedSourceIds?: string[];
+  addedPluginIds?: string[];
   name: string;
   preparedMode: SourceMode;
   revision: number;

@@ -50,7 +50,7 @@ for (const protocols of [undefined, ['2025-11-25']]) test(`official stdio client
   for (const tool of tools) {
     assert.equal(tool.inputSchema.additionalProperties, false, tool.name);
     assert.equal(tool.outputSchema.type, 'object', tool.name);
-    assert.equal(tool.annotations.openWorldHint, false, tool.name);
+    assert.equal(tool.annotations.openWorldHint, tool.name === 'review_plugin_enrollment', tool.name);
   }
   assert.equal(tools.find(t => t.name === 'status').annotations.readOnlyHint, true);
   assert.equal(tools.find(t => t.name === 'plan_mode').annotations.readOnlyHint, false);

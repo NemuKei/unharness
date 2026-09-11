@@ -19,7 +19,7 @@ function ids(value, limit) {
   if (list(value, limit).some(v => !identifier(v))) fail(invalid);
   return [...new Set(value)].sort();
 }
-function confirmed(plugin) {
+export function validateOfficialPluginEvidence(plugin) {
   try {
     if (plugin.eligibility !== 'official-confirmed') throw Error();
     const e = plugin.evidence;
@@ -63,7 +63,7 @@ export function resolveModeSkillSets(value) {
     for (const id of ids(value.retainedOfficialPluginIds, 2048)) {
       const plugin = plugins.get(id);
       if (!plugin) fail(invalid);
-      confirmed(plugin);
+      validateOfficialPluginEvidence(plugin);
       for (const skillId of plugin.skillIds) {
         if (getSkill(skillId).enabled) inherited.add(skillId);
       }

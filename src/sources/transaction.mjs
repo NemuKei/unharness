@@ -1,4 +1,6 @@
-// Node-only transactional publication/recovery. No catalog, editor or YAML import.
+// Frozen publication/recovery remains Node-only. New release preparations may
+// obtain an application-owned dependency guard without importing native code
+// into Normal, favorite or interruption restoration.
 import { randomBytes } from 'node:crypto';
 import { lstat, readdir, rename } from 'node:fs/promises';
 import { join, dirname, basename } from 'node:path';
@@ -194,7 +196,10 @@ export async function transact(w, plan, planId) {
     after = await loadSnapshot(w.workspace, w.reg, plan.afterId);
   // Forward publications obey today's retained-control rules. A valid older
   // interrupted transaction still has to be reversible by offline recovery.
-  assertControlChanges({ sources: w.reg.skills, before, after });
+  assertControlChanges({ sources: w.reg.skills, plugins: w.reg.plugins, before, after });
+  const app = applicationFor(w.reg.context);
+  const verifyDependencies = ['unseal', 'trueform'].includes(plan.mode) && app.forwardDependencyGuard
+    ? await app.forwardDependencyGuard(w) : async () => {};
   const keys = changes(w, before, after),
     paths = pathsFor(w.reg);
   await assertCurrent(w, before);
@@ -232,6 +237,7 @@ export async function transact(w, plan, planId) {
   };
   await writeJson(join(w.workspace, 'pending.json'), journal, true);
   await sourceTransactionHook('journal');
+  await verifyDependencies();
   for (const dir of dirs) {
     if (dir.identity) continue;
     const parent = w.reg.bindings[dir.key], parentStat = await lstat(parent.path);
@@ -253,11 +259,13 @@ export async function transact(w, plan, planId) {
   }
   await sourceTransactionHook('staged');
   const active = { ...w, state: { ...w.state, ownedDirs: dirs } };
+  await verifyDependencies();
   await assertCurrent(active, before);
   for (let i = 0; i < keys.length; i++) {
     const k = keys[i];
     assertWritableOwnership(before[k]);
     assertWritableOwnership(after[k]);
+    await verifyDependencies({ localOnly: true });
     await checkParents(w.reg);
     if (!equal(await captureFile(paths[k]), before[k])) fail('source-conflict');
     if (after[k] === null) await unlink(paths[k]);
@@ -266,6 +274,7 @@ export async function transact(w, plan, planId) {
   }
   await assertCurrent(active, after);
   await sourceTransactionHook('before-completion');
+  await verifyDependencies();
   const newState = {
     ...w.state,
     ...(w.state.scopePreparationRequired === undefined ? {} : { scopePreparationRequired: false }),
@@ -283,6 +292,7 @@ export async function transact(w, plan, planId) {
   };
   await writeJson(join(w.workspace, 'state.json'), newState);
   await sourceTransactionHook('state');
+  await verifyDependencies({ localOnly: true });
   // Journal removal is the committed boundary. Empty directory housekeeping
   // follows it so pending recovery never needs to recreate a deleted directory.
   await unlink(join(w.workspace, 'pending.json'));
@@ -401,6 +411,10 @@ export async function recoverTransaction(w) {
     return { status: 'nothing-pending', verification };
   if (process.platform !== 'darwin') fail('unsupported-platform');
   const j = await readJson(join(w.workspace, 'pending.json'));
+  if (j.kind === 'unharness-user-source-plugin-enrollment-pending') {
+    const { recoverPluginEnrollment } = await import('../setup/plugin-enrollment-recovery.mjs');
+    return recoverPluginEnrollment(w, j);
+  }
   if (j.kind === 'unharness-user-source-directory-rebind-pending') {
     const { recoverDirectoryRebind } = await import('./directory-rebind-recovery.mjs');
     return recoverDirectoryRebind(w, j);
@@ -419,7 +433,8 @@ export async function recoverTransaction(w) {
   }
   const { before, after, paths } = await validateJournal(w, j);
   await checkParents(w.reg);
-  const dependencyConflicts = [];
+  const dependencyConflicts = applicationFor(w.reg.context).changedReadOnlyDependencies
+    ? await applicationFor(w.reg.context).changedReadOnlyDependencies(w) : [];
   // Validate every target and dependency before the first recovery mutation.
   for (const [k, path] of Object.entries(paths)) {
     const current = await captureFile(path);

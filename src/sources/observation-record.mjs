@@ -1,5 +1,6 @@
 // Pure persisted-observation validation. Status/recovery must not load native or YAML code.
 import { verification } from './errors.mjs';
+import { PLUGIN_OBSERVATION_REASONS, validatePluginEvidence } from '../codex/plugin-task-observation.mjs';
 export const OBSERVATION_REASONS = Object.freeze([
   'preparation-boundary-unavailable', 'preparation-metadata-invalid',
   'task-record-unavailable', 'task-record-invalid', 'task-identity-mismatch',
@@ -10,8 +11,9 @@ export const OBSERVATION_REASONS = Object.freeze([
   'skill-catalog-unavailable', 'skill-state-unavailable', 'skill-catalog-mismatch',
 ]);
 // Claude Code records a different startup surface, so its projection uses a
-// separate schema version. Codex observations keep schemaVersion 1 and the
-// exact reason vocabulary they were written with; nothing here migrates them.
+// separate schema version. Existing Codex observations keep schemaVersion 1
+// and their original reason vocabulary. Registered-plugin scopes use schema3;
+// no historical observation acquires today's plugin registration implicitly.
 export const CLAUDE_OBSERVATION_REASONS = Object.freeze([
   'preparation-boundary-unavailable', 'preparation-metadata-invalid',
   'task-record-unavailable', 'task-record-invalid', 'task-identity-mismatch',
@@ -43,7 +45,17 @@ export function preparationMetadata(state) {
 }
 export const conditionId = v => typeof v === 'string' && /^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,127}$/.test(v) ? v : null;
 export function projectObservation(p, observationId, w) {
+  if (w.reg.plugins?.length) {
+    if (p?.schemaVersion !== 3) throw Error('observation-invalid');
+    const pluginFields = validatePluginEvidence(p, w.reg.plugins);
+    const original = projectCodexObservation({ ...p, schemaVersion: 1, status: p.sourceStatus,
+      reasons: p.reasons.filter(r => !PLUGIN_OBSERVATION_REASONS.includes(r)) }, observationId, w);
+    return { ...original, schemaVersion: 3, ...pluginFields };
+  }
   if (p?.schemaVersion === 2) return projectClaudeObservation(p, observationId, w);
+  return projectCodexObservation(p, observationId, w);
+}
+function projectCodexObservation(p, observationId, w) {
   const boundary = preparationMetadata(w.state);
   const ids = new Map([...(w.reg.instructions ? [[w.reg.instructions.id, 'instructions']] : []), ...w.reg.skills.map(s => [s.id, 'skill'])]);
   const reject = () => { throw Error('observation-invalid'); };

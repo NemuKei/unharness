@@ -8,6 +8,7 @@ import { loadReplayAttempt } from './replay-records.mjs';
 import { readStartingManifest } from './records.mjs';
 import { digestBytes } from './files.mjs';
 import { assessReplay, replayBudget, replayAcceptance } from './replay-assessment.mjs';
+import { PLUGIN_OBSERVATION_REASONS, validatePluginEvidence } from '../codex/plugin-task-observation.mjs';
 const invalid = () => fail('replay-record-invalid');
 const shape = (x, keys, optional = []) => exactKeys(x, keys, optional, 'replay-record-invalid');
 const statuses = ['matched', 'not-matched', 'unknown'];
@@ -18,7 +19,16 @@ const reasons = new Set(['task-identity-mismatch', 'task-project-or-timeline-mis
   'request-envelope-unavailable', 'request-mismatch', 'project-instructions-unavailable', 'project-instructions-mismatch',
   'selected-source-unavailable', 'selected-source-mismatch', 'retained-runtime-unavailable', 'retained-runtime-mismatch',
   'native-source-changed', 'native-source-change-unavailable', 'task-record-changed-during-collection']);
-function qualification(q, attempt, measurement) {
+function qualification(q, attempt, measurement, reg) {
+  if (reg.plugins?.length) {
+    shape(q, ['parserVersion', 'status', 'reasons', 'request', 'sources', 'runtime', 'startingFilesAtTaskStart', 'startingFilesAtHandoff',
+      'completeIsolationVerified', 'sourceStatus', 'plugins', 'coverage']);
+    if (q.parserVersion !== 'codex-desktop-replay-0.153.4/v2') invalid();
+    validatePluginEvidence(q, reg.plugins);
+    const { sourceStatus, plugins, coverage, ...original } = q;
+    q = { ...original, parserVersion: 'codex-desktop-replay-0.153.4/v1', status: sourceStatus,
+      reasons: q.reasons.filter(r => !PLUGIN_OBSERVATION_REASONS.includes(r)) };
+  }
   shape(q, ['parserVersion', 'status', 'reasons', 'request', 'sources', 'runtime', 'startingFilesAtTaskStart', 'startingFilesAtHandoff', 'completeIsolationVerified']);
   if (q.parserVersion !== 'codex-desktop-replay-0.153.4/v1' || !['matched-record', 'not-matched-record', 'unknown-record', 'unqualified-record'].includes(q.status)
     || !Array.isArray(q.reasons) || q.reasons.length > reasons.size || new Set(q.reasons).size !== q.reasons.length || q.reasons.some(r => !reasons.has(r))
@@ -61,7 +71,7 @@ export async function loadReplayResultReview(w, resultReviewId) {
     w = scopeWorkspace(w, p.scopeId);
     shape(p, ['kind', 'role', 'schemaVersion', 'scopeId', 'attemptId', 'attemptStateId', 'taskId', 'capturedAt', 'recordRead', 'recordingDigest',
       'readIssue', 'sourceIssue', 'measurement', 'outputText', 'qualification', 'files']);
-    if (p.role !== 'replay-result-review' || p.schemaVersion !== 1 || p.scopeId !== w.scopeId || !hash(p.attemptId) || !hash(p.attemptStateId)
+    if (p.role !== 'replay-result-review' || p.schemaVersion !== (w.reg.plugins?.length ? 2 : 1) || p.scopeId !== w.scopeId || !hash(p.attemptId) || !hash(p.attemptStateId)
       || !validUuid(p.taskId) || !validUtc(p.capturedAt) || !(p.recordingDigest === null || hash(p.recordingDigest))
       || ![null, 'replay-task-record-unavailable', 'replay-task-record-invalid', 'replay-task-record-changed'].includes(p.readIssue)
       || !(p.sourceIssue === null || USER_SOURCE_ERROR_KINDS.includes(p.sourceIssue))) invalid();
@@ -76,7 +86,7 @@ export async function loadReplayResultReview(w, resultReviewId) {
     if (p.outputText !== null && (typeof p.outputText !== 'string' || Buffer.byteLength(p.outputText) > 65536
       || measurement?.output.available !== true || measurement.output.bytes !== Buffer.byteLength(p.outputText))) invalid();
     if (measurement?.output.available === true && p.outputText === null) invalid();
-    qualification(p.qualification, attempt, measurement);
+    qualification(p.qualification, attempt, measurement, w.reg);
     if (p.readIssue === 'replay-task-record-changed' && (p.qualification.status === 'matched-record'
       || !p.qualification.reasons.includes('task-record-changed-during-collection') || !hash(p.recordingDigest))) invalid();
     shape(p.files, ['manifestId', 'capturedAt', 'ignoredFiles', 'issue']);

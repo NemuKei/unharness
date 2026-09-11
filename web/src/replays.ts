@@ -1,5 +1,6 @@
 import { ApiError } from "./api.ts";
-import type { SourceMode, SourceView } from "./sources";
+import { validPluginEvidence } from './plugin-evidence.ts';
+import type { SourceMode, SourceView, PluginObservation, PluginCoverage } from "./sources";
 import type { RunMeasurement, RunOutcome, RequirementResult, AssessmentProvenance } from "./comparisons";
 import type { StartingDeclaration } from "./starting-conditions";
 export type ReplayBudget = StartingDeclaration["budget"];
@@ -23,7 +24,8 @@ export type ReplayAssessment = {
   outcome: RunOutcome; provenance: AssessmentProvenance; requirements: Array<{ id: string; result: RequirementResult }>;
   ratings: Array<{ id: string; score: number | null; reason: string }>; note?: string;
 };
-export type ReplayQualification = { status: "matched-record" | "not-matched-record" | "unqualified-record" | "unknown-record"; reasons: string[] };
+export type ReplayQualification = { status: "matched-record" | "not-matched-record" | "unqualified-record" | "unknown-record"; reasons: string[];
+  plugins?: PluginObservation[]; coverage?: PluginCoverage };
 export type ReplayResultReview = {
   scopeId: string; resultReviewId: string; attemptId: string; startId: string; taskId: string; capturedAt: string; preparedMode: SourceMode;
   readIssue: string | null; sourceIssue: string | null; measurement: RunMeasurement | null; outputText: string | null;
@@ -107,6 +109,7 @@ function result(x: unknown, body = true, saved = false): boolean {
     || !Array.isArray(x.criteria.ratings) || x.criteria.ratings.length > 8
     || !x.criteria.ratings.every(r => labeled(r) && text(r.lowAnchor) && text(r.highAnchor)) || !declaredBudget(x.criteria.budget)
     || !object(x.qualification) || typeof x.qualification.status !== "string" || !Object.hasOwn(qualificationLabels, x.qualification.status) || !strings(x.qualification.reasons)
+    || !validPluginEvidence(x.qualification)
     || !object(x.files) || !nullableText(x.files.issue) || !nullableCount(x.files.fileCount) || !nullableCount(x.files.totalBytes) || !text(x.files.ignoredFiles)
     || !object(x.budget) || !oneOf(x.budget.status, ["within-recorded-budget", "exceeded", "unknown"])
     || !nullableCount(x.budget.recordedTurns) || !nullableCount(x.budget.recordedTokens)) return false;

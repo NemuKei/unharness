@@ -58,6 +58,21 @@ enabled = true
   for (const launch of launches) await assert.rejects(stat(launch.profile), { code: 'ENOENT' });
 });
 
+test('v3 merges only registered plugin enablement and preserves plugin metadata and unrelated edits', async t => {
+  const ctx = await reconcileSetup(t);
+  const baseText = 'model = "base"\n[plugins.selected]\nenabled = true\n\n\nnote = "retained"\n[plugins.other]\nenabled = true\n';
+  const targetText = baseText.replace('enabled = true', 'enabled = false');
+  const currentText = baseText.replace('model = "base"', 'model = "current"').replace('note = "retained"', 'note = "edited"');
+  const values = { baseText, targetText, currentText, skillPaths: [], pluginIds: ['selected'] };
+  const result = await ctx.run(values);
+  assert.equal(result.text, currentText.replace('enabled = true', 'enabled = false'));
+  assert.ok((await ctx.events()).filter(e => e.method).every(e => ['initialize', 'initialized', 'config/read'].includes(e.method)));
+  await assert.rejects(ctx.run({ ...values, currentText: targetText }), { kind: 'config-transform-failed' });
+  await assert.rejects(ctx.run({ ...values, targetText: targetText.replace('note = "retained"', 'note = "changed"') }), { kind: 'config-transform-failed' });
+  await assert.rejects(ctx.run({ ...values, targetText: targetText.replace('[plugins.other]\nenabled = true', '[plugins.other]\nenabled = false') }), { kind: 'config-transform-failed' });
+  await assert.rejects(ctx.run({ ...values, pluginIds: [] }), { kind: 'config-transform-failed' });
+});
+
 test('restoring Normal after plugin removal merges adjacent deletions and verifies both semantic partitions', async t => {
   const ctx = await reconcileSetup(t);
   const common = 'model = "base"\n\n';

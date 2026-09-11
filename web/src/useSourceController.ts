@@ -384,7 +384,7 @@ export function useSourceController() {
     setBusy(true);
     try {
       const response = await sourceOperation<T>(api, view.metadata, action, input);
-      const reviewedEnrollment = action === 'apply-enrollment' && expectedEnrollment !== undefined
+      const reviewedEnrollment = ['apply-enrollment', 'apply-plugin-enrollment'].includes(action) && expectedEnrollment !== undefined
         && reviewedEnrollmentTransition(view, expectedEnrollment, response);
       if (expectedEnrollment && !reviewedEnrollment || !acceptChangedContext && !reviewedEnrollment && (response.status === "context-updated"
         || !sameSourceContext(view.metadata, response.state.metadata)
@@ -451,6 +451,8 @@ export function useSourceController() {
     executeComparison,
     executeEnrollment: <T,>(reviewId: string, nextScopeId: string) =>
       executeComparison<T>('apply-enrollment', { reviewId }, false, { reviewId, nextScopeId }),
+    executePluginEnrollment: <T,>(reviewId: string, nextScopeId: string) =>
+      executeComparison<T>('apply-plugin-enrollment', { reviewId }, false, { reviewId, nextScopeId }),
     executeAuxiliary: <T,>(action: string, input: object) => ['artwork', 'artwork-item', 'read-appearance-import'].includes(action)
       ? readArtwork<T>(action, input) : executeComparison<T>(action, input, false),
     artworkImage: (referenceId: string, asset: { assetId: string; bytes: number }, signal: AbortSignal) => {

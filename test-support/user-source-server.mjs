@@ -88,14 +88,14 @@ for await (const line of createInterface({ input: process.stdin })) {
     if (
       Object.keys(msg.params).sort().join(',') !== 'enabled,path' ||
       typeof msg.params.path !== 'string' ||
-      msg.params.enabled !== false
+      typeof msg.params.enabled !== 'boolean'
     )
       process.exit(72);
     config.skills ??= {};
     config.skills.config ??= [];
     const entry = config.skills.config.find(item => item.path === msg.params.path);
-    if (entry) entry.enabled = false;
-    else config.skills.config.push({ path: msg.params.path, enabled: false });
+    if (entry) entry.enabled = msg.params.enabled;
+    else config.skills.config.push({ path: msg.params.path, enabled: msg.params.enabled });
     version = 'two';
     text =
       text.split('[[skills.config]]')[0] +

@@ -6,9 +6,9 @@ import { PromptCopy } from './SetupHandoff';
 
 type Candidate = SourceRow & { eligible: boolean; enabled: boolean; reason: string | null };
 type Inventory = { scopeId: string; discoveryId: string; registeredCount: number; limit: number;
-  enrollmentSchemaVersion: 1 | 2; setupRequired: boolean; candidates: Candidate[]; unavailableSources: Array<{ id: string; reason: string }> };
+  enrollmentSchemaVersion: 1 | 2 | 3; setupRequired: boolean; candidates: Candidate[]; unavailableSources: Array<{ id: string; reason: string }> };
 type Addition = { sourceId: string; origin: 'self' | 'external'; reason: string; unseal?: 'automatic' | 'manual'; trueform?: 'automatic' | 'manual' };
-type Review = { reviewId: string; schemaVersion: 1 | 2; scopeId: string; nextScopeId: string; sourceFilesChanged: 0; modeChangeRequired: true;
+type Review = { reviewId: string; schemaVersion: 1 | 2 | 3; scopeId: string; nextScopeId: string; sourceFilesChanged: 0; modeChangeRequired: true;
   setupId: string | null; setupRequired: boolean;
   additions: Array<Addition & { label: string; enabled: boolean }> };
 const hash = (x: unknown): x is string => typeof x === 'string' && /^[a-f0-9]{64}$/.test(x);
@@ -29,7 +29,7 @@ export function EnrollmentPanel({ controller: c }: { controller: ReturnType<type
   const supported = c.view?.metadata.application === 'codex';
   const blocked = !supported || !source || !c.confirmed || !!source.conflict || source.recovery.pending || c.busy;
   const candidate = inventory?.candidates.find(s => s.id === sourceId);
-  const inherited = inventory?.enrollmentSchemaVersion === 2;
+  const inherited = (inventory?.enrollmentSchemaVersion ?? 1) >= 2;
   function changed() { setReview(null); setError(''); }
   function failed(e: unknown, applying = false) {
     const unknown = applying && (!(e instanceof ApiError) || e.disposition === 'uncertain');
@@ -45,7 +45,7 @@ export function EnrollmentPanel({ controller: c }: { controller: ReturnType<type
     const i = response.result;
     if (i?.scopeId !== source?.registration.scopeId || !hash(i.discoveryId) || !Array.isArray(i.candidates)
       || !Number.isSafeInteger(i.registeredCount) || i.limit !== 32 || typeof i.setupRequired !== 'boolean'
-      || ![1, 2].includes(i.enrollmentSchemaVersion)
+      || ![1, 2, 3].includes(i.enrollmentSchemaVersion)
       || !i.candidates.every(s => /^skill-[a-f0-9]{64}$/.test(s.id) && typeof s.label === 'string'
         && typeof s.eligible === 'boolean' && typeof s.enabled === 'boolean')) return failed(new Error('invalid-response'));
     setInventory(i); setSourceId(''); setOrigin(''); setReason('');
@@ -107,7 +107,8 @@ export function EnrollmentPanel({ controller: c }: { controller: ReturnType<type
               <select id={fieldId + '-origin'} disabled={blocked || uncertain} value={origin} onChange={e => { changed(); setOrigin(e.target.value as typeof origin); setTrueform('manual'); }}>
                 <option value="">未確認</option><option value="self">自分で作った</option><option value="external">外部から追加した</option>
               </select>
-              {!candidate.enabled && <p className="muted">このSkillは現在無効です。どのモードでも無効の状態を維持します。</p>}
+              {!candidate.enabled && <p className="muted">このSkillは現在無効です。{inventory.enrollmentSchemaVersion === 3
+                ? '登録後の構成確認で、無効・手動・自動を明示的に選びます。' : 'どのモードでも無効の状態を維持します。'}</p>}
               {inherited ? <p className="muted">登録後に、零式からの引き継ぎと限定解除への追加をまとめて確認します。由来の確認だけでは、自動使用の対象には加わりません。</p> : <>
               <label htmlFor={fieldId + '-unseal'}>限定解除での使用</label>
               <select id={fieldId + '-unseal'} disabled={blocked || uncertain} value={unseal} onChange={e => { changed(); setUnseal(e.target.value as typeof unseal); }}>
@@ -131,7 +132,7 @@ export function EnrollmentPanel({ controller: c }: { controller: ReturnType<type
     {review && !blocked && <div className="enrollment-review" aria-label="Skillの追加登録内容">
       <h3>{review.additions[0].label}を追加</h3>
       <p>由来：{review.additions[0].origin === 'self' ? '自分で作った' : '外部から追加した'}</p>
-      <ul><li>Normal：現在の状態を保存</li>{review.schemaVersion === 2 ? <li>両モードの自動使用：登録後にまとめて確認</li>
+      <ul><li>Normal：現在の状態を保存</li>{review.schemaVersion >= 2 ? <li>{review.schemaVersion === 3 ? '両モードでの使用' : '両モードの自動使用'}：登録後にまとめて確認</li>
         : <><li>限定解除：{invocation(review.additions[0].enabled, review.additions[0].unseal)}</li>
           <li>零式：{invocation(review.additions[0].enabled, review.additions[0].trueform)}</li></>}</ul>
       <p>従来のNormalの内容と履歴を残し、追加分を含む新しい版を保存します。この登録では設定ファイルを変更しません。</p>

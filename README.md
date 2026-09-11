@@ -8,6 +8,13 @@ Try different combinations of skills and instructions on your own work. Find wha
 
 [日本語](README.ja.md)
 
+The [v3 development candidate](docs/evidence/2026-09-11-source-states-v3-macos.md)
+adds ordinary Skill disabled/manual/automatic choices and separate optional
+plugin OFF/Normal settings. It preserves older saved versions and offline
+recovery. Skill input matches and unavailable whole-plugin runtime evidence
+are displayed separately. Native v3 onboarding qualification is in progress;
+the public download below remains the earlier preview.
+
 The development build can [open and reuse its local workbench](docs/local-workbench.md) through CLI or MCP. The [plugin connection](docs/plugin-connection.md) can also open the initial Normal-saving screen before registration, using an explicitly selected local context. The [public site](https://unharness.deltahelmlab.com/) now has [native public-domain QA](docs/evidence/2026-09-11-public-mac-qa.md). The complete model-led onboarding journey remains under verification.
 
 The [0.0.1 Mac arm64 development preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.1) includes Node, the UI, MCP and management/setup/authoring Skills. Its [AI-guided installation wrapper](docs/mac-installation.md) has passed native installation and ZIP extraction checks. The integrated candidate also preserves saved Normal, v2 setups, favorites and artwork through [independent recovery after removal with external networking denied](docs/evidence/2026-09-11-final-native-candidate.md). The archive is publicly downloadable and its SHA-256 has been verified without authentication. The website configuration now pins this exact version. The full model-driven journey remains under verification.

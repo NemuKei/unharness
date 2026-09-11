@@ -78,10 +78,11 @@ else for await (const line of createInterface({ input: process.stdin })) {
       if (msg.params.filePath !== file || msg.params.expectedVersion !== version || msg.params.reloadUserConfig !== false || msg.params.edits.length !== 1 || msg.params.edits[0].keyPath !== 'skills.config' || msg.params.edits[0].mergeStrategy !== 'replace') process.exit(71);
       config.skills.config = msg.params.edits[0].value;
     } else {
-      if (Object.keys(msg.params).sort().join(',') !== 'enabled,path' || !['/skills/selected/SKILL.md', '/skills/new/SKILL.md'].includes(msg.params.path) || msg.params.enabled !== false) process.exit(71);
+      if (Object.keys(msg.params).sort().join(',') !== 'enabled,path' || !['/skills/selected/SKILL.md', '/skills/new/SKILL.md'].includes(msg.params.path)
+        || typeof msg.params.enabled !== 'boolean' || scenario !== 'states-v3' && msg.params.enabled !== false) process.exit(71);
       const entry = config.skills.config.find(item => item.path === msg.params.path);
-      if (entry) entry.enabled = false;
-      else config.skills.config.push({ path: msg.params.path, enabled: false });
+      if (entry) entry.enabled = msg.params.enabled;
+      else config.skills.config.push({ path: msg.params.path, enabled: msg.params.enabled });
     }
     if (scenario === 'tamper-retained') config.memories.use_memories = true;
     if (scenario === 'tamper-selected') config.skills.config[0].enabled = true;

@@ -125,12 +125,16 @@ export const userSourceState = wrap(async ({ workspace }) => {
       modeChangeRequired: w.state.scopePreparationRequired === true,
       normalId: w.reg.normalId,
       activeNormalId: activeNormalId(w),
-      sources: targets(w.reg)
+      sources: targets(w.reg),
+      ...(w.reg.plugins ? { plugins: w.reg.plugins.map(p => ({ id: p.id, label: p.label,
+        normalEnabled: p.normalEnabled, eligibility: p.eligibility, sourceRevision: p.sourceRevision,
+        wholePluginControl: p.wholePluginControl, requiredControl: p.requiredControl,
+        origin: p.role.origin, features: p.features, checkedAt: p.evidence.checkedAt })) } : {})
     },
     preparedMode: w.state.preparedMode,
     setup: { setupId: w.state.setupId ?? null, preparedSetupId: w.state.preparedSetupId ?? null,
       schemaVersion: w.state.setupSchemaVersion ?? (w.state.setupId ? 1 : null),
-      setupRequired: w.manifestVersion === 2 && !w.state.setupId },
+      setupRequired: w.manifestVersion >= 2 && !w.state.setupId },
     revision: w.state.revision,
     conflict,
     recovery: {
@@ -151,6 +155,7 @@ function planSummary(plan, planId) {
     selectedIds: plan.selectedIds,
     changedFiles: plan.changedFiles,
     skillStates: plan.skillStates,
+    ...(plan.pluginStates === undefined ? {} : { pluginStates: plan.pluginStates }),
     guide: plan.guide,
     adaptation: plan.adaptation ?? null,
     setupId: plan.setupId ?? null,
@@ -167,6 +172,7 @@ async function buildPlan(
     after,
     guide = null,
     skillStates = [],
+    pluginStates,
     adaptation = null,
     setupId = null,
     restoreSourceId = null
@@ -176,7 +182,7 @@ async function buildPlan(
   if (['unseal', 'trueform'].includes(mode)) await freshCatalog(w.reg);
   const before = await loadSnapshot(w.workspace, w.reg, w.state.snapshotId);
   await assertCurrent(w, before);
-  assertControlChanges({ sources: w.reg.skills, before, after });
+  assertControlChanges({ sources: w.reg.skills, plugins: w.reg.plugins, before, after });
   assertPlanOwnershipChanges(before, after);
   const afterId = await saveSnapshot(w.workspace, w.reg, after, w.state.snapshotVersion ?? 1);
   const plan = {
@@ -195,6 +201,7 @@ async function buildPlan(
     afterId,
     guide,
     skillStates,
+    ...(w.manifestVersion === 3 ? { pluginStates: pluginStates ?? [] } : {}),
     changedFiles: Object.keys(before)
       .filter((k) => !equal(before[k], after[k]))
       .map((id) => ({
@@ -208,8 +215,8 @@ export const planUserMode = wrap(async ({ workspace, mode, selectedIds }) => {
   if (!['normal', 'unseal', 'trueform'].includes(mode)) fail('invalid-request');
   const w = await openWorkspace(workspace),
     all = targets(w.reg);
-  if (w.manifestVersion === 2 && mode !== 'normal' && selectedIds !== undefined) fail('setup-proposal-invalid');
-  if (w.manifestVersion === 2 && mode !== 'normal' && !w.state.setupId) fail('setup-required');
+  if (w.manifestVersion >= 2 && mode !== 'normal' && selectedIds !== undefined) fail('setup-proposal-invalid');
+  if (w.manifestVersion >= 2 && mode !== 'normal' && !w.state.setupId) fail('setup-required');
   if (selectedIds === undefined && mode !== 'normal' && w.state.setupId) {
     const { savedPresetForMode } = await import('../setup/service.mjs');
     return buildPlan(w, { mode, ...await savedPresetForMode(w, mode) });
@@ -280,7 +287,7 @@ export const applyUserPlan = wrap(async ({ workspace, planId }) => {
     );
     if (['unseal', 'trueform'].includes(plan.mode))
       await freshCatalog(current.reg);
-    if (current.manifestVersion === 2) {
+    if (current.manifestVersion >= 2) {
       const { assertV2ApplicationPlan } = await import('../setup/apply-plan.mjs');
       await assertV2ApplicationPlan(current, plan);
     }
@@ -348,6 +355,8 @@ export const listUserFavorites = wrap(async ({ workspace, after, limit }) => {
       normalId: p.normalId ?? historical.reg.normalId,
       needsAdaptation: p.scopeId !== w.scopeId || (p.normalId ?? historical.reg.normalId) !== activeNormalId(w),
       ...(p.scopeId === w.scopeId ? {} : { scopeId: p.scopeId,
+        ...((w.reg.plugins ?? []).some(p => !(historical.reg.plugins ?? []).some(h => h.id === p.id)) ? {
+          addedPluginIds: w.reg.plugins.filter(p => !(historical.reg.plugins ?? []).some(h => h.id === p.id)).map(p => p.id) } : {}),
         addedSourceIds: w.reg.skills.filter(s => !historical.reg.skills.some(h => h.id === s.id)).map(s => s.id) }),
       name: p.name,
       preparedMode: p.preparedMode,
@@ -496,7 +505,12 @@ export const inspectUserEnrollment = wrap(async args => (await import('../setup/
 export const reviewUserEnrollmentCandidate = wrap(async args => (await import('../setup/enrollment.mjs')).reviewEnrollmentCandidate(args));
 export const reviewUserEnrollment = wrap(async args => (await import('../setup/enrollment.mjs')).reviewEnrollment(args));
 export const applyUserEnrollment = wrap(async args => (await import('../setup/enrollment.mjs')).applyEnrollment(args));
+export const inspectUserPluginEnrollment = wrap(async args => (await import('../setup/plugin-enrollment.mjs')).inspectPluginEnrollment(args));
+export const reviewUserPluginEnrollment = wrap(async args => (await import('../setup/plugin-enrollment.mjs')).reviewPluginEnrollment(args));
+export const applyUserPluginEnrollment = wrap(async args => (await import('../setup/plugin-enrollment.mjs')).adoptPluginEnrollment(args));
 export const ENROLLMENT_OPERATIONS = Object.freeze({ 'enrollment-inventory': inspectUserEnrollment,
+  'plugin-enrollment-inventory': inspectUserPluginEnrollment, 'review-plugin-enrollment': reviewUserPluginEnrollment,
+  'apply-plugin-enrollment': applyUserPluginEnrollment,
   'review-candidate': reviewUserEnrollmentCandidate, 'review-enrollment': reviewUserEnrollment, 'apply-enrollment': applyUserEnrollment });
 
 const appearanceRead = method => wrap(async args => (await import('../appearances/service.mjs'))[method](args));

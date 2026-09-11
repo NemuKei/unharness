@@ -10,7 +10,7 @@ import { canonical, equal, assertWritableOwnership } from './platform.mjs';
 import { acquire, pending, assertCurrent, sourceTransactionHook } from './transaction.mjs';
 import { applicationFor } from '../apps/index.mjs';
 import { fail, verification } from './errors.mjs';
-import { reboundRegistration, reboundState, assertRebindState, loadDirectoryRebindReview,
+import { reboundRegistration, reboundState, reboundManifest, assertRebindState, loadDirectoryRebindReview,
   directoryRebindSummary } from './directory-rebind-records.mjs';
 
 const request = (args, fields) => exactKeys(args, ['workspace', ...fields], [], 'invalid-request');
@@ -111,7 +111,7 @@ export async function applyDirectoryRebind(args) {
     const p = await loadDirectoryRebindReview(w, args.reviewId);
     const reg = reboundRegistration(p.before.reg, p, p.reviewId);
     const nextScopeId = await record(w.workspace, 'scope', reg);
-    const afterManifest = { schemaVersion: 2, rootScopeId: w.rootScopeId };
+    const afterManifest = reboundManifest(p);
     const files = await loadSnapshot(w.workspace, reg, p.observedId, 2);
     const result = duplicate => ({ ...directoryRebindSummary(p), scopeId: nextScopeId,
       previousScopeId: p.scopeId, revision: p.beforeState.revision + 1,

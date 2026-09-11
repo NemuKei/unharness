@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PluginObservationSummary } from './PluginObservationSummary';
 import type { useSourceController } from "./useSourceController";
 import type { useReplayController } from "./useReplayController";
 import { phaseLabels, qualificationLabels, replayIssue } from "./replays";
@@ -36,6 +37,7 @@ function ResultView({ result }: { result: ReplayResultReview | ReplayResult }) {
   return <section className="replay-result" aria-label="取り込んだ再実行の記録"><h3>結果の確認</h3>
     <p className="muted">{date(result.capturedAt)} に取り込んだ記録です。</p>
     <span className="neutral-badge">{qualificationLabels[result.qualification.status]}</span>
+    <PluginObservationSummary evidence={result.qualification} />
     <dl className="replay-summary"><div><dt>試行時の装備</dt><dd>{modePresentation[result.preparedMode].title}</dd></div>
       <div><dt>モデル</dt><dd>{m?.conditions.model ?? "不明"}</dd></div><div><dt>推論設定</dt><dd>{m?.conditions.reasoningEffort ?? "不明"}</dd></div>
       <div><dt>記録したターン</dt><dd>{formatNumber(result.budget.recordedTurns)}</dd></div><div><dt>ルート応答のトークン</dt><dd>{formatNumber(m?.usage.totals.totalTokens ?? null)}</dd></div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PluginObservationSummary } from './PluginObservationSummary';
 import artwork from "../assets/hangar-states-v1.png";
 import {
   aggregateReasonLabels,
@@ -100,6 +101,7 @@ function ReviewSummary({ review }: { review: RunReview }) {
       <p className="comparison-boundary">
         使用量は記録されたルート応答だけです。子タスク、全体の完全性、ツール、メモリ入力、開始時の依頼とファイルは不明です。
       </p>
+      {review.source.observation && <PluginObservationSummary evidence={review.source.observation} />}
       <details>
         <summary>条件・収集範囲・問題の詳細</summary>
         <dl className="comparison-details">

@@ -2,6 +2,16 @@
 
 Updated: 2026-09-11.
 
+The [source-state v3 implementation](evidence/2026-09-11-source-states-v3-macos.md)
+adds ordinary Skill disabled/manual/automatic states and separately registered
+whole-plugin OFF/Normal controls. Native read-only provenance for Superpowers
+6.3.0, owned-profile storage/restoration, offline recovery and the built local
+GUI have targeted evidence. The next immutable package is 0.0.3; actual v3
+installation, personal plugin preparation and the remaining model-led Mac
+journey are still open. Task records distinguish Skill input correspondence
+from unavailable whole-plugin runtime state and do not grant performance
+qualification from input matching alone.
+
 The [installed-plugin Normal task](evidence/2026-09-11-native-desktop-origin.md) now confirms native plugin discovery, the persistent binding, retained-setting reconciliation and an actual fresh Desktop model response. Normal revision 19 is conflict-free. The source reader recognizes the newly observed `codex_work_desktop` tuple for the exact 0.153.4 agent-created route; all 108 affected checks pass and the original recording is unchanged. The installed 0.0.2 package predates this reader fix. The user has revised the next control contract to ordinary Skill disabled/manual/automatic states and optional whole-plugin disablement; that implementation and the remaining native journey are next.
 
 The [legacy directory reattestation](evidence/2026-09-11-legacy-directory-rebind.md) now recovered the maintainer's real registration through the independent 0.0.2 candidate, separate retained-setting acceptance and the Codex in-app browser. It ended at Normal revision 18, with exact accepted-Normal source bytes/metadata, all 385 prior records and six favorites preserved. The core full regression passes 1,078 tests with 65 skips and no failures. Native/browser QA also repaired misleading rebind wording and the GUI guard that rejected reviewed enrollment; 51 affected client/browser checks and type/CSP/both builds pass. The revised 0.0.2 candidate and fresh installed-plugin Desktop model tasks are next. The published 0.0.1 remains the public download.

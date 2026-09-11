@@ -646,6 +646,18 @@
 .enrollment-ai, .enrollment-review { margin-top: 1rem; }
 .scope-enrollment-notice, .enrollment-review { border-left: 3px solid var(--accent, #e54f5d); padding-left: 1rem; line-height: 1.7; }
 .saved-setup-summary { margin-block: 1rem; padding: 1rem; border: 1px solid var(--line, #303849); border-radius: .5rem; line-height: 1.65; overflow-wrap: anywhere; }
+.source-state-editor { max-width: 100%; margin-top: .65rem; }
+.source-state-editor fieldset { min-width: 0; margin: 1rem 0; padding: .7rem; border: 1px solid var(--line); }
+.source-state-editor legend { font-size: .85rem; padding-inline: .25rem; }
+.source-state-editor button { max-width: 100%; white-space: normal; font-size: .8rem; margin-top: .6rem; }
+.state-source-row { display: grid; gap: .35rem; padding-block: .7rem; border-bottom: 1px solid var(--line); }
+.source-state-editor label, .source-state-editor select { max-width: 100%; min-width: 0; font-size: .85rem; }
+.source-state-editor select { width: 100%; padding: .65rem .3rem; color: inherit; background: var(--surface, #171d28); border: 1px solid var(--line); }
+.source-state-editor .saved-setup-summary { padding: .55rem; }
+.source-state-editor .setup-inheritance-lists { grid-template-columns: minmax(0, 1fr); }
+.source-state-editor ul { padding-left: 1rem; }
+.plugin-observation-summary { margin-block: 1rem; padding: .8rem; border: 1px solid var(--line); border-radius: .35rem; font-size: .85rem; line-height: 1.65; overflow-wrap: anywhere; }
+.plugin-observation-summary ul { padding-left: 1rem; }
 .setup-inheritance-lists { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
 .setup-inheritance-lists h3 { margin-top: 0; font-size: .95rem; }
 .setup-inheritance-lists ul, .setup-eligibility ul { padding-left: 1.2rem; }

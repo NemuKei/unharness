@@ -1,0 +1,10 @@
+{
+  "package": "node-diff3",
+  "version": "3.1.2",
+  "license": "MIT",
+  "upstream": "https://github.com/bhousel/node-diff3",
+  "files": {
+    "index.mjs": "7846310a8d43de21e248a2bacb397290689f9fda34ba2d9e84d8dfdb70b0b006",
+    "LICENSE.md": "037a1e27afcaa7c73d7cd8e44d3a32c1e605a00aa4af1073fa4f19a22e939b8f"
+  }
+}

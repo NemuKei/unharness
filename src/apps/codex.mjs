@@ -278,6 +278,7 @@ export const application = {
       targetText,
       currentText,
       skillPaths: reg.skills.map((s) => s.path),
+      pluginIds: (reg.plugins ?? []).map(p => p.id),
       executable: reg.context.executable
     });
     return { text: result.text, changed: result.changed, version: result.codexVersion };
@@ -318,6 +319,30 @@ export const application = {
   },
 
   supportsReleasePresets: true,
+  async forwardDependencyGuard(w) {
+    if (!w.reg.plugins?.length) return async () => {};
+    const { validateRegisteredPlugins, checkPluginPackage } = await import('../codex/plugin-dependency.mjs');
+    const dependencies = await validateRegisteredPlugins(w.workspace, w.reg);
+    return async ({ localOnly = false } = {}) => {
+      for (const dependency of dependencies) {
+        if (localOnly) await checkPluginPackage(dependency, w.reg.context);
+        else {
+          const { assertPluginDependency } = await import('../codex/plugin-inventory.mjs');
+          await assertPluginDependency(w.reg.context, dependency);
+        }
+      }
+    };
+  },
+  async changedReadOnlyDependencies(w) {
+    if (!w.reg.plugins?.length) return [];
+    const { validateRegisteredPlugins, checkPluginPackage } = await import('../codex/plugin-dependency.mjs');
+    const changed = [];
+    for (const dependency of await validateRegisteredPlugins(w.workspace, w.reg)) {
+      try { await checkPluginPackage(dependency, w.reg.context); }
+      catch { changed.push(dependency.plugin.id); }
+    }
+    return changed;
+  },
   // Stored legacy plans keep their original disabled-Skill contract. Reviewed
   // release presets explicitly request manual invocation for either mode.
   async compile({ reg, mode, selection, normal, targetFile, releasePreset }) {
@@ -338,6 +363,10 @@ export const application = {
         const { text, ...identity } = fixed;
         guide = identity;
       }
+    }
+    if (releasePreset?.skillRelease === 'per-source-v3') {
+      const { compileCodexSourceStates } = await import('../codex/source-state-compiler.mjs');
+      return { ...await compileCodexSourceStates({ reg, normal, after, targetFile, sourceStates: releasePreset.sourceStates }), guide };
     }
     const skills = reg.skills.filter((s) => selection.includes(s.id));
     for (const s of skills) {
@@ -438,7 +467,8 @@ export const application = {
         enabled = selectedSkillIntent(
           normalFlags[index],
           preparedFlags[index],
-          s.enabled
+          s.enabled,
+          { allowEnable: w.manifestVersion === 3 }
         );
       let expected = enabled === false ? 'disabled' : 'unknown';
       if (enabled === true && files[s.id + ':format'] === null) {
@@ -515,8 +545,8 @@ export const application = {
     }
   },
 
-  projectTask(w, taskId, expected, records, observedAt, readIssue, boundary) {
-    return projection(
+  async projectTask(w, taskId, expected, records, observedAt, readIssue, boundary) {
+    const result = projection(
       w,
       taskId,
       expected,
@@ -525,6 +555,11 @@ export const application = {
       readIssue,
       boundary
     );
+    if (!w.reg.plugins?.length) return result;
+    const { frozenPluginInputBindings, projectPluginInputs, withPluginEvidence } = await import('../codex/plugin-task-observation.mjs');
+    const bindings = await frozenPluginInputBindings(w);
+    const plugins = projectPluginInputs(bindings, initialFields(records).state, result.conditions.codexVersion);
+    return { ...withPluginEvidence(result, plugins), schemaVersion: 3 };
   }
 };
 

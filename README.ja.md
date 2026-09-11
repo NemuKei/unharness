@@ -1,5 +1,7 @@
 # Unharness
 
+[v3の開発候補](docs/evidence/2026-09-11-source-states-v3-macos.md)では、通常Skillを無効・手動・自動から選び、任意のプラグインは全体OFF・Normal保持を別に設定できます。古い保存版とオフライン復旧を保持し、Skill入力の一致と、プラグイン全体の状態が未確認であることを分けて表示します。v3の実機導入全体は確認中で、下の公開ダウンロードは以前のプレビューです。
+
 開発版では、CLIまたはMCPから[ローカル画面を起動・再利用](docs/local-workbench.md)できます。[プラグイン接続](docs/plugin-connection.md)では、選んだローカル環境に固定して、登録前のNormal保存画面も開けます。開発プレビューをGitHubで公開しました。[公開サイト](https://unharness.deltahelmlab.com/)では[公開接続・操作を実機で確認](docs/evidence/2026-09-11-public-mac-qa.md)し、モデルによる導入全体の確認を続けています。
 
 [Mac arm64向けの0.0.1開発プレビュー](https://github.com/NemuKei/unharness/releases/tag/v0.0.1)には、Node・画面・MCP・管理／設定相談／制作Skillを同梱しています。[AIに導入を依頼する配布形式](docs/mac-installation.md)で、実際のCodexへの導入とZIP展開後の一致を確認しました。統合した候補では、Normal・新しい解除設定・お気に入り・作品を保存し、[削除後に外部通信を遮断した状態で復旧](docs/evidence/2026-09-11-final-native-candidate.md)できています。公開したZIPを認証なしで取得し、SHA-256の一致を確認しました。サイトの導入依頼もこの版を指定します。実際のAIによる導入全体の検証は引き続き進めています。

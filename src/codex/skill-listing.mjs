@@ -63,9 +63,10 @@ export function parseSkillCatalog(value) {
   return availableSeen ? entries : null;
 }
 
-export function selectedSkillIntent(normalFlags, preparedFlags, registeredEnabled) {
+export function selectedSkillIntent(normalFlags, preparedFlags, registeredEnabled, { allowEnable = false } = {}) {
   if (isDeepStrictEqual(normalFlags, preparedFlags)) return registeredEnabled;
   if (preparedFlags.length && preparedFlags.every((value) => value === false))
     return false;
+  if (allowEnable && preparedFlags.length && preparedFlags.every(value => value === true)) return true;
   return null;
 }

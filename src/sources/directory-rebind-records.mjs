@@ -79,9 +79,11 @@ export async function loadDirectoryRebindReview(w, reviewId) {
   return { ...p, reviewId, before };
 }
 
+export const reboundManifest = p => ({ schemaVersion: Math.max(2, p.beforeManifest.schemaVersion ?? 1), rootScopeId: p.rootScopeId });
+
 export function reboundState(before, p, nextScopeId, preparation) {
   return { ...before, scopeId: nextScopeId, revision: before.revision + 1, ownedDirs: p.ownedDirs,
-    setupId: null, setupSchemaVersion: 2, lastRebindReviewId: p.reviewId,
+    setupId: null, setupSchemaVersion: reboundManifest(p).schemaVersion, lastRebindReviewId: p.reviewId,
     scopePreparationRequired: true, lastEnrollmentReviewId: null,
     lastPlanId: null, lastRetainedPlanId: null, lastObservationId: null, preparation };
 }

@@ -8,6 +8,7 @@ import {
   withPrivateNativeConfig,
 } from './config-native-profile.mjs';
 import { preservesTomlComments } from './toml-comments.mjs';
+import { preservesUnselectedConfig } from './control-config.mjs';
 
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 
@@ -20,14 +21,14 @@ function containsNumber(value) {
   return false;
 }
 
-function disabledConfig(config, paths) {
+function selectedConfigValue(config, selections) {
   if (Object.hasOwn(config, 'skills') && !object(config.skills)) throw failed();
   const entries = config.skills?.config ?? [];
   if (!Array.isArray(entries) || entries.some(entry => !object(entry) || typeof entry.path !== 'string' || typeof entry.enabled !== 'boolean')) throw failed();
-  const selected = new Set(paths);
-  const next = entries.map(entry => selected.has(entry.path) ? { ...entry, enabled: false } : entry);
-  for (const path of paths) {
-    if (!entries.some(entry => entry.path === path)) next.push({ path, enabled: false });
+  const selected = new Map(selections.map(s => [s.path, s.enabled]));
+  const next = entries.map(entry => selected.has(entry.path) ? { ...entry, enabled: selected.get(entry.path) } : entry);
+  for (const { path, enabled } of selections) {
+    if (!entries.some(entry => entry.path === path)) next.push({ path, enabled });
   }
   return { ...config, skills: { ...config.skills, config: next } };
 }
@@ -35,10 +36,11 @@ function disabledConfig(config, paths) {
 // Stages native TOML edits in a new private profile. This API never accepts a
 // destination path, a generic write operation, or a browser-controlled command.
 // executableArgs is an internal synthetic-executable seam, not a GUI input.
-async function selectedConfig({ configText, skillPaths, executable, executableArgs = [], timeoutMs = 10000 }, editing) {
+async function selectedConfig({ configText, skillPaths, executable, executableArgs = [], timeoutMs = 10000 }, editing, states) {
   try {
     if (typeof configText !== 'string' || Buffer.byteLength(configText, 'utf8') > MAX_CONFIG_BYTES || !Array.isArray(skillPaths) || skillPaths.length > 32 || new Set(skillPaths).size !== skillPaths.length || skillPaths.some(path => typeof path !== 'string' || path.includes('\0') || path.length > 32768 || !(isAbsolute(path) || win32.isAbsolute(path)))) throw failed();
     if (skillPaths.length === 0) return editing ? { text: configText, changed: false, codexVersion: null } : { selectors: [], codexVersion: null };
+    const selections = states ?? skillPaths.map(path => ({ path, enabled: false }));
     return await withPrivateNativeConfig({
       configText,
       executable,
@@ -47,27 +49,28 @@ async function selectedConfig({ configText, skillPaths, executable, executableAr
       editing,
       clientName: 'unharness_config_editor',
     }, async ({ client, codexVersion, file, layer: before, read }) => {
+      if (states && codexVersion !== '0.153.4') throw failed();
       if (!editing) {
         // Validate shape without returning unrelated native configuration.
-        disabledConfig(before.config, skillPaths);
+        selectedConfigValue(before.config, selections);
         return { selectors: skillPaths.map(path => (before.config.skills?.config ?? []).filter(entry => entry.path === path).map(entry => entry.enabled)), codexVersion };
       }
-      const expected = disabledConfig(before.config, skillPaths);
+      const expected = selectedConfigValue(before.config, selections);
       if (isDeepStrictEqual(expected, before.config)) return { text: configText, changed: false, codexVersion };
       if (containsNumber(before.config.skills?.config)) throw failed();
       const entries = before.config.skills?.config ?? [];
       const selectedEntries = skillPaths.map(path => entries.filter(entry => entry.path === path));
       // The native path-specific method updates only the first duplicate entry.
       // Retain the guarded array edit for this case so every selected copy is off.
-      if (selectedEntries.some(matches => matches.length > 1 && matches.some(entry => entry.enabled))) {
+      if (selectedEntries.some((matches, index) => matches.length > 1 && matches.some(entry => entry.enabled !== selections[index].enabled))) {
         await client.request('config/batchWrite', { filePath: file, expectedVersion: before.version, reloadUserConfig: false, edits: [{ keyPath: 'skills.config', mergeStrategy: 'replace', value: expected.skills.config }] });
       } else {
         // The path-specific native edit preserves untouched array-entry comments.
         // Its implicit destination is confined by the verified private CODEX_HOME;
         // no caller-controlled config destination or generic write is accepted.
-        for (const [index, path] of skillPaths.entries()) {
-          if (selectedEntries[index].length === 0 || selectedEntries[index][0].enabled) {
-            await client.request('skills/config/write', { path, enabled: false });
+        for (const [index, { path, enabled }] of selections.entries()) {
+          if (selectedEntries[index].length === 0 || selectedEntries[index][0].enabled !== enabled) {
+            await client.request('skills/config/write', { path, enabled });
           }
         }
       }
@@ -75,6 +78,7 @@ async function selectedConfig({ configText, skillPaths, executable, executableAr
       if (!isDeepStrictEqual(after.config, expected)) throw failed();
       const text = await readFile(file, 'utf8');
       if (Buffer.byteLength(text, 'utf8') > MAX_CONFIG_BYTES || !preservesTomlComments(configText, text)) throw failed();
+      if (states && !preservesUnselectedConfig(configText, text, skillPaths)) throw failed();
       return { text, changed: text !== configText, codexVersion };
     });
   } catch {
@@ -86,3 +90,16 @@ async function selectedConfig({ configText, skillPaths, executable, executableAr
 export const disableSkillConfig = args => selectedConfig(args, true);
 // Only initialize/config-read are allowed, including for duplicated selectors.
 export const readSkillSelectors = args => selectedConfig(args, false);
+
+// V3 receives complete desired booleans only after the registered-state
+// compiler has resolved an explicit ordinary Skill choice. Legacy callers
+// retain the disable-only API and do not gain an implicit enable operation.
+export async function setSkillStatesConfig(args) {
+  try {
+    if (!object(args) || !Array.isArray(args.skillStates) || args.skillStates.length > 32
+      || args.skillStates.some(s => !object(s) || Object.keys(s).sort().join(',') !== 'enabled,path'
+        || typeof s.enabled !== 'boolean')) throw failed();
+    const states = args.skillStates.map(s => ({ path: s.path, enabled: s.enabled }));
+    return await selectedConfig({ ...args, skillPaths: states.map(s => s.path) }, true, states);
+  } catch { throw failed(); }
+}

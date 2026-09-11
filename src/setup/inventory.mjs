@@ -6,6 +6,7 @@ import { exactKeys } from '../comparisons/assessment.mjs';
 import { equal } from '../sources/platform.mjs';
 import { fail } from '../sources/errors.mjs';
 import { requiredControlSources } from './control-sources.mjs';
+import { validateSourceStateInventory } from './inventory-v3.mjs';
 
 export const setupInventoryId = data => recordId('input', { kind: 'unharness-user-source', role: 'setup-inventory', ...data });
 const shape = (v, keys) => exactKeys(v, keys, [], 'setup-inventory-invalid');
@@ -13,6 +14,7 @@ const shape = (v, keys) => exactKeys(v, keys, [], 'setup-inventory-invalid');
 export function validateSetupInventory(value, scope) {
   try {
     recordId('input', value);
+    if (value?.schemaVersion === 2) return validateSourceStateInventory(value, scope);
     shape(value, ['inventoryId', 'schemaVersion', 'scopeId', 'normalId', 'application', 'runtimeVersion', 'skills', 'plugins']);
     const { inventoryId, ...data } = value;
     if (inventoryId !== setupInventoryId(data) || data.schemaVersion !== 1 || data.scopeId !== scope.scopeId

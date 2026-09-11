@@ -18,8 +18,13 @@ const sameExceptRetained = (reg, left, right, kind = 'source-conflict') => {
   for (const key of Object.keys(left))
     if (key !== skip && !equal(left[key], right[key])) fail(kind);
 };
-async function compose(w, base, target, current) {
+async function compose(w, base, target, current, frozenRestore = false) {
   const key = retainedKey(w.reg);
+  if (frozenRestore && w.manifestVersion === 3 && applicationFor(w.reg.context).id === 'codex') {
+    const { mergeFrozenRetainedConfig } = await import('../codex/config-reconcile.mjs');
+    return mergeFrozenRetainedConfig({ baseText: base[key]?.text ?? '', targetText: target[key]?.text ?? '',
+      currentText: current[key]?.text ?? '', skillPaths: w.reg.skills.map(s => s.path), pluginIds: (w.reg.plugins ?? []).map(p => p.id) });
+  }
   const result = await applicationFor(w.reg.context).mergeRetained({
     reg: w.reg, baseText: base[key]?.text ?? '',
     targetText: target[key]?.text ?? '', currentText: current[key]?.text ?? '' });
@@ -137,14 +142,16 @@ export async function adaptRetainedSnapshot(w, r, id, type) {
     // Expansion alone needs no native editor. When retained settings also
     // changed, use the already qualified application-specific reconciliation.
     if (!equal(base[key], current[key])) {
-      const merged = await compose(historical, base, saved, current);
+      const merged = await compose(historical, base, saved, current, true);
       saved[key] = current[key] === null && merged.text === '' ? null : await targetFile(w.reg, key, merged.text, current);
     }
     const addedSourceIds = w.reg.skills.filter(s => !historical.reg.skills.some(h => h.id === s.id)).map(s => s.id);
-    if (addedSourceIds.length === 0) return { after: saved, adaptation: { kind: 'directory-rebind', sourceType: type,
+    const addedPluginIds = (w.reg.plugins ?? []).filter(p => !(historical.reg.plugins ?? []).some(h => h.id === p.id)).map(p => p.id);
+    if (addedSourceIds.length === 0 && addedPluginIds.length === 0) return { after: saved, adaptation: { kind: 'directory-rebind', sourceType: type,
       sourceId: id, previousScopeId: r.scopeId, scopeId: w.scopeId, previousNormalId, normalId } };
     return { after: { ...current, ...saved }, adaptation: { kind: 'source-enrollment', sourceType: type, sourceId: id,
       previousScopeId: r.scopeId, scopeId: w.scopeId, previousNormalId, normalId, addedSourceIds,
+      ...(addedPluginIds.length ? { addedPluginIds, addedPluginState: 'saved-normal' } : {}),
       addedSourceState: 'saved-normal' } };
   }
   const previousNormalId = r.normalId ?? w.reg.normalId;
@@ -153,7 +160,7 @@ export async function adaptRetainedSnapshot(w, r, id, type) {
   const normalId = activeNormalId(w);
   if (previousNormalId === normalId) return { after, adaptation: null };
   const current = await loadNormal(w.workspace, w.reg, normalId);
-  const merged = await compose(w, base, after, current);
+  const merged = await compose(w, base, after, current, true);
   const key = retainedKey(w.reg);
   after[key] = current[key] === null && merged.text === '' ? null :
     await targetFile(w.reg, key, merged.text, current);

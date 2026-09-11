@@ -1,5 +1,13 @@
 # Registered user-source modes
 
+The adopted [v3 source-state contract](spec-mode-inheritance.md) extends the
+historical rules below with ordinary Skill disabled/manual/automatic states
+and a separate optional-plugin registration/control boundary. Plugin packages
+are read-only dependencies; only registered user enabled selectors join the
+existing configuration snapshot. New plugin scopes use a v3 writer fence and
+require a separately reviewed setup and preparation. Older records keep the
+rules under which they were saved.
+
 This contract is shared by both application adapters. Where it names a Codex
 file, path or native editor below, the Claude Code adapter has its own
 equivalent and its own boundaries; see [claude-macos](claude-macos.md) for the

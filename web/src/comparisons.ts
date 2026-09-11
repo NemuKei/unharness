@@ -1,5 +1,5 @@
 import { ApiError } from "./api.ts";
-import type { SourceMode, SourceVerification } from "./sources";
+import type { SourceMode, SourceVerification, PluginObservation, PluginCoverage } from "./sources";
 
 export type UsageAvailability = "available" | "partial" | "unavailable";
 export type RunOutcome = "accepted" | "failed" | "abandoned" | "unknown";
@@ -86,6 +86,8 @@ export type SourceAssociation = {
 export type RunSource = {
   association: SourceAssociation | null;
   observation: {
+    plugins?: PluginObservation[];
+    coverage?: PluginCoverage;
     observationId: string;
     observedAt: string;
     status:

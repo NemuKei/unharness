@@ -1,5 +1,12 @@
 # Compatibility and evidence
 
+The [v3 source-state checks](evidence/2026-09-11-source-states-v3-macos.md) add
+native 0.153.4 read-only plugin provenance and a separately guarded user-enabled
+configuration boundary, plus owned-profile v3 restoration and local GUI/MCP
+coverage. Task-record schema 3 reports plugin Skill input matches separately
+from unknown whole-plugin runtime state. This is not complete plugin-runtime
+qualification; the new immutable package and real v3 preparation remain pending.
+
 The [installed-plugin Normal task](evidence/2026-09-11-native-desktop-origin.md) corroborates one fresh 0.153.4 native agent-created task using `codex_work_desktop` with source `vscode`. Source readers recognize that exact tuple while retaining all existing identity, route, freshness and no-fork checks. This adds one Normal recording match; the installed 0.0.2 package still predates the recognition fix and the remaining native product journey is open.
 
 The [published Mac preview QA](evidence/2026-09-11-public-mac-qa.md) adds actual public download/install, HTTPS-to-loopback access, Codex WebMCP, mixed GUI/AI mode restoration, artwork/card saving and revocation on the recorded Mac/app version. It does not establish the remaining fresh Desktop model-task journey or nonempty official-plugin automatic-use control.

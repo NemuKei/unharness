@@ -23,6 +23,14 @@ On 2026-09-10 the maintainer authorized merging [PR #1](https://github.com/NemuK
 
 ## Phase 1: complete the Mac Codex core
 
+The 2026-09-11 [v3 source-state revision](spec-mode-inheritance.md) supersedes
+the v2 optional-control choices for new setups: ordinary Skills explicitly use
+disabled/manual/automatic states, and separately registered optional plugins
+use whole-plugin disabled/Normal. This changes no historical v1/v2 records or
+deferred-platform gates. [Current qualification](evidence/2026-09-11-source-states-v3-macos.md)
+separates prepared configuration, recorded Skill inputs and unobserved runtime
+components; the new real Mac journey remains required.
+
 Start with a read-only probe of desktop configuration sources, supported controls, application scope, and evidence available after a fresh task. Keep the user's real setup unchanged during inventory.
 
 Then implement the smallest complete save → switch → fresh comparison → favorite → restore loop on Mac, including UNSEAL and TRUEFORM. Keep OS-specific handling behind the existing filesystem/process boundary. Verify the web and AI entry points and effects off against the same core outcomes.

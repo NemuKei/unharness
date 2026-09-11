@@ -7,7 +7,7 @@ import { fail } from '../sources/errors.mjs';
 import { hash, loadSetup, loadSetupReview } from './records.mjs';
 
 export function validateAdditions(value, schemaVersion = 1) {
-  if (![1, 2].includes(schemaVersion)) fail('enrollment-proposal-invalid');
+  if (![1, 2, 3].includes(schemaVersion)) fail('enrollment-proposal-invalid');
   if (!Array.isArray(value) || !value.length || value.length > 32 || new Set(value.map(v => v?.sourceId)).size !== value.length) fail('enrollment-proposal-invalid');
   for (const a of value) {
     exactKeys(a, ['sourceId', 'origin', 'reason', ...(schemaVersion === 1 ? ['unseal', 'trueform'] : [])], [], 'enrollment-proposal-invalid');
@@ -41,9 +41,9 @@ export async function loadEnrollmentReview(w, reviewId) {
     const p = await loadRecord(w.workspace, 'input', reviewId);
     exactKeys(p, ['kind', 'role', 'schemaVersion', 'scopeId', 'revision', 'normalId', 'beforeId', 'previousSetupId',
       'discoveryId', 'additions', 'nextScopeId', 'nextNormalId', 'nextSnapshotId', 'setupReviewId', 'setupId'], [], 'enrollment-record-invalid');
-    if (p.role !== 'enrollment-review' || ![1, 2].includes(p.schemaVersion) || !Number.isSafeInteger(p.revision) || p.revision < 0 ||
+    if (p.role !== 'enrollment-review' || ![1, 2, 3].includes(p.schemaVersion) || !Number.isSafeInteger(p.revision) || p.revision < 0 ||
         ['scopeId', 'normalId', 'beforeId', 'previousSetupId', 'discoveryId', 'nextScopeId', 'nextNormalId', 'nextSnapshotId'].some(k => !hash(p[k])) ||
-        ['setupReviewId', 'setupId'].some(k => p.schemaVersion === 2 ? p[k] !== null : !hash(p[k]))) fail('enrollment-record-invalid');
+        ['setupReviewId', 'setupId'].some(k => p.schemaVersion >= 2 ? p[k] !== null : !hash(p[k]))) fail('enrollment-record-invalid');
     validateAdditions(p.additions, p.schemaVersion);
     const before = scopeWorkspace(w, p.scopeId);
     const registrations = await loadScopeLineage(w.workspace, w.rootScopeId, p.nextScopeId);
@@ -58,7 +58,7 @@ export async function loadEnrollmentReview(w, reviewId) {
       if (!equal(expanded[key], Object.hasOwn(original, key) ? original[key] : normal[key])) fail('enrollment-record-invalid');
     const saved = await loadSetup(before, p.previousSetupId);
     if (saved.review.schemaVersion !== p.schemaVersion) fail('enrollment-record-invalid');
-    if (p.schemaVersion === 2) return { ...p, reviewId, before, next };
+    if (p.schemaVersion >= 2) return { ...p, reviewId, before, next };
     const reviewed = await loadSetupReview(next, p.setupReviewId);
     if (reviewed.normalId !== p.nextNormalId || reviewed.beforeId !== p.nextSnapshotId || reviewed.revision !== p.revision + 1 ||
         reviewed.previousSetupId !== p.previousSetupId || !equal(reviewed.proposal,
@@ -71,13 +71,13 @@ export async function validateEnrollmentStates(w, p, beforeState, afterState) {
   await validateStateSnapshots(w.workspace, p.before.reg, beforeState);
   await validateStateSnapshots(w.workspace, p.next.reg, afterState);
   assertEnrollmentCurrent({ ...p.before, state: beforeState }, p);
-  if (p.schemaVersion === 2 && beforeState.setupSchemaVersion !== 2) fail('journal-invalid');
+  if (p.schemaVersion >= 2 && beforeState.setupSchemaVersion !== p.schemaVersion) fail('journal-invalid');
   if ((beforeState.scopeId ?? w.rootScopeId) !== p.scopeId ||
       !equal(afterState, enrollmentState(beforeState, p, afterState.preparation))) fail('journal-invalid');
 }
 export const enrollmentSummary = p => ({ reviewId: p.reviewId, schemaVersion: p.schemaVersion, scopeId: p.scopeId, nextScopeId: p.nextScopeId,
   normalId: p.normalId, nextNormalId: p.nextNormalId, revision: p.revision, previousSetupId: p.previousSetupId, setupId: p.setupId,
-  setupRequired: p.schemaVersion === 2,
+  setupRequired: p.schemaVersion >= 2,
   additions: p.additions.map(a => ({ ...a, label: p.next.reg.skills.find(s => s.id === a.sourceId).label,
     enabled: p.next.reg.skills.find(s => s.id === a.sourceId).enabled })),
   existingSourcesChanged: 0, sourceFilesChanged: 0, modeChangeRequired: true, addedSourcesUntilPreparation: 'saved-normal' });

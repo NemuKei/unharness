@@ -1,5 +1,12 @@
 # Registered-source task observations
 
+Registered-plugin scopes add observation schema 3. The initial Skill catalog
+can establish input correspondence or detect a disabled plugin's unexpected
+presence, while whole-plugin runtime remains unknown on Codex 0.153.4.
+The [v3 evidence boundary](evidence/2026-09-11-source-states-v3-macos.md#task-record-evidence-and-its-limit)
+defines the separate coverage and the resulting comparison limitation.
+Earlier scopes retain their original schema and meaning.
+
 This extends the approved Mac goal and the [real-source desktop pilot](evidence/2026-09-08-real-source-desktop-macos.md) into shared operations. It reads one explicitly selected Codex task and records whether its initial instruction/catalog fields match a prepared registered snapshot. It does not start a task, restart an app, change a source, measure performance, or prove complete runtime coverage.
 
 ## Fixed boundaries

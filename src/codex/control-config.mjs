@@ -1,8 +1,9 @@
 import { isDeepStrictEqual } from 'node:util';
 import { parse } from '../vendor/smol-toml/parse.js';
+import { partitionPluginEnablement } from './plugin-config-selection.mjs';
 
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
-function retained(text, selectedPaths) {
+function retained(text, selectedPaths, pluginIds) {
   // The pinned, bundled reader supports native TOML forms during offline
   // frozen restores. BigInt keeps integer type and precision distinct.
   const config = parse(text, { integersAsBigInt: true, maxDepth: 100 });
@@ -25,13 +26,13 @@ function retained(text, selectedPaths) {
     else delete config.skills.config;
     if (!Object.keys(config.skills).length) delete config.skills;
   }
-  return config;
+  return partitionPluginEnablement(config, pluginIds).retained;
 }
 
-export function preservesUnselectedConfig(before, after, selectedPaths) {
+export function preservesUnselectedConfig(before, after, selectedPaths, pluginIds = []) {
   if (before === after) return true;
   try {
     const paths = new Set(selectedPaths);
-    return isDeepStrictEqual(retained(before, paths), retained(after, paths));
+    return isDeepStrictEqual(retained(before, paths, pluginIds), retained(after, paths, pluginIds));
   } catch { return false; }
 }

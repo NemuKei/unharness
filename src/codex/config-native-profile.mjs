@@ -4,11 +4,8 @@ import { join } from 'node:path';
 
 import { createRpcTransport } from './rpc-transport.mjs';
 
-export const MAX_CONFIG_BYTES = 128 * 1024;
-export const configTransformFailed = () => Object.assign(
-  new Error('Codex configuration could not be safely transformed'),
-  { kind: 'config-transform-failed' },
-);
+import { MAX_CONFIG_BYTES, configTransformFailed } from './config-transform-contract.mjs';
+export { MAX_CONFIG_BYTES, configTransformFailed } from './config-transform-contract.mjs';
 
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const READ_METHODS = Object.freeze(['initialize', 'config/read']);

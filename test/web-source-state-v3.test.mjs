@@ -1,0 +1,133 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile,mkdir,writeFile} from 'node:fs/promises';
+import {randomUUID} from 'node:crypto';
+import {join,resolve} from 'node:path';
+import {pathToFileURL} from 'node:url';
+import {pluginStateProfile,pluginStateSetup} from '../test-support/plugin-state-profile.mjs';
+import {startGuiServer} from '../src/gui/server.mjs';
+import {openWorkspace,loadSnapshot} from '../src/sources/records.mjs';
+import {readSetup} from '../src/setup/service.mjs';
+import * as sources from '../src/sources/service.mjs';
+import {replayRecording} from '../test-support/replay-recording.mjs';
+const browserCase={timeout:120000,skip:process.platform!=='darwin'?'Mac GUI qualification':!process.env.UNHARNESS_PLAYWRIGHT_MODULE&&'Set the existing owned Playwright harness for built checks'};
+async function fixture(t,{enroll=true,setup=true,selector=true}={}){
+  const s=await pluginStateProfile(t,selector,enroll);
+  if(setup) await pluginStateSetup(s);
+  const gui=await startGuiServer({manageSources:s.context,assetsDirectory:resolve('dist')});t.after(()=>gui.close());
+  const {chromium}=await import(pathToFileURL(resolve(process.env.UNHARNESS_PLAYWRIGHT_MODULE)).href);
+  const browser=await chromium.launch({headless:true,...(process.env.UNHARNESS_BROWSER_EXECUTABLE?{executablePath:process.env.UNHARNESS_BROWSER_EXECUTABLE}:{})});t.after(()=>browser.close());
+  const browserContext=await browser.newContext({reducedMotion:'reduce',viewport:{width:1440,height:1100}});
+  await browserContext.addInitScript(()=>localStorage.setItem('unharness.effects.v1','off'));
+  const page=await browserContext.newPage();page.setDefaultTimeout(15000);
+  const errors=[],posts=[];
+  page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+  page.on('request',r=>{if(r.method()==='POST')posts.push({path:new URL(r.url()).pathname,body:r.postDataJSON()});});
+  await page.goto(gui.url);await page.getByText('プラグインの登録を確認する',{exact:true}).waitFor();
+  return{...s,page,browserContext,errors,posts};
+}
+async function screenshot(s,name){
+  if(!process.env.UNHARNESS_SETUP_SCREENSHOT_DIR)return;
+  await mkdir(process.env.UNHARNESS_SETUP_SCREENSHOT_DIR,{recursive:true});
+  await s.page.screenshot({path:join(process.env.UNHARNESS_SETUP_SCREENSHOT_DIR,name+'.png')});
+}
+test('built v3 GUI reviews both states before saving, then prepares separately and preserves Normal',browserCase,async t=>{
+  const s=await fixture(t),{page}=s,before=await openWorkspace(s.workspace),files=await readFile(s.configPath);
+  await page.getByRole('button',{name:'設定をAIに相談',exact:true}).click();
+  await page.getByRole('button',{name:'保存した2構成を確認',exact:true}).click();
+  const summary=page.getByRole('region',{name:'保存した2構成',exact:true});
+  await summary.getByRole('heading',{name:'零式から引き継ぐプラグイン',exact:true}).waitFor();
+  assert.match(await summary.innerText(),/通常Skill：無効 0件 \/ 手動 1件 \/ 自動 0件/);
+  assert.match(await summary.innerText(),/プラグイン：1件/);
+  const editor=page.locator('.source-mode').nth(2).locator('.source-state-editor');
+  await editor.locator('summary').first().click();
+  const load=editor.getByRole('button',{name:'保存した対象を編集',exact:true});await load.focus();await page.keyboard.press('Enter');
+  await editor.getByLabel('example',{exact:true}).selectOption('disabled');
+  await editor.getByRole('button',{name:'両モードの変更を確認',exact:true}).click();
+  await editor.getByRole('button',{name:'この2構成を保存',exact:true}).waitFor();
+  assert.match(await editor.innerText(),/通常Skill：無効 1件 \/ 手動 0件 \/ 自動 0件/);
+  assert.deepEqual(await readFile(s.configPath),files);
+  assert.equal((await openWorkspace(s.workspace)).state.setupId,before.state.setupId);
+  await page.setViewportSize({width:390,height:844});
+  await editor.scrollIntoViewIfNeeded();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  await screenshot(s,'v3-source-editor-mobile');
+  const savedResponse=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/sources/apply-setup'&&r.request().method()==='POST');
+  await editor.getByRole('button',{name:'この2構成を保存',exact:true}).click();
+  assert.equal((await savedResponse).status(),200);
+  await page.waitForFunction(()=>!document.querySelector('.source-state-editor .enrollment-review'));
+  const saved=await readSetup({workspace:s.workspace,schemaVersion:3});assert.notEqual(saved.setupId,before.state.setupId);
+  assert.deepEqual(await readFile(s.configPath),files);
+  await page.getByRole('button',{name:/TRUEFORM/}).click();
+  const apply=page.getByRole('button',{name:'この計画で準備する',exact:true});await apply.and(page.locator(':enabled')).waitFor();await apply.click();
+  await page.locator('.control-column .selected-name').filter({hasText:'TRUEFORM'}).waitFor();
+  assert.match(await readFile(s.configPath,'utf8'),/enabled = false/);
+  await page.getByRole('button',{name:/通常装備/}).click();await apply.and(page.locator(':enabled')).waitFor();await apply.click();
+  await page.locator('.control-column .selected-name').filter({hasText:'Normal'}).waitFor();
+  assert.equal(await readFile(s.configPath,'utf8'),s.originalConfig);
+  assert.deepEqual(s.errors,[]);
+});
+test('built plugin registration confirms optional role, freezes impact and accepts the reviewed scope transition',browserCase,async t=>{
+  const s=await fixture(t,{enroll:false,setup:false}),{page}=s,before=await openWorkspace(s.workspace),files=await readFile(s.configPath);
+  await page.getByText('プラグインの登録を確認する',{exact:true}).click();
+  await page.getByRole('button',{name:'導入済みプラグインを確認',exact:true}).click();
+  await page.getByLabel('登録するプラグイン',{exact:true}).selectOption(s.pluginId);
+  const reviewButton=page.getByRole('button',{name:'プラグインの登録内容を確認',exact:true});assert.equal(await reviewButton.isDisabled(),true);
+  await page.getByLabel('このプラグインの由来',{exact:true}).selectOption('external');
+  await page.getByLabel('自分で追加した任意のプラグインです',{exact:true}).check();
+  await reviewButton.click();
+  // aria-label on a generic div is inspected through its explicit locator.
+  const panel=page.locator('[aria-label="プラグインの追加登録内容"]');
+  await panel.getByRole('button',{name:'このプラグインを登録',exact:true}).waitFor();
+  assert.match(await panel.innerText(),/Skill 1件 \/ MCP 0件/);assert.match(await panel.innerText(),/予定タスク 未確認/);
+  assert.deepEqual(await readFile(s.configPath),files);assert.equal((await openWorkspace(s.workspace)).scopeId,before.scopeId);
+  await screenshot(s,'v3-plugin-registration');
+  await panel.getByRole('button',{name:'このプラグインを登録',exact:true}).click();
+  await page.getByText('この登録の2構成は確認・保存待ちです。以前の保存版はそのまま残っています。',{exact:true}).waitFor();
+  const after=await openWorkspace(s.workspace);assert.notEqual(after.scopeId,before.scopeId);assert.equal(after.state.setupId,null);
+  assert.deepEqual(await readFile(s.configPath),files);assert.equal(await page.getByRole('button',{name:/TRUEFORM/}).isDisabled(),true);
+  assert.equal(s.posts.filter(p=>p.path==='/api/sources/apply-plugin-enrollment').length,1);assert.deepEqual(s.errors,[]);
+});
+test('a lost plugin adoption response offers no automatic repeat',browserCase,async t=>{
+  const s=await fixture(t,{enroll:false,setup:false}),{page}=s;
+  await page.getByText('プラグインの登録を確認する',{exact:true}).click();
+  await page.getByRole('button',{name:'導入済みプラグインを確認',exact:true}).click();
+  await page.getByLabel('登録するプラグイン',{exact:true}).selectOption(s.pluginId);
+  await page.getByLabel('このプラグインの由来',{exact:true}).selectOption('external');
+  await page.getByLabel('自分で追加した任意のプラグインです',{exact:true}).check();
+  await page.getByRole('button',{name:'プラグインの登録内容を確認',exact:true}).click();
+  let finished;const adopted=new Promise(resolve=>{finished=resolve;});
+  await page.route('**/api/sources/apply-plugin-enrollment',async route=>{await route.fetch();finished();await route.abort('connectionfailed');});
+  await page.getByRole('button',{name:'このプラグインを登録',exact:true}).click();
+  await adopted;
+  await page.waitForFunction(()=>[...document.querySelectorAll('button')].filter(b=>b.textContent==='このプラグインを登録'&&!b.disabled).length===0);
+  assert.equal(s.posts.filter(p=>p.path==='/api/sources/apply-plugin-enrollment').length,1);
+  assert.equal((await openWorkspace(s.workspace)).reg.plugins.length,1);
+});
+test('built task observation separates plugin input mismatch/match from unavailable whole-plugin runtime',browserCase,async t=>{
+  const s=await fixture(t),{page}=s;
+  const plan=await sources.planUserMode({workspace:s.workspace,mode:'trueform'});
+  await sources.applyUserPlan({workspace:s.workspace,planId:plan.planId});
+  await page.reload();
+  await page.getByText('タスク記録で確認',{exact:true}).click();
+  const w=await openWorkspace(s.workspace),files=await loadSnapshot(s.workspace,w.reg,w.state.snapshotId);
+  const global=(files.override?.text?.trim()?files.override.text:files.base?.text??'').trim();
+  for(const present of [true,false]){
+    const taskId=randomUUID();
+    const records=replayRecording({taskId,project:s.context.project,createdAt:new Date().toISOString(),
+      instructions:global+'\n\n--- project-doc ---\n\n# Required project instructions',
+      catalog:'### Available skills\n'+(present?'- fixture-state:fixture: Plugin fixture (file: '+join(s.packageRoot,'skills/fixture/SKILL.md')+')\n':'')});
+    await mkdir(join(s.context.codexHome,'sessions'),{recursive:true});
+    await writeFile(join(s.context.codexHome,'sessions','rollout-'+taskId+'.jsonl'),records.map(JSON.stringify).join('\n')+'\n');
+    await page.locator('.task-observation').getByLabel('タスクUUID',{exact:true}).fill(taskId);
+    await page.getByRole('button',{name:'このタスクの記録を確認',exact:true}).click();
+    const observed=page.getByRole('region',{name:'プラグインの確認範囲',exact:true});
+    await observed.getByText('記録された入力：'+(present?'不一致':'一致'),{exact:true}).waitFor();
+    assert.match(await observed.innerText(),/プラグイン全体の稼働・停止は未確認/);
+    assert.equal(await page.locator('.task-observation-result.matched-record').count(),0);
+  }
+  await page.setViewportSize({width:390,height:844});
+  await page.getByRole('region',{name:'プラグインの確認範囲',exact:true}).scrollIntoViewIfNeeded();
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  await screenshot(s,'v3-plugin-observation-mobile');
+  assert.deepEqual(s.errors,[]);
+});

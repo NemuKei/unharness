@@ -4,6 +4,9 @@ import { ComparisonWorkbench } from "./ComparisonWorkbench";
 import { SetupHandoff, FreshTaskHandoff } from "./SetupHandoff";
 import { releaseModeDescription } from "./setup";
 import { EnrollmentPanel } from "./EnrollmentPanel";
+import { PluginEnrollmentPanel } from './PluginEnrollmentPanel';
+import { SourceStateEditor } from './SourceStateEditor';
+import { PluginObservationSummary } from './PluginObservationSummary';
 import { LocalConnectionPanel } from "./LocalConnectionPanel";
 import { useLocalAppearance } from './useLocalAppearance';
 import { AppearancePanel } from './AppearancePanel';
@@ -159,6 +162,7 @@ export function SourceWorkbench() {
             {c.view && <SetupHandoff key={c.view.metadata.contextId + ":" + (source?.setup?.setupId ?? "initial")}
               view={c.view} confirmed={c.confirmed} busy={c.busy} execute={c.executeAuxiliary} />}
             <EnrollmentPanel key={c.view?.metadata.contextId + ":" + source?.revision} controller={c} />
+            <PluginEnrollmentPanel key={c.view?.metadata.contextId + ":plugins:" + source?.revision} controller={c} />
           </section>
           <aside className="control-column" aria-label="設定と保存">
             <section className="control-section">
@@ -306,6 +310,11 @@ export function SourceWorkbench() {
                               : "無効"}
                           </p>
                         ))}
+                        {(c.plan.pluginStates ?? []).map(row => <p key={row.pluginId}>
+                          {source.registration.plugins?.find(p => p.id === row.pluginId)?.label ?? row.pluginId}：
+                          {row.state === 'disabled' ? 'プラグイン全体を無効にする設定' : row.enabled ? 'Normalを保持（有効）' : 'Normalを保持（無効）'}
+                        </p>)}
+                        {!!c.plan.pluginStates?.length && <p className="muted">プラグイン全体の設定を準備します。各機能が新しいタスクでどう読み込まれたかは、別に確認します。</p>}
                       </details>
                     </>
                   ) : (
@@ -373,6 +382,7 @@ export function SourceWorkbench() {
                     }
                   >
                     {f.name} · {modePresentation[f.preparedMode].title}
+                    {f.addedPluginIds?.length ? ` · 追加したプラグイン ${f.addedPluginIds.length}件はNormal` : ''}
                     {f.addedSourceIds?.length ? ` · 追加したSkill ${f.addedSourceIds.length}件を含む` : source &&
                     f.normalId !== source.registration.activeNormalId
                       ? " · 現在の共通設定を維持"
@@ -525,6 +535,7 @@ function TaskObservationSection({
           {observationIssueText(source?.observationIssue ?? null)}
         </p>
       )}
+      {observation && <PluginObservationSummary evidence={observation} names={source?.registration.plugins} />}
       <details>
         <summary>タスク記録で確認</summary>
         <p className="muted">
@@ -866,6 +877,8 @@ function ModeChoices({
               <small>{modePresentation[mode].label}</small>
             </span>
           </button>
+          {mode !== 'normal' && c.view?.source?.setup?.schemaVersion === 3 && c.view.source.setup.setupId &&
+            <SourceStateEditor key={c.view.metadata.contextId + ':' + c.view.source.revision + ':' + mode} controller={c} mode={mode} />}
           {mode !== "normal" && c.view?.source && !c.view.source.setup?.setupId && !c.view.source.setup?.setupRequired && (
             <details>
               <summary>対象を調整</summary>

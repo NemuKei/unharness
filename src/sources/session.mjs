@@ -26,13 +26,16 @@ const fields = {
   plan: [["mode"], ["selectedIds"]],
   "plan-retained": [[], []],
   "accept-retained": [["planId"], []],
-  setup: [[], []],
+  setup: [[], ["schemaVersion"]],
   "review-setup": [["proposal"], []],
   "apply-setup": [["reviewId"], []],
   "enrollment-inventory": [[], []],
   "review-candidate": [["discoveryId", "sourceId"], []],
   "review-enrollment": [["discoveryId", "additions"], []],
   "apply-enrollment": [["reviewId"], []],
+  "plugin-enrollment-inventory": [[], []],
+  "review-plugin-enrollment": [["discoveryId", "additions"], []],
+  "apply-plugin-enrollment": [["reviewId"], []],
   apply: [["planId"], []],
   save: [[], ["name"]],
   favorites: [[], ["after"]],
@@ -129,6 +132,7 @@ export function sourceRequestShape(body, action) {
     fail("gui-invalid-request");
   if (Object.hasOwn(input, "sourceId") && !sourceId(input.sourceId))
     fail("gui-invalid-request");
+  if (Object.hasOwn(input, "schemaVersion") && ![2, 3].includes(input.schemaVersion)) fail("gui-invalid-request");
   if (
     Object.hasOwn(input, "throughTurnId") &&
     (typeof input.throughTurnId !== "string" ||

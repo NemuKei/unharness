@@ -60,7 +60,7 @@ test('built GUI reviews source roles, enrolls without file writes, then prepares
     await page.screenshot({ path: join(process.env.UNHARNESS_ENROLLMENT_SCREENSHOT_DIR, 'enrollment-desktop.png') });
   }
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.locator('.enrollment-panel').scrollIntoViewIfNeeded();
+  await page.locator('.enrollment-panel:not(.plugin-enrollment-panel)').scrollIntoViewIfNeeded();
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   const boxes = await page.locator('.enrollment-form select, .enrollment-form textarea').evaluateAll(elements => elements.map(e => {
     const r = e.getBoundingClientRect(); return { width: r.width, right: r.right, viewport: innerWidth };

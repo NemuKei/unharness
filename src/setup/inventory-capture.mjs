@@ -36,3 +36,11 @@ export async function captureSetupInventory(w, normalId = activeNormalId(w)) {
     runtimeVersion: w.reg.version, skills, plugins };
   return { ...data, inventoryId: setupInventoryId(data) };
 }
+
+export async function captureInventoryForSetup(w, schemaVersion, normalId = activeNormalId(w)) {
+  if (schemaVersion === 3) {
+    const { captureSourceStateInventory } = await import('./inventory-v3-capture.mjs');
+    return captureSourceStateInventory(w, normalId);
+  }
+  return captureSetupInventory(w, normalId);
+}

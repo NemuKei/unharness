@@ -8,6 +8,7 @@ import { fail, verification, USER_SOURCE_ERROR_KINDS } from '../sources/errors.m
 import { sourceTransactionHook } from '../sources/transaction.mjs';
 import { findCurrentDesktopSession, readDesktopRecords } from '../codex/desktop-record.mjs';
 import { projectReplayTask } from '../codex/replay-observation.mjs';
+import { frozenPluginInputBindings, PLUGIN_OBSERVATION_REASONS, withPluginEvidence } from '../codex/plugin-task-observation.mjs';
 import { assertReplaySupported } from './replay-service.mjs';
 import { loadReplayIndex } from './replay-index.mjs';
 import { loadReplayAttempts, loadReplayNative } from './replay-records.mjs';
@@ -57,7 +58,9 @@ async function bindingFor(w, attempt, taskId, read, observedAt) {
     return mapping ? { ...s, path: mapping.path } : s;
   });
   return { taskId, project: attempt.review.project, readyAt: attempt.readyAt, observedAt,
-    request: attempt.review.saved.review.declaration.request, expectedSources, nativeConfig: native.config, instructions, recordRead: read.recordRead };
+    request: attempt.review.saved.review.declaration.request, expectedSources,
+    ...(w.reg.plugins?.length ? { expectedPlugins: await frozenPluginInputBindings(w, attempt.review.sourceBinding.snapshotId) } : {}),
+    nativeConfig: native.config, instructions, recordRead: read.recordRead };
 }
 async function captureOutcome(w, attempt) {
   try {
@@ -86,9 +89,12 @@ async function recordingChanged(w, taskId, read) {
 }
 function changedRecording(payload) {
   payload.readIssue = 'replay-task-record-changed';
-  if (payload.qualification.status === 'matched-record') payload.qualification.status = 'unknown-record';
-  if (!payload.qualification.reasons.includes('task-record-changed-during-collection'))
-    payload.qualification.reasons.push('task-record-changed-during-collection');
+  const original = payload.qualification;
+  const q = original.plugins ? { ...original, status: original.sourceStatus,
+    reasons: original.reasons.filter(r => !PLUGIN_OBSERVATION_REASONS.includes(r)) } : original;
+  if (q.status === 'matched-record') q.status = 'unknown-record';
+  if (!q.reasons.includes('task-record-changed-during-collection')) q.reasons.push('task-record-changed-during-collection');
+  payload.qualification = original.plugins ? withPluginEvidence(q, original.plugins) : q;
 }
 export async function observeUserReplay(args) {
   request(args, ['attemptId', 'taskId']);
@@ -106,7 +112,7 @@ export async function observeUserReplay(args) {
     const binding = await bindingFor(w, attempt, taskId, read, capturedAt);
     const projection = projectReplayTask(read.records, binding);
     if (readIssue) { projection.measurement = null; projection.outputText = null; }
-    const payload = { role: 'replay-result-review', schemaVersion: 1, scopeId: attempt.scopeId, attemptId: attempt.attemptId,
+    const payload = { role: 'replay-result-review', schemaVersion: binding.expectedPlugins?.length ? 2 : 1, scopeId: attempt.scopeId, attemptId: attempt.attemptId,
       attemptStateId: attempt.stateId, taskId, capturedAt, recordRead: read.recordRead,
       recordingDigest: readIssue ? null : digestBytes(Buffer.from(JSON.stringify(read.records))), readIssue,
       sourceIssue: firstIssue ?? await sourceIssue(w, attempt.review), ...projection, files };

@@ -108,10 +108,10 @@ export function validateState(reg, state) {
   for (const key of ['lastCheckpointId', 'lastPlanId'])
     if (state[key] !== null && !/^[0-9a-f]{64}$/.test(state[key]))
       fail('workspace-invalid');
-  for (const key of ['setupId', 'preparedSetupId', 'scopeId', 'lastEnrollmentReviewId', 'lastRebindReviewId'])
+  for (const key of ['setupId', 'preparedSetupId', 'scopeId', 'lastEnrollmentReviewId', 'lastRebindReviewId', 'lastPluginEnrollmentReviewId'])
     if (state[key] != null && (typeof state[key] !== 'string' || !/^[0-9a-f]{64}$/.test(state[key]))) fail('workspace-invalid');
   if (state.scopePreparationRequired !== undefined && typeof state.scopePreparationRequired !== 'boolean') fail('workspace-invalid');
-  if (state.setupSchemaVersion !== undefined && state.setupSchemaVersion !== 2) fail('workspace-invalid');
+  if (state.setupSchemaVersion !== undefined && ![2, 3].includes(state.setupSchemaVersion)) fail('workspace-invalid');
   const paths = pathsFor(reg);
   if (
     new Set(state.ownedDirs.map((d) => d.path)).size !== state.ownedDirs.length
@@ -129,7 +129,7 @@ export function validateState(reg, state) {
 async function loadRegistration(workspace, scopeId) {
   const reg = await loadRecord(workspace, 'scope', scopeId);
   if (
-    !['registration', 'registration-rebind'].includes(reg.role) ||
+    !['registration', 'registration-rebind', 'registration-controls-v3'].includes(reg.role) ||
     reg.workspace !== workspace ||
     !reg.context ||
     !Array.isArray(reg.skills) ||
@@ -137,6 +137,13 @@ async function loadRegistration(workspace, scopeId) {
   )
     fail('workspace-invalid');
   const app = applicationFor(reg.context);
+  if (reg.plugins !== undefined || reg.controlSchemaVersion !== undefined || reg.role === 'registration-controls-v3') {
+    if (app.id !== 'codex' || reg.controlSchemaVersion !== 3) fail('workspace-invalid');
+    const { validateRegisteredPlugins } = await import('../codex/plugin-dependency.mjs');
+    try { await validateRegisteredPlugins(workspace, reg); } catch { fail('workspace-invalid'); }
+  }
+  if (reg.role === 'registration-controls-v3' && !/^[a-f0-9]{64}$/.test(reg.pluginEnrollmentReviewId)
+    || reg.role === 'registration' && reg.pluginEnrollmentReviewId !== undefined) fail('workspace-invalid');
   if (reg.role === 'registration-rebind' &&
       (!/^[a-f0-9]{64}$/.test(reg.rebindReviewId) || !/^[a-f0-9]{64}$/.test(reg.parentScopeId))
       || reg.role === 'registration' && reg.rebindReviewId !== undefined) fail('workspace-invalid');
@@ -198,7 +205,8 @@ export async function loadScopeLineage(workspace, rootScopeId, scopeId) {
     const reg = await loadRegistration(workspace, id);
     registrations.push({ scopeId: id, reg });
     if (id === rootScopeId) {
-      if (reg.role !== 'registration' || reg.parentScopeId !== undefined || reg.parentNormalId !== undefined) fail('workspace-invalid');
+      if (reg.role !== 'registration' || reg.parentScopeId !== undefined || reg.parentNormalId !== undefined
+        || reg.plugins !== undefined || reg.controlSchemaVersion !== undefined) fail('workspace-invalid');
       break;
     }
     if (!/^[a-f0-9]{64}$/.test(reg.parentScopeId) || !/^[a-f0-9]{64}$/.test(reg.parentNormalId)) fail('workspace-invalid');
@@ -211,8 +219,14 @@ export async function loadScopeLineage(workspace, rootScopeId, scopeId) {
       await validateReboundRegistration(workspace, rootScopeId, registrations[i + 1].scopeId, parent, child);
       continue;
     }
+    if (child.role === 'registration-controls-v3') {
+      const { validatePluginEnrollmentRegistration } = await import('../setup/plugin-enrollment-records.mjs');
+      await validatePluginEnrollmentRegistration(workspace, rootScopeId, registrations[i + 1].scopeId, parent, child);
+      continue;
+    }
     if (!equal(child.context, parent.context) || child.ownedRoot !== parent.ownedRoot || child.version !== parent.version ||
         !equal(child.instructions, parent.instructions) || child.skills.length <= parent.skills.length ||
+        !equal(child.plugins, parent.plugins) || child.controlSchemaVersion !== parent.controlSchemaVersion ||
         !equal(child.skills.slice(0, parent.skills.length), parent.skills)) fail('workspace-invalid');
     const before = await loadNormal(workspace, parent, child.parentNormalId);
     const after = await loadNormal(workspace, child);
@@ -235,7 +249,18 @@ export async function openWorkspace(workspace) {
   const state = await readJson(join(workspace, 'state.json'));
   const rootScopeId = workspaceManifestRoot(manifest);
   const manifestVersion = manifest.schemaVersion ?? 1;
-  if (state.setupSchemaVersion === 2 && manifestVersion !== 2) fail('workspace-invalid');
+  if ((state.setupSchemaVersion ?? 1) > manifestVersion) fail('workspace-invalid');
+  if (manifestVersion === 3 && state.setupSchemaVersion !== 3) {
+    // The new writer fence is published before its state. Only the matching
+    // durable record-only adoption may account for this intermediate pair.
+    try {
+      const j = await readJson(join(workspace, 'pending.json'));
+      if (!['unharness-user-source-setup-pending', 'unharness-user-source-plugin-enrollment-pending'].includes(j.kind) || j.schemaVersion !== 3
+        || j.scopeId !== (state.scopeId ?? rootScopeId) || !equal(j.beforeState, state)
+        || !equal(j.afterManifest, manifest) || workspaceManifestRoot(j.beforeManifest) !== rootScopeId)
+        fail('workspace-invalid');
+    } catch { fail('workspace-invalid'); }
+  }
   const scopeId = state.scopeId ?? rootScopeId;
   const registrations = await loadScopeLineage(workspace, rootScopeId, scopeId);
   const reg = registrations[0].reg;
@@ -255,9 +280,9 @@ export async function openWorkspace(workspace) {
 // it, even if they ignore fields added to mutable state. Immutable scopes,
 // snapshots and the original profile reservation keep their exact identities.
 export function workspaceManifestRoot(manifest) {
-  const v2 = manifest?.schemaVersion === 2;
-  const root = v2 ? manifest.rootScopeId : manifest?.scopeId;
-  if (!manifest || !equal(Object.keys(manifest).sort(), v2 ? ['rootScopeId', 'schemaVersion'] : ['scopeId'])
+  const versioned = [2, 3].includes(manifest?.schemaVersion);
+  const root = versioned ? manifest.rootScopeId : manifest?.scopeId;
+  if (!manifest || !equal(Object.keys(manifest).sort(), versioned ? ['rootScopeId', 'schemaVersion'] : ['scopeId'])
     || typeof root !== 'string' || !/^[a-f0-9]{64}$/.test(root)) fail('workspace-invalid');
   return root;
 }

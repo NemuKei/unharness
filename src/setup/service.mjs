@@ -9,7 +9,7 @@ import { fail, verification } from '../sources/errors.mjs';
 import { assertControlChanges } from './control-sources.mjs';
 import { validatePresetProposal, compileReleasePreset } from './preset.mjs';
 import { setupScope, loadSetupReview, loadSetup, setupReviewSummary, assertReviewCurrent, adoptedState } from './records.mjs';
-import { captureSetupInventory } from './inventory-capture.mjs';
+import { captureInventoryForSetup } from './inventory-capture.mjs';
 
 const request = (args, fields) => exactKeys(args, ['workspace', ...fields], [], 'invalid-request');
 async function locked(workspace, action) {
@@ -40,9 +40,10 @@ export async function freezePresets(w, proposal, inventory) {
   for (const mode of ['unseal', 'trueform']) {
     const result = await app.compile({ reg: w.reg, mode, normal, selection: options[mode].selection,
       releasePreset: options[mode], targetFile: (key, text) => targetFile(w.reg, key, text, normal) });
-    assertControlChanges({ sources: w.reg.skills, before: normal, after: result.after });
+    assertControlChanges({ sources: w.reg.skills, plugins: w.reg.plugins, before: normal, after: result.after });
     assertPlanOwnershipChanges(normal, result.after);
     presets[mode] = { ...options[mode], guide: result.guide, skillStates: result.skillStates,
+      ...(proposal.schemaVersion === 3 ? { pluginStates: result.pluginStates } : {}),
       snapshotId: await saveSnapshot(w.workspace, w.reg, result.after, w.state.snapshotVersion ?? 1) };
   }
   return presets;
@@ -56,11 +57,11 @@ export async function reviewSetup(args) {
     const app = applicationFor(w.reg.context);
     if (!app.supportsReleasePresets) fail('setup-application-unsupported');
     const scope = setupScope(w), proposal = validatePresetProposal(args.proposal, scope);
-    if (w.manifestVersion === 2 && proposal.schemaVersion !== 2) fail('setup-upgrade-required');
+    if (proposal.schemaVersion < w.manifestVersion) fail('setup-upgrade-required');
     if (proposal.basis.runtimeVersion !== null && proposal.basis.runtimeVersion !== w.reg.version) fail('stale-discovery');
     await assertUnchanged(w);
     await freshCatalog(w.reg);
-    const inventory = proposal.schemaVersion === 2 ? await captureSetupInventory(w) : undefined;
+    const inventory = proposal.schemaVersion >= 2 ? await captureInventoryForSetup(w, proposal.schemaVersion) : undefined;
     const presets = await freezePresets(w, proposal, inventory);
     await sourceTransactionHook('setup-review-compiled');
     await freshCatalog(w.reg);
@@ -76,19 +77,19 @@ export async function applySetup(args) {
   request(args, ['reviewId']);
   return locked(args.workspace, async w => {
     const p = await loadSetupReview(w, args.reviewId), existing = await loadSetup(w);
-    if (w.manifestVersion === 2 && p.schemaVersion !== 2) fail('setup-upgrade-required');
+    if (p.schemaVersion < w.manifestVersion) fail('setup-upgrade-required');
     await assertUnchanged(w);
-    if (p.schemaVersion === 2) {
+    if (p.schemaVersion >= 2) {
       const { assertFrozenPreset } = await import('./frozen-preset.mjs');
       for (const mode of ['unseal', 'trueform']) await assertFrozenPreset(w, p, mode);
     }
     if (existing?.review.reviewId === p.reviewId) return result(w, existing.setupId, p, true);
     assertReviewCurrent(w, p);
     if (!applicationFor(w.reg.context).supportsReleasePresets) fail('setup-application-unsupported');
-    if (p.schemaVersion === 2 && !equal(await captureSetupInventory(w), p.inventory)) fail('stale-discovery');
+    if (p.schemaVersion >= 2 && !equal(await captureInventoryForSetup(w, p.schemaVersion), p.inventory)) fail('stale-discovery');
     for (const mode of ['unseal', 'trueform']) {
       compileReleasePreset(p.proposal, mode, setupScope(w), p.inventory);
-      assertControlChanges({ sources: w.reg.skills,
+      assertControlChanges({ sources: w.reg.skills, plugins: w.reg.plugins,
         before: await loadNormal(w.workspace, w.reg, p.normalId),
         after: await loadSnapshot(w.workspace, w.reg, p.presets[mode].snapshotId) });
     }
@@ -96,14 +97,14 @@ export async function applySetup(args) {
     const setupId = await record(w.workspace, 'application', { role: 'release-setup', schemaVersion: p.schemaVersion,
       scopeId: w.scopeId, reviewId: p.reviewId });
     const afterState = adoptedState(w.state, setupId, p.schemaVersion);
-    const afterManifest = { schemaVersion: 2, rootScopeId: w.rootScopeId };
+    const afterManifest = { schemaVersion: p.schemaVersion, rootScopeId: w.rootScopeId };
     const journal = { kind: 'unharness-user-source-setup-pending', scopeId: w.scopeId,
       setupId, beforeState: w.state, afterState,
-      ...(p.schemaVersion === 2 ? { schemaVersion: 2, beforeManifest: w.manifest, afterManifest } : {}) };
+      ...(p.schemaVersion >= 2 ? { schemaVersion: p.schemaVersion, beforeManifest: w.manifest, afterManifest } : {}) };
     await writeJson(join(w.workspace, 'pending.json'), journal, true);
     await sourceTransactionHook('setup-journal');
     await assertUnchanged(w);
-    if (p.schemaVersion === 2) {
+    if (p.schemaVersion >= 2) {
       await writeJson(join(w.workspace, 'registration.json'), afterManifest);
       await sourceTransactionHook('setup-manifest');
       await assertUnchanged({ ...w, manifest: afterManifest });
@@ -111,7 +112,7 @@ export async function applySetup(args) {
     }
     await writeJson(join(w.workspace, 'state.json'), afterState);
     await sourceTransactionHook('setup-state');
-    if (p.schemaVersion === 2) {
+    if (p.schemaVersion >= 2) {
       const current = await openWorkspace(w.workspace);
       if (!equal(current.manifest, afterManifest) || !equal(current.state, afterState)
         || !equal(await readJson(join(w.workspace, 'pending.json')), journal)) fail('journal-invalid');
@@ -125,12 +126,14 @@ const result = (w, setupId, p, duplicate) => ({ setupId, reviewId: p.reviewId, n
   adopted: true, duplicate, sourceFilesChanged: 0, modeChangeRequired: true, verification });
 
 export async function readSetup(args) {
-  request(args, []);
+  exactKeys(args, ['workspace'], ['schemaVersion'], 'invalid-request');
+  if (args.schemaVersion !== undefined && ![2, 3].includes(args.schemaVersion)) fail('invalid-request');
   const w = await openWorkspace(args.workspace), saved = await loadSetup(w);
   let inventory = null, inventoryError = null;
   if (applicationFor(w.reg.context).supportsReleasePresets) {
-    try { inventory = await captureSetupInventory(w); }
-    catch (e) { inventoryError = e.kind === 'setup-inventory-unavailable' ? e.kind : 'setup-inventory-invalid'; }
+    try { inventory = await captureInventoryForSetup(w, args.schemaVersion ?? Math.max(2, w.manifestVersion)); }
+    catch (e) { inventoryError = ['setup-inventory-unavailable', 'setup-plugin-control-unavailable', 'plugin-dependency-changed'].includes(e.kind)
+      ? e.kind : 'setup-inventory-invalid'; }
   }
   const { readEnrollmentContext } = await import('./enrollment-records.mjs');
   return { scopeId: w.scopeId, normalId: activeNormalId(w), setupId: saved?.setupId ?? null,
@@ -145,9 +148,9 @@ export async function savedPresetForMode(w, mode) {
   const saved = await loadSetup(w);
   if (!saved || !['unseal', 'trueform'].includes(mode)) return null;
   const p = saved.review;
-  if (w.manifestVersion === 2 && p.schemaVersion !== 2) fail('setup-upgrade-required');
+  if (p.schemaVersion < w.manifestVersion) fail('setup-upgrade-required');
   compileReleasePreset(p.proposal, mode, setupScope(w, p.normalId), p.inventory);
-  if (p.schemaVersion === 2) {
+  if (p.schemaVersion >= 2) {
     const { assertFrozenPreset } = await import('./frozen-preset.mjs');
     await assertFrozenPreset(w, p, mode);
   }
@@ -155,5 +158,6 @@ export async function savedPresetForMode(w, mode) {
   const preset = p.presets[mode];
   const { after, adaptation } = await adaptRetainedSnapshot(w, { normalId: p.normalId, snapshotId: preset.snapshotId }, saved.setupId, 'setup');
   return { after, adaptation, guide: preset.guide, skillStates: preset.skillStates,
+    ...(p.schemaVersion === 3 ? { pluginStates: preset.pluginStates } : {}),
     selectedIds: preset.selection, setupId: saved.setupId };
 }

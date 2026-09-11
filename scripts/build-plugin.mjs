@@ -22,6 +22,7 @@ async function notices(output) {
   await writeFile(join(output, 'THIRD_PARTY_NOTICES.md'), '# Bundled components\n\nUnharness is MIT licensed; see LICENSE. Component licenses and notices remain in their package directories.\n\n'
     + `Node.js ${NODE_RUNTIME.version}: official ${NODE_RUNTIME.platform} archive, SHA256 ${NODE_RUNTIME.archiveSha256}. Its license and notices are in runtime/LICENSE.\n\n`
     + 'The offline TOML reader and its BSD-3-Clause notice are in src/vendor/smol-toml. Browser builds include THIRD_PARTY_NOTICES.txt.\n\n'
+    + 'The offline three-way merge and its MIT notice are in src/vendor/node-diff3.\n\n'
     + '| Package | Version | Declared license | Included source and notices |\n| --- | --- | --- | --- |\n' + rows.join('\n') + '\n');
 }
 export async function buildPlugin({ output, runtimeArchive }) {

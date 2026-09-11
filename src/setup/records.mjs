@@ -11,14 +11,15 @@ import { validateSetupInventory } from './inventory.mjs';
 export const hash = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
 const shape = (v, keys) => exactKeys(v, keys, [], 'setup-record-invalid');
 export const setupScope = (w, normalId = activeNormalId(w)) => ({ scopeId: w.scopeId, normalId,
-  application: applicationFor(w.reg.context).id, runtimeVersion: w.reg.version, instructions: w.reg.instructions, skills: w.reg.skills });
+  application: applicationFor(w.reg.context).id, runtimeVersion: w.reg.version, instructions: w.reg.instructions, skills: w.reg.skills,
+  plugins: w.reg.plugins ?? [] });
 
 export async function loadSetupReview(w, reviewId) {
   try {
     const p = await loadRecord(w.workspace, 'input', reviewId);
     shape(p, ['kind', 'role', 'schemaVersion', 'scopeId', 'normalId', 'revision', 'beforeId', 'previousSetupId', 'proposal', 'presets',
-      ...(p.schemaVersion === 2 ? ['inventory'] : [])]);
-    if (p.role !== 'setup-review' || ![1, 2].includes(p.schemaVersion) || p.scopeId !== w.scopeId || !hash(p.normalId)
+      ...(p.schemaVersion >= 2 ? ['inventory'] : [])]);
+    if (p.role !== 'setup-review' || ![1, 2, 3].includes(p.schemaVersion) || p.scopeId !== w.scopeId || !hash(p.normalId)
       || !hash(p.beforeId) || !(p.previousSetupId === null || hash(p.previousSetupId))
       || !Number.isSafeInteger(p.revision) || p.revision < 0) fail('setup-record-invalid');
     validatePresetProposal(p.proposal, setupScope(w, p.normalId));
@@ -27,15 +28,19 @@ export async function loadSetupReview(w, reviewId) {
     await loadNormal(w.workspace, w.reg, p.normalId);
     await loadSnapshot(w.workspace, w.reg, p.beforeId);
     shape(p.presets, ['unseal', 'trueform']);
-    if (p.schemaVersion === 2) {
+    if (p.schemaVersion >= 2) {
       validateSetupInventory(p.inventory, setupScope(w, p.normalId));
+      if (p.inventory.schemaVersion !== p.schemaVersion - 1) fail('setup-record-invalid');
       for (const mode of ['unseal', 'trueform']) {
         const preset = p.presets[mode], options = compileReleasePreset(p.proposal, mode, setupScope(w, p.normalId), p.inventory);
-        shape(preset, [...Object.keys(options), 'snapshotId', 'guide', 'skillStates']);
+        shape(preset, [...Object.keys(options), 'snapshotId', 'guide', 'skillStates', ...(p.schemaVersion === 3 ? ['pluginStates'] : [])]);
         if (!hash(preset.snapshotId) || Object.entries(options).some(([key, value]) => !equal(value, preset[key]))) fail('setup-record-invalid');
-        const states = p.inventory.skills.filter(s => !s.requiredControl).map(s => ({ id: s.id, enabled: s.enabled,
-          manualOnly: s.enabled && !options.automaticSkillIds.includes(s.id) }));
+        const states = p.schemaVersion === 3 ? options.sourceStates.skills.map(s => ({ id: s.sourceId,
+          enabled: s.state !== 'disabled', manualOnly: s.state === 'manual' }))
+          : p.inventory.skills.filter(s => !s.requiredControl).map(s => ({ id: s.id, enabled: s.enabled,
+            manualOnly: s.enabled && !options.automaticSkillIds.includes(s.id) }));
         if (!equal(states, preset.skillStates)) fail('setup-record-invalid');
+        if (p.schemaVersion === 3 && !equal(preset.pluginStates, options.sourceStates.plugins)) fail('setup-record-invalid');
         await loadSnapshot(w.workspace, w.reg, preset.snapshotId);
       }
       return { ...p, reviewId };
@@ -66,7 +71,7 @@ export async function loadSetup(w, setupId = w.state.setupId) {
   try {
     const p = await loadRecord(w.workspace, 'application', setupId);
     shape(p, ['kind', 'role', 'schemaVersion', 'scopeId', 'reviewId']);
-    if (p.role !== 'release-setup' || ![1, 2].includes(p.schemaVersion) || p.scopeId !== w.scopeId || !hash(p.reviewId))
+    if (p.role !== 'release-setup' || ![1, 2, 3].includes(p.schemaVersion) || p.scopeId !== w.scopeId || !hash(p.reviewId))
       fail('setup-record-invalid');
     const review = await loadSetupReview(w, p.reviewId);
     if (review.schemaVersion !== p.schemaVersion) fail('setup-record-invalid');
@@ -76,13 +81,14 @@ export async function loadSetup(w, setupId = w.state.setupId) {
 
 export const setupReviewSummary = review => ({ reviewId: review.reviewId, scopeId: review.scopeId,
   schemaVersion: review.schemaVersion,
-  ...(review.schemaVersion === 2 ? { inventoryId: review.inventory.inventoryId, inheritance: review.presets.trueform.inheritance,
+  ...(review.schemaVersion >= 2 ? { inventoryId: review.inventory.inventoryId, inheritance: review.presets.trueform.inheritance,
     plugins: review.inventory.plugins } : {}),
   normalId: review.normalId, revision: review.revision, previousSetupId: review.previousSetupId,
   basis: review.proposal.basis, roles: review.proposal.roles,
   presets: Object.fromEntries(Object.entries(review.presets).map(([mode, preset]) => [mode, {
     instructionStyle: preset.instructionStyle, skillRelease: preset.skillRelease,
     ...(review.schemaVersion === 2 ? { automaticSkillIds: preset.automaticSkillIds } : {}),
+    ...(review.schemaVersion === 3 ? { sourceStates: preset.sourceStates, pluginStates: preset.pluginStates } : {}),
     selectedIds: preset.selection, skillStates: preset.skillStates, guide: preset.guide,
   }])), sourceFilesChanged: 0, modeChangeRequired: true });
 
@@ -92,5 +98,5 @@ export function assertReviewCurrent(w, p) {
 }
 
 export const adoptedState = (before, setupId, schemaVersion = 1) => ({ ...before, setupId,
-  ...(schemaVersion === 2 ? { setupSchemaVersion: 2 } : {}), revision: before.revision + 1,
+  ...(schemaVersion >= 2 ? { setupSchemaVersion: schemaVersion } : {}), revision: before.revision + 1,
   lastPlanId: null, lastRetainedPlanId: null });

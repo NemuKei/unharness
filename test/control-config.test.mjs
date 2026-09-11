@@ -60,3 +60,19 @@ test('unselected integer precision, types and selected-entry metadata remain pro
   assert.equal(preserves(entry(path, true, 'note = "saved"\n'), entry(path, false, 'note = "changed"\n'), [path]), false);
   assert.equal(preserves(entry(path, true, 'note = "saved"\n'), entry(path, false, 'note = "saved"\n'), [path]), true);
 });
+
+test('v3 permits only selected plugin enabled fields and keeps every other plugin setting', () => {
+  const id = 'example.plugin@market';
+  const entry = value => `[plugins."${id}"]\n${value === null ? '' : `enabled = ${value}\n`}note = "retained"\n[plugins."${id}".mcp_servers.demo]\napproval_policy = "prompt"\n`;
+  for (const from of [null, true, false]) for (const to of [null, true, false]) {
+    assert.equal(preserves(base + entry(from), base + entry(to), [], [id]), true);
+    if (from !== to) assert.equal(preserves(base + entry(from), base + entry(to), []), false);
+  }
+  assert.equal(preserves(base, base + `[plugins."${id}"]\nenabled = false\n`, [], [id]), true);
+  for (const changed of [entry(false).replace('retained', 'changed'), entry(false).replace('prompt', 'auto'),
+    entry(false) + '[plugins.other]\nenabled = false\n', entry(false).replace('enabled = false', 'enabled = "false"')]) {
+    assert.equal(preserves(base + entry(true), base + changed, [], [id]), false);
+  }
+  assert.equal(preserves(base, base + '[plugins.example.plugin]\nenabled = false\n', [], [id]), false);
+  assert.equal(preserves(base + entry(true), base + entry(false), [], [id, id]), false);
+});

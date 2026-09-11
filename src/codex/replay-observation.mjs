@@ -3,6 +3,7 @@ import { parseSkillCatalog } from '../sources/observation.mjs';
 import { validUtc } from '../sources/observation-record.mjs';
 import { projectCodexRun } from './run-metrics.mjs';
 import { projectReplayRequest } from './replay-request.mjs';
+import { projectPluginInputs, withPluginEvidence } from './plugin-task-observation.mjs';
 const object = x => x !== null && typeof x === 'object' && !Array.isArray(x);
 const normalize = text => text.replaceAll('\r\n', '\n').trim();
 
@@ -114,10 +115,17 @@ export function projectReplayTask(records, binding) {
   const laterSources = nativeSourceChange(records);
   if (laterSources === 'changed') { add('native-source-changed'); mismatch = true; }
   if (laterSources === 'unknown') { add('native-source-change-unavailable'); unknown = true; }
-  return { measurement, outputText, qualification: {
+  const qualification = {
     parserVersion: 'codex-desktop-replay-0.153.4/v1', status: unqualified ? 'unqualified-record' : mismatch ? 'not-matched-record' : unknown ? 'unknown-record' : 'matched-record',
     reasons, request: input, sources, runtime,
     startingFilesAtTaskStart: 'not-recorded', startingFilesAtHandoff: 'verified',
     completeIsolationVerified: false,
-  } };
+  };
+  if (binding.expectedPlugins?.length) {
+    const plugins = projectPluginInputs(binding.expectedPlugins, state, measurement?.runtimeVersion ?? null);
+    return { measurement, outputText, qualification: {
+      ...withPluginEvidence(qualification, plugins), parserVersion: 'codex-desktop-replay-0.153.4/v2',
+    } };
+  }
+  return { measurement, outputText, qualification };
 }

@@ -1,5 +1,7 @@
 # 公式プラグインを基準にしたモード継承 実装計画
 
+2026-09-11追記：新しい設定の制御方法は[Skillの3段階とプラグイン全体制御](2026-09-11-source-state-v3.md)へ更新された。この文書は[v2の保存契約](../../spec-mode-inheritance-v2.md)の履歴として残す。
+
 > **For agentic workers:** Use `superpowers:executing-plans` task by task in an isolated branch. Steps use checkbox (`- [ ]`) syntax. This PR changes documentation only; do not treat it as implementation, native qualification, or permission to alter personal configuration.
 
 **Goal:** 零式で残せる任意の自動Skillを確認済みの公式プラグインに限定し、限定解除がその全部を継承して、外部Skill・自作Skillを追加できるようにする。

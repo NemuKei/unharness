@@ -19,7 +19,7 @@ export function assertControlPreserved({ selectedIds = [], changedFileIds = [], 
     || changedFileIds.some(id => control.fileIds.includes(id))) fail('setup-required-control');
 }
 
-export function assertControlChanges({ sources, before, after }) {
+export function assertControlChanges({ sources, plugins = [], before, after }) {
   const control = requiredControlSources(sources);
   assertControlPreserved({ control,
     changedFileIds: control.fileIds.filter(id => !isDeepStrictEqual(before[id], after[id])),
@@ -27,6 +27,7 @@ export function assertControlChanges({ sources, before, after }) {
   if (Object.hasOwn(before, 'config') && !preservesUnselectedConfig(
     before.config?.text ?? '', after.config?.text ?? '',
     sources.filter(source => source.path !== control.path).map(source => source.path),
+    plugins.filter(plugin => !plugin.requiredControl && plugin.wholePluginControl).map(plugin => plugin.id),
   )) fail('setup-required-control');
 }
 

@@ -42,6 +42,13 @@ Show this with acceptance rate, task count, budget, and which cases passed. With
 
 ## Codex usage evidence
 
+For registered-plugin v3 scopes, initial Skill input correspondence is saved
+separately from complete plugin runtime state. The qualified 0.153.4 task
+record contains no per-plugin MCP/hook/app/scheduled-task state. Per-run usage
+and outcomes remain inspectable, but input matches alone do not grant a
+matching mode association or qualified replay/performance aggregate. See the
+[v3 evidence boundary](evidence/2026-09-11-source-states-v3-macos.md#task-record-evidence-and-its-limit).
+
 The installed 0.153.4 protocol schema includes `ThreadTokenUsageUpdatedNotification` with `threadId`, `turnId`, and a `tokenUsage` object containing `last` and `total`. Its breakdown fields include `totalTokens`, `inputTokens`, `cachedInputTokens`, `cacheWriteInputTokens`, `outputTokens`, and `reasoningOutputTokens`. The implemented native adapter recognizes the corresponding persisted top-level `token_usage_record` stream for one explicit task UUID and selected turn prefix.
 
 The [App Server documentation](https://learn.chatgpt.com/docs/app-server) also describes `thread/tokenUsage/updated`. Persisted root-response values are now collected with explicit availability and reason codes. This does not establish complete billing, child-task usage or live notification capture. Account/thread estimates from a different billing endpoint are not substituted for the persisted event source.

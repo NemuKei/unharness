@@ -10,6 +10,7 @@ import { validateMeasurement } from "../../src/comparisons/measurement.mjs";
 import { validateAssessment, deriveAcceptance } from "../../src/comparisons/assessment.mjs";
 import { validAppearanceView } from "./appearances.ts";
 import type { AppearanceView } from "./appearances";
+import { validPluginEvidence } from './plugin-evidence.ts';
 
 export type HistorySlice<T> = { data: T; error: null } | { data: null; error: { kind: string } };
 export type SourceUpdate = {
@@ -57,7 +58,7 @@ function observation(v: unknown, scopeId: string, application: SourceApplication
     && object(v.conditions) && observedVersions(v.conditions, application)
     && [v.conditions.model, v.conditions.reasoningEffort].every(maybeText)
     && maybeHash(v.conditions.executionPolicyDigest) && maybeHash(v.conditions.projectInstructionsDigest)
-    && typeof v.conditions.memoryGuidanceRecorded === "boolean" && verification(v.verification);
+    && typeof v.conditions.memoryGuidanceRecorded === "boolean" && verification(v.verification) && validPluginEvidence(v);
 }
 function sourceView(value: unknown, metadata: SourceMetadata): value is SourceView {
   if (!object(value) || !object(value.guide) || !text(value.guide.id) || !text(value.guide.text)
@@ -77,7 +78,8 @@ function sourceView(value: unknown, metadata: SourceMetadata): value is SourceVi
     || !s.registration.sources.every(row => object(row) && text(row.id) && text(row.label) && text(row.path)
       && object(row.availability) && [row.availability.normal, row.availability.unseal, row.availability.trueform].every(v => typeof v === "boolean"))
     || !fieldsMatch(s.context, metadata.context)
-    || !(s.setup === undefined || object(s.setup) && maybeHash(s.setup.setupId) && maybeHash(s.setup.preparedSetupId))
+    || !(s.setup === undefined || object(s.setup) && maybeHash(s.setup.setupId) && maybeHash(s.setup.preparedSetupId)
+      && (s.setup.schemaVersion === undefined || s.setup.schemaVersion === null || [1, 2, 3].includes(s.setup.schemaVersion as number)))
     || !(s.conflict === null || object(s.conflict) && text(s.conflict.kind)) || !object(s.recovery)
     || typeof s.recovery.pending !== "boolean" || !maybeHash(s.recovery.lastCheckpointId) || !strings(s.recovery.argv)
     || !(s.preparation === null || object(s.preparation) && text(s.preparation.id) && time(s.preparation.preparedAt))
@@ -91,7 +93,8 @@ function favoritePage(value: unknown) {
   return page(value, "favorites", f => object(f) && hash(f.favoriteId) && hash(f.normalId) && mode(f.preparedMode)
     && text(f.name) && count(f.revision) && typeof f.needsAdaptation === "boolean"
     && (f.addedSourceIds === undefined || Array.isArray(f.addedSourceIds) && f.addedSourceIds.length <= 32
-      && f.addedSourceIds.every(id => text(id) && /^skill-[a-f0-9]{64}$/.test(id))));
+      && f.addedSourceIds.every(id => text(id) && /^skill-[a-f0-9]{64}$/.test(id)))
+    && (f.addedPluginIds === undefined || Array.isArray(f.addedPluginIds) && f.addedPluginIds.length <= 32 && f.addedPluginIds.every(text)));
 }
 function runPage(value: unknown, scopes: string[]) {
   return page(value, "runs", r => {
@@ -107,7 +110,7 @@ function runPage(value: unknown, scopes: string[]) {
       if (a !== null && (!object(a) || a.scopeId !== r.scopeId || !mode(a.preparedMode) || !hash(a.snapshotId)
         || !hash(a.normalId) || !count(a.revision) || !maybeText(a.preparationId) || a.coverage !== "initial-turn-only")) return false;
       return o === null || object(o) && hash(o.observationId) && time(o.observedAt) && strings(o.reasons)
-        && oneOf(o.status, ["matched-record", "not-matched-record", "unqualified-record", "unknown-record"]);
+        && oneOf(o.status, ["matched-record", "not-matched-record", "unqualified-record", "unknown-record"]) && validPluginEvidence(o);
     } catch { return false; }
   });
 }

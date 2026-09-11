@@ -43,8 +43,9 @@ export function RestoreAdaptationNotice({
       元の保存版と過去の確認記録はそのまま残します。</p>
   </div>;
   if (adaptation.kind === "source-enrollment") return <div className="restore-adaptation" role="note">
-    <strong>追加後のSkillを含めて準備</strong>
-    <p>{sourceLabel}に保存された指示・Skillを戻し、後から登録した{adaptation.addedSourceIds.length}件のSkillは、
+    <strong>{adaptation.addedPluginIds?.length ? '追加後の登録範囲へ準備' : '追加後のSkillを含めて準備'}</strong>
+    <p>{sourceLabel}に保存された設定を戻し、後から登録した通常Skill {adaptation.addedSourceIds.length}件
+      {adaptation.addedPluginIds?.length ? `・プラグイン ${adaptation.addedPluginIds.length}件` : ''}は、
       保存済みNormalの状態にします。現在の共通設定を維持し、元の保存版はそのまま残します。</p>
   </div>;
   return (
