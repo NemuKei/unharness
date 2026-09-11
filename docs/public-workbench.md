@@ -8,7 +8,7 @@ npm run build:site
 npm exec vite -- preview --config vite.site.config.mjs --host 127.0.0.1
 ```
 
-The source entry is `site/index.html` → `web/src/public-main.tsx`; generated `site-dist/` is ignored. A local preview can demonstrate the static entry, but cannot redeem a public-origin connection. The connection origin is exactly `https://unharness.deltahelmlab.com`, fixed in the local bridge and browser protocol. This pass does not publish that site.
+The source entry is `site/index.html` → `web/src/public-main.tsx`; generated `site-dist/` is ignored. A local preview can demonstrate the static entry, but cannot redeem a public-origin connection. The connection origin is exactly `https://unharness.deltahelmlab.com`, fixed in the local bridge and browser protocol. The [published Mac QA](evidence/2026-09-11-public-mac-qa.md) verifies the real site at that origin and its native in-app-browser connection.
 
 ## Connection and operations
 
@@ -18,7 +18,7 @@ The page keeps its ticket and connection token only in memory. Issuing and appro
 
 `PublicConnection` owns the shared calls for both buttons and WebMCP. It validates response shape and scope, binds receipts to their original requested mode/revision, suppresses duplicate in-flight writes, and keeps the original operation ID after uncertainty. Results are stored in the view separately from subsequent status requests. Expiry during an accepted write can therefore show its historical result while current connection/state remain expired. A recovered plan can be reviewed after a same-ID result lookup. Local setup adoption advances the existing revision and invalidates an older public plan.
 
-The page can open the currently verified local workbench for configuration saving, comparisons, favorites and source recovery. Configuration advice and fresh-task requests have copyable handoffs with a selectable fallback. The final downloadable installer and public-origin native journey remain unfinished.
+The page can open the currently verified local workbench for configuration saving, comparisons, favorites and source recovery. Configuration advice and fresh-task requests have copyable handoffs with a selectable fallback. The published installer and public-origin GUI/WebMCP operations are verified in the QA above. Fresh Desktop model tasks and the full AI-led onboarding journey remain unfinished.
 
 ## Artwork
 
@@ -34,12 +34,12 @@ The page feature-detects `document.modelContext.registerTool` and registers elev
 
 Registration uses `AbortSignal`; missing capability or partial registration is reported without claiming success. Tool input uses exact schemas and the same connection client. An aborted call before dispatch does not operate; cancellation after an accepted mutation does not undo the local transaction or create a replacement request.
 
-The demo closes this page's connection before showing sample data. Demo controls do not use local operations, and website tools cannot operate a disconnected scope. Tool registration inside the page is distinct from actual enumeration and invocation by Codex Desktop. That native qualification is still required.
+The demo closes this page's connection before showing sample data. Demo controls do not use local operations, and website tools cannot operate a disconnected scope. Tool registration inside the page is distinct from actual enumeration and invocation by Codex Desktop. Actual enumeration and mixed GUI/WebMCP invocation were verified in the published Mac QA; automated registration checks alone do not establish them.
 
 ## Publishing boundary
 
-The maintainer selected the existing `deltahelmlab-unharness` Cloudflare Pages project, separate from the main DeltaHelm Lab site. Read-only API checks on 2026-09-10 found the project with no deployments or custom domains, and no DNS record for `unharness.deltahelmlab.com`. Publication and domain binding require the maintainer's approval of the concrete artifact.
+The maintainer selected the existing `deltahelmlab-unharness` Cloudflare Pages project, separate from the main DeltaHelm Lab site. After explicit approval, source `c81ee9c` was deployed on 2026-09-11 JST and the dedicated domain became active. All 21 served files match the built bytes. A host-specific `disable_rum` Configuration Rule prevents the parent zone's analytics injection on this site while leaving the parent site's settings unchanged.
 
-`site/public/_headers` supplies CSP and referrer/content-type/frame protections. Document and immutable asset cache rules do not overlap for the same header. The build uses local bundled assets and has no analytics, external scripts or account backend. Each built file is below the documented [25 MiB Pages limit](https://developers.cloudflare.com/pages/platform/limits/). The installed package/Node download is not yet part of this static build.
+`site/public/_headers` supplies CSP and referrer/content-type/frame protections. Document and immutable asset cache rules do not overlap for the same header. The build uses local bundled assets and has no analytics, external scripts or account backend. Each built file is below the documented [25 MiB Pages limit](https://developers.cloudflare.com/pages/platform/limits/). The installed package/Node ZIP is served as the pinned GitHub release asset, separately from the static build.
 
-See the earlier [mode-client evidence](evidence/2026-09-10-public-client.md) and current [v2 artwork evidence](evidence/2026-09-11-public-artwork-client.md). Browser tests with a routed synthetic HTTPS origin do not establish real HTTPS, native local-network permission, DNS/TLS success or Codex website-tool invocation. Those require the actual approved deployment and a fresh native Mac journey.
+See the earlier [mode-client evidence](evidence/2026-09-10-public-client.md) and current [v2 artwork evidence](evidence/2026-09-11-public-artwork-client.md). Browser tests with a routed synthetic HTTPS origin do not establish real HTTPS, native local-network permission, DNS/TLS success or Codex website-tool invocation. The [published QA](evidence/2026-09-11-public-mac-qa.md) now adds those live checks with a fresh owned native profile; it does not establish fresh model-task loading.

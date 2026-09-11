@@ -1,6 +1,6 @@
 # Public-page connection protocol
 
-The development build has a restricted public-page backend, local approval screen, MCP handoff and [static public client](public-workbench.md) for one locally selected, registered source workspace. This is part of [domain entry](spec-domain-entry.md). Publication, actual HTTPS-to-loopback permission and native Codex WebMCP invocation remain subsequent work; the complete public entry is not yet qualified.
+The development build has a restricted public-page backend, local approval screen, MCP handoff and [static public client](public-workbench.md) for one locally selected, registered source workspace. This is part of [domain entry](spec-domain-entry.md). The [published Mac QA](evidence/2026-09-11-public-mac-qa.md) now verifies publication, actual HTTPS-to-loopback access under the browser's existing granted permission, native Codex WebMCP calls, mode/artwork operations and local revocation. The full fresh-model-task onboarding journey remains unqualified.
 
 ## Local authority and lifetime
 

@@ -1,5 +1,7 @@
 # Compatibility and evidence
 
+The [published Mac preview QA](evidence/2026-09-11-public-mac-qa.md) adds actual public download/install, HTTPS-to-loopback access, Codex WebMCP, mixed GUI/AI mode restoration, artwork/card saving and revocation on the recorded Mac/app version. It does not establish the remaining fresh Desktop model-task journey or nonempty official-plugin automatic-use control.
+
 ## Target matrix
 
 | OS | Application | Delivery phase | Current evidence |

@@ -8,7 +8,7 @@ Try different combinations of skills and instructions on your own work. Find wha
 
 [日本語](README.ja.md)
 
-The development build can [open and reuse its local workbench](docs/local-workbench.md) through CLI or MCP. The [plugin connection](docs/plugin-connection.md) can also open the initial Normal-saving screen before registration, using an explicitly selected local context. The complete onboarding journey and real public-domain behavior remain under verification.
+The development build can [open and reuse its local workbench](docs/local-workbench.md) through CLI or MCP. The [plugin connection](docs/plugin-connection.md) can also open the initial Normal-saving screen before registration, using an explicitly selected local context. The [public site](https://unharness.deltahelmlab.com/) now has [native public-domain QA](docs/evidence/2026-09-11-public-mac-qa.md). The complete model-led onboarding journey remains under verification.
 
 The [0.0.1 Mac arm64 development preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.1) includes Node, the UI, MCP and management/setup/authoring Skills. Its [AI-guided installation wrapper](docs/mac-installation.md) has passed native installation and ZIP extraction checks. The integrated candidate also preserves saved Normal, v2 setups, favorites and artwork through [independent recovery after removal with external networking denied](docs/evidence/2026-09-11-final-native-candidate.md). The archive is publicly downloadable and its SHA-256 has been verified without authentication. The website configuration now pins this exact version. The full model-driven journey remains under verification.
 
@@ -16,9 +16,9 @@ The [0.0.1 Mac arm64 development preview](https://github.com/NemuKei/unharness/r
 
 **Free, with no required paid API or hosted backend.** Unharness is designed to run locally with no recurring operator service expense. Your existing AI subscription and usage are separate. Default artwork, layered composition, image import and card export have a local route without model calls. Optional original-artwork authoring uses your own AI. See [feasibility and limitations](docs/feasibility.md).
 
-**Planned product entry:** ask your AI to open Unharness in its in-app browser at your own domain, while settings and artwork stay on your PC. The plan includes a guided installation/demo, retained Unharness controls in TRUEFORM, and freely created entity/restraint/background layers with performance displayed separately. Public HTTPS connection and the complete native onboarding journey are not yet qualified. See the [Mac product plan](docs/superpowers/plans/2026-09-09-mac-product-experience.md).
+**Planned product entry:** ask your AI to open Unharness in its in-app browser at your own domain, while settings and artwork stay on your PC. The plan includes a guided installation/demo, retained Unharness controls in TRUEFORM, and freely created entity/restraint/background layers with performance displayed separately. Public HTTPS connection is verified; the complete model-led native onboarding journey remains under verification. See the [Mac product plan](docs/superpowers/plans/2026-09-09-mac-product-experience.md).
 
-The [restricted public connection bridge](docs/domain-connection.md) now has local approval/cancellation, MCP handoff, expiring authorization and durable operation lookup. Its [static public workbench](docs/public-workbench.md) includes the demo, connection UI, artwork import/collection/cards and eleven website-tool adapters under synthetic/HTTP and built-browser tests. Artwork access requires explicit v2 local approval. Publication, real HTTPS-to-loopback permission and native Codex website-tool invocation remain unqualified.
+The [restricted public connection bridge](docs/domain-connection.md) now has local approval/cancellation, MCP handoff, expiring authorization and durable operation lookup. Its [static public workbench](docs/public-workbench.md) includes the demo, connection UI, artwork import/collection/cards and eleven website-tool adapters under synthetic/HTTP and built-browser tests. Artwork access requires explicit v2 local approval. [Live Mac QA](docs/evidence/2026-09-11-public-mac-qa.md) verifies publication, real HTTPS-to-loopback access under the existing browser permission, actual Codex website-tool calls, mixed GUI/AI mode restoration and public artwork/card saving.
 
 The Codex core now saves reviewed UNSEAL/TRUEFORM presets with model and official-reference provenance, separately from the original Normal. CLI, GUI operations and MCP use the same frozen versions; adoption does not change source files or the current task. The [setup contract](docs/spec-guided-setup.md) records the tested boundary and the remaining onboarding/native checks.
 
@@ -144,7 +144,7 @@ The local GUI uses PixiJS for the equipment scene and effects, with React and HT
 
 Equipment can also be shown as supportive armor or a resonating frame when a comparison shows it fits the work. Unmeasured setups remain neutral, and the illustration stays separate from the measured result.
 
-Original artwork uses reusable local parts for the AI entity, restraints and background. The [local workbench](docs/layered-appearances.md) reviews chosen PNG parts in three modes, saves versions, reselects earlier work and exports an appearance card with explicitly chosen public text. The approved public workbench now uses those same components through bounded image and collection operations. The bundled authoring Skill can use the private MCP to prepare a creation place and review its selected images; that private location is not exposed publicly. Actual public-origin permission and the complete native creation journey remain unqualified. There is no performance unlock, fixed three-candidate choice or forced BAD treatment; performance is reported separately. Choosing a look never changes the harness. See the [layered appearance contract](docs/personalization.md).
+Original artwork uses reusable local parts for the AI entity, restraints and background. The [local workbench](docs/layered-appearances.md) reviews chosen PNG parts in three modes, saves versions, reselects earlier work and exports an appearance card with explicitly chosen public text. The approved public workbench now uses those same components through bounded image and collection operations. The bundled authoring Skill can use the private MCP to prepare a creation place and review its selected images; that private location is not exposed publicly. Actual public-origin access, image import/reselection and card saving passed the live QA. AI-led creation remains unqualified. There is no performance unlock, fixed three-candidate choice or forced BAD treatment; performance is reported separately. Choosing a look never changes the harness. See the [layered appearance contract](docs/personalization.md).
 
 Effects can be turned off without changing the loadout. The state remains readable, and animation settings stay separate from saved harness configurations.
 
@@ -158,7 +158,7 @@ Recovery should restore managed configuration without silently overwriting indep
 
 ## Availability and contributing
 
-Unharness is being prepared for an open-source release. There is no published installation procedure or verified compatibility matrix yet. Both operating systems remain design targets; Mac completion comes first:
+Unharness is public under the MIT License, with a Mac arm64 development preview and [installation instructions](docs/mac-installation.md). The [compatibility record](docs/compatibility.md) separates verified operations from the unfinished full Mac product. Both operating systems remain design targets; Mac completion comes first:
 
 | Application | macOS | Windows |
 | --- | --- | --- |
@@ -167,7 +167,7 @@ Unharness is being prepared for an open-source release. There is no published in
 
 The initial Mac completion criteria cover Codex Desktop. Claude Code and Windows qualification follow later; their remaining work does not block that scoped release. These are delivery targets, not completed compatibility tests. See [delivery](docs/delivery.md) and [compatibility and evidence](docs/compatibility.md).
 
-Useful early contributions include reproducible compatibility observations, small comparison examples, feedback on the save–try–compare–restore flow, and documentation improvements. Unharness uses the [MIT License](LICENSE); bundled third-party components retain their own license notices. Public installation and reporting channels are being prepared. The intended release combines a playable web demo, a usable local plugin, and inspectable implementation and verification records.
+Useful early contributions include reproducible compatibility observations, small comparison examples, feedback on the save–try–compare–restore flow, and documentation improvements. Unharness uses the [MIT License](LICENSE); bundled third-party components retain their own license notices. The public demo, local plugin, installation guide and verification records are available. See [CONTRIBUTING](CONTRIBUTING.md) for feedback and contribution guidance.
 
 ## Documentation
 
