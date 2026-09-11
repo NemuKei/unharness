@@ -49,6 +49,14 @@ test('registered sources match only a selected fresh task and persist the prepar
   assert.equal((await service.userSourceState({ workspace: s.workspace })).observation.observationId, observed.observationId);
   assert.ok(!JSON.stringify(observed).includes('PRIVATE'));
 });
+test('the corroborated desktop-work agent origin can qualify unchanged registered sources', { skip: process.platform !== 'darwin' }, async t => {
+  const s = await setup(t);
+  const taskId = await recording(s, records => Object.assign(records[0].payload,
+    { originator: 'codex_work_desktop', source: 'vscode', thread_source: 'agent_created_thread' }));
+  const observed = await service.observeUserTask({ workspace: s.workspace, taskId });
+  assert.equal(observed.status, 'matched-record');
+  assert.equal(observed.verification.runtimeStateVerified, false);
+});
 
 test('source matching rejects stale provenance and cannot use pasted, later, or malformed source evidence', { skip: process.platform !== 'darwin' }, async t => {
   const s = await setup(t);

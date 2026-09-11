@@ -3,6 +3,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { validUuid } from '../sources/observation-record.mjs';
 import { exactKeys } from '../comparisons/assessment.mjs';
 import { fail } from '../sources/errors.mjs';
+import { recordedDesktopOrigin } from './desktop-origin.mjs';
 
 const object = x => x !== null && typeof x === 'object' && !Array.isArray(x);
 const digest = text => createHash('sha256').update(text).digest('hex');
@@ -18,7 +19,7 @@ export function projectReplayRequest(records, options) {
   const metas = records.filter(r => r?.type === 'session_meta');
   const meta = metas.length === 1 ? metas[0].payload : null;
   if (!object(meta) || meta.id !== options.taskId || meta.cli_version !== '0.153.4'
-    || meta.originator !== 'Codex Desktop' || !['user', 'agent_created_thread'].includes(meta.thread_source)
+    || !recordedDesktopOrigin(meta) || !['user', 'agent_created_thread'].includes(meta.thread_source)
     || meta.forked_from_id != null || meta.forked_from_thread_id != null) return result('unknown', 'request-route-unavailable');
   const route = meta.thread_source === 'user' ? 'user-created' : 'agent-created';
   let world = false, turnId = null, invalid = false;

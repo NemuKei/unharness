@@ -9,6 +9,7 @@
 // budget.
 import { createHash } from 'node:crypto';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
+import { recordedDesktopOrigin } from '../codex/desktop-origin.mjs';
 import { canPlanOwnership, canonical, captureFile, parentBinding } from '../sources/platform.mjs';
 import { samePath } from '../sources/paths.mjs';
 import { hash } from '../sources/hash.mjs';
@@ -641,7 +642,7 @@ function projection(w, taskId, expected, records, observedAt, readIssue, boundar
       unqualified = true;
     };
     if (meta.id !== taskId) reject('task-identity-mismatch');
-    if (meta.originator !== 'Codex Desktop') reject('task-origin-unqualified');
+    if (!recordedDesktopOrigin(meta)) reject('task-origin-unqualified');
     if (!['user', 'agent_created_thread'].includes(meta.thread_source))
       reject('task-route-unqualified');
     if (

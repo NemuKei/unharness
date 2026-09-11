@@ -3,6 +3,7 @@ import { arch, homedir, platform } from 'node:os';
 import { join } from 'node:path';
 
 import { readRecordFile } from '../sources/record-file.mjs';
+import { recordedDesktopOrigin } from './desktop-origin.mjs';
 
 import { fixtureMarkers, snapshotDesktopFixture } from './desktop-fixture.mjs';
 
@@ -57,7 +58,7 @@ export function summarizeDesktopRecords(records, { expectedCwd, expectedSessionI
   const meta = metas[0].payload;
   if (typeof meta.id !== 'string' || !validDate(meta.timestamp) || typeof meta.cwd !== 'string') fail('invalid-desktop-record');
   if (expectedSessionId !== undefined && meta.id !== expectedSessionId) fail('desktop-record-identity-mismatch');
-  const desktopOriginator = meta.originator === 'Codex Desktop';
+  const desktopOriginator = recordedDesktopOrigin(meta);
   const recordedStartRoute = meta.thread_source === 'user' ? 'user-created'
     : meta.thread_source === 'agent_created_thread' ? 'agent-created'
       : meta.thread_source === 'agent_forked_thread' ? 'agent-forked' : 'unknown';

@@ -22,6 +22,19 @@ test('recognized initial delegation requires exact native namespace, envelope an
     const bad = structuredClone(r); edit(bad); assert.notEqual(project(bad).status, 'matched');
   }
 });
+test('the observed desktop-work agent route preserves the same exact native request checks', () => {
+  const r = replayRecording({ route: 'agent_created_thread' });
+  Object.assign(r[0].payload, { originator: 'codex_work_desktop', source: 'vscode' });
+  assert.equal(project(r).status, 'matched');
+  for (const change of [m => { m.source = 'cli'; }, m => { m.cli_version = '0.154.0'; },
+    m => { m.thread_source = 'user'; }, m => { m.originator = 'codex_work_cli'; },
+    m => { m.forked_from_id = replayTaskId; }]) {
+    const changed = structuredClone(r); change(changed[0].payload);
+    assert.notEqual(project(changed).status, 'matched');
+  }
+  const mismatched = structuredClone(r); mismatched[6].payload.item.output += '\n';
+  assert.notEqual(project(mismatched).status, 'matched');
+});
 test('matching later messages, pasted evidence, partial attachments and matching answers do not prove the first request', () => {
   for (const edit of [
     r => { r.splice(5, 2); },

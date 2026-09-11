@@ -46,6 +46,17 @@ test('missing inputs and missing source fields remain unknown, never disabled', 
   assert.equal(result.provenance.freshFixtureTaskCandidate, false);
   assert.equal(result.recordedSources.agents_md, 'unknown');
 });
+test('desktop-work is recognized only for the version and agent route observed in the native app', () => {
+  const records = sample();
+  Object.assign(records[0].payload, { originator: 'codex_work_desktop', thread_source: 'agent_created_thread' });
+  const options = { expectedCwd: '/synthetic', preparedAt: '2026-09-06T09:00:00Z' };
+  assert.equal(summarizeDesktopRecords(records, options).provenance.freshFixtureTaskCandidate, true);
+  for (const patch of [{ source: 'cli' }, { cli_version: '0.154.0' }, { thread_source: 'user' },
+    { originator: 'codex_work_cli' }, { forked_from_id: 'another-task' }]) {
+    const changed = structuredClone(records); Object.assign(changed[0].payload, patch);
+    assert.equal(summarizeDesktopRecords(changed, options).provenance.freshFixtureTaskCandidate, false);
+  }
+});
 
 test('CLI origin, forks, wrong cwd and stale preparation cannot qualify as a fresh fixture task', () => {
   for (const mutate of [s => { s[0].payload.originator = 'codex_cli_rs'; },

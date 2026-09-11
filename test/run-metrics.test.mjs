@@ -19,6 +19,17 @@ const secondTurnId = 'turn-synthetic-two';
 const expectedProject = '/synthetic/project';
 const recordRead = { incompleteTrailingLine: false, snapshotBytes: 4096 };
 
+test('the observed desktop-work agent origin uses the existing metric format without admitting other routes', () => {
+  const records = twoTurnRecords();
+  Object.assign(records[0].payload, { originator: 'codex_work_desktop', source: 'vscode', thread_source: 'agent_created_thread' });
+  const result = projectCodexRun(records, { taskId, expectedProject, recordRead });
+  assert.ok(!result.measurement.issues.includes('unsupported-origin'));
+  for (const patch of [{ source: 'cli' }, { cli_version: '0.154.0' }, { thread_source: 'user' }]) {
+    const changed = structuredClone(records); Object.assign(changed[0].payload, patch);
+    assert.ok(projectCodexRun(changed, { taskId, expectedProject, recordRead }).measurement.issues.includes('unsupported-origin'));
+  }
+});
+
 function record(type, payload, timestamp) {
   return { timestamp, type, payload };
 }

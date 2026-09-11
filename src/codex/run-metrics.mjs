@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { recordedDesktopOrigin } from './desktop-origin.mjs';
 import { isDeepStrictEqual } from 'node:util';
 import { posix, win32 } from 'node:path';
 
@@ -495,7 +496,7 @@ export function projectCodexRun(records, options) {
   const createdAt = validUtc(meta.timestamp) ? meta.timestamp : null;
   const formatIssues = [];
   if (meta.cli_version !== SUPPORTED_RUNTIME) addReason(formatIssues, 'unsupported-runtime-version');
-  if (meta.originator !== 'Codex Desktop') addReason(formatIssues, 'unsupported-origin');
+  if (!recordedDesktopOrigin(meta)) addReason(formatIssues, 'unsupported-origin');
   const forked = meta.forked_from_id != null || meta.forked_from_thread_id != null
     || meta.thread_source === 'agent_forked_thread';
   if (forked) addReason(formatIssues, 'forked-recording');
