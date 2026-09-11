@@ -43,6 +43,8 @@ export async function compileCodexSourceStates({ reg, normal, after, sourceState
     pluginStates.push({ pluginId: p.id, state: wanted.state, enabled: wanted.enabled });
   }
   if (disabled.length) {
+    const { assertPluginControl } = await import('./plugin-inventory.mjs');
+    for (const pluginId of disabled) await assertPluginControl(reg.context, pluginId);
     const { disablePluginConfig } = await import('./plugin-config-editor.mjs');
     const compiled = await disablePluginConfig({ configText: after.config?.text ?? '',
       pluginIds: disabled, executable: reg.context.executable });

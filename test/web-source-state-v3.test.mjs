@@ -87,6 +87,27 @@ test('built plugin registration confirms optional role, freezes impact and accep
   assert.deepEqual(await readFile(s.configPath),files);assert.equal(await page.getByRole('button',{name:/TRUEFORM/}).isDisabled(),true);
   assert.equal(s.posts.filter(p=>p.path==='/api/sources/apply-plugin-enrollment').length,1);assert.deepEqual(s.errors,[]);
 });
+test('the built editor retains unsupported official plugins while editing ordinary Skill states',browserCase,async t=>{
+  const s=await fixture(t),{page}=s,before=await openWorkspace(s.workspace),files=await readFile(s.configPath);
+  const fixtureFile=join(s.context.codexHome,'.fixture-plugins.json');
+  await writeFile(fixtureFile,JSON.stringify({...JSON.parse(await readFile(fixtureFile,'utf8')),ignorePluginOverrides:true}));
+  const editor=page.locator('.source-mode').nth(2).locator('.source-state-editor');
+  await editor.locator('summary').first().click();await editor.getByRole('button',{name:'保存した対象を編集',exact:true}).click();
+  const plugin=editor.getByRole('checkbox',{name:/個別OFF未対応のため保持/});
+  await plugin.waitFor();assert.equal(await plugin.isChecked(),true);assert.equal(await plugin.isDisabled(),true);
+  await editor.getByLabel('example',{exact:true}).selectOption('disabled');
+  await editor.getByRole('button',{name:'両モードの変更を確認',exact:true}).click();
+  const save=editor.getByRole('button',{name:'この2構成を保存',exact:true});await save.waitFor();
+  assert.equal((await openWorkspace(s.workspace)).state.setupId,before.state.setupId);assert.deepEqual(await readFile(s.configPath),files);
+  assert.equal(await editor.getByText('Normalを保持（有効）',{exact:false}).count()>0,true);
+  await page.setViewportSize({width:390,height:844});await editor.scrollIntoViewIfNeeded();
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await screenshot(s,'v4-retained-plugins-mobile');
+  const response=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/sources/apply-setup'&&r.request().method()==='POST');
+  await save.click();assert.equal((await response).status(),200);
+  const setup=await readSetup({workspace:s.workspace,schemaVersion:3});
+  assert.deepEqual(setup.proposal.trueform.retainedOfficialPluginIds,[s.pluginId]);
+  assert.deepEqual(setup.proposal.unseal.additionalPluginIds,[]);assert.deepEqual(await readFile(s.configPath),files);assert.deepEqual(s.errors,[]);
+});
 test('a lost plugin adoption response offers no automatic repeat',browserCase,async t=>{
   const s=await fixture(t,{enroll:false,setup:false}),{page}=s;
   await page.getByText('プラグインの登録を確認する',{exact:true}).click();

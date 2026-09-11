@@ -2,6 +2,15 @@
 
 Updated: 2026-09-11.
 
+The maintainer accepted the [retained official-plugin Mac scope](evidence/2026-09-11-remote-plugin-control-limit.md)
+after real Codex 0.153.4 ignored individual remote-plugin OFF. The 0.0.3
+candidate was installed and recovered safely; its writable-selector check was
+insufficient to qualify that control. New preflight rejects unsupported OFF
+before source writes, while ordinary Skill states and retained-plugin modes
+continue. The next immutable candidate is 0.0.4. Complete the native journey
+and public distribution within this accepted scope; whole-plugin OFF is
+deferred, and the earlier paragraphs below are historical development steps.
+
 The [source-state v3 implementation](evidence/2026-09-11-source-states-v3-macos.md)
 adds ordinary Skill disabled/manual/automatic states and separately registered
 whole-plugin OFF/Normal controls. Native read-only provenance for Superpowers

@@ -319,10 +319,19 @@ export const application = {
   },
 
   supportsReleasePresets: true,
-  async forwardDependencyGuard(w) {
+  async currentPluginControls(reg) {
+    const { inspectPluginControl } = await import('../codex/plugin-inventory.mjs');
+    const controls = [];
+    for (const plugin of reg.plugins ?? []) controls.push(await inspectPluginControl(reg.context, plugin.id));
+    return controls;
+  },
+  async forwardDependencyGuard(w, plan) {
     if (!w.reg.plugins?.length) return async () => {};
     const { validateRegisteredPlugins, checkPluginPackage } = await import('../codex/plugin-dependency.mjs');
     const dependencies = await validateRegisteredPlugins(w.workspace, w.reg);
+    const { assertPluginControl } = await import('../codex/plugin-inventory.mjs');
+    for (const state of plan.pluginStates ?? []) if (state.state === 'disabled')
+      await assertPluginControl(w.reg.context, state.pluginId);
     return async ({ localOnly = false } = {}) => {
       for (const dependency of dependencies) {
         if (localOnly) await checkPluginPackage(dependency, w.reg.context);

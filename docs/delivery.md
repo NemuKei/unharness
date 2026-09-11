@@ -23,6 +23,8 @@ On 2026-09-10 the maintainer authorized merging [PR #1](https://github.com/NemuK
 
 ## Phase 1: complete the Mac Codex core
 
+The maintainer subsequently accepted the [native remote-plugin control limit](evidence/2026-09-11-remote-plugin-control-limit.md) on 2026-09-11: retain official plugins and complete the Mac release within the explicitly stated ordinary-Skill/additional-instruction scope. Reliable individual remote-plugin OFF is deferred. Neither a successful config edit nor a synthetic control peer establishes that capability. Existing records and recovery remain intact; unsupported forward OFF work must stop before source publication.
+
 The 2026-09-11 [v3 source-state revision](spec-mode-inheritance.md) supersedes
 the v2 optional-control choices for new setups: ordinary Skills explicitly use
 disabled/manual/automatic states, and separately registered optional plugins

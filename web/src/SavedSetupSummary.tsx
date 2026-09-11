@@ -10,6 +10,7 @@ export type SetupRead = {
   inventory: null | { skills: Array<{ requiredControl: boolean }>;
     plugins: Array<{ id: string; eligibility: 'official-confirmed' | 'not-official' | 'unknown' }> };
   inventoryError: string | null;
+  pluginControls?: Array<{ pluginId: string; available: boolean; reason: string | null }>;
 };
 
 export function readableSetup(data: SetupRead) {

@@ -6,6 +6,13 @@ verification and publication gates are already authorized. Real registration
 still requires an identified target and confirmed optional role. The normative
 contract is [source states](../../spec-mode-inheritance.md).
 
+After native testing, the maintainer accepted retaining official plugins and
+completing the Mac version within the ordinary-Skill/instruction scope. The
+[remote-plugin limit](../../evidence/2026-09-11-remote-plugin-control-limit.md)
+supersedes whole-plugin OFF as a Mac completion gate. Keep its historical
+records and synthetic implementation, reject unsupported forward writes, and
+make the retained scope explicit in the GUI, AI guidance and release.
+
 ## Approach
 
 Split at the existing application/core boundary. Keep v1/v2 resolvers and
@@ -57,7 +64,8 @@ preserves one source preparation and its independent offline recovery route.
 
 ## 5. Immutable candidate and native finish
 
-- [ ] Build a fresh cache version including the native Desktop-origin fix.
+- [x] Build/install an immutable 0.0.3 candidate including the Desktop-origin fix.
+- [ ] Install and qualify 0.0.4 with control preflight and retained-plugin guidance.
 - [ ] Qualify real optional plugin registration/control, initial AI consultation,
       fresh model tasks, manual use, comparisons, favorites, local artwork and
       independent offline recovery through the GUI and AI entry points.

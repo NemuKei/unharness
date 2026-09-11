@@ -4,7 +4,7 @@ import { mkdtemp, realpath, mkdir, writeFile, readFile, chmod, rm, symlink } fro
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { discoverPluginCandidates, capturePluginCandidate, assertPluginDependency } from '../src/codex/plugin-inventory.mjs';
+import { discoverPluginCandidates, capturePluginCandidate, assertPluginDependency, inspectPluginControl } from '../src/codex/plugin-inventory.mjs';
 const id = 'fixture-plugin@openai-curated-remote';
 async function fixture(t, data = {}, selector = true) {
   const root = await realpath(await mkdtemp(join(tmpdir(), 'unharness-plugin-inventory-')));
@@ -79,4 +79,19 @@ test('Normal plugin disablement does not invalidate the content dependency', asy
   const { dependency } = await capturePluginCandidate(f.context, id);
   await writeFile(join(f.context.codexHome, 'config.toml'), f.config.replace('enabled = true', 'enabled = false'));
   await assertPluginDependency(f.context, dependency);
+});
+
+test('remote installed state overriding local disablement cannot qualify whole-plugin control', async t => {
+  const f = await fixture(t, { ignorePluginOverrides: true });
+  assert.deepEqual(await inspectPluginControl(f.context, id), {
+    pluginId: id, available: false, reason: 'setup-plugin-control-unavailable',
+  });
+  await assert.rejects(capturePluginCandidate(f.context, id), { kind: 'setup-plugin-control-unavailable' });
+  assert.equal(await readFile(join(f.context.codexHome, 'config.toml'), 'utf8'), f.config);
+});
+
+test('read-only control qualification checks both values without saving configuration', async t => {
+  const f = await fixture(t);
+  assert.deepEqual(await inspectPluginControl(f.context, id), { pluginId: id, available: true, reason: null });
+  assert.equal(await readFile(join(f.context.codexHome, 'config.toml'), 'utf8'), f.config);
 });

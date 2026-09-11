@@ -121,7 +121,7 @@ export function PublicWorkbench({ client, view }: { client: PublicConnection; vi
           text={`Unharnessの公開画面で行った操作 ${last.requestId} の結果を、ローカルMCPのpublic_operation_statusで確認してください。結果が不明でも新しい操作IDで再実行せず、ローカルの準備状態と復旧の必要を確認してください。`}/></details>
       </section>}
       <details className="public-next-task"><summary>この設定で新しいタスクを始める</summary><CopyRequest text={nextTask} label="新しいタスクへの依頼文"/></details>
-      <details><summary>設定をAIに相談する</summary><CopyRequest label="設定相談の依頼文" text="Unharnessの現在の接続先と登録範囲を確認し、保存済みのNormalを保持して、零式と限定解除の2つの構成を相談したいです。同梱のUnharness Setup Skillに従い、公式プラグインの確認と継承規則を守ってください。構成の保存とモードの準備は分けてください。"/></details>
+      <details><summary>設定をAIに相談する</summary><CopyRequest label="設定相談の依頼文" text="Unharnessの現在の接続先と登録範囲を確認し、保存済みのNormalを保持して、零式と限定解除の2つの構成を相談したいです。このMac版では公式プラグインを元の状態で保持し、確認済みの追加指示と自作・外部Skillを切替対象にします。同梱のUnharness Setup Skillに従い、通常Skillの無効・手動・自動と継承規則を確認してください。構成の保存とモードの準備は分けてください。"/></details>
       {localUrl && <a className="local-workbench-link" href={localUrl} target="_blank" rel="noopener noreferrer">保存・比較・復旧のローカル画面を開く</a>}
     </aside></div>}
   </main>;

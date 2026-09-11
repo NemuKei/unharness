@@ -8,7 +8,12 @@ const home = process.env.CODEX_HOME;
 const data = JSON.parse(await readFile(join(home, '.fixture-plugin.json'), 'utf8'));
 const name = 'fixture-plugin', market = 'openai-curated-remote', id = name + '@' + market;
 const config = parse(await readFile(join(home, 'config.toml'), 'utf8'));
-const enabled = config.plugins?.[id]?.enabled ?? true;
+const originalEnabled = config.plugins?.[id]?.enabled ?? true;
+for (let i = 0; i < process.argv.length - 1; i++) if (process.argv[i] === '-c') {
+  const override = parse(process.argv[++i]);
+  config.plugins = { ...config.plugins, ...override.plugins };
+}
+const enabled = data.ignorePluginOverrides ? originalEnabled : config.plugins?.[id]?.enabled ?? true;
 const summary = { id, name, remotePluginId: 'plugins~fixture-native-id', version: '1.2.3', localVersion: null,
   installed: true, enabled, source: { type: 'remote' }, installPolicy: 'AVAILABLE', installPolicySource: null,
   availability: 'AVAILABLE', disabledReason: null, interface: { displayName: 'Fixture plugin' }, ...data.summary };

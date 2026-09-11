@@ -14,6 +14,11 @@ const data = await readFile(join(home, '.fixture-plugins.json'), 'utf8').then(JS
 });
 const file = join(home, 'config.toml');
 let text = await readFile(file, 'utf8'), config = parse(text);
+const originalPlugins = structuredClone(config.plugins ?? {});
+for (let i = 0; i < process.argv.length - 1; i++) if (process.argv[i] === '-c') {
+  const override = parse(process.argv[++i]);
+  config.plugins = { ...config.plugins, ...override.plugins };
+}
 const version = () => createHash('sha256').update(text).digest('hex');
 function setSkill(path, enabled) {
   let found = false;
@@ -34,7 +39,7 @@ function disablePlugin(id) {
   if (!found) text += '\n[plugins.' + JSON.stringify(id) + ']\nenabled = false\n';
 }
 const rows = data.names.map(name => {
-  const id = name + '@' + market, enabled = config.plugins?.[id]?.enabled ?? true;
+  const id = name + '@' + market, enabled = (data.ignorePluginOverrides ? originalPlugins : config.plugins)?.[id]?.enabled ?? true;
   return { id, name, remotePluginId: 'plugins~' + name, version: '1.2.3', localVersion: null,
     installed: true, enabled, source: { type: 'remote' }, installPolicy: 'AVAILABLE', installPolicySource: null,
     availability: 'AVAILABLE', disabledReason: null, interface: { displayName: name }, ...data.summary };

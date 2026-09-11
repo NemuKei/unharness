@@ -11,7 +11,8 @@ test('public entry, synthetic demo and platform guidance do not connect or chang
   await page.getByRole('button', { name: '01 ／ デモ 試してみる 架空の設定で、3つのモードを体験。' }).waitFor();
   assert.match(await page.title(), /Unharness/); assert.equal(new URL(page.url()).origin, PUBLIC_WEB_ORIGIN);
   assert.equal(await page.locator('vite-error-overlay').count(), 0);
-  await page.locator('.scene-indicator').filter({ hasText: /静止画表示/ }).waitFor();
+  await page.getByLabel('標準外観のプレビュー', { exact: true }).locator('.scene-indicator').filter({ hasText: /静止画表示/ }).waitFor();
+  assert.equal(await page.locator('.original-example-modes figure').count(), 3);
   await s.screenshot('public-entry-desktop.png');
   await page.setViewportSize({ width: 1280, height: 720 });
   assert.equal(await page.locator('.entry-choices').evaluate(element => {

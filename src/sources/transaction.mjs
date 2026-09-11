@@ -199,7 +199,7 @@ export async function transact(w, plan, planId) {
   assertControlChanges({ sources: w.reg.skills, plugins: w.reg.plugins, before, after });
   const app = applicationFor(w.reg.context);
   const verifyDependencies = ['unseal', 'trueform'].includes(plan.mode) && app.forwardDependencyGuard
-    ? await app.forwardDependencyGuard(w) : async () => {};
+    ? await app.forwardDependencyGuard(w, plan) : async () => {};
   const keys = changes(w, before, after),
     paths = pathsFor(w.reg);
   await assertCurrent(w, before);

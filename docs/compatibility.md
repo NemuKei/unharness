@@ -1,6 +1,14 @@
 # Compatibility and evidence
 
-The [v3 source-state checks](evidence/2026-09-11-source-states-v3-macos.md) add
+The [real remote-plugin control check](evidence/2026-09-11-remote-plugin-control-limit.md)
+found individual OFF unavailable on Codex 0.153.4. The maintainer accepted
+retaining official plugins for the first Mac product; confirmed optional
+instructions and ordinary Skill disabled/manual/automatic states remain the
+switching scope. Whole-plugin OFF is deferred. The 0.0.4 candidate rejects
+unsupported OFF before publication and reports the present capability
+separately from saved records. Its complete native journey is the next check.
+
+The earlier [v3 source-state checks](evidence/2026-09-11-source-states-v3-macos.md) add
 native 0.153.4 read-only plugin provenance and a separately guarded user-enabled
 configuration boundary, plus owned-profile v3 restoration and local GUI/MCP
 coverage. Task-record schema 3 reports plugin Skill input matches separately

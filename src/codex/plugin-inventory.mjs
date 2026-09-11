@@ -92,21 +92,62 @@ function selectorFor(report, configFile, context, id, enabled) {
     || enabled !== (own ?? true)) failed();
   return own;
 }
-async function native(context, operation) {
+async function native(context, operation, configOverrides = []) {
   let client;
   try {
     const { contextOf } = await import('../sources/catalog.mjs');
     context = await contextOf(context);
-    client = createRpcTransport({ command: context.executable, args: ['app-server', '--stdio'], cwd: context.project,
+    client = createRpcTransport({ command: context.executable, args: [...configOverrides.flatMap(value => ['-c', value]), 'app-server', '--stdio'], cwd: context.project,
       env: { ...process.env, CODEX_HOME: context.codexHome }, timeoutMs: 20000, maxResponseBytes: 8 * 1024 * 1024, allowedMethods: methods });
-    const init = await client.request('initialize', { clientInfo: { name: 'unharness_plugin_inventory', version: '0.0.3' },
+    const init = await client.request('initialize', { clientInfo: { name: 'unharness_plugin_inventory', version: '0.0.4' },
       capabilities: { experimentalApi: true } });
     if (init.codexHome !== context.codexHome || typeof init.userAgent !== 'string'
       || init.userAgent.match(/^[^/\r\n]{1,80}\/(\d+\.\d+\.\d+)(?=[ (]|$)/)?.[1] !== '0.153.4') failed();
     client.initialized();
     return await operation(client, context);
-  } catch { failed(); }
+  } catch (e) {
+    if (e.kind === 'setup-plugin-control-unavailable') throw e;
+    failed();
+  }
   finally { await client?.close(); }
+}
+
+// A writable TOML field is insufficient: remote installed state can override
+// it. Require native installation/Skill readback to honor both process-local
+// values. These reads do not persist a setting or start a model task. Failure
+// is conservative; it never authorizes a cache edit or a global plugin switch.
+export async function inspectPluginControl(context, pluginId) {
+  validatePluginIds([pluginId]);
+  try {
+    const before = await captureFile(join(context.codexHome, 'config.toml'));
+    let previous;
+    for (const enabled of [true, false]) {
+      const current = await native(context, async (client, admitted) => {
+        const [config, installed, catalog] = await Promise.all([
+          client.request('config/read', { cwd: admitted.project, includeLayers: true }),
+          client.request('plugin/installed', { cwds: [admitted.project] }),
+          client.request('skills/list', { cwds: [admitted.project], forceReload: true }),
+        ]);
+        const item = selected(installations(installed), pluginId);
+        if (partitionPluginEnablement(config.config, [pluginId]).selected[0].enabled !== enabled
+          || item.plugin.enabled !== enabled || !Array.isArray(catalog?.data) || catalog.data.length !== 1
+          || catalog.data[0].cwd !== admitted.project || catalog.data[0].errors?.length
+          || !Array.isArray(catalog.data[0].skills)
+          || catalog.data[0].skills.filter(s => s.pluginId === pluginId).some(s => s.enabled !== enabled)) failed();
+        return identity(item);
+      }, ['plugins.' + JSON.stringify(pluginId) + '.enabled=' + enabled]);
+      if (previous && !equal(previous, current)) failed();
+      previous = current;
+    }
+    if (!equal(before, await captureFile(join(context.codexHome, 'config.toml')))) failed();
+    return { pluginId, available: true, reason: null };
+  } catch {
+    return { pluginId, available: false, reason: 'setup-plugin-control-unavailable' };
+  }
+}
+
+export async function assertPluginControl(context, pluginId) {
+  if (!(await inspectPluginControl(context, pluginId)).available) failed('setup-plugin-control-unavailable');
 }
 export async function discoverPluginCandidates(context) {
   return native(context, async (client, admitted) => {
@@ -152,6 +193,7 @@ export async function capturePluginCandidate(context, pluginId) {
   validatePluginIds([pluginId]);
   return native(context, async (client, admitted) => {
     const local = await localSelected(client, admitted, pluginId), p = local.item.plugin;
+    await assertPluginControl(admitted, pluginId);
     const search = await client.request('plugin/search', { searchTerm: p.name, scope: 'global', limit: 100 });
     if (!Array.isArray(search?.data) || search.data.length > 100) failed();
     const found = search.data.filter(i => i?.plugin?.id === p.id);

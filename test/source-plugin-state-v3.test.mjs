@@ -49,6 +49,22 @@ test('an explicitly retained official plugin is inherited by both modes',mac,asy
     assert.equal((await config(s)).plugins[s.pluginId].enabled,true);
   }
 });
+test('unsupported remote enablement stops new OFF work before a journal and permits retained-plugin modes',mac,async t=>{
+  const s=await pluginStateProfile(t);await pluginStateSetup(s);
+  const plan=await sources.planUserMode({workspace:s.workspace,mode:'trueform'});
+  const before=await readFile(s.configPath),state=await readFile(join(s.workspace,'state.json'));
+  const fixtureFile=join(s.context.codexHome,'.fixture-plugins.json');
+  await writeFile(fixtureFile,JSON.stringify({...JSON.parse(await readFile(fixtureFile,'utf8')),ignorePluginOverrides:true}));
+  const setup=await sources.readUserSetup({workspace:s.workspace,schemaVersion:3});
+  assert.deepEqual(setup.pluginControls,[{pluginId:s.pluginId,available:false,reason:'setup-plugin-control-unavailable'}]);
+  await assert.rejects(sources.planUserMode({workspace:s.workspace,mode:'trueform'}),{kind:'setup-plugin-control-unavailable'});
+  await assert.rejects(sources.applyUserPlan({workspace:s.workspace,planId:plan.planId}),{kind:'setup-plugin-control-unavailable'});
+  await assert.rejects(readFile(join(s.workspace,'pending.json')),{code:'ENOENT'});
+  assert.deepEqual(await readFile(s.configPath),before);assert.deepEqual(await readFile(join(s.workspace,'state.json')),state);
+  await pluginStateSetup(s,{retained:true});
+  for(const mode of ['trueform','unseal','normal'])await prepare(s,mode);
+  assert.deepEqual(await readFile(s.configPath),before);
+});
 test('saved OFF, Normal and old favorites restore offline after retained settings, package removal and native removal',mac,async t=>{
   const s=await pluginStateProfile(t); await pluginStateSetup(s); const z=await prepare(s,'trueform');
   const favorite=await sources.saveUserFavorite({workspace:s.workspace,name:'Plugin disabled'});

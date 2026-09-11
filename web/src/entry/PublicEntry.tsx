@@ -8,7 +8,7 @@ import { OriginalAppearanceExample } from './OriginalAppearanceExample';
 export const publicModes = {
   normal: { title: "Normal", label: "通常装備", scene: "baseline", description: "保存しておいた、いつもの構成へ。" },
   unseal: { title: "UNSEAL", label: "限定解除", scene: "manual-only", description: "零式に、選んだ追加Skillを重ねる。" },
-  trueform: { title: "TRUEFORM", label: "零式", scene: "fixed-only", description: "選んだ公式プラグインのSkillを軸に。" },
+  trueform: { title: "TRUEFORM", label: "零式", scene: "fixed-only", description: "追加指示を外し、Skillを無効・手動に。" },
 } as const;
 export function PublicModeChoices({ mode, choose }: { mode: SourceMode; choose: (mode: SourceMode) => void }) {
   return <div className="public-mode-choices" aria-label="モードのプレビュー">
@@ -42,11 +42,12 @@ export function PublicDemo() {
     <PublicModeChoices mode={mode} choose={choose}/><Hangar condition={selected.scene} effects={false}/>
   </section><aside className="public-panel"><p className="eyebrow">このデモの架空の構成</p><h2>組み合わせを変えてみる。</h2>
     <dl className="demo-sources"><dt>追加した指示</dt><dd>{mode === "normal" ? "保存した指示を使う" : mode === "unseal" ? "最小ガイドを使う" : "選んだ追加指示を外す"}</dd>
-      <dt>確認済み公式プラグインのSkill（例）</dt><dd>選んだ対象を自動で使う</dd>
+      <dt>公式プラグイン（例）</dt><dd>元の状態で保持する</dd>
       <dt>自作の手順Skill（例）</dt><dd>{mode === "trueform" ? "必要なときに明示して使う" : "追加で自動使用する"}</dd>
+      <dt>使用頻度の低い外部Skill（例）</dt><dd>{mode === "normal" ? "自動" : mode === "unseal" ? "手動" : "無効"}</dd>
       <dt>メモリ・作業の継続・実行権限</dt><dd>保持する</dd></dl>
     <p className="boundary">このデモは架空のデータです。モードを選んでも、あなたのAI設定は変わりません。</p>
-    <p className="boundary">実際に管理する対象は、ローカル画面で確認して登録します。零式の任意の自動Skillを空にすることもできます。</p>
+    <p className="boundary">実際の切替対象はローカルで確認した追加指示と自作・外部Skillです。現行Codexでは公式プラグインの個別OFFが反映されないため、このMac版では保持します。</p>
     <p className="boundary">速さや品質は、別の比較記録から判断します。</p>
   </aside></main>;
 }

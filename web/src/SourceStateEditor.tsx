@@ -28,7 +28,9 @@ export function SourceStateEditor({ controller: c, mode }: { controller: ReturnT
   function failed(e: unknown, adopting = false) {
     const unknown = adopting && (!(e instanceof ApiError) || e.disposition === 'uncertain');
     setUncertain(unknown); setReview(null);
-    setError(unknown ? '保存結果は未確認です。「状態を再取得」で保存版を確認してください。'
+    setError(e instanceof ApiError && e.kind === 'setup-plugin-control-unavailable'
+      ? 'このCodexではプラグインの個別OFFを確認できません。保存内容を取得し直し、両モードでNormalを保つ案を確認してください。'
+      : unknown ? '保存結果は未確認です。「状態を再取得」で保存版を確認してください。'
       : `設定を確認できませんでした（${e instanceof ApiError ? e.kind : 'invalid-response'}）。保存内容を取得し直してください。`);
   }
   async function load() {
@@ -41,8 +43,18 @@ export function SourceStateEditor({ controller: c, mode }: { controller: ReturnT
       || r.scopeId !== source?.registration.scopeId || r.setupId !== source.setup?.setupId
       || r.normalId !== source.registration.activeNormalId || !hash(r.inventory.inventoryId)
       || !Array.isArray(r.proposal.trueform?.skillStates) || !Array.isArray(r.proposal.unseal?.skillElevations)
+      || r.inventory.plugins.length > 0 && (!Array.isArray(r.pluginControls)
+        || r.pluginControls.length !== r.inventory.plugins.length
+        || new Set(r.pluginControls.map(c => c.pluginId)).size !== r.inventory.plugins.length
+        || r.pluginControls.some(c => !r.inventory.plugins.some(p => p.id === c.pluginId)
+          || typeof c.available !== 'boolean' || c.reason !== null && c.reason !== 'setup-plugin-control-unavailable'))
       || !r.inventory.skills.every(s => typeof s.id === 'string' && Array.isArray(s.availableStates) && typeof s.requiredControl === 'boolean')) return failed(Error());
-    setLoaded(r); setDraft({ ...structuredClone(r.proposal), normalId: r.normalId, inventoryId: r.inventory.inventoryId });
+    const next = { ...structuredClone(r.proposal), normalId: r.normalId, inventoryId: r.inventory.inventoryId };
+    for (const control of r.pluginControls ?? []) if (!control.available) {
+      if (!next.trueform.retainedOfficialPluginIds.includes(control.pluginId)) next.trueform.retainedOfficialPluginIds.push(control.pluginId);
+      next.unseal.additionalPluginIds = next.unseal.additionalPluginIds.filter(id => id !== control.pluginId);
+    }
+    setLoaded(r); setDraft(next);
   }
   function update(change: (p: Proposal) => void) {
     if (!draft) return;
@@ -96,19 +108,20 @@ export function SourceStateEditor({ controller: c, mode }: { controller: ReturnT
       {loaded.inventory.plugins.length > 0 && <div className="state-plugins"><p>プラグインをNormalの状態で保つ</p>
         {loaded.inventory.plugins.map(p => {
           const inherited = draft.trueform.retainedOfficialPluginIds.includes(p.id);
+          const unavailable = loaded.pluginControls?.some(c => c.pluginId === p.id && !c.available) ?? false;
           return <label className="source-target" key={p.id}><input type="checkbox"
             checked={inherited || mode === 'unseal' && draft.unseal.additionalPluginIds.includes(p.id)}
-            disabled={mode === 'unseal' && inherited || mode === 'trueform' && p.eligibility !== 'official-confirmed'}
+            disabled={unavailable || mode === 'unseal' && inherited || mode === 'trueform' && p.eligibility !== 'official-confirmed'}
             onChange={e => update(d => {
               if (mode === 'trueform') {
                 d.trueform.retainedOfficialPluginIds = e.target.checked ? [...d.trueform.retainedOfficialPluginIds, p.id] : d.trueform.retainedOfficialPluginIds.filter(id => id !== p.id);
                 if (e.target.checked) d.unseal.additionalPluginIds = d.unseal.additionalPluginIds.filter(id => id !== p.id);
               } else d.unseal.additionalPluginIds = e.target.checked ? [...d.unseal.additionalPluginIds, p.id] : d.unseal.additionalPluginIds.filter(id => id !== p.id);
             })} />
-            {names.get(p.id) ?? p.id}（Normalは{p.normalEnabled ? '有効' : '無効'}{mode === 'unseal' && inherited ? '・零式から継承' : ''}）
+            {names.get(p.id) ?? p.id}（Normalは{p.normalEnabled ? '有効' : '無効'}{unavailable ? '・個別OFF未対応のため保持' : mode === 'unseal' && inherited ? '・零式から継承' : ''}）
           </label>;
         })}
-        <p className="muted">選ばなかった登録プラグインは、全体を無効にする設定です。元から無効なら、Normalを保っても無効のままです。</p>
+        <p className="muted">現行Codexで個別OFFが反映されない公式プラグインは、両モードでNormalを保持します。未対応のOFFが以前の保存内容にある場合、この確認では両モードの保持へ変更します。元から無効なら、保持しても無効のままです。</p>
       </div>}
       {mode === 'unseal' && <><label htmlFor={prefix + '-instructions'}>追加指示</label>
         <select id={prefix + '-instructions'} value={draft.unseal.instructions} onChange={e => update(d => { d.unseal.instructions = e.target.value as 'minimal' | 'none'; })}>

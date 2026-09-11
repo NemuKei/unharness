@@ -27,7 +27,9 @@ export function PluginEnrollmentPanel({ controller: c }: { controller: ReturnTyp
   function failed(e: unknown, applying = false) {
     const unknown = applying && (!(e instanceof ApiError) || e.disposition === 'uncertain');
     setUncertain(unknown);
-    setError(unknown ? '登録結果は未確認です。「状態を再取得」で現在の登録を確認してください。'
+    setError(e instanceof ApiError && e.kind === 'setup-plugin-control-unavailable'
+      ? 'このCodexではプラグインの個別OFFを確認できません。登録せず、現在の状態を保持します。'
+      : unknown ? '登録結果は未確認です。「状態を再取得」で現在の登録を確認してください。'
       : `内容を確認できませんでした（${e instanceof ApiError ? e.kind : 'invalid-response'}）。候補を取得し直してください。`);
   }
   async function inspect() {
@@ -63,7 +65,7 @@ export function PluginEnrollmentPanel({ controller: c }: { controller: ReturnTyp
   if (!source || c.view?.metadata.application !== 'codex') return null;
   return <details className="control-section enrollment-panel plugin-enrollment-panel">
     <summary>プラグインの登録を確認する</summary>
-    <p className="muted">自分で追加した任意のプラグインを、全体のON/OFFを扱う対象に登録します。導入済みというだけでは任意と判断しません。</p>
+    <p className="muted">このMac版では公式プラグインを現在の状態で保持します。個別OFFが未対応のため、追加指示と自作・外部Skillを切替対象にします。導入済みというだけでは任意の対象と判断しません。</p>
     {(source.registration.plugins?.length ?? 0) > 0 && <details><summary>登録済みのプラグイン {source.registration.plugins!.length}件</summary>
       <ul>{source.registration.plugins!.map(p => <li key={p.id}>{p.label} {p.sourceRevision}：保存Normalは{p.normalEnabled ? '有効' : '無効'}
         <p className="muted">{pluginFeaturesText(p.features)}</p></li>)}</ul>
