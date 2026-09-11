@@ -75,6 +75,34 @@
 .copy-request p { font-size: 12px; }
 .public-tool-note { margin: 24px 38px; font-size: 12px; color: var(--muted); }
 .local-workbench-link { display: inline-block; margin-top: 22px; color: #e4b578; font-size: 13px; text-underline-offset: 5px; }
+.original-example { grid-column: 1 / -1; min-width: 0; margin-top: 48px; padding-top: 48px; border-top: 1px solid var(--line); }
+.original-example-heading { display: grid; grid-template-columns: 1fr 1fr; gap: 44px; align-items: end; margin-bottom: 28px; }
+.original-example h2 { margin: 16px 0 0; font-size: clamp(32px, 4vw, 52px); line-height: 1.35; letter-spacing: -.045em; }
+.original-example h2 span { color: var(--mint, #65d6c8); }
+.original-example-heading > div > p:not(.eyebrow) { line-height: 1.8; }
+.original-example-lead { font-size: 20px; font-weight: 600; }
+.original-example-modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.original-example-modes figure { margin: 0; min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 7px; background: #081216; }
+.original-example-modes .hangar-scene { aspect-ratio: 1; }
+.original-example-modes figcaption { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 16px 18px; border-top: 1px solid var(--line); }
+.original-example-modes figcaption strong { font-size: 16px; }
+.original-example-modes figcaption span { color: var(--muted); font-size: 12px; }
+.original-example-footer { display: flex; align-items: center; justify-content: space-between; gap: 32px; margin-top: 22px; }
+.original-example-footer p { max-width: 650px; color: var(--muted); font-size: 13px; line-height: 1.8; }
+.original-example-footer button { flex-shrink: 0; }
+.original-example-note { color: var(--muted); font-size: 12px; line-height: 1.8; }
+.original-example-scroll { display: none; }
+@media (max-width: 700px) {
+  .original-example { order: 4; width: 100%; margin-top: 18px; padding-top: 28px; }
+  .original-example-heading { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .original-example h2 { font-size: 36px; }
+  .original-example-lead { font-size: 18px; }
+  .original-example-scroll { display: block; color: var(--muted); font-size: 12px; }
+  .original-example-modes { grid-template-columns: repeat(3, minmax(260px, 1fr)); overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 12px; gap: 12px; }
+  .original-example-modes figure { scroll-snap-align: start; }
+  .original-example-modes figcaption { padding: 14px; }
+  .original-example-footer { align-items: flex-start; flex-direction: column; gap: 8px; margin-top: 8px; }
+}
 @media (min-width: 951px) and (max-height: 800px) {
   .public-entry { padding-top: 24px; }
   .entry-intro { padding-top: 0; }

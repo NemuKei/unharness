@@ -3,6 +3,7 @@ import { Hangar } from "../Hangar";
 import { CopyRequest } from "./CopyRequest";
 import type { SourceMode } from "../sources";
 import { siteConfig, type MacCodexRelease } from "../site-config";
+import { OriginalAppearanceExample } from './OriginalAppearanceExample';
 
 export const publicModes = {
   normal: { title: "Normal", label: "通常装備", scene: "baseline", description: "保存しておいた、いつもの構成へ。" },
@@ -29,6 +30,7 @@ export function PublicEntry({ choose }: { choose: (page: "demo" | "install" | "c
       <button onClick={() => choose("install")}><span>02 ／ 導入</span><strong>自分のAIに導入する</strong><small>{siteConfig.macCodexRelease ? "MacのCodexへ。導入をAIに頼めます。" : "MacのCodexから。配布の準備状況を確認。"}</small></button>
       <button onClick={() => choose("connect")}><span>03 ／ 導入済み</span><strong>接続して開く</strong><small>ローカルで許可して、登録済みの設定へ。</small></button>
     </nav>
+    <OriginalAppearanceExample onInstall={() => choose('install')}/>
     <p className="entry-note">軽い構成が、いつもよいとは限りません。ふだんの構成をNormalに保存して、戻せる状態で比べます。</p>
   </main>;
 }

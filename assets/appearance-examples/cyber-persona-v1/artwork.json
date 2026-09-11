@@ -1,0 +1,159 @@
+{
+  "id": "d93788672ec5759de84f19bcf5665ef89cf2053a0d8fd98e1931f9c0174d1328",
+  "kind": "layered",
+  "name": "オリジナルAIの作例",
+  "author": "DeltaHelm Lab",
+  "parentItemId": null,
+  "manifest": {
+    "kind": "unharness-layered-appearance",
+    "schemaVersion": 1,
+    "templateId": "ee9c5889d4a44c4258b3bdc21bc963ed4f8b28cbbcd49718fcf4f792c435975c",
+    "assets": [
+      {
+        "assetId": "0ee909a019a0ebece557b8286086db01e02a59c6d0ff3c8b315290f22e45c9c0",
+        "format": "png",
+        "width": 724,
+        "height": 724,
+        "bytes": 755275
+      },
+      {
+        "assetId": "e27dd53d2ea860268c9bcd0548b7daecab24a6c6482674901819bb1c742f2b2f",
+        "format": "png",
+        "width": 724,
+        "height": 724,
+        "bytes": 24459
+      },
+      {
+        "assetId": "d7fc567c81544390e7db4eec38e233310da0f553950799f19fdcc412b8b1594e",
+        "format": "png",
+        "width": 724,
+        "height": 724,
+        "bytes": 21535
+      },
+      {
+        "assetId": "f8e2962b21dd966b025c722b71f38f4e8e43935826084e0ec2edde20617dbe3e",
+        "format": "png",
+        "width": 724,
+        "height": 724,
+        "bytes": 18253
+      },
+      {
+        "assetId": "3fef0ec4f168e8369485697ec448c3cf34f416b9e2ebd86c360a24fc9af67404",
+        "format": "png",
+        "width": 724,
+        "height": 724,
+        "bytes": 23759
+      },
+      {
+        "assetId": "338ec1f11177ab83ddce8a591457d4fb46a666cb911ec38f9e500f1ec7011039",
+        "format": "png",
+        "width": 724,
+        "height": 724,
+        "bytes": 21637
+      },
+      {
+        "assetId": "df1b1caf518e5381f55293050a3d92d3eba000e7819c1525821134d3153978d5",
+        "format": "png",
+        "width": 724,
+        "height": 724,
+        "bytes": 19120
+      },
+      {
+        "assetId": "81ea6d3337a6adb4a73c5b4f60e3e1180881c913870f2510a931f4061677f481",
+        "format": "png",
+        "width": 724,
+        "height": 724,
+        "bytes": 36421
+      },
+      {
+        "assetId": "717b44df6fc0f4549d80b526f77da13dce9fb4d6713502737d7e8cdbdec969b0",
+        "format": "png",
+        "width": 724,
+        "height": 724,
+        "bytes": 44283
+      },
+      {
+        "assetId": "16520eeab2daf42bb89a1584430c02bce7cca546a1c252a0f68d39850509e6f2",
+        "format": "png",
+        "width": 724,
+        "height": 724,
+        "bytes": 31824
+      },
+      {
+        "assetId": "838c0379eba67ebc837b5894253d20c7d4227e97e205f0284ecb65f5f2f1594a",
+        "format": "png",
+        "width": 724,
+        "height": 724,
+        "bytes": 33060
+      },
+      {
+        "assetId": "686edeccbfb99d96c61070954e1d2f77f91abe1447561015216f08e98c73f708",
+        "format": "png",
+        "width": 724,
+        "height": 724,
+        "bytes": 23053
+      },
+      {
+        "assetId": "93de49dd53cd0843da341d5f9f48d7685bcaff4a8157347008d43df4357ef9a5",
+        "format": "png",
+        "width": 724,
+        "height": 724,
+        "bytes": 188496
+      }
+    ],
+    "layers": {
+      "entity": {
+        "assetId": "93de49dd53cd0843da341d5f9f48d7685bcaff4a8157347008d43df4357ef9a5"
+      },
+      "background": {
+        "assetId": "0ee909a019a0ebece557b8286086db01e02a59c6d0ff3c8b315290f22e45c9c0"
+      },
+      "restraints": [
+        {
+          "partId": "arm-left-upper",
+          "assetId": "e27dd53d2ea860268c9bcd0548b7daecab24a6c6482674901819bb1c742f2b2f"
+        },
+        {
+          "partId": "arm-left-middle",
+          "assetId": "d7fc567c81544390e7db4eec38e233310da0f553950799f19fdcc412b8b1594e"
+        },
+        {
+          "partId": "arm-left-lower",
+          "assetId": "f8e2962b21dd966b025c722b71f38f4e8e43935826084e0ec2edde20617dbe3e"
+        },
+        {
+          "partId": "arm-right-upper",
+          "assetId": "3fef0ec4f168e8369485697ec448c3cf34f416b9e2ebd86c360a24fc9af67404"
+        },
+        {
+          "partId": "arm-right-middle",
+          "assetId": "338ec1f11177ab83ddce8a591457d4fb46a666cb911ec38f9e500f1ec7011039"
+        },
+        {
+          "partId": "arm-right-lower",
+          "assetId": "df1b1caf518e5381f55293050a3d92d3eba000e7819c1525821134d3153978d5"
+        },
+        {
+          "partId": "panel-upper-left",
+          "assetId": "81ea6d3337a6adb4a73c5b4f60e3e1180881c913870f2510a931f4061677f481"
+        },
+        {
+          "partId": "panel-upper-right",
+          "assetId": "717b44df6fc0f4549d80b526f77da13dce9fb4d6713502737d7e8cdbdec969b0"
+        },
+        {
+          "partId": "panel-lower-left",
+          "assetId": "16520eeab2daf42bb89a1584430c02bce7cca546a1c252a0f68d39850509e6f2"
+        },
+        {
+          "partId": "panel-lower-right",
+          "assetId": "838c0379eba67ebc837b5894253d20c7d4227e97e205f0284ecb65f5f2f1594a"
+        },
+        {
+          "partId": "glint",
+          "assetId": "686edeccbfb99d96c61070954e1d2f77f91abe1447561015216f08e98c73f708"
+        }
+      ]
+    }
+  }
+}
