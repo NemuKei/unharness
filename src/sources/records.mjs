@@ -108,7 +108,7 @@ export function validateState(reg, state) {
   for (const key of ['lastCheckpointId', 'lastPlanId'])
     if (state[key] !== null && !/^[0-9a-f]{64}$/.test(state[key]))
       fail('workspace-invalid');
-  for (const key of ['setupId', 'preparedSetupId', 'scopeId', 'lastEnrollmentReviewId'])
+  for (const key of ['setupId', 'preparedSetupId', 'scopeId', 'lastEnrollmentReviewId', 'lastRebindReviewId'])
     if (state[key] != null && (typeof state[key] !== 'string' || !/^[0-9a-f]{64}$/.test(state[key]))) fail('workspace-invalid');
   if (state.scopePreparationRequired !== undefined && typeof state.scopePreparationRequired !== 'boolean') fail('workspace-invalid');
   if (state.setupSchemaVersion !== undefined && state.setupSchemaVersion !== 2) fail('workspace-invalid');
@@ -129,7 +129,7 @@ export function validateState(reg, state) {
 async function loadRegistration(workspace, scopeId) {
   const reg = await loadRecord(workspace, 'scope', scopeId);
   if (
-    reg.role !== 'registration' ||
+    !['registration', 'registration-rebind'].includes(reg.role) ||
     reg.workspace !== workspace ||
     !reg.context ||
     !Array.isArray(reg.skills) ||
@@ -137,6 +137,9 @@ async function loadRegistration(workspace, scopeId) {
   )
     fail('workspace-invalid');
   const app = applicationFor(reg.context);
+  if (reg.role === 'registration-rebind' &&
+      (!/^[a-f0-9]{64}$/.test(reg.rebindReviewId) || !/^[a-f0-9]{64}$/.test(reg.parentScopeId))
+      || reg.role === 'registration' && reg.rebindReviewId !== undefined) fail('workspace-invalid');
   if (
     reg.skills.some(
       (s) =>
@@ -195,7 +198,7 @@ export async function loadScopeLineage(workspace, rootScopeId, scopeId) {
     const reg = await loadRegistration(workspace, id);
     registrations.push({ scopeId: id, reg });
     if (id === rootScopeId) {
-      if (reg.parentScopeId !== undefined || reg.parentNormalId !== undefined) fail('workspace-invalid');
+      if (reg.role !== 'registration' || reg.parentScopeId !== undefined || reg.parentNormalId !== undefined) fail('workspace-invalid');
       break;
     }
     if (!/^[a-f0-9]{64}$/.test(reg.parentScopeId) || !/^[a-f0-9]{64}$/.test(reg.parentNormalId)) fail('workspace-invalid');
@@ -203,6 +206,11 @@ export async function loadScopeLineage(workspace, rootScopeId, scopeId) {
   }
   for (let i = 0; i < registrations.length - 1; i++) {
     const child = registrations[i].reg, parent = registrations[i + 1].reg;
+    if (child.role === 'registration-rebind') {
+      const { validateReboundRegistration } = await import('./directory-rebind-records.mjs');
+      await validateReboundRegistration(workspace, rootScopeId, registrations[i + 1].scopeId, parent, child);
+      continue;
+    }
     if (!equal(child.context, parent.context) || child.ownedRoot !== parent.ownedRoot || child.version !== parent.version ||
         !equal(child.instructions, parent.instructions) || child.skills.length <= parent.skills.length ||
         !equal(child.skills.slice(0, parent.skills.length), parent.skills)) fail('workspace-invalid');

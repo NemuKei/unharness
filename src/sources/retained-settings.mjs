@@ -141,6 +141,8 @@ export async function adaptRetainedSnapshot(w, r, id, type) {
       saved[key] = current[key] === null && merged.text === '' ? null : await targetFile(w.reg, key, merged.text, current);
     }
     const addedSourceIds = w.reg.skills.filter(s => !historical.reg.skills.some(h => h.id === s.id)).map(s => s.id);
+    if (addedSourceIds.length === 0) return { after: saved, adaptation: { kind: 'directory-rebind', sourceType: type,
+      sourceId: id, previousScopeId: r.scopeId, scopeId: w.scopeId, previousNormalId, normalId } };
     return { after: { ...current, ...saved }, adaptation: { kind: 'source-enrollment', sourceType: type, sourceId: id,
       previousScopeId: r.scopeId, scopeId: w.scopeId, previousNormalId, normalId, addedSourceIds,
       addedSourceState: 'saved-normal' } };

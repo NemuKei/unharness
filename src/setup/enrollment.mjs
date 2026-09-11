@@ -72,7 +72,8 @@ export async function reviewEnrollment(args) {
     const selected = additions.map(a => d.skills.find(s => s.id === a.sourceId));
     if (d.unavailableSources.length || selected.some(s => !s?.eligible || w.reg.skills.some(r => r.path === s.path))) fail('unsupported-source');
     assertRegistrationOwnership(d, additions.map(a => a.sourceId), false);
-    const reg = { ...w.reg, parentScopeId: w.scopeId, parentNormalId: activeNormalId(w),
+    const { rebindReviewId: previousRebindReviewId, ...previousRegistration } = w.reg;
+    const reg = { ...previousRegistration, role: 'registration', parentScopeId: w.scopeId, parentNormalId: activeNormalId(w),
       skills: [...w.reg.skills, ...selected.map(s => registeredSkill(app, s))], bindings: { ...w.reg.bindings }, normalId: null };
     const normal = await loadNormal(w.workspace, w.reg, activeNormalId(w));
     const before = await loadSnapshot(w.workspace, w.reg, w.state.snapshotId);

@@ -85,6 +85,12 @@ An independent edit remains a conflict until `plan-retained` proves that only re
 
 Favorites and checkpoints keep their original Normal identity and immutable snapshots. Restoring one from an older Normal version composes its saved selected-source state with the current retained settings, returns an explicit adaptation summary and creates a new plan snapshot. It does not rewrite the old record or save a replacement favorite. A cancelled retained-recording journal restores only its prior private state and removes its known journal; it must not claim to restore independently edited managed files.
 
+## Explicit legacy directory recovery
+
+The development runtime can review an old Mac registration whose directory identity uses a device number and inode. `sources review-rebind` considers only the registered paths and existing owned-directory receipts. The path and inode must remain unchanged; present persistent identities stay strict. The review records today's volume UUID without claiming historical volume continuity. Registered files must match the prepared snapshot except for a separately verified retained-only configuration edit.
+
+`sources apply-rebind` requires that review ID and `confirmedCurrentLocations: true`. It changes only registration/state records, retains the original Normal and historical records, and requires a new preparation under the reattested scope. Retained edits still need the separate acceptance above. Old writers reject the new registration role. Interrupted rebind adoption can be cancelled with ordinary `sources recover`, without a native compiler or source-file writes. See the [rebind contract](superpowers/specs/2026-09-11-legacy-directory-rebind.md) for the exact local JSON interface and limits. This maintenance route is not exposed to the public page and is not an automatic migration.
+
 ## GUI and CLI
 
 An explicit `--manage-sources` launch enables the user-source workbench; read-only inventory launches retain their original behavior. The workbench uses the accepted Pixi scene with Normal / UNSEAL / TRUEFORM labels and a separate prepared-state/readback status. Keep fixture controls available as development diagnostics; never route a personal-source button into the fixture service.

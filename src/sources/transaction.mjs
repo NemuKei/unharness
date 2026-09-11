@@ -401,6 +401,10 @@ export async function recoverTransaction(w) {
     return { status: 'nothing-pending', verification };
   if (process.platform !== 'darwin') fail('unsupported-platform');
   const j = await readJson(join(w.workspace, 'pending.json'));
+  if (j.kind === 'unharness-user-source-directory-rebind-pending') {
+    const { recoverDirectoryRebind } = await import('./directory-rebind-recovery.mjs');
+    return recoverDirectoryRebind(w, j);
+  }
   if (j.kind === 'unharness-user-source-retained-pending') {
     const { recoverRetainedSettings } = await import('./retained-settings.mjs');
     return recoverRetainedSettings(w, j);

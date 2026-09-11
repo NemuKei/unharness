@@ -266,7 +266,8 @@ export type SourcePlanAdaptation = {
   sourceId: string;
   previousNormalId: string;
   normalId: string;
-} & ({ kind: "retained-settings" } | { kind: "source-enrollment"; previousScopeId: string; scopeId: string;
+} & ({ kind: "retained-settings" } | { kind: "directory-rebind"; previousScopeId: string; scopeId: string }
+  | { kind: "source-enrollment"; previousScopeId: string; scopeId: string;
   addedSourceIds: string[]; addedSourceState: "saved-normal" });
 export type RetainedPlan = {
   planId: string;

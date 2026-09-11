@@ -454,6 +454,12 @@ export const acceptUserRetainedSettings = wrap(async args => {
   const { acceptRetainedSettings } = await import('./retained-settings.mjs');
   return acceptRetainedSettings(args);
 });
+export const reviewUserDirectoryRebind = wrap(async args =>
+  (await import('./directory-rebind.mjs')).reviewDirectoryRebind(args));
+export const applyUserDirectoryRebind = wrap(async args =>
+  (await import('./directory-rebind.mjs')).applyDirectoryRebind(args));
+export const DIRECTORY_REBIND_OPERATIONS = Object.freeze({ 'review-rebind': reviewUserDirectoryRebind,
+  'apply-rebind': applyUserDirectoryRebind });
 
 export const reviewUserRun = wrap(async args => (await import('../comparisons/service.mjs')).reviewUserRun(args));
 export const saveUserRun = wrap(async args => (await import('../comparisons/service.mjs')).saveUserRun(args));

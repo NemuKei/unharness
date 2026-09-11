@@ -1,4 +1,7 @@
 export const USER_SOURCE_ERROR_KINDS = Object.freeze([
+  'directory-rebind-confirmation-required',
+  'directory-rebind-unavailable',
+  'directory-rebind-record-invalid',
   'setup-proposal-invalid',
   'setup-inventory-invalid',
   'setup-inventory-unavailable',
