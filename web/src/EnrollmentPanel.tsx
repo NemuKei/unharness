@@ -71,7 +71,7 @@ export function EnrollmentPanel({ controller: c }: { controller: ReturnType<type
   async function adopt() {
     if (!review) return;
     setError('');
-    const response = await c.executeAuxiliary<{ adopted: boolean; nextScopeId: string }>('apply-enrollment', { reviewId: review.reviewId });
+    const response = await c.executeEnrollment<{ adopted: boolean; nextScopeId: string }>(review.reviewId, review.nextScopeId);
     if (response.status === 'failed') return failed(response.error, true);
     if (response.status === 'context-updated') return;
     if (response.result?.adopted !== true || response.result.nextScopeId !== review.nextScopeId) failed(new Error('invalid-response'), true);

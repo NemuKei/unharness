@@ -11,9 +11,11 @@ import { canAcceptSourceUpdate, readSourceUpdate } from "./source-updates";
 import type { SourceUpdate } from "./source-updates";
 import {
   readSourceState,
+  reviewedEnrollmentTransition,
   sameSourceContext,
   sourceOperation,
 } from "./source-operations";
+import type { EnrollmentTransition } from "./source-operations";
 import type {
   Discovery,
   SourceFavorite,
@@ -78,7 +80,11 @@ export function useSourceController() {
     setSelectionKey((key) => key + 1);
   }
   function accept(next: SourceView) {
-    if (!view || !sameSourceContext(view.metadata, next.metadata)) {
+    if (!view || !sameSourceContext(view.metadata, next.metadata)
+      || view.source?.registration.scopeId !== next.source?.registration.scopeId) {
+      // Invalidate reads started during the old scope's foreground mutation as
+      // well as its cached history; they cannot block the accepted new scope.
+      ++foregroundGeneration.current;
       resetContext();
     }
     dispatch({ type: "accept-view", view: next });
@@ -367,6 +373,7 @@ export function useSourceController() {
     action: string,
     input: object,
     acceptChangedContext = true,
+    expectedEnrollment?: EnrollmentTransition,
   ): Promise<AuxiliarySourceOperationResult<T>> {
     if (!acceptChangedContext && contextBlocked.current)
       return { status: "failed", error: new ApiError("gui-source-context-changed") };
@@ -377,7 +384,9 @@ export function useSourceController() {
     setBusy(true);
     try {
       const response = await sourceOperation<T>(api, view.metadata, action, input);
-      if (!acceptChangedContext && (response.status === "context-updated"
+      const reviewedEnrollment = action === 'apply-enrollment' && expectedEnrollment !== undefined
+        && reviewedEnrollmentTransition(view, expectedEnrollment, response);
+      if (expectedEnrollment && !reviewedEnrollment || !acceptChangedContext && !reviewedEnrollment && (response.status === "context-updated"
         || !sameSourceContext(view.metadata, response.state.metadata)
         || view.source?.registration.scopeId !== response.state.source?.registration.scopeId)) {
         contextBlocked.current = true;
@@ -440,6 +449,8 @@ export function useSourceController() {
     choose,
     loadFavorites,
     executeComparison,
+    executeEnrollment: <T,>(reviewId: string, nextScopeId: string) =>
+      executeComparison<T>('apply-enrollment', { reviewId }, false, { reviewId, nextScopeId }),
     executeAuxiliary: <T,>(action: string, input: object) => ['artwork', 'artwork-item', 'read-appearance-import'].includes(action)
       ? readArtwork<T>(action, input) : executeComparison<T>(action, input, false),
     artworkImage: (referenceId: string, asset: { assetId: string; bytes: number }, signal: AbortSignal) => {

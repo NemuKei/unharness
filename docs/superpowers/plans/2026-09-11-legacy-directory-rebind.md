@@ -32,6 +32,6 @@ Same registered paths, source IDs/roles, original Normal, root collection and hi
 ## 3. Review, native recovery and package qualification
 
 - [x] Run affected source/setup/recovery/CLI tests, type/CSP and both builds. Have the established reviewer inspect the immutable patch and recovery boundaries.
-- [ ] Reinspect real registered files, identities, runtime version and retained-only differences. Review/accept only the previously authorized target locations, then separately adopt retained settings and restore Normal. Re-read source bytes/metadata and historical IDs.
+- [x] Reinspect real registered files, identities, runtime version and retained-only differences. Review/accept only the previously authorized target locations, then separately adopt retained settings and restore Normal. Re-read source bytes/metadata and historical IDs.
 - [ ] Update the private installation candidate before fresh Desktop model-task qualification. Do not silently replace the already-published 0.0.1 archive or claim unsupported plugin binding migration.
 - [ ] Record sanitized evidence, update current documentation and Git state, and continue the full Mac goal audit.

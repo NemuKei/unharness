@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile, mkdir } from 'node:fs/promises';
+import { readFile, mkdir, mkdtemp, realpath, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { setupProfile, addSetupSkill } from '../test-support/setup-profile.mjs';
@@ -70,7 +71,7 @@ test('built GUI reviews source roles, enrolls without file writes, then prepares
     await page.screenshot({ path: join(process.env.UNHARNESS_ENROLLMENT_SCREENSHOT_DIR, 'enrollment-mobile.png') });
   }
   await page.getByRole('button', { name: 'この内容で登録', exact: true }).click();
-  await page.getByText(/Skillの登録範囲が増えました/).waitFor();
+  await page.getByText(/登録が更新されました/).waitFor();
   assert.equal((await openWorkspace(s.workspace)).reg.skills.length, 2);
   assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
   assert.deepEqual(await readFile(s.newSkill.path), s.newSkill.bytes);
@@ -79,7 +80,7 @@ test('built GUI reviews source roles, enrolls without file writes, then prepares
   await page.getByRole('button', { name: 'この計画で準備する', exact: true }).click();
   await page.locator('.control-column .selected-name').filter({ hasText: 'TRUEFORM' }).waitFor();
   assert.match(await readFile(join(s.newSkill.path, '..', 'agents', 'openai.yaml'), 'utf8'), /allow_implicit_invocation: false/);
-  assert.equal(await page.getByText(/Skillの登録範囲が増えました/).count(), 0);
+  assert.equal(await page.getByText(/登録が更新されました/).count(), 0);
   await page.getByRole('button', { name: '保存版を表示', exact: true }).click();
   await page.getByRole('button', { name: /追加前のNormal.*追加したSkill 1件を含む/ }).click();
   await page.getByText('追加後のSkillを含めて準備', { exact: true }).waitFor();
@@ -101,14 +102,51 @@ test('a lost enrollment response does not resend; explicit readback reveals the 
   });
   await page.getByRole('button', { name: 'この内容で登録', exact: true }).click();
   await page.getByText(/登録結果は未確認です/).waitFor();
-  assert.equal(await page.getByRole('button', { name: 'この内容で登録', exact: true }).isDisabled(), true);
+  // A concurrent read can also block the old context and remove this control.
+  // Neither representation may offer an enabled repeat of the uncertain write.
+  assert.equal(await page.getByRole('button', { name: 'この内容で登録', exact: true }).and(page.locator(':enabled')).count(), 0);
   assert.equal(attempts, 1);
   assert.equal((await openWorkspace(s.workspace)).reg.skills.length, 2);
   await page.getByRole('button', { name: '状態を再取得', exact: true }).click();
-  await page.getByText(/Skillの登録範囲が増えました/).waitFor();
+  await page.getByText(/登録が更新されました/).waitFor();
   assert.equal(attempts, 1);
   assert.equal(s.posts.filter(path => path.endsWith('/apply-enrollment')).length, 1);
   assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
   assert.deepEqual(await readFile(s.newSkill.path), s.newSkill.bytes);
   assert.deepEqual(s.errors, []);
+});
+
+test('a directory-only rebind keeps the source count and never tells the user that Skills were added', browserCase, async t => {
+  const { createOwnedSourceProfile } = await import('../src/sources/owned-profile.mjs');
+  const { registerLegacySourceProfile } = await import('../test-support/legacy-source-registration.mjs');
+  const sources = await import('../src/sources/service.mjs');
+  const parent = await realpath(await mkdtemp(join(tmpdir(), 'unharness-rebind-browser-')));
+  t.after(() => rm(parent, { recursive: true, force: true }));
+  const p = await createOwnedSourceProfile({ parent, executable: resolve('test-support/user-source-server.mjs') });
+  const registered = await registerLegacySourceProfile({ parent, context: p.context,
+    revision: 'ba64cebbdc2a17179b13a6281668f75fb35dc668', directoryDeviceOffset: 17 });
+  await registered.callLegacy('save', { workspace: registered.workspace, name: '再確認前のNormal' });
+  const before = await sources.userSourceState({ workspace: registered.workspace });
+  const review = await sources.reviewUserDirectoryRebind({ workspace: registered.workspace });
+  await sources.applyUserDirectoryRebind({ workspace: registered.workspace, reviewId: review.reviewId, confirmedCurrentLocations: true });
+  const after = await sources.userSourceState({ workspace: registered.workspace });
+  assert.deepEqual(after.registration.sources, before.registration.sources);
+  const gui = await startGuiServer({ manageSources: p.context, assetsDirectory: resolve('dist') }); t.after(() => gui.close());
+  const { chromium } = await import(pathToFileURL(resolve(process.env.UNHARNESS_PLAYWRIGHT_MODULE)).href);
+  const browser = await chromium.launch({ headless: true, ...(process.env.UNHARNESS_BROWSER_EXECUTABLE ? { executablePath: process.env.UNHARNESS_BROWSER_EXECUTABLE } : {}) });
+  t.after(() => browser.close());
+  const page = await browser.newPage({ reducedMotion: 'reduce', viewport: { width: 1440, height: 1000 } });
+  page.setDefaultTimeout(8000);
+  await page.goto(gui.url);
+  await page.locator('.scope-enrollment-notice').waitFor();
+  assert.doesNotMatch(await page.locator('#main').innerText(), /Skillの登録範囲が増えました|追加したSkillを含む|追加後の2構成/);
+  await page.getByRole('button', { name: '設定をAIに相談', exact: true }).click();
+  const prompt = await page.getByLabel('設定相談の依頼文', { exact: true }).inputValue();
+  assert.doesNotMatch(prompt, /追加登録後/);
+  assert.match(prompt, /以前の選択を置き換えない/);
+  await page.getByRole('button', { name: /再確認前のNormal/ }).click();
+  await page.getByText('再確認した場所へ保存内容を準備', { exact: true }).waitFor();
+  await page.getByRole('button', { name: 'この計画で準備する', exact: true }).click();
+  await page.locator('.scope-enrollment-notice').waitFor({ state: 'detached' });
+  assert.deepEqual(await readSourceProfileFiles(p.context), p.originalFiles);
 });

@@ -104,7 +104,7 @@ export function PublicWorkbench({ client, view }: { client: PublicConnection; vi
       </section>}
     </section><aside className="public-panel preparation-panel"><p className="eyebrow">登録済みの追加設定</p><h2>現在の準備</h2>
       <p className="prepared-mode">{view.state ? publicModes[view.state.preparedMode].title : "未確認"}</p>
-      {view.state && <p className="muted">保存版 {view.state.revision}{view.state.modeChangeRequired ? " ／ 追加した対象の準備が必要です" : ""}</p>}
+      {view.state && <p className="muted">保存版 {view.state.revision}{view.state.modeChangeRequired ? " ／ 登録を更新したため、準備が必要です" : ""}</p>}
       <p className="boundary">設定ファイルの準備と、タスクへの読み込みは別です。使用時は新しいタスクを作成してください。</p>
       {(view.state?.conflict || view.state?.recoveryPending) && <p role="alert">変更の競合または中断を検出しました。ローカル画面で確認・復旧してください。</p>}
       {view.state?.setupRequired && <p role="status">零式と限定解除の構成を、ローカルでAIと相談して保存してください。</p>}

@@ -180,7 +180,7 @@ export function SourceWorkbench() {
                 {source?.recovery.pending
                   ? "変更が中断しています"
                   : source
-                    ? `${source.registration.modeChangeRequired ? "追加前の最後の準備：" : !c.confirmed || source.conflict ? "最後に確認した保存状態：" : ""}${modePresentation[source.preparedMode].title}`
+                    ? `${source.registration.modeChangeRequired ? "登録変更前の最後の準備：" : !c.confirmed || source.conflict ? "最後に確認した保存状態：" : ""}${modePresentation[source.preparedMode].title}`
                     : "通常装備はまだ保存されていません"}
               </p>
               <p className="boundary">
@@ -191,7 +191,7 @@ export function SourceWorkbench() {
                     : "対象を確認し、追加した任意の指示・Skillだけを選んで保存します。"}
               </p>
               {source?.registration.modeChangeRequired && <p className="scope-enrollment-notice" role="status">
-                Skillの登録範囲が増えました。追加分は保存済みNormalの状態です。
+                登録が更新されました。次のタスクで使う設定は、まだ準備していません。
                 {source.setup?.setupRequired ? '先に「設定をAIに相談」で両モードの構成を確認・保存してください。Normalと過去の保存版には戻せます。'
                   : '使うモードを選び、差分を確認して準備してください。'}
               </p>}

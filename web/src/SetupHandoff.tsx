@@ -60,7 +60,7 @@ export function SetupHandoff({ view, confirmed, busy, execute }: { view: SourceV
       : <p className="muted">Normalを残して、限定解除と零式の構成を相談できます。</p>}
     {view.source?.setup?.setupId && <p className="setup-saved" role="status">解除設定は保存済みです。
       {view.source.setup.preparedSetupId !== view.source.setup.setupId || view.source.registration.modeChangeRequired ? ' 次に解除モードを準備するときに使います。' : ' 現在の準備にもこの保存版を使っています。'}</p>}
-    {setupRequired && <p className="setup-saved" role="status">追加後の2構成は確認・保存待ちです。以前の準備を新しい登録範囲へ自動で広げません。</p>}
+    {setupRequired && <p className="setup-saved" role="status">この登録の2構成は確認・保存待ちです。以前の保存版はそのまま残っています。</p>}
     {open && reliable && <div className="setup-conversation">
       {configured && <>
         <button type="button" className="secondary" aria-disabled={busy} aria-busy={busy} onClick={() => { if (!busy) void readSaved(); }}>保存した2構成を確認</button>

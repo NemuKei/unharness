@@ -171,7 +171,7 @@ type TaskObservationState = Pick<
 
 export function observationIssueText(issue: string | null) {
   if (issue === "source-preparation-required")
-    return "追加したSkillを含むモードの準備が必要です。使うモードを選んでから、新しいタスクで確認してください。";
+    return "現在の登録に合うモードの準備が必要です。使うモードを選んでから、新しいタスクで確認してください。";
   if (
     issue === "preparation-boundary-unavailable" ||
     issue === "preparation-metadata-invalid"

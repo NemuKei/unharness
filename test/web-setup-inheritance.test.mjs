@@ -87,7 +87,7 @@ test('built v2 GUI separates saved inheritance, role-only registration, setup ap
   await page.getByRole('button', { name: '設定をAIに相談', exact: true }).click();
   assert.equal(await page.getByLabel('現在の構成から相談する', { exact: true }).isChecked(), true);
   const prompt = await page.getByLabel('設定相談の依頼文', { exact: true }).inputValue();
-  assert.match(prompt, /追加登録後/); assert.match(prompt, /read_setup/);
+  assert.match(prompt, /登録更新後/); assert.match(prompt, /read_setup/);
   assert.ok(!prompt.includes(s.context.codexHome));
   assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
   assert.deepEqual(await readFile(s.newSkill.path), s.newSkill.bytes);
