@@ -58,6 +58,16 @@ enabled = true
   for (const launch of launches) await assert.rejects(stat(launch.profile), { code: 'ENOENT' });
 });
 
+test('native proof preserves retained edits when a saved Skill block shares an appended blank separator', async t => {
+  const ctx = await reconcileSetup(t);
+  const baseText = 'model = "base"\n\n[plugins.unharness]\nenabled = true\n';
+  const targetText = baseText + '\n[[skills.config]]\npath = "' + selectedPath + '"\nenabled = false\n';
+  const currentText = baseText.replace('"base"', '"current"') + '\n';
+  const result = await ctx.run({baseText, targetText, currentText, skillPaths:[selectedPath]});
+  assert.equal(result.text, targetText.replace('"base"', '"current"'));
+  assert.ok((await ctx.events()).filter(event => event.method).every(event => ['initialize', 'initialized', 'config/read'].includes(event.method)));
+});
+
 test('v3 merges only registered plugin enablement and preserves plugin metadata and unrelated edits', async t => {
   const ctx = await reconcileSetup(t);
   const baseText = 'model = "base"\n[plugins.selected]\nenabled = true\n\n\nnote = "retained"\n[plugins.other]\nenabled = true\n';

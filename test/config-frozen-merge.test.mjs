@@ -31,3 +31,23 @@ for (const [name, edit] of [
 ]) test('frozen composition refuses ' + name, () => {
   assert.throws(() => mergeFrozenRetainedConfig({baseText,targetText,currentText,skillPaths:[path],pluginIds:[id],...edit}), {kind:'config-transform-failed'});
 });
+
+for (const newline of ['\n', '\r\n']) test('frozen Skill insertion shares a retained trailing separator ' + JSON.stringify(newline), () => {
+  const base = ['model = "original"', 'precision = 9007199254740993', '',
+    '[plugins."unharness@fixture"]', 'enabled = true', ''].join(newline);
+  const target = base + ['', '[[skills.config]]', 'path = "' + path + '"', 'enabled = false', ''].join(newline);
+  // Native plugin removal/reinstallation can leave this extra separator.
+  const current = base.replace('"original"', '"latest"') + newline;
+  const merged = mergeFrozenRetainedConfig({baseText:base, targetText:target, currentText:current, skillPaths:[path]});
+  assert.equal(merged.text, target.replace('"original"', '"latest"'));
+  assert.equal(merged.proof, 'frozen-typed-toml');
+});
+
+test('a shared separator does not authorize overlapping nonblank insertions or changed retained values', () => {
+  const base = 'model = "original"\n';
+  const target = base + '\n[[skills.config]]\npath = "' + path + '"\nenabled = false\n';
+  assert.throws(() => mergeFrozenRetainedConfig({baseText:base, targetText:target,
+    currentText:base + '\n# independent comment\n', skillPaths:[path]}), {kind:'config-transform-failed'});
+  assert.throws(() => mergeFrozenRetainedConfig({baseText:base, targetText:target.replace('"original"', '"changed"'),
+    currentText:base + '\n', skillPaths:[path]}), {kind:'config-transform-failed'});
+});

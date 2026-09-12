@@ -19,7 +19,16 @@ function lineBuffer(text) {
   return lines;
 }
 
-function deletionUnion(conflict) {
+function mergeConflict(conflict) {
+  if (conflict.o.length === 0) {
+    for (const [separator, insertion] of [[conflict.a, conflict.b], [conflict.b, conflict.a]]) {
+      // A native reinstall may append the same blank separator that a saved
+      // Skill block starts with. Keep that shared prefix once, without merging
+      // competing content. The typed partition proof still checks every value.
+      if (separator.length > 0 && separator.every(line => /^[ \t\r\n]+$/.test(line))
+        && separator.every((line, index) => insertion[index] === line)) return insertion;
+    }
+  }
   const removed = new Set();
   for (const side of [conflict.a, conflict.b]) {
     const edits = diffIndices(conflict.o, side);
@@ -73,7 +82,7 @@ async function readConfig(configText, args) {
 
 function mergedText(baseText, targetText, currentText) {
   const chunks = diff3Merge(lineBuffer(targetText), lineBuffer(baseText), lineBuffer(currentText));
-  const text = chunks.flatMap(chunk => chunk.conflict ? deletionUnion(chunk.conflict) : chunk.ok).join('');
+  const text = chunks.flatMap(chunk => chunk.conflict ? mergeConflict(chunk.conflict) : chunk.ok).join('');
   if (chunks.some(chunk => chunk.conflict) && !preservesTomlComments(currentText, text)) throw failed();
   if (Buffer.byteLength(text, 'utf8') > MAX_CONFIG_BYTES || lineBuffer(text).length > 4096) throw failed();
   return text;
