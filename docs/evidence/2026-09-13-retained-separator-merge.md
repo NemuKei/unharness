@@ -11,16 +11,30 @@ the same position. The three-way merge treated their shared blank prefix as
 competing content. This occurred during adaptation of an immutable saved
 preset to the accepted current Normal, before the native Skill editor.
 
-The shared composition helper now accepts this exact blank-prefix overlap.
-It keeps the inserted content and shared separator once. Both native and
-frozen paths retain their independent proof of selected and retained values,
-comment checks and bounds. Overlapping nonblank insertions and changed
-retained values still fail. Old setups, Normal versions, favorites and
-snapshots are not rewritten.
+Replacing the native marketplace also moved its retained plugin table.
+Adapting the old saved Skill block then required combining a table deletion
+at its former location with a neighboring insertion. The small synthetic
+reproduction also exercised concurrent insertion of two separate tables.
 
-The two new LF/CRLF cases reproduced the failure before the fix and passed
-afterward. All 61 related reconciliation and retained-settings checks passed.
-Planning the original saved TRUEFORM with the corrected source then succeeded
-without source writes. A new immutable 0.0.5 package will carry the fix;
-the existing 0.0.4 archive remains unchanged. Distribution and public-mode
-round-trip verification are the next checks.
+The shared composition helper now proposes combinations of separable
+deletions and boundary insertions, shared blank prefixes and independently
+parseable table insertions. Both native and frozen paths retain their
+independent proof of selected and retained values, comment checks and bounds.
+Replacements, insertions inside deleted content, competing non-table
+insertions and changed retained values still fail. Old setups, Normal
+versions, favorites and snapshots are not rewritten.
+
+The LF/CRLF and table-move cases reproduced the failures before the fix and
+passed afterward. Composing the actual updated qualification profile also
+passed without source writes. The full regression passed 1,253 of 1,324
+cases, with 71 explicit optional/platform skips and no failures. Type/CSP and
+both builds passed.
+
+The corrected source completed an actual HTTPS/WebMCP TRUEFORM preparation,
+GUI UNSEAL preparation and WebMCP Normal restoration. Independent readback
+matched all selected file bytes and metadata to current Normal, preserved the
+original saved setup and corroborated all three operation receipts.
+
+A new immutable 0.0.6 package will carry the complete fix; the existing 0.0.4
+archive remains unchanged. The internal 0.0.5 candidate was not published.
+Distribution and installed-package round-trip verification are the next checks.

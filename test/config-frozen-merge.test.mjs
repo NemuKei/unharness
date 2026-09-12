@@ -43,11 +43,27 @@ for (const newline of ['\n', '\r\n']) test('frozen Skill insertion shares a reta
   assert.equal(merged.proof, 'frozen-typed-toml');
 });
 
-test('a shared separator does not authorize overlapping nonblank insertions or changed retained values', () => {
+test('composition rejects overlapping non-table insertions or changed retained values', () => {
   const base = 'model = "original"\n';
   const target = base + '\n[[skills.config]]\npath = "' + path + '"\nenabled = false\n';
   assert.throws(() => mergeFrozenRetainedConfig({baseText:base, targetText:target,
     currentText:base + '\n# independent comment\n', skillPaths:[path]}), {kind:'config-transform-failed'});
   assert.throws(() => mergeFrozenRetainedConfig({baseText:base, targetText:target.replace('"original"', '"changed"'),
     currentText:base + '\n', skillPaths:[path]}), {kind:'config-transform-failed'});
+  assert.throws(() => mergeFrozenRetainedConfig({baseText:base, targetText:target,
+    currentText:target.replace('enabled = false', 'enabled = true'), skillPaths:[path]}), {kind:'config-transform-failed'});
+});
+
+test('a retained table move preserves a saved Skill block appended beside its old position', () => {
+  const prefix = 'model = "original"\n\n';
+  const market = '[marketplaces.unharness]\nsource = "previous"\n\n';
+  const plugin = '[plugins."unharness@fixture"]\nenabled = true\n';
+  const skill = '\n[[skills.config]]\npath = "' + path + '"\nenabled = false\n';
+  const base = prefix + market + plugin;
+  const current = prefix + plugin + '\n' + market.replace('"previous"', '"current"');
+  const merged = mergeFrozenRetainedConfig({baseText:base, targetText:base + skill, currentText:current, skillPaths:[path]});
+  assert.equal(merged.text, current + skill);
+  assert.throws(() => mergeFrozenRetainedConfig({baseText:base,
+    targetText:(base + skill).replace('[plugins."unharness@fixture"]\nenabled = true', '[plugins."unharness@fixture"]\nenabled = false'),
+    currentText:current, skillPaths:[path]}), {kind:'config-transform-failed'});
 });

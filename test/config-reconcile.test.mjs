@@ -83,6 +83,17 @@ test('v3 merges only registered plugin enablement and preserves plugin metadata 
   await assert.rejects(ctx.run({ ...values, pluginIds: [] }), { kind: 'config-transform-failed' });
 });
 
+test('native proof composes a moved retained table and adjacent saved Skill insertion', async t => {
+  const ctx = await reconcileSetup(t);
+  const prefix = 'model = "base"\n\n', market = '[marketplaces.unharness]\nsource = "old"\n\n';
+  const plugin = '[plugins.unharness]\nenabled = true\n';
+  const skill = '\n[[skills.config]]\npath = "' + selectedPath + '"\nenabled = false\n';
+  const baseText = prefix + market + plugin;
+  const currentText = prefix + plugin + '\n' + market.replace('"old"', '"new"');
+  const result = await ctx.run({baseText, targetText:baseText + skill, currentText, skillPaths:[selectedPath]});
+  assert.equal(result.text, currentText + skill);
+});
+
 test('restoring Normal after plugin removal merges adjacent deletions and verifies both semantic partitions', async t => {
   const ctx = await reconcileSetup(t);
   const common = 'model = "base"\n\n';

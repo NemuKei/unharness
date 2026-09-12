@@ -19,29 +19,50 @@ function lineBuffer(text) {
   return lines;
 }
 
+function tableInsertion(lines) {
+  const first = lines.find(line => line.trim() && !line.trimStart().startsWith('#'));
+  if (!first?.trimStart().startsWith('[')) return false;
+  try { parse(lines.join(''), { integersAsBigInt: true, maxDepth: 100 }); return true; }
+  catch { return false; }
+}
+
 function mergeConflict(conflict) {
-  if (conflict.o.length === 0) {
-    for (const [separator, insertion] of [[conflict.a, conflict.b], [conflict.b, conflict.a]]) {
-      // A native reinstall may append the same blank separator that a saved
-      // Skill block starts with. Keep that shared prefix once, without merging
-      // competing content. The typed partition proof still checks every value.
-      if (separator.length > 0 && separator.every(line => /^[ \t\r\n]+$/.test(line))
-        && separator.every((line, index) => insertion[index] === line)) return insertion;
-    }
-  }
-  const removed = new Set();
+  const removed = new Set(), deletions = [], insertions = new Map();
   for (const side of [conflict.a, conflict.b]) {
     const edits = diffIndices(conflict.o, side);
-    // Adjacent deletions can overlap on a separator line. Never guess how to
-    // combine inserted/replaced text; the native partition proof below is still
-    // mandatory even for a union of deletions.
-    if (edits.some(edit => edit.buffer2[1] !== 0)) throw failed();
     for (const edit of edits) {
-      const [start, length] = edit.buffer1;
-      for (let i = start; i < start + length; i++) removed.add(i);
+      const [start, deleted] = edit.buffer1, [offset, added] = edit.buffer2;
+      // Compose deletions and boundary insertions, never a replacement or an
+      // insertion inside removed content. Every result still needs the complete
+      // typed selected/retained proof below.
+      if (deleted && added) throw failed();
+      if (deleted) {
+        deletions.push([start, start + deleted]);
+        for (let i = start; i < start + deleted; i++) removed.add(i);
+      } else if (added) {
+        const lines = side.slice(offset, offset + added), previous = insertions.get(start);
+        if (!previous || isDeepStrictEqual(previous, lines)) insertions.set(start, lines);
+        else {
+          // Reuse a shared blank prefix. Independently inserted complete TOML
+          // tables can also be proposed together, current first. The full
+          // partition proof rejects duplicate or overlapping configuration.
+          const pair = [[previous, lines], [lines, previous]].find(([separator, insertion]) =>
+            separator.every(line => /^[ \t\r\n]+$/.test(line))
+            && separator.every((line, index) => insertion[index] === line));
+          if (pair) insertions.set(start, pair[1]);
+          else if (tableInsertion(previous) && tableInsertion(lines)) insertions.set(start, [...lines, ...previous]);
+          else throw failed();
+        }
+      }
     }
   }
-  return conflict.o.filter((_, i) => !removed.has(i));
+  if ([...insertions.keys()].some(position => deletions.some(([start, end]) => start < position && position < end))) throw failed();
+  const result = [];
+  for (let i = 0; i <= conflict.o.length; i++) {
+    result.push(...insertions.get(i) ?? []);
+    if (i < conflict.o.length && !removed.has(i)) result.push(conflict.o[i]);
+  }
+  return result;
 }
 
 function validateProvableValues(value) {
