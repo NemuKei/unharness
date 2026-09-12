@@ -8,6 +8,8 @@ Try different combinations of skills and instructions on your own work. Find wha
 
 [日本語](README.ja.md)
 
+The [0.0.4 Mac preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.4) is available. See the [native installation, input, artwork and recovery checks](docs/evidence/2026-09-11-mac-codex-0.0.4.md) for its verified scope.
+
 The first Mac version targets Apple Silicon and Codex Desktop. It keeps your saved Normal and lets you choose disabled, manual or automatic states for confirmed optional ordinary Skills. Official plugins remain enabled or disabled as they already were: individual remote-plugin OFF is [unavailable on the inspected Codex version](docs/evidence/2026-09-11-remote-plugin-control-limit.md). Older saved versions and independent offline recovery are preserved. Recorded Skill inputs and unknown runtime state are shown separately.
 
 Use the [public site](https://unharness.deltahelmlab.com/) to explore the demo and installation guidance. The [release page](https://github.com/NemuKei/unharness/releases) supplies the verified archive and checksum; the Mac package bundles Node, UI, MCP and management/setup/artwork Skills. See [compatibility and verification](docs/compatibility.md) for the exact qualified release and remaining limits. Claude Code native qualification and Windows delivery are later work.

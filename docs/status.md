@@ -2,6 +2,14 @@
 
 Updated: 2026-09-11.
 
+The [0.0.4 Mac distribution](evidence/2026-09-11-mac-codex-0.0.4.md) is now
+published and its unauthenticated download matches the verified archive.
+The native installer, ordinary Skill states, three fresh Desktop input
+observations, model-led setup and artwork, legacy favorites and independent
+recovery have passed within the retained-plugin scope. The new static-site
+rollout and live HTTPS/WebMCP checks are next. The development notes below
+retain their earlier evidence boundaries.
+
 The maintainer accepted the [retained official-plugin Mac scope](evidence/2026-09-11-remote-plugin-control-limit.md)
 after real Codex 0.153.4 ignored individual remote-plugin OFF. The 0.0.3
 candidate was installed and recovered safely; its writable-selector check was

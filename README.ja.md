@@ -1,5 +1,7 @@
 # Unharness
 
+[0.0.4 Macプレビュー](https://github.com/NemuKei/unharness/releases/tag/v0.0.4)を公開しました。[導入・入力確認・作品・復旧の実機検証](docs/evidence/2026-09-11-mac-codex-0.0.4.md)で確認範囲を示しています。
+
 Mac初回版はApple SiliconとCodex Desktopを対象に、保存したNormalを保ち、確認済みの自作・外部Skillを無効・手動・自動から選びます。公式プラグインは元の状態で保持します。確認したCodexでは[公式プラグインの個別OFFが反映されません](docs/evidence/2026-09-11-remote-plugin-control-limit.md)。以前の保存版と独立したオフライン復旧を維持し、Skill入力の対応と未確認の実行状態を分けて表示します。
 
 [公開サイト](https://unharness.deltahelmlab.com/)からデモと導入案内へ進めます。[配布ページ](https://github.com/NemuKei/unharness/releases)で検証したZIPとチェックサムを公開し、Mac配布物にはNode・画面・MCP・管理／設定相談／作画Skillを同梱します。正確な検証版と制約は[対応状況](docs/compatibility.md)で確認できます。Claude Codeの実機対応とWindowsは後続です。

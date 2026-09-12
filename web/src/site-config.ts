@@ -9,14 +9,14 @@ export type MacCodexRelease = Readonly<{
 export const siteConfig = Object.freeze({
   author: "DeltaHelm Lab",
   authorUrl: "https://deltahelmlab.com/",
-  releaseLabel: "0.0.1 開発プレビュー",
+  releaseLabel: "0.0.4 Macプレビュー",
   publicRepositoryUrl: "https://github.com/NemuKei/unharness" as string | null,
   // Set only after the selected public archive and source can be retrieved and verified.
   macCodexRelease: Object.freeze({
-    version: "0.0.1",
-    archiveUrl: "https://github.com/NemuKei/unharness/releases/download/v0.0.1/unharness-0.0.1-macos-arm64.zip",
-    archiveSha256: "581f523d663958ddb78b016f8901305f5fa9cf4551b474364368d1bc8a0bc2d2",
-    distributionId: "dcacd38531d8a07e38da2488713966668548b09b585e47f6b7eac865674a28e3",
-    sourceUrl: "https://github.com/NemuKei/unharness/tree/v0.0.1",
+    version: "0.0.4",
+    archiveUrl: "https://github.com/NemuKei/unharness/releases/download/v0.0.4/unharness-0.0.4-macos-arm64.zip",
+    archiveSha256: "ef2e44aee408f20fce05c1ae76cdade3f9879485c09775abee1e16b2dc752221",
+    distributionId: "9d4c0cb53618fcb08fa9cad1d51afa65be5469bf1b8f9be43da5722ef895ace6",
+    sourceUrl: "https://github.com/NemuKei/unharness/tree/f785edd9fc5a7061723133a34eddd3aa4998ef22",
   }) as MacCodexRelease | null,
 });
