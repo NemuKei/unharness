@@ -1,20 +1,20 @@
 # Project status
 
-As of 2026-09-13. Read [the documentation guide](README.md) for the canonical
+As of 2026-09-14. Read [the documentation guide](README.md) for the canonical
 contracts and [the continuity brief](handoff.md) when starting another task.
 The next platform priority is Windows Codex, followed by Claude Code. Read the
 current user request and live state before starting platform implementation.
 
 ## Available now
 
-The [0.0.8 Mac preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.8)
-is published and installed. The agreed initial product scope is Apple Silicon
+The [0.0.9 Mac preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.9)
+is published. The agreed initial product scope is Apple Silicon
 and Codex Desktop: save Normal, prepare the three supported modes, inspect fresh
 task evidence, compare recorded work, reuse favorites and recover independently.
 The [Mac qualification](evidence/2026-09-13-mac-codex-completion.md) is the
 mode/control/recovery baseline and links earlier fresh-model and setup evidence.
 
-0.0.8 adds fixed twelve-frame authoring, nine intermediate awakening poses,
+The earlier 0.0.8 added fixed twelve-frame authoring, nine intermediate awakening poses,
 outward crests and bloom, free appearance save/reselection and the 白銀/琥珀
 examples. Its archive, installed native MCP authoring, personal-source/old-artwork
 preservation and actual public HTTPS selection passed; see
@@ -30,22 +30,24 @@ and shows the same four functions through screen and chat entry points. The
 local/public workbench uses mode/settings/appearance pages, nearby mode
 confirmation and actionable blocked states. Initial registration and local
 approval remain explicit; conflicts offer an AI inspection prompt without
-enabling a source write. These UI and management-Skill changes need separate
-site and package publication; the published snapshots below remain independent.
+enabling a source write. These UI and management-Skill changes are included in the 0.0.9 package;
+the corresponding site upload is pending. Its isolated native installation,
+packaged MCP and archive checks are recorded in [the release evidence](evidence/2026-09-14-workbench-release.md).
+The published snapshots below remain independent.
 
 ## Release and site are separate snapshots
 
 | Surface | Verified revision | Evidence |
 | --- | --- | --- |
-| Published 0.0.8 package | e4f557d204f6beb48602616143fe98ac0ca5d390 | [Archive and native checks](evidence/2026-09-13-awakening-motion.md#release-evidence) |
+| Published 0.0.9 package | 45a9a4c721ff03a002ab3e09dac451b7aa3923d4 | [Archive and isolated native checks](evidence/2026-09-14-workbench-release.md) |
 | Public site, including desktop three-column layout | 9a4bce8be11baafc425e1fa875219fd6598fa992 | [Public layout follow-up](evidence/2026-09-13-awakening-motion.md#public-only-desktop-layout-follow-up) |
 | Current repository | Re-read main/remote and local changes | Later documentation commits do not rebuild the archive or redeploy the site |
 
 The latest site deployment is 8c2a707f-18a2-4b1f-a274-00d4c6979d47 on the dedicated
 `deltahelmlab-unharness` Pages project. All 48 served files matched its build.
-Release availability, published asset digests, deployment metadata and the
-absence of open GitHub issues were rechecked at this documentation checkpoint.
-An empty issue list does not mean all future platform work is implemented.
+Release availability, published asset digests and the anonymous download were
+rechecked for 0.0.9. The installed personal profile was not updated by this
+release task.
 
 ## Current limits
 

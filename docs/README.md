@@ -36,6 +36,8 @@ The canonical contracts are split by responsibility:
 
 ## Evidence and history
 
+- [0.0.9 workbench release](evidence/2026-09-14-workbench-release.md): simplified screen/chat entry points, current archive and publication checks.
+
 - [0.0.6 Mac qualification](evidence/2026-09-13-mac-codex-completion.md):
   native/public mode preparation, Normal restoration and independent recovery;
   links the dated [0.0.4 fresh-model/setup/artwork journey](evidence/2026-09-11-mac-codex-0.0.4.md).

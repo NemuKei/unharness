@@ -8,9 +8,9 @@
 
 **画面で操作。チャットで依頼。** 初期設定・設定の見直し・モード切替・外観づくりを、Unharnessを導入したCodexのチャットからも頼めます。「アンハーネスの初期設定をして」「零式と限定解除のSkill構成を見直して」「零式に切り替えて」「アンハーネスのオリジナルイメージを作成したい」が入口です。初回登録や接続許可など、必要な確認はこのMacの画面へ案内します。[チャットでの操作](docs/ai-commands.md)を参照してください。
 
-[0.0.8 Macプレビュー](https://github.com/NemuKei/unharness/releases/tag/v0.0.8)を公開しました。[導入・公開画面での操作・復旧の実機検証](docs/evidence/2026-09-13-mac-codex-completion.md)に、確認範囲と以前のAI操作・作品の検証をまとめています。
+[0.0.9 Macプレビュー](https://github.com/NemuKei/unharness/releases/tag/v0.0.9)を公開しました。操作画面とチャットの入口を整理し、[0.0.9の配布確認](docs/evidence/2026-09-14-workbench-release.md)をまとめています。[導入・公開画面での操作・復旧の実機検証](docs/evidence/2026-09-13-mac-codex-completion.md)に、確認範囲と以前のAI操作・作品の検証をまとめています。
 
-[外観更新の検証](docs/evidence/2026-09-13-awakening-motion.md)には、この配布物・実機導入・公開画面の確認を記録しています。
+[0.0.8の外観更新の検証](docs/evidence/2026-09-13-awakening-motion.md)には、以前の実機作画・公開画面での作品操作の確認を記録しています。
 
 Mac初回版はApple SiliconとCodex Desktopを対象に、保存したNormalを保ち、確認済みの自作・外部Skillを無効・手動・自動から選びます。公式プラグインは元の状態で保持します。確認したCodexでは[公式プラグインの個別OFFが反映されません](docs/evidence/2026-09-11-remote-plugin-control-limit.md)。以前の保存版と独立したオフライン復旧を維持し、Skill入力の対応と未確認の実行状態を分けて表示します。
 

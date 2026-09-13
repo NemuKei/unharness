@@ -1,6 +1,6 @@
 # Mac向けの導入案内と配布ラッパー
 
-Apple SiliconのMacで、展開した配布フォルダをCodexへ渡して導入を依頼する。利用者によるGit・npm・コマンドの手入力を前提にしない。現在の配布版は[0.0.8 Macプレビュー](https://github.com/NemuKei/unharness/releases/tag/v0.0.8)。公式ディレクトリからの直接導入は案内していない。
+Apple SiliconのMacで、展開した配布フォルダをCodexへ渡して導入を依頼する。利用者によるGit・npm・コマンドの手入力を前提にしない。現在の配布版は[0.0.9 Macプレビュー](https://github.com/NemuKei/unharness/releases/tag/v0.0.9)。公式ディレクトリからの直接導入は案内していない。
 
 ## 利用者の入口
 
@@ -8,7 +8,7 @@ Apple SiliconのMacで、展開した配布フォルダをCodexへ渡して導�
 
 この経路は[合意した導入計画](superpowers/plans/2026-09-09-mac-product-experience.md)のAIへの導入依頼に対応する。公開サイトには実在・取得可能な配布物が確認できた時点で導入ボタンと版を設定する。公開前のZIPへ架空の公開リンクを付けない。
 
-サイトの導入画面には、この依頼文のコピーと手動ダウンロードの導線がある。公開後の版を`web/src/site-config.ts`の`macCodexRelease`へ設定した場合だけ表示する。設定するのは版、ZIPのURLとSHA-256、配布内容の識別子、ソースとライセンスのURL。現在は公開した0.0.8を設定している。認証なしの実ダウンロードでZIP・照合ファイル・タグのソースを確認してから設定した。Intel Mac・Claude Code・Windowsを配布対象として案内しない。
+サイトの導入画面には、この依頼文のコピーと手動ダウンロードの導線がある。公開後の版を`web/src/site-config.ts`の`macCodexRelease`へ設定した場合だけ表示する。設定するのは版、ZIPのURLとSHA-256、配布内容の識別子、ソースとライセンスのURL。現在は公開した0.0.9を設定している。認証なしの実ダウンロードでZIP・照合ファイル・タグのソースを確認してから設定した。Intel Mac・Claude Code・Windowsを配布対象として案内しない。
 
 ## 配布担当者が組み立てるもの
 
@@ -39,6 +39,6 @@ runtime/bin/node --input-type=module -e 'import { readDistribution } from "./src
 
 ## 確認できた範囲
 
-[2026-09-11の配布候補検証](evidence/2026-09-11-final-native-candidate.md)では、この構造からの実際のCodex導入、同梱Nodeだけでの設定、Native MCP、アプリ内ブラウザーでの保存と復旧、ZIP展開後の一致を確認した。[公開後のMac QA](evidence/2026-09-11-public-mac-qa.md)では、公開ZIPからの実導入、本物の公開HTTPSとの接続、CodexのWebMCP呼び出し、画像カードのMacへの保存も確認した。Codex内ブラウザーで保存したZIPは公開ハッシュと一致し、Finderの標準展開後も隔離属性を保持したまま同梱Nodeと起動スクリプトを実行できた。[0.0.4の導入・AI相談・作品](evidence/2026-09-11-mac-codex-0.0.4.md)、[0.0.6の導入・公開操作・復旧](evidence/2026-09-13-mac-codex-completion.md)、[0.0.8の12コマ作品と導入更新](evidence/2026-09-13-awakening-motion.md)が、各版の確認範囲を示している。
+[2026-09-11の配布候補検証](evidence/2026-09-11-final-native-candidate.md)では、この構造からの実際のCodex導入、同梱Nodeだけでの設定、Native MCP、アプリ内ブラウザーでの保存と復旧、ZIP展開後の一致を確認した。[公開後のMac QA](evidence/2026-09-11-public-mac-qa.md)では、公開ZIPからの実導入、本物の公開HTTPSとの接続、CodexのWebMCP呼び出し、画像カードのMacへの保存も確認した。Codex内ブラウザーで保存したZIPは公開ハッシュと一致し、Finderの標準展開後も隔離属性を保持したまま同梱Nodeと起動スクリプトを実行できた。[0.0.4の導入・AI相談・作品](evidence/2026-09-11-mac-codex-0.0.4.md)、[0.0.6の導入・公開操作・復旧](evidence/2026-09-13-mac-codex-completion.md)、[0.0.8の12コマ作品と導入更新](evidence/2026-09-13-awakening-motion.md)、[0.0.9の操作画面・配布確認](evidence/2026-09-14-workbench-release.md)が、各版の確認範囲を示している。
 
 公開用の導入画面は、合成した配布URLで別途確認した。16件のビルド済みChrome確認と1件の表示テストが通り、対応版の正確な依頼文、クリップボード処理が成功を返す場合と拒否する場合、未公開・対応外の表示、390pxでの横はみ出しなし、ローカル設定への変更要求なしを確認した。コピーAPIと公開HTTPSはテスト用の代替であり、本物の配布元からのダウンロードやOSのクリップボード確認ではない。型・CSP・ローカル／公開用の両ビルドも通っている。

@@ -1,7 +1,9 @@
 # Compatibility and evidence
 
+The [0.0.9 workbench release](evidence/2026-09-14-workbench-release.md) adds the simplified screen/chat entry points, verified archive and isolated native installation. Its support scope remains the Mac baseline below.
+
 The [0.0.8 artwork qualification](evidence/2026-09-13-awakening-motion.md) adds
-the current verified archive, native twelve-frame authoring/save/reselection,
+its verified archive, native twelve-frame authoring/save/reselection,
 personal-profile preservation and public-domain artwork selection. It retains
 the Mac source-control scope below; it is not a new model-level mode trial.
 
