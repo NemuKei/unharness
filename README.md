@@ -8,9 +8,9 @@ Try different combinations of skills and instructions on your own work. Find wha
 
 [日本語](README.ja.md)
 
-The [0.0.7 Mac preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.7) is available. See the [installation, public operation and recovery checks](docs/evidence/2026-09-13-mac-codex-completion.md) for its verified scope and earlier model/artwork evidence.
+The [0.0.8 Mac preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.8) is available. See the [installation, public operation and recovery checks](docs/evidence/2026-09-13-mac-codex-completion.md) for its verified scope and earlier model/artwork evidence.
 
-The [artwork update evidence](docs/evidence/2026-09-13-entity-awakening.md) records the current archive, native installation and published UI.
+The [artwork update evidence](docs/evidence/2026-09-13-awakening-motion.md) records the current archive, native installation and published UI.
 
 The first Mac version targets Apple Silicon and Codex Desktop. It keeps your saved Normal and lets you choose disabled, manual or automatic states for confirmed optional ordinary Skills. Official plugins remain enabled or disabled as they already were: individual remote-plugin OFF is [unavailable on the inspected Codex version](docs/evidence/2026-09-11-remote-plugin-control-limit.md). Older saved versions and independent offline recovery are preserved. Recorded Skill inputs and unknown runtime state are shown separately.
 

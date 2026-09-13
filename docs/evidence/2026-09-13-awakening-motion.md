@@ -1,6 +1,6 @@
 # Twelve-frame awakening and original-creation introduction
 
-Date: 2026-09-13. Candidate: 0.0.8. This artwork refinement keeps the qualified
+Date: 2026-09-13. Released: 0.0.8. This artwork refinement keeps the qualified
 Mac Codex source-control scope and the [0.0.7 release](2026-09-13-entity-awakening.md)
 intact. It does not expand native providers, platforms or remote-plugin control.
 
@@ -46,9 +46,38 @@ intact. It does not expand native providers, platforms or remote-plugin control.
   checked against the selected asset identity, with reduced motion and a 390px
   viewport included in the browser checks.
 
-## Release boundary
+## Release evidence
 
-The immutable distribution, native installed-plugin update and public deployment
-require qualification before 0.0.8 is reported as released. Native model-level
-mode qualification remains the dated 0.0.6 baseline, not a new claim for this
-art-only refinement.
+The [0.0.8 prerelease](https://github.com/NemuKei/unharness/releases/tag/v0.0.8)
+contains 7,523 indexed files from source `e4f557d204f6beb48602616143fe98ac0ca5d390`.
+The ZIP has 105,819,258 bytes and SHA-256
+`77c3e3a4bb6fdf310d2bbc6c6bd2b0a66597ca7e780aed11bced11ce6c292d41`;
+its distribution ID is
+`a2f07e892ba61be1cbc33914895587aa5ede0a571f5c99413a5e6a1aa2cccd68`.
+Independent extraction, indexed bytes, executable permissions and bundled Node
+signature passed. Anonymous download, checksum sidecar and tag target agree.
+
+Native Codex loaded the installed 0.0.8 MCP, issued the new guide, reviewed and
+saved both real twelve-frame source sheets, repeated the exact save operation,
+and reselected both an older appearance and the new saved White/silver version.
+Owned-profile artwork actions preserved source files and preparation state.
+The personal update retained all non-product configuration, registered source
+bytes, the old Normal snapshot and the selected historical v1 artwork/collection.
+Its retained-only adoption changed zero managed files. Both profiles remained
+prepared as Normal, at revisions 20 (owned) and 37 (personal).
+
+The public domain deployed source `c217253696e030fb16d0a2de68c2fbd747ddfe65`
+as `091fc76a-d238-4d9b-b79e-3668dd80e291`; all 48 served files matched the build,
+including the exact verified download selection. Security headers also matched.
+The actual Codex in-app browser displayed the new copy, adjacent character
+buttons, 通常 label, both crests and motion. A real approved HTTPS connection
+to the owned native profile read Normal revision 20 through WebMCP, selected
+Amber and White/silver through the public UI, and reused the existing v2 works.
+The live artwork response contained all nine intermediate references; its
+TRUEFORM preview left the actual prepared mode as Normal. Final native readback
+confirmed the same preparation ID/revision and exact prepared source files.
+The test grant was revoked; the public tab returned to the introduction and the
+local tab to the personal installation, where the old selected artwork remained.
+
+Native model-level mode qualification remains the dated 0.0.6 baseline; this
+refinement does not claim new model trials or expand supported source controls.

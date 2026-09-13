@@ -2,10 +2,13 @@
 
 Updated: 2026-09-13.
 
-The 0.0.8 artwork refinement adds fixed twelve-frame authoring, nine intermediate
+The [0.0.8 artwork refinement](https://github.com/NemuKei/unharness/releases/tag/v0.0.8)
+is published and installed. It adds fixed twelve-frame authoring, nine intermediate
 awakening poses, outward crest/bloom, side-by-side character choices and the
-creation-focused introduction. Local verification and release qualification are
-in progress. Existing works and their old presentation profiles remain intact.
+creation-focused introduction. The verified archive, actual native MCP authoring,
+personal-source/old-artwork preservation and public HTTPS selection all passed.
+All 48 served files match the final build. Existing works and their old presentation
+profiles remain intact; see the [motion evidence](evidence/2026-09-13-awakening-motion.md).
 
 The [0.0.7 artwork update](https://github.com/NemuKei/unharness/releases/tag/v0.0.7)
 is published and installed. It added **白銀** and **琥珀**, original authoring,

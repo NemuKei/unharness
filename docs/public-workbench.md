@@ -38,7 +38,7 @@ The demo closes this page's connection before showing sample data. Demo controls
 
 ## Publishing boundary
 
-The maintainer selected the existing `deltahelmlab-unharness` Cloudflare Pages project, separate from the main DeltaHelm Lab site. The first approved rollout and its 21-file comparison are historical evidence. The [0.0.6 qualification](evidence/2026-09-13-mac-codex-completion.md) records the current release and final public follow-through. A host-specific `disable_rum` Configuration Rule prevents the parent zone's analytics injection on this site while leaving the parent site's settings unchanged.
+The maintainer selected the existing `deltahelmlab-unharness` Cloudflare Pages project, separate from the main DeltaHelm Lab site. The first approved rollout and its 21-file comparison are historical evidence. The [0.0.8 artwork qualification](evidence/2026-09-13-awakening-motion.md) records the current release, 48-file comparison and live appearance selection; the [0.0.6 qualification](evidence/2026-09-13-mac-codex-completion.md) retains the native mode/control baseline. A host-specific `disable_rum` Configuration Rule prevents the parent zone's analytics injection on this site while leaving the parent site's settings unchanged.
 
 `site/public/_headers` supplies CSP and referrer/content-type/frame protections. Document and immutable asset cache rules do not overlap for the same header. The build uses local bundled assets and has no analytics, external scripts or account backend. Each built file is below the documented [25 MiB Pages limit](https://developers.cloudflare.com/pages/platform/limits/). The installed package/Node ZIP is served as the pinned GitHub release asset, separately from the static build.
 
