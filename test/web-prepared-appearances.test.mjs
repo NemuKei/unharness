@@ -1,0 +1,55 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {join} from 'node:path';
+import {artworkBrowser,artworkBrowserCase} from '../test-support/artwork-browser.mjs';
+import {publicBrowser,publicBrowserCase} from '../test-support/public-browser.mjs';
+import {readUserAppearance} from '../src/appearances/service.mjs';
+import {readSourceProfileFiles} from '../src/sources/owned-profile.mjs';
+
+test('prepared appearances save through review and reuse their immutable versions after reload',artworkBrowserCase,async t=>{
+  const s=await artworkBrowser(t),{page}=s;await page.goto(s.gui.url);
+  const group=page.getByRole('group',{name:'用意された外観',exact:true});
+  for(const label of ['白銀','琥珀','デフォルト']) {
+    await group.getByRole('button',{name:new RegExp('^'+label)}).click();
+    await page.locator('.artwork-panel-heading strong').filter({hasText:label}).waitFor();
+    await page.waitForFunction(()=>document.querySelector('.pixi-host')?.dataset.appearance==='layered');
+  }
+  const before=await readUserAppearance({workspace:s.workspace}),count=before.state.items.length;
+  await page.reload();
+  await group.getByRole('button',{name:/^白銀/}).click();
+  await page.locator('.artwork-panel-heading strong').filter({hasText:'白銀'}).waitFor();
+  const after=await readUserAppearance({workspace:s.workspace});assert.equal(after.state.items.length,count);
+  assert.equal(s.posts.filter(row=>row.path.endsWith('/review-appearance-import')).length,3);
+  assert.equal(s.posts.filter(row=>/\/(apply|plan|register)$/.test(row.path)).length,0);
+  assert.deepEqual(await readFile(join(s.workspace,'state.json')),s.sourceState);
+  assert.deepEqual(await readSourceProfileFiles(s.context),s.originalFiles);
+  await s.screenshot('prepared-appearances-desktop.png');assert.deepEqual(s.errors,[]);
+});
+test('the introduction compares default and both humanoids with actual synchronized mode transitions',publicBrowserCase,async t=>{
+  const s=await publicBrowser(t),{page}=s;await page.emulateMedia({reducedMotion:'no-preference'});await page.goto('https://unharness.deltahelmlab.com/');
+  const section=page.locator('.original-example'),stages=section.locator('.pixi-host');
+  await section.scrollIntoViewIfNeeded();await page.waitForFunction(()=>document.querySelectorAll('.original-example .pixi-host[data-cel="24"]').length===2);
+  await stages.first().waitFor({state:'visible'});await stages.last().waitFor({state:'visible'});
+  const controls=section.getByRole('group',{name:'比較プレビューのモード'});
+  await controls.getByRole('button',{name:'零式',exact:true}).click();
+  await page.waitForFunction(()=>[...document.querySelectorAll('.original-example .pixi-host')].every(el=>Number(el.dataset.release)>1 && Number(el.dataset.release)<2));
+  await page.waitForFunction(()=>document.querySelectorAll('.original-example .pixi-host[data-cel="48"]').length===2);
+  assert.equal(await stages.count(),2);assert.equal(await section.getByText('描画を準備中…').count(),0);
+  await s.screenshot('intro-silver-awake.png');
+  await section.getByLabel('擬人化の外観',{exact:true}).selectOption('amber');
+  await section.locator('figure[aria-label="比較プレビュー：琥珀"] .pixi-host').waitFor({state:'visible'});
+  assert.equal(await section.getByText('描画を準備中…').count(),0);
+  assert.equal(await section.getByText('外観を表示できません · 装備の操作は利用できます').count(),0);
+  await s.screenshot('intro-amber-awake.png');
+  await controls.getByRole('button',{name:'Normal',exact:true}).click();
+  await page.waitForFunction(()=>document.querySelectorAll('.original-example .pixi-host[data-cel="0"]').length===2);
+  await section.getByLabel('アニメーション',{exact:true}).uncheck();
+  await controls.getByRole('button',{name:'限定解除',exact:true}).click();
+  assert.deepEqual(await stages.evaluateAll(els=>els.map(el=>[el.dataset.cel,el.dataset.playback])),[['24','stopped'],['24','stopped']]);
+  await page.emulateMedia({reducedMotion:'reduce'});await section.getByLabel('アニメーション',{exact:true}).check();
+  await controls.getByRole('button',{name:'零式',exact:true}).click();
+  assert.deepEqual(await stages.evaluateAll(els=>els.map(el=>[el.dataset.cel,el.dataset.playback])),[['48','stopped'],['48','stopped']]);
+  await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  await s.screenshot('intro-comparison-mobile.png');assert.equal(s.posts.length,0);assert.deepEqual(s.errors,[]);
+});

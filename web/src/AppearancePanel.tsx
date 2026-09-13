@@ -1,8 +1,11 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CopyRequest } from './entry/CopyRequest';
 import { artworkName } from './artwork';
-import type { ArtworkItem, ArtworkReview, ArtworkUpload } from './artwork';
+import type { ArtworkItem, ArtworkReview, ArtworkUpload, ArtworkImageLoader } from './artwork';
 import { stockLayerManifest } from './appearance-layers';
+import { Hangar } from './Hangar';
+import {PreparedAppearanceOptions} from './PreparedAppearanceOptions';
+import {readArtworkBase64} from './artwork-upload';
 import { renderArtworkCollection, renderArtworkImages } from './artwork-render';
 import type { AppearanceController } from './useAppearanceController';
 import './artwork.css';
@@ -16,20 +19,6 @@ const partNames: Record<string, string> = {
 const modeNames = ['Normal', 'UNSEAL', 'TRUEFORM'];
 function UploadedImage({ file }: { file: File | null }) {
   return file ? <div className="art-uploaded"><small>{file.name} ／ {(file.size / 1024).toFixed(0)} KiB</small></div> : <p className="art-keep">変更せずに保持</p>;
-}
-function readBase64(file: File, signal: AbortSignal) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    const abort = () => { reader.abort(); reject(new Error('cancelled')); };
-    if (signal.aborted) { reject(new Error('cancelled')); return; }
-    signal.addEventListener('abort', abort, { once: true });
-    reader.onloadend = () => {
-      signal.removeEventListener('abort', abort);
-      if (reader.error || typeof reader.result !== 'string') reject(new Error('image-read-failed'));
-      else resolve(reader.result.slice(reader.result.indexOf(',') + 1));
-    };
-    reader.readAsDataURL(file);
-  });
 }
 function CreationPrompt({ current }: { current: ArtworkItem | null }) {
   const [brief, setBrief] = useState(''), [part, setPart] = useState('本体だけ');
@@ -52,11 +41,18 @@ function ImportArtwork({ controller: c, close }: { controller: AppearanceControl
   const [restraints, setRestraints] = useState<Array<{ id: string; partId: string; file: File }>>([]);
   const [error, setError] = useState(''), [encoding, setEncoding] = useState(false), [previews, setPreviews] = useState<string[]>([]);
   const [rendering, setRendering] = useState(false), [renderError, setRenderError] = useState('');
+  const [showMotion,setShowMotion]=useState(false);
   const readController = useRef<AbortController | null>(null), previewHeading = useRef<HTMLHeadingElement>(null);
   const readImage = c.image;
+  const reviewId=c.review?.reviewId;
+  const motionArtwork=useMemo(()=>c.review ? reviewItem(c.review):null,[c.review]);
+  const motionImage=useCallback<ArtworkImageLoader>((asset,signal)=>{
+    if(!reviewId)throw Error('appearance-review-unavailable');
+    return readImage(reviewId,asset,signal,c.key);
+  },[reviewId,readImage,c.key]);
   useEffect(() => () => readController.current?.abort(), []);
   useEffect(() => {
-    setPreviews([]); setRenderError('');
+    setPreviews([]); setRenderError(''); setShowMotion(false);
     if (!c.review) { setRendering(false); return; }
     const controller = new AbortController(), review = c.review, key = c.key;
     setRendering(true);
@@ -72,7 +68,7 @@ function ImportArtwork({ controller: c, close }: { controller: AppearanceControl
   async function review() {
     if (!c.view || blocked) return;
     const selected: Array<{ partId: string; file: File }> = [
-      ...(entity ? [{ partId: 'entity', file: entity }] : []), ...(background ? [{ partId: 'background', file: background }] : []),
+      ...(entity ? [{ partId: 'entity-poses', file: entity }] : []), ...(background ? [{ partId: 'background', file: background }] : []),
       ...restraints.map(({ partId, file }) => ({ partId, file })),
     ];
     if (!base || !name.trim() || !selected.length || selected.some(row => !row.partId) || new Set(selected.map(row => row.partId)).size !== selected.length) {
@@ -85,7 +81,7 @@ function ImportArtwork({ controller: c, close }: { controller: AppearanceControl
     setEncoding(true); setError('');
     try {
       const files = [];
-      for (const row of selected) files.push({ fileId: row.partId, base64: await readBase64(row.file, controller.signal) });
+      for (const row of selected) files.push({ fileId: row.partId, base64: await readArtworkBase64(row.file, controller.signal) });
       if (controller.signal.aborted) return;
       const upload: ArtworkUpload = { importId: crypto.randomUUID(), expectedStateId: c.view.stateId,
         manifest: { templateId: stockLayerManifest.templateId, baseItemId: base === 'stock' ? null : base, name: name.trim(), author: author.trim(),
@@ -104,7 +100,7 @@ function ImportArtwork({ controller: c, close }: { controller: AppearanceControl
       <option value="stock">標準のパーツ</option>
     </select></label>
     {current?.kind === 'recipe' && <p className="muted">この旧形式の外観は、そのままパーツとして引き継げません。新しい作品に使う素材を選んでください。以前の外観はコレクションに残ります。</p>}
-    <div className="art-part-inputs"><section><label>本体のPNG<input type="file" accept="image/png" disabled={blocked} onChange={event => changeInput(() => setEntity(event.target.files?.[0] ?? null))}/></label><UploadedImage file={entity}/></section>
+    <div className="art-part-inputs"><section><label>本体の3ポーズPNG<input type="file" accept="image/png" disabled={blocked} onChange={event => changeInput(() => setEntity(event.target.files?.[0] ?? null))}/></label><UploadedImage file={entity}/><p className="muted">左から、眠ったNormal・半覚醒の限定解除・完全覚醒の零式を並べた透明PNG。3つの姿を同じ縮尺で描き、間に透明な余白を残してください。収まる大きさと動きはUnharnessが調整します。</p></section>
       <section><label>背景のPNG<input type="file" accept="image/png" disabled={blocked} onChange={event => changeInput(() => setBackground(event.target.files?.[0] ?? null))}/></label><UploadedImage file={background}/></section></div>
     <details className="art-restraints"><summary>拘束具を作り替える</summary><p className="muted">支持部・装甲などの部品PNGを選び、AIから受け取った部品名に合わせます。</p>
       <label>拘束具のPNG<input type="file" accept="image/png" multiple disabled={blocked} onChange={event => {
@@ -121,9 +117,15 @@ function ImportArtwork({ controller: c, close }: { controller: AppearanceControl
     {(error || c.error) && <p className="art-error" role="alert">{error || c.error}</p>}
     <button className="secondary" disabled={blocked} onClick={() => void review()}>{encoding || c.mutating ? '画像を確認中…' : '画像を確認'}</button>
     {c.review && <section className="art-preview"><h3 ref={previewHeading} tabIndex={-1}>3モードの見た目を確認</h3>
-      <p>{c.review.name} ／ {c.review.replacedParts.map(part => part === 'entity' ? '本体' : part === 'background' ? '背景' : partNames[part]).join('・')}を変更します。</p>
+      <p>{c.review.name} ／ {c.review.replacedParts.map(part => part === 'entity-poses' ? '本体の3姿勢' : part === 'entity' ? '本体' : part === 'background' ? '背景' : partNames[part]).join('・')}を変更します。</p>
       {rendering && <p role="status">合成表示を準備中…</p>}{renderError && <p className="art-error" role="alert">{renderError}</p>}
       <div className="art-preview-grid">{previews.map((url, index) => <figure key={modeNames[index]}><img src={url} alt={`${modeNames[index]}の合成プレビュー`}/><figcaption>{modeNames[index]}</figcaption></figure>)}</div>
+      {previews.length===3 && c.review.manifest.schemaVersion===2 && <>
+        <button className="secondary" type="button" onClick={()=>setShowMotion(value=>!value)}>{showMotion?'動きの確認を閉じる':'半覚醒と完全覚醒の動きを確認'}</button>
+        {showMotion && <div className="art-preview-grid">{(['baseline','manual-only','fixed-only'] as const).map((condition,index)=><figure key={condition}>
+          <Hangar condition={condition} effects={true} artwork={motionArtwork} imageLoader={motionImage}/>
+          <figcaption>{modeNames[index]}</figcaption></figure>)}</div>}
+      </>}
       <p className="muted">このプレビューでは装備の設定を切り替えません。</p>
       <button className="primary" disabled={blocked || rendering || previews.length !== 3 || !!renderError} onClick={async () => { if (await c.saveReview()) close(); }}>この作品を保存</button>
     </section>}
@@ -171,6 +173,7 @@ export function AppearancePanel({ controller: c }: { controller: AppearanceContr
   const unavailable = !c.enabled || !c.confirmed || c.mutating || c.uncertain || c.view?.recoveryRequired;
   return <section className="artwork-panel" aria-label="見た目とコレクション"><div className="artwork-panel-heading"><span>見た目</span>
     <strong>{c.view?.selectedItem ? artworkName(c.view.selectedItem) : '標準の外観'}</strong></div>
+    <PreparedAppearanceOptions controller={c}/>
     <div className="artwork-actions"><button onClick={() => setPanel('create')}>オリジナルイメージを作成</button>
       <button disabled={unavailable} onClick={() => { c.clearReview(); setPanel('import'); }}>作品を読み込む</button>
       <button disabled={!c.enabled || !c.confirmed || c.mutating} onClick={() => setPanel('collection')}>コレクション</button>

@@ -1,10 +1,21 @@
 # Local artwork reviews and versions
 
-The [layered appearance contract](personalization.md) now has a local import/storage API, a replacement-layer renderer, import/collection panels, image cards and a bundled [authoring Skill](../skills/unharness-original/SKILL.md). Public-page image permission and the complete native installation/creation journey are still being integrated.
+The [layered appearance contract](personalization.md) has a local import/storage API, a replacement-layer renderer, import/collection panels, image cards and a bundled [authoring Skill](../skills/unharness-original/SKILL.md). The paired public page uses the same artwork operations under its explicit image permission. Native installation and the earlier artwork path are covered by the [Mac evidence](evidence/2026-09-13-mac-codex-completion.md); new presentation changes need their own rendering and authoring checks.
 
 ## Local screen
 
-The Equipment tab has a small appearance area. “オリジナルイメージを作成” prepares a copyable request for the user's AI. “作品を読み込む” accepts an entity, a background and explicitly mapped restraint parts. It reviews all three poses before enabling save, using the current layered version or an explicitly chosen standard base. A legacy recipe remains in the collection and requires an explicit standard-base choice for a new layered work.
+The Equipment tab has a small appearance area. “オリジナルイメージを作成” prepares a copyable request for the user's AI. “作品を読み込む” accepts a transparent three-pose entity sheet, a background and explicitly mapped restraint parts. It reviews all three modes before enabling save, using the current layered version or an explicitly chosen standard base. The optional motion preview shows half/full awakening without preparing source settings. A legacy recipe remains in the collection and requires an explicit standard-base choice for a new layered work.
+
+The [v2 entity contract](spec-entity-poses.md) adds `entity-poses` as a single input,
+which becomes three normalized PNG assets and the fixed `entity-awakening/v1`
+profile. Normal and UNSEAL fit within the closed capsule, while TRUEFORM can
+unfold at the same scale. The corresponding review has three output-image rows
+named `entity-poses-normal`, `entity-poses-unseal` and `entity-poses-trueform`.
+The row's `resized` flag still reports the source-canvas size change; silhouette
+fitting applies even when the input canvas is already 724px. New authoring places
+use this input. Older v1 places and single-image imports remain compatible, and
+retrying an old creationId reopens its original place. New work is saved as a new
+item; no existing collection, Normal, favorite or artwork record is rewritten.
 
 The collection shows version names and static thumbnails through one offscreen renderer, then lets the user select an older work. One damaged image does not stop later thumbnails. No mode configuration is prepared by image review, selection or card creation. Read-only artwork requests do not disable mode controls or accept a replacement source context; a changed context requires explicit confirmation through the source refresh action. Accepted artwork writes retain their original operation ID when the response is uncertain.
 
@@ -33,6 +44,10 @@ The local MCP also provides `prepare_appearance_authoring` and `read_appearance_
 
 An import review reports the deterministic `proposedItemId` for checking the later save receipt; that ID is not proof of a saved or selected work. The `artwork` and `artwork-item` projections contain appearance metadata and image references only. They omit private acquisition, comparison, configuration and task information. These projections prepare a restricted public boundary without granting public access themselves.
 
-The public bridge still exposes only its separately approved mode/status operations. Local image routes do not accept its public-page credentials or origin. Public artwork access needs an explicit protocol/permission extension and its own verification before it is available.
+The public bridge exposes its approved mode/status and bounded artwork operations.
+Its image/collection permission and source-operation permission remain separate.
+Local image routes do not accept public-page credentials or origin, and private
+authoring paths never appear in a public response. Installations before 0.0.7
+reject the new entity input; the three-pose authoring workflow requires an update.
 
 The optional artwork store is separate from source recovery. Corrupt or missing images are refused; independent image/index edits are preserved. An interrupted image copy alone does not save a work. A pending appearance journal resumes its exact already recorded version without another creation or source write.

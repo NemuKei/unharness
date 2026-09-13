@@ -9,6 +9,7 @@ import { readUserAppearance } from '../src/appearances/service.mjs';
 import { readSourceProfileFiles } from '../src/sources/owned-profile.mjs';
 import { reviewAppearanceImport, saveAppearanceImport } from '../src/appearances/import.mjs';
 import { getAppearanceTemplate } from '../src/appearances/template.mjs';
+import { entityAssetIds } from '../src/appearances/entity-profile.mjs';
 
 test('creation stays available without comparison and copying a brief does not send it or change settings', artworkBrowserCase, async t => {
   const s = await artworkBrowser(t, { clipboardFails: true }), { page } = s;
@@ -120,7 +121,7 @@ test('a review response for different requested parts is refused before a save i
   await page.goto(s.gui.url);
   await page.getByRole('button', { name: '作品を読み込む', exact: true }).click();
   const dialog = page.getByRole('dialog');
-  await dialog.getByLabel('本体のPNG', { exact: true }).setInputFiles(s.image);
+  await dialog.getByLabel('本体の3ポーズPNG', { exact: true }).setInputFiles(s.image);
   await dialog.getByRole('button', { name: '画像を確認', exact: true }).click();
   await dialog.getByRole('alert').waitFor();
   assert.equal(await dialog.getByRole('button', { name: 'この作品を保存', exact: true }).count(), 0);
@@ -136,7 +137,7 @@ test('the import form maps a complete set to all thirteen fixed parts without pr
   await page.goto(s.gui.url);
   await page.getByRole('button', { name: '作品を読み込む', exact: true }).click();
   const dialog = page.getByRole('dialog');
-  await dialog.getByLabel('本体のPNG', { exact: true }).setInputFiles(s.image);
+  await dialog.getByLabel('本体の3ポーズPNG', { exact: true }).setInputFiles(s.image);
   await dialog.getByLabel('背景のPNG', { exact: true }).setInputFiles(s.image);
   await dialog.getByText('拘束具を作り替える', { exact: true }).click();
   await dialog.getByLabel('拘束具のPNG', { exact: true }).setInputFiles(files);
@@ -146,7 +147,9 @@ test('the import form maps a complete set to all thirteen fixed parts without pr
   await page.getByText('作品をコレクションに保存しました。', { exact: true }).waitFor();
   const saved = (await readUserAppearance({ workspace: s.workspace })).state.items.at(-1).manifest;
   assert.equal(saved.layers.restraints.length, 11);
-  assert.equal(new Set([saved.layers.entity.assetId, saved.layers.background.assetId, ...saved.layers.restraints.map(part => part.assetId)]).size, 1);
+  assert.equal(saved.schemaVersion,2);
+  assert.equal(new Set([saved.layers.background.assetId, ...saved.layers.restraints.map(part => part.assetId)]).size,1);
+  assert.equal(new Set([...entityAssetIds(saved),saved.layers.background.assetId]).size,4);
   assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
   assert.equal(s.posts.filter(row => /\/(apply|plan|register)$/.test(row.path)).length, 0);
   assert.deepEqual(s.errors, []);

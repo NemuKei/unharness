@@ -12,6 +12,13 @@ The user can ask for an AI entity, restraints, a background or a complete set. E
 
 The same entity remains recognizable across Normal, UNSEAL and TRUEFORM. The restraint template makes the release mode understandable. Appearance selection does not apply a harness configuration, establish task loading or change an evaluation.
 
+New entities use the [three-pose awakening contract](spec-entity-poses.md): asleep,
+half awake and fully awake at one physical scale. The plugin splits a transparent
+pose sheet, fits the first two silhouettes inside the closed restraints and owns
+bounded idle, crown, light and field effects. Historical single-entity versions
+remain unchanged and selectable. The authoring AI chooses the character and
+poses; deterministic pixel checks establish fit, not semantic anatomy or expression.
+
 ## Layer template
 
 | Logical part | User-created content | Template-owned structure |

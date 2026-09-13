@@ -14,7 +14,7 @@ export const REMOTE_OPERATIONS = Object.freeze(['status', 'plan', 'apply', 'oper
 export const REMOTE_IMAGE_LIMIT = LAYER_IMAGE_LIMIT;
 export const REMOTE_SET_LIMIT = LAYER_SET_LIMIT;
 export const REMOTE_UPLOAD_BODY_LIMIT = APPEARANCE_UPLOAD_BODY_LIMIT;
-const template = getAppearanceTemplate(), partIds = template.parts.map(part => part.id);
+const template = getAppearanceTemplate(), partIds = [...template.parts.map(part => part.id),'entity-poses'];
 const fileId = value => typeof value === 'string' && /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/.test(value);
 const optionalHash = value => value === null || isHash(value);
 const text = (value, empty = false) => typeof value === 'string' && value.length <= 80
@@ -150,7 +150,7 @@ const SAFE_ERRORS = new Set(['remote-request-forbidden', 'remote-invalid-request
   'remote-stale-plan', 'remote-operation-unconfirmed', 'remote-operation-error', 'remote-operation-conflict', 'remote-request-too-large',
   'source-conflict', 'stale-plan', 'recovery-required', 'setup-required', 'setup-review-required',
   'scope-preparation-required', 'source-session-changed', 'gui-source-context-changed', 'source-locked',
-  'appearance-import-invalid', 'appearance-image-invalid', 'appearance-image-store-invalid', 'appearance-not-owned',
+  'appearance-import-invalid', 'appearance-image-invalid', 'appearance-entity-poses-invalid', 'appearance-image-store-invalid', 'appearance-not-owned',
   'appearance-state-conflict', 'appearance-recovery-required', 'appearance-record-invalid',
   'appearance-template-invalid', 'appearance-name-invalid', 'appearance-publication-uncertain', 'appearance-image-publication-uncertain']);
 export function remoteError(error) {

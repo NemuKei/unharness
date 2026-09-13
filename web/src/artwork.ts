@@ -59,7 +59,7 @@ export function validArtworkView(v: unknown, scopeId: string, collectionScopes: 
 export function validArtworkReview(v: unknown, scopeId: string, collectionScopes: string[]): v is ArtworkReview {
   if (!object(v) || !validLayerManifest(v.manifest)) return false;
   const manifest = v.manifest;
-  const partIds = ['entity', 'background', ...stockLayerManifest.layers.restraints.map(part => part.partId)];
+  const partIds = ['entity', 'entity-poses', 'background', ...stockLayerManifest.layers.restraints.map(part => part.partId)];
   return exact(v, ['scopeId', 'collectionScopeId', 'reviewId', 'expectedStateId', 'proposedItemId', 'baseItemId', 'name', 'author', 'manifest', 'replacedParts', 'images'])
     && v.scopeId === scopeId && hash(v.collectionScopeId) && collectionScopes.includes(v.collectionScopeId)
     && hash(v.reviewId) && hash(v.proposedItemId) && nullableHash(v.expectedStateId) && nullableHash(v.baseItemId)
@@ -72,6 +72,7 @@ export function validArtworkReview(v: unknown, scopeId: string, collectionScopes
       && image.sourceWidth > 0 && image.sourceWidth <= 2048 && image.sourceHeight === image.sourceWidth
       && image.resized === (image.sourceWidth !== 724));
 }
+export {matchesArtworkUpload} from './artwork-review.ts';
 export function validArtworkReceipt(v: unknown, scopeId: string): v is ArtworkReceipt {
   return exact(v, ['scopeId', 'collectionRevision', 'stateId', 'selectedItemId', 'recoveryRequired', 'pendingStateId'], ['savedItemId', 'reviewId'])
     && v.scopeId === scopeId && count(v.collectionRevision) && nullableHash(v.stateId) && nullableHash(v.selectedItemId)

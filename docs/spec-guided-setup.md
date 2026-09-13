@@ -1,5 +1,11 @@
 # AI-guided initial setup
 
+**Current Mac scope (2026-09-11 onward):** v3 uses confirmed ordinary Skill
+disabled/manual/automatic states and retains official plugins at Normal.
+Individual remote-plugin OFF is deferred. The qualified path is recorded in
+[the Mac completion evidence](evidence/2026-09-13-mac-codex-completion.md);
+the earlier target and v1/v2 observations below retain their historical scope.
+
 **2026-09-10 selection revision:** [Official-plugin eligibility and inherited modes](spec-mode-inheritance.md) defines the target: TRUEFORM may retain selected verified official plugins, and UNSEAL inherits every retained Skill plus reviewed external/self-authored additions. The [v2 record/operation checks](evidence/2026-09-10-mode-inheritance-storage.md) cover the common compiler, storage, explicit enrollment and offline recovery. The [built v2 consultation/enrollment checks](evidence/2026-09-10-mode-inheritance-gui.md) cover saved inheritance display and separate registration, setup and preparation steps. Official-plugin eligibility/control and native qualification remain incomplete. Earlier v1 evidence below retains its original scope. [The new plan](superpowers/plans/2026-09-10-official-plugin-mode-inheritance.md) tracks the remaining work.
 
 Direction refined by the maintainer on 2026-09-09. Initial setup is a conversation with the user's chosen AI that produces reviewed, saved UNSEAL and TRUEFORM configurations while retaining the user's existing configuration as Normal. It is not an automatic claim that an AI has found an optimal harness. The core record/operation slice below is implemented; the existing native desktop qualification covers the earlier mode contract until the new journey is verified.
@@ -61,6 +67,13 @@ Initial proposals use official guidance for the selected model together with the
 Save the target model, application/runtime version where available, official reference URLs and verification dates, and proposal reasons with the configuration version. A model or application change offers **新しいモデルで設定を見直す** through the same consultation entry point. Keep the previous configuration and comparison history while preparing a new version. Current performance claims remain unknown until applicable new evidence exists; artwork stays freely selectable. Neither a model announcement nor a newer official harness automatically rewrites the user's settings.
 
 Official model-specific guidance is currently available from [OpenAI](https://developers.openai.com/api/docs/guides/latest-model) and [Anthropic](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices). These are sources for a task-specific proposal, not proof that the proposal is optimal or that old user rules are unnecessary.
+
+For GPT-6 Astra, the setup Skill also points to the official
+[skills and prompting article dated 2026-09-11](https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra).
+The setup AI retrieves the relevant sources during consultation and stores its
+actual reference basis. This is not a background feed or an automatic optimizer.
+Use the [model-reference procedure](../skills/unharness-setup/references/model-guidance.md)
+to keep model-specific advice, source-control authority and measured outcomes separate.
 
 ### Passing the consultation to the user's AI
 

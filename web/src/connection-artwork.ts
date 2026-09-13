@@ -4,8 +4,10 @@ import stock from '../../assets/appearance-templates/hangar-layered-v1/stock.jso
 import { connectionFields, connectionRecord, isConnectionHash as hash, isConnectionId as uuid } from './connection-contract.ts';
 import { readPublicReceipt } from './connection-results.ts';
 import type { PublicReceipt } from './connection-results.ts';
-import type { ArtworkItem, ArtworkReceipt, ArtworkReview, ArtworkView, ArtworkAction } from './artwork';
+import type { ArtworkItem, ArtworkReceipt, ArtworkReview, ArtworkView, ArtworkAction, ArtworkUpload } from './artwork';
+import { matchesArtworkUpload } from './artwork-review.ts';
 import type { LayerAsset } from './appearance-layers';
+import { validLayerManifest } from './appearance-layers.ts';
 
 export const ARTWORK_WRITES = ['review-appearance-import', 'save-appearance-import', 'select-appearance', 'name-appearance', 'recover-appearance'] as const;
 export type ArtworkWrite = typeof ARTWORK_WRITES[number];
@@ -33,7 +35,7 @@ const nullable = (v: unknown) => v === null || hash(v);
 const count = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v >= 0;
 const label = (v: unknown, empty = true): v is string => typeof v === 'string' && v.length <= 80 && (empty || !!v.trim()) && !/[\u0000-\u001f\u007f-\u009f]/.test(v);
 const fileId = (v: unknown): v is string => typeof v === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(v);
-const parts = ['entity', 'background', ...stock.manifest.layers.restraints.map(p => p.partId)];
+const parts = ['entity', 'entity-poses', 'background', ...stock.manifest.layers.restraints.map(p => p.partId)];
 export const isArtworkWrite = (v: unknown): v is ArtworkWrite => typeof v === 'string' && (ARTWORK_WRITES as readonly string[]).includes(v);
 export function readLayerAsset(value: unknown): LayerAsset {
   const v = record(value); fields(v, ['assetId', 'format', 'width', 'height', 'bytes']);
@@ -41,19 +43,7 @@ export function readLayerAsset(value: unknown): LayerAsset {
   return { assetId: v.assetId, format: 'png', width: 724, height: 724, bytes: v.bytes };
 }
 function manifest(value: unknown) {
-  const v = record(value); fields(v, ['kind','schemaVersion','templateId','assets','layers']);
-  if (v.kind !== 'unharness-layered-appearance' || v.schemaVersion !== 1 || v.templateId !== stock.manifest.templateId || !Array.isArray(v.assets) || !v.assets.length || v.assets.length > 64) invalid();
-  const assets = v.assets.map(readLayerAsset), ids = new Set(assets.map(a => a.assetId));
-  if (ids.size !== assets.length || assets.reduce((sum,a) => sum+a.bytes,0) > 64*1024*1024) invalid();
-  const l = record(v.layers); fields(l, ['entity','background','restraints']); const used = new Set<string>();
-  for (const name of ['entity','background']) { const p = record(l[name]); fields(p,['assetId']); if (!hash(p.assetId) || !ids.has(p.assetId)) invalid(); used.add(p.assetId); }
-  if (!Array.isArray(l.restraints) || l.restraints.length !== stock.manifest.layers.restraints.length) invalid();
-  const seen = new Set();
-  for (const part of l.restraints) { const p=record(part); fields(p,['partId','assetId']);
-    if (!stock.manifest.layers.restraints.some(s=>s.partId===p.partId) || seen.has(p.partId) || !hash(p.assetId) || !ids.has(p.assetId)) invalid();
-    seen.add(p.partId); used.add(p.assetId);
-  }
-  if (used.size !== ids.size) invalid();
+  if (!validLayerManifest(value)) invalid();
 }
 function recipe(value: unknown) {
   const v=record(value); fields(v,['schemaVersion','selectorVersion','rendererVersion','seed','origin','artPack','body','palette','details','modes','treatments']);
@@ -183,10 +173,7 @@ export function checkArtworkResult(receipt: PublicArtworkReceipt, operation: Art
   if(receipt.operation!==operation) invalid();
   if(receipt.state!=='completed'||!receipt.result.ok) return;
   if(receipt.operation==='review-appearance-import') {
-    const d=receipt.result.data, m=input.manifest as {templateId:string;baseItemId:string|null;name:string;author:string;parts:{partId:string;fileId:string}[]};
-    const same=(a:string[],b:string[])=>JSON.stringify([...a].sort())===JSON.stringify([...b].sort());
-    if(d.expectedStateId!==input.expectedStateId||d.baseItemId!==m.baseItemId||d.manifest.templateId!==m.templateId||d.name!==m.name.trim()||d.author!==m.author.trim()
-      ||!same(d.replacedParts,m.parts.map(p=>p.partId))||!same(d.images.map(f=>f.fileId),(input.files as {fileId:string}[]).map(f=>f.fileId))) invalid();
+    if(!matchesArtworkUpload(receipt.result.data,input as ArtworkUpload))invalid();
   } else if(receipt.operation==='save-appearance-import' && receipt.result.data.reviewId!==input.reviewId
     ||receipt.operation==='select-appearance' && receipt.result.data.selectedItemId!==input.itemId) invalid();
 }

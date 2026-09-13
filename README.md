@@ -144,6 +144,8 @@ Equipment can also be shown as supportive armor or a resonating frame when a com
 
 Original artwork uses reusable local parts for the AI entity, restraints and background. The [local workbench](docs/layered-appearances.md) reviews chosen PNG parts in three modes, saves versions, reselects earlier work and exports an appearance card with explicitly chosen public text. The approved public workbench now uses those same components through bounded image and collection operations. The bundled authoring Skill can use the private MCP to prepare a creation place and review its selected images; that private location is not exposed publicly. Actual public-origin access, image import/reselection and card saving passed the live QA. AI-led creation remains unqualified. There is no performance unlock, fixed three-candidate choice or forced BAD treatment; performance is reported separately. Choosing a look never changes the harness. See the [layered appearance contract](docs/personalization.md).
 
+Prepared looks include the default core, **白銀** (short silver hair and cyan light) and **琥珀** (long chestnut hair and amber light). The introduction compares the default and a selected humanoid with working mode transitions. The workbench can save and reuse those looks; original pose sheets are fitted at one common scale and use bounded awakening effects. The original TRUEFORM light crests add a subtle visual reference. Appearance selection does not change the AI model. See the [entity-pose contract](docs/spec-entity-poses.md).
+
 Effects can be turned off without changing the loadout. The state remains readable, and animation settings stay separate from saved harness configurations.
 
 ## Know what changed

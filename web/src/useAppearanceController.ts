@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError } from './api';
 import { appearanceErrorMessage } from './appearances';
-import { validArtworkItem, validArtworkView, validArtworkReview, validArtworkReceipt } from './artwork';
+import { validArtworkItem, validArtworkView, validArtworkReview, validArtworkReceipt, matchesArtworkUpload } from './artwork';
 import type { ArtworkAction, ArtworkItem, ArtworkPort, ArtworkReceipt, ArtworkReview, ArtworkUpload, ArtworkView } from './artwork';
-import type { LayerAsset } from './appearance-layers';
+import {layerManifestKey} from './appearance-layers';
+import type { LayerAsset,LayerManifest } from './appearance-layers';
 
 type Pending = { key: string; action: ArtworkAction; input: Record<string, unknown>; requestId: string; expectedItemId?: string };
 type State = { key: string; view: ArtworkView | null; review: ArtworkReview | null; error: string; notice: string;
@@ -11,15 +12,6 @@ type State = { key: string; view: ArtworkView | null; review: ArtworkReview | nu
 const initial = (key: string): State => ({ key, view: null, review: null, error: '', notice: '', busy: false,
   confirmed: false, uncertain: false, operationId: null, lastReceipt: null });
 const changed = () => new ApiError('gui-source-context-changed');
-function matchesUpload(review: ArtworkReview, input: Record<string, unknown>) {
-  const upload = input as ArtworkUpload, manifest = upload.manifest;
-  if (!manifest || !Array.isArray(manifest.parts) || !Array.isArray(upload.files)) return false;
-  const sameIds = (a: unknown[], b: unknown[]) => a.length === b.length && JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
-  return review.expectedStateId === upload.expectedStateId && review.baseItemId === manifest.baseItemId
-    && review.manifest.templateId === manifest.templateId && review.name === manifest.name.trim() && review.author === manifest.author.trim()
-    && sameIds(review.replacedParts, manifest.parts.map(part => part.partId))
-    && sameIds(review.images.map(file => file.fileId), upload.files.map(file => file.fileId));
-}
 export function useAppearanceController(port: ArtworkPort, externalVersion = '') {
   const portRef = useRef(port); portRef.current = port;
   const [state, setState] = useState(() => initial(port.key)), stateRef = useRef(state); stateRef.current = state;
@@ -27,6 +19,7 @@ export function useAppearanceController(port: ArtworkPort, externalVersion = '')
   const idleWaiter = useRef<(() => void) | null>(null), waiting = useRef(false), alive = useRef(true);
   const [queued, setQueued] = useState(false);
   const pending = useRef<Pending | null>(null), items = useRef(new Map<string, ArtworkItem>());
+  const reviewedResult=useRef<{key:string;review:ArtworkReview}|null>(null);
   const current = state.key === port.key ? state : initial(port.key);
   function wakeWaiting() {
     if ((!working.current && !portRef.current.busy) || !portRef.current.enabled || !alive.current) {
@@ -86,7 +79,7 @@ export function useAppearanceController(port: ArtworkPort, externalVersion = '')
     }
     if (!alive.current || portRef.current.key !== key || !portRef.current.enabled) return false;
     if (write && pending.current && !retry && action !== 'recover-appearance') return false;
-    const activeReview = stateRef.current.review;
+    const activeReview = reviewedResult.current?.key===key ? reviewedResult.current.review : stateRef.current.review;
     const command: Pending = retry && pending.current ? pending.current : { key, action, input, requestId: crypto.randomUUID(),
       ...(action === 'save-appearance-import' && activeReview && activeReview.reviewId === input.reviewId
         ? { expectedItemId: activeReview.proposedItemId } : {}) };
@@ -106,7 +99,8 @@ export function useAppearanceController(port: ArtworkPort, externalVersion = '')
       if (['review-appearance-import', 'read-appearance-import'].includes(command.action)) {
         const review = result as ArtworkReview;
         if (command.action === 'read-appearance-import' && review.reviewId !== command.input.reviewId) throw new ApiError('invalid-response', undefined, 'uncertain');
-        if (command.action === 'review-appearance-import' && !matchesUpload(review, command.input)) throw new ApiError('invalid-response', undefined, 'uncertain');
+        if (command.action === 'review-appearance-import' && !matchesArtworkUpload(review, command.input as ArtworkUpload)) throw new ApiError('invalid-response', undefined, 'uncertain');
+        reviewedResult.current={key,review};
         setState(old => ({ ...old, review, error: '', notice: '', uncertain: false }));
       } else {
         const receipt = result as ArtworkReceipt;
@@ -166,17 +160,52 @@ export function useAppearanceController(port: ArtworkPort, externalVersion = '')
     if (!view) return Promise.resolve(false);
     return run(action, { ...input, expectedStateId: view.stateId }, true);
   }
+  async function choosePrepared(expected:LayerManifest,createUpload:(stateId:string|null)=>Promise<ArtworkUpload>,signal:AbortSignal) {
+    const key=portRef.current.key,view=stateRef.current.key===key ? stateRef.current.view:null;
+    if(signal.aborted || key!==port.key || !view)return false;
+    const expectedKey=layerManifestKey(expected);
+    // Reuse a saved immutable version of this prepared look, including after
+    // a reload. Page through at most the bounded collection, without replacing
+    // the user's expanded collection UI or silently accepting a newer revision.
+    let page=view;const visited=new Set<string>();
+    while(true) {
+      for(const row of page.collection) {
+        if(signal.aborted || portRef.current.key!==key)return false;
+        if(visited.has(row.id) || visited.size>=128)throw new ApiError('invalid-response');
+        visited.add(row.id);
+        if(row.kind!=='layered')continue;
+        const value=await item(row.id);
+        if(signal.aborted || portRef.current.key!==key)return false;
+        if(value.kind==='layered' && layerManifestKey(value.manifest)===expectedKey)
+          return run('select-appearance',{itemId:value.id,expectedStateId:view.stateId},true);
+      }
+      if(!page.nextCursor)break;
+      page=await call('artwork',{after:page.nextCursor},key) as ArtworkView;
+      if(page.stateId!==view.stateId)throw new ApiError('appearance-state-conflict');
+    }
+    const upload=await createUpload(view.stateId);
+    if(signal.aborted || portRef.current.key!==key || !await run('review-appearance-import',upload,true))return false;
+    const accepted=reviewedResult.current;
+    if(signal.aborted || portRef.current.key!==key)return false;
+    if(!accepted || accepted.key!==key || !matchesArtworkUpload(accepted.review,upload)
+      || layerManifestKey(accepted.review.manifest)!==expectedKey) {
+      reviewedResult.current=null;
+      setState(old=>({...old,review:null,error:'用意された外観と読込結果が一致しませんでした。保存せずに停止しました。'}));return false;
+    }
+    return run('save-appearance-import',{reviewId:accepted.review.reviewId,expectedStateId:accepted.review.expectedStateId},true);
+  }
   return { ...current, enabled: port.enabled, busy: current.busy || port.busy || queued,
     mutating: queued || current.busy && pending.current !== null, image, item,
     load: (after?: string) => portRef.current.key === port.key ? run('artwork', after ? { after } : {}) : Promise.resolve(false),
     reviewUpload: (upload: ArtworkUpload) => portRef.current.key === port.key ? run('review-appearance-import', upload, true) : Promise.resolve(false),
+    choosePrepared,
     readReview: (reviewId: string) => portRef.current.key === port.key ? run('read-appearance-import', { reviewId }) : Promise.resolve(false),
     saveReview: () => current.review && portRef.current.key === port.key ? run('save-appearance-import', { reviewId: current.review.reviewId, expectedStateId: current.review.expectedStateId }, true) : Promise.resolve(false),
     select: (itemId: string) => edit('select-appearance', { itemId }),
     rename: (itemId: string, name: string) => edit('name-appearance', { itemId, name }),
     recover: () => portRef.current.key === port.key ? run('recover-appearance', {}, true) : Promise.resolve(false),
     retry: () => pending.current && portRef.current.key === port.key ? run(pending.current.action, pending.current.input, true, true) : Promise.resolve(false),
-    clearReview: () => { if (portRef.current.key === port.key) setState(old => ({ ...old, review: null })); },
+    clearReview: () => { if (portRef.current.key === port.key) {reviewedResult.current=null;setState(old => ({ ...old, review: null }));} },
   };
 }
 export type AppearanceController = ReturnType<typeof useAppearanceController>;

@@ -32,6 +32,7 @@ export const USER_SOURCE_ERROR_KINDS = Object.freeze([
   'appearance-recipe-invalid',
   'appearance-template-invalid',
   'appearance-image-invalid',
+  'appearance-entity-poses-invalid',
   'appearance-stock-invalid',
   'appearance-image-store-invalid',
   'appearance-image-conflict',

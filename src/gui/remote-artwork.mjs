@@ -2,6 +2,7 @@
 // appearance/evidence records. Core ownership and PNG decoding remain local.
 import { createHash } from 'node:crypto';
 import { getAppearanceTemplate } from '../appearances/template.mjs';
+import { ENTITY_MODES, entityAssetIds, validEntityLayer } from '../appearances/entity-profile.mjs';
 import { isHash, isRevision, remoteFail, REMOTE_IMAGE_LIMIT, REMOTE_SET_LIMIT } from './remote-policy.mjs';
 
 const template = getAppearanceTemplate();
@@ -26,13 +27,20 @@ function asset(value) {
 }
 function manifest(value) {
   const m = pick(value, ['kind', 'schemaVersion', 'templateId', 'assets', 'layers']);
-  check(m.kind === 'unharness-layered-appearance' && m.schemaVersion === 1 && m.templateId === template.id);
+  check(m.kind === 'unharness-layered-appearance' && [1,2].includes(m.schemaVersion) && m.templateId === template.id);
   check(Array.isArray(m.assets) && m.assets.length > 0 && m.assets.length <= 64);
   m.assets = m.assets.map(asset);
   const ids = new Set(m.assets.map(a => a.assetId)), used = new Set();
   check(ids.size === m.assets.length && m.assets.reduce((n, a) => n + a.bytes, 0) <= REMOTE_SET_LIMIT);
   const layers = pick(m.layers, ['entity', 'background', 'restraints']);
-  for (const role of ['entity', 'background']) {
+  if(m.schemaVersion===2) {
+    const entity=pick(layers.entity,['profileId','poses']), poses=pick(entity.poses,ENTITY_MODES);
+    for(const mode of ENTITY_MODES)poses[mode]=pick(poses[mode],['assetId']);
+    layers.entity={profileId:entity.profileId,poses};
+  } else layers.entity=pick(layers.entity,['assetId']);
+  check(validEntityLayer(layers.entity,m.schemaVersion,ids));
+  for(const id of entityAssetIds({...m,layers}))used.add(id);
+  for (const role of ['background']) {
     layers[role] = pick(layers[role], ['assetId']); check(ids.has(layers[role].assetId)); used.add(layers[role].assetId);
   }
   const parts = template.parts.filter(part => part.role === 'restraints').map(part => part.id), seen = new Set();
@@ -99,7 +107,7 @@ export function projectArtworkReview(value, binding) {
   check(isHash(v.reviewId) && isHash(v.proposedItemId) && nullableHash(v.expectedStateId) && nullableHash(v.baseItemId)
     && text(v.name) && v.name.trim().length > 0 && text(v.author));
   v.manifest = manifest(v.manifest);
-  const parts = template.parts.map(part => part.id), assetIds = new Set(v.manifest.assets.map(a => a.assetId));
+  const parts = [...template.parts.map(part => part.id),'entity-poses'], assetIds = new Set(v.manifest.assets.map(a => a.assetId));
   check(Array.isArray(v.replacedParts) && v.replacedParts.length > 0 && v.replacedParts.length <= parts.length
     && new Set(v.replacedParts).size === v.replacedParts.length && v.replacedParts.every(p => parts.includes(p)));
   v.replacedParts = [...v.replacedParts];

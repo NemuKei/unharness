@@ -108,6 +108,12 @@ test('three previews are artwork-only and missing composition is not declared ve
   required(body, [/Normal/, /UNSEAL/, /TRUEFORM/, /同じ.*本体.*背景|本体.*背景.*同じ/, /設定.*切り替えない/,
     /既存.*合成/, /未検証/, /完成.*装わない/, /49姿勢.*新.*生成しない/]);
 });
+test('new authoring names the pose sheet, common scale, transparency and bounded awakening guide',async()=>{
+  const body=await skill(),ref=await text(new URL('skills/unharness-original/references/entity-poses.md',root));
+  required(body,[/entity-poses\.png/,/同じ頭.*縮尺/,/実際.*アルファ/,/7\.5%/,/目と顔/,/演出OFF/,/プラグイン/]);
+  required(ref,[/entity-awakening\/v1/,/partIds: \["entity-poses"\]/,/同じ倍率/,/8\/255/,/旧制作場所/,/髪の自動認識ではない/]);
+  const guide=links(ref).find(link=>link.endsWith('/guide.svg'));assert.ok(guide);assert.ok((await stat(new URL(guide,new URL('skills/unharness-original/references/entity-poses.md',root)))).isFile());
+});
 
 test('files, preview, local review and saved collection have different completion states', async () => {
   const body = section(await skill(), '引き渡しと報告');

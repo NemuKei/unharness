@@ -43,6 +43,7 @@ Unharness makes it easy to take off, compare, and save AI harness configurations
 - `docs/spec-mode-inheritance.md`: current official-plugin eligibility and TRUEFORM → UNSEAL inheritance target; read before changing mode selection or setup schemas.
 - `docs/superpowers/plans/2026-09-10-official-plugin-mode-inheritance.md`: implementation and native-acceptance sequence for that target; supersedes the independent mode-selection rules in the 2026-09-09 setup plan.
 - `docs/personalization.md`: free layered original artwork, template compatibility and independent appearance/performance semantics; read before appearance work. `docs/spec-appearances.md` records the earlier implemented lifecycle and its migration boundary.
+- `docs/spec-entity-poses.md`: versioned three-pose entities, common scale, containment, fixed awakening effects and v1 preservation; read before changing original-entity authoring, import or rendering.
 - `docs/superpowers/plans/2026-09-09-mac-product-experience.md`: accepted 2026-09-09 product plan and the focused execution plans.
 - `docs/architecture.md`: responsibility boundaries; read when changing integration or storage behavior.
 - `docs/compatibility.md`: evidence and the OS × app matrix; read before making support claims or running integration verification.

@@ -6,6 +6,8 @@ import { fail } from '../sources/errors.mjs';
 import { withAppearanceWorkspace } from './workspace.mjs';
 import { getAppearanceTemplate, validateLayeredAppearance, LAYER_COUNT_LIMIT, LAYER_IMAGE_LIMIT, LAYER_SET_LIMIT } from './template.mjs';
 import { normalizeLayerPng, MAX_LAYER_INPUT_SIDE } from './assets.mjs';
+import { normalizeEntityPoseSheet } from './entity-poses.mjs';
+import { ENTITY_PROFILE_ID, ENTITY_MODES, entityAssetIds } from './entity-profile.mjs';
 import { readStockAppearance, readStockImage } from './stock.mjs';
 import { readAppearanceImage, storeAppearanceImage } from './image-store.mjs';
 import { readAppearanceStore, publishAppearanceState, appearanceStoreSummary } from './store.mjs';
@@ -49,9 +51,10 @@ function importInput(args) {
   const parts = new Set(), used = new Set();
   for (const part of value.parts) {
     shape(part, ['partId', 'fileId']);
-    if (!template.parts.some(p => p.id === part.partId) || parts.has(part.partId) || !fileId(part.fileId)) invalid();
+    if (!(part.partId==='entity-poses' || template.parts.some(p => p.id === part.partId)) || parts.has(part.partId) || !fileId(part.fileId)) invalid();
     parts.add(part.partId); used.add(part.fileId);
   }
+  if (parts.has('entity') && parts.has('entity-poses')) invalid();
   let total = 0;
   const seen = new Set();
   for (const file of args.files) {
@@ -62,7 +65,10 @@ function importInput(args) {
   }
   if (total > LAYER_SET_LIMIT || seen.size !== used.size) invalid();
   // Decode the entire explicit input before creating any store files.
-  return new Map(args.files.map(file => [file.fileId, normalizeLayerPng(file.bytes)]));
+  const poseFile = value.parts.find(p=>p.partId==='entity-poses')?.fileId;
+  if(poseFile && value.parts.some(p=>p.partId!=='entity-poses' && p.fileId===poseFile)) invalid();
+  return new Map(args.files.map(file => [file.fileId, file.fileId===poseFile
+    ? normalizeEntityPoseSheet(file.bytes).poses : [normalizeLayerPng(file.bytes)]]));
 }
 function validateReview(value, scopeId) {
   try {
@@ -75,7 +81,7 @@ function validateReview(value, scopeId) {
     validateLayeredAppearance(value.manifest);
     const template = getAppearanceTemplate();
     if (!Array.isArray(value.replacedParts) || !value.replacedParts.length || new Set(value.replacedParts).size !== value.replacedParts.length
-      || value.replacedParts.some(id => !template.parts.some(p => p.id === id))
+      || value.replacedParts.some(id => id!=='entity-poses' && !template.parts.some(p => p.id === id))
       || !Array.isArray(value.images) || !value.images.length || value.images.length > LAYER_COUNT_LIMIT) invalid();
     const ids = new Set();
     for (const image of value.images) {
@@ -85,6 +91,8 @@ function validateReview(value, scopeId) {
         || image.sourceHeight !== image.sourceWidth || image.resized !== (image.sourceWidth !== 724)) invalid();
       ids.add(image.fileId);
     }
+    if(value.replacedParts.includes('entity-poses') && (value.manifest.schemaVersion!==2
+      || ENTITY_MODES.some(mode=>value.images.find(image=>image.fileId==='entity-poses-'+mode)?.assetId!==value.manifest.layers.entity.poses[mode].assetId)))invalid();
     return value;
   } catch { invalid(); }
 }
@@ -124,22 +132,28 @@ export async function reviewAppearanceImport(args) {
     if (base) await verifiedImages(w, original);
     const manifest = structuredClone(original), assets = new Map(original.assets.map(asset => [asset.assetId, asset]));
     for (const part of input.parts) {
-      const image = images.get(part.fileId);
-      assets.set(image.asset.assetId, image.asset);
-      if (part.partId === 'entity' || part.partId === 'background') manifest.layers[part.partId] = { assetId: image.asset.assetId };
+      const set = images.get(part.fileId), image=set[0];
+      for (const row of set) assets.set(row.asset.assetId,row.asset);
+      if (part.partId === 'entity-poses') {
+        manifest.schemaVersion=2;
+        manifest.layers.entity={profileId:ENTITY_PROFILE_ID,poses:Object.fromEntries(set.map(row=>[row.mode,{assetId:row.asset.assetId}]))};
+      } else if (part.partId === 'entity' || part.partId === 'background') {
+        manifest.layers[part.partId] = { assetId: image.asset.assetId };
+        if(part.partId==='entity') manifest.schemaVersion=1;
+      }
       else manifest.layers.restraints.find(row => row.partId === part.partId).assetId = image.asset.assetId;
     }
-    const used = new Set([manifest.layers.entity.assetId, manifest.layers.background.assetId, ...manifest.layers.restraints.map(p => p.assetId)]);
+    const used = new Set([...entityAssetIds(manifest), manifest.layers.background.assetId, ...manifest.layers.restraints.map(p => p.assetId)]);
     manifest.assets = [...used].sort().map(id => assets.get(id));
     const valid = validateLayeredAppearance(manifest);
     const value = validateReview({ kind: 'unharness-appearance-import-review', schemaVersion: 1, scopeId, requestId,
       expectedStateId, baseItemId: input.baseItemId, name: input.name.trim(), author: input.author.trim(), manifest: valid,
       replacedParts: input.parts.map(p => p.partId).sort(),
-      images: [...images].map(([fileId, image]) => ({ fileId, assetId: image.asset.assetId, sourceWidth: image.sourceWidth,
-        sourceHeight: image.sourceHeight, resized: image.resized })).sort((a, b) => a.fileId < b.fileId ? -1 : a.fileId > b.fileId ? 1 : 0) }, scopeId);
+      images: [...images].flatMap(([fileId, set]) => set.map(image => ({ fileId: image.mode ? 'entity-poses-'+image.mode : fileId, assetId: image.asset.assetId, sourceWidth: image.sourceWidth,
+        sourceHeight: image.sourceHeight, resized: image.resized }))).sort((a, b) => a.fileId < b.fileId ? -1 : a.fileId > b.fileId ? 1 : 0) }, scopeId);
     // Freeze stock bytes into this collection too. A later bundled template
     // update cannot replace or remove any image used by this saved version.
-    const uploaded = new Map([...images.values()].map(image => [image.asset.assetId, image]));
+    const uploaded = new Map([...images.values()].flat().map(image => [image.asset.assetId, image]));
     for (const asset of valid.assets) {
       const image = uploaded.get(asset.assetId) ?? (base ? await readAppearanceImage(w, asset.assetId) : await readStockImage(asset.assetId));
       if (!image || !isDeepStrictEqual(image.asset, asset)) invalid();

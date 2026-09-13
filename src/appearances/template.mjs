@@ -4,6 +4,7 @@ import { exactKeys } from '../comparisons/assessment.mjs';
 import { fail } from '../sources/errors.mjs';
 import { WORLD, sourceArms, coreBounds, coreNucleus, coreMask } from './parts.mjs';
 import { buildCels, sourcePanels } from './kinematics.mjs';
+import { entityAssetIds, validEntityLayer } from './entity-profile.mjs';
 
 const error = () => fail('appearance-template-invalid');
 const exact = (value, keys) => exactKeys(value, keys, [], 'appearance-template-invalid');
@@ -41,7 +42,7 @@ export function validateLayeredAppearance(manifest, template = TEMPLATE) {
     recordId('appearance', manifest); recordId('appearance', template);
     if (!isDeepStrictEqual(template, TEMPLATE)) error();
     exact(manifest, ['kind', 'schemaVersion', 'templateId', 'assets', 'layers']);
-    if (manifest.kind !== 'unharness-layered-appearance' || manifest.schemaVersion !== 1 || manifest.templateId !== template.id
+    if (manifest.kind !== 'unharness-layered-appearance' || ![1,2].includes(manifest.schemaVersion) || manifest.templateId !== template.id
       || !Array.isArray(manifest.assets) || !manifest.assets.length || manifest.assets.length > LAYER_COUNT_LIMIT) error();
     const ids = new Set(); let size = 0;
     for (const asset of manifest.assets) {
@@ -52,13 +53,14 @@ export function validateLayeredAppearance(manifest, template = TEMPLATE) {
     }
     if (size > LAYER_SET_LIMIT) error();
     exact(manifest.layers, ['entity', 'background', 'restraints']);
-    for (const role of ['entity', 'background']) {
+    if (!validEntityLayer(manifest.layers.entity,manifest.schemaVersion,ids)) error();
+    for (const role of ['background']) {
       exact(manifest.layers[role], ['assetId']);
       if (!ids.has(manifest.layers[role].assetId)) error();
     }
     const expected = template.parts.filter(part => part.role === 'restraints').map(part => part.id);
     if (!Array.isArray(manifest.layers.restraints) || manifest.layers.restraints.length !== expected.length) error();
-    const parts = new Set(), used = new Set([manifest.layers.entity.assetId, manifest.layers.background.assetId]);
+    const parts = new Set(), used = new Set([...entityAssetIds(manifest), manifest.layers.background.assetId]);
     for (const part of manifest.layers.restraints) {
       exact(part, ['partId', 'assetId']);
       if (!expected.includes(part.partId) || parts.has(part.partId) || !ids.has(part.assetId)) error();
@@ -73,7 +75,8 @@ export function resolveAppearanceLayers(manifest, template, mode) {
   if (!['normal', 'unseal', 'trueform'].includes(mode)) error();
   const parts = new Map(value.layers.restraints.map(part => [part.partId, part.assetId]));
   return { templateId: template.id, canvas: { ...template.canvas }, mode, order: [...template.order],
-    entity: { ...value.layers.entity, anchor: { ...template.entityAnchor } }, background: { ...value.layers.background },
+    entity: { ...(value.schemaVersion===2 ? value.layers.entity.poses[mode] : value.layers.entity),
+      ...(value.schemaVersion===2 ? {profileId:value.layers.entity.profileId}:{}), anchor: { ...template.entityAnchor } }, background: { ...value.layers.background },
     restraints: template.parts.filter(part => part.role === 'restraints').map(part => ({ ...structuredClone(part), assetId: parts.get(part.id) })),
     pose: structuredClone(template.poses[{ normal: 0, unseal: 24, trueform: 48 }[mode]]) };
 }

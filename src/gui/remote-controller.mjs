@@ -145,7 +145,10 @@ export async function createRemoteController({ controller, webOrigin, now, enque
     if (operation === 'redeem') remoteFail('remote-invalid-request');
     if (operation === 'status') return { connection: publicConnection(session), state: await currentState(session) };
     if (operation === 'operation-status') return receiptFor(session, payload.requestId);
-    if (!REMOTE_WRITES.includes(operation)) return readArtwork(operation, payload, session, auth);
+    // Image membership reads touch the collection index. Use the same queue as
+    // selection/save so our own publication cannot move it during that read.
+    if (!REMOTE_WRITES.includes(operation)) return operation==='artwork-image'
+      ? enqueue(()=>readArtwork(operation,payload,session,auth)) : readArtwork(operation, payload, session, auth);
     const ledger = await ledgerFor(session), requestId = payload.requestId, action = 'remote-' + operation;
     const claimInput = remoteLedgerInput(operation, payload);
     try {

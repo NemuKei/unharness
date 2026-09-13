@@ -21,6 +21,8 @@ Registration is record-only. After adoption, refresh `status` and the connection
 
 Establish the actual selected model and provenance (user-specified, AI-reported or task-record). Use current primary model/app references, recording the actual checked URLs, titles and date. Keep unavailable version information null and avoid performance promises.
 
+Use [model-specific references](references/model-guidance.md) during initial setup or an explicitly requested review. For GPT-6 Astra, include the current official skills/prompting guidance there. Read only the sources relevant to the selected model and this work; a new article does not authorize a source rewrite or change the saved Normal.
+
 - TRUEFORM removes selected optional global instructions. For every registered optional ordinary Skill, explicitly choose disabled or manual. UNSEAL inherits that state and records only upward additions: disabled to manual/automatic, or manual to automatic. Enabling a Normal-disabled Skill requires showing that explicit change.
 - Read `pluginControls` from `read_setup`. For this release, include every previously registered plugin in `trueform.retainedOfficialPluginIds` and use an empty `unseal.additionalPluginIds`, so both modes retain Normal. Unregistered official plugins remain untouched. Normal-disabled plugins remain disabled. If an older saved setup requests unsupported OFF, explain the change and review a new pair that retains the plugins; preserve the older records.
 - UNSEAL's selected global instructions use either the fixed minimal guide or none. A TRUEFORM change requires reviewing both resulting modes. Do not maintain an independent complete UNSEAL set or remove an inherited member only from UNSEAL.

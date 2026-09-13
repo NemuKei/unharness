@@ -2,6 +2,12 @@
 
 Updated: 2026-09-13.
 
+The 0.0.7 artwork update is implemented and has passed the local core and focused
+browser checks. It adds **白銀** and **琥珀**, common-scale three-pose authoring,
+bounded awakening effects and an interactive default/humanoid comparison.
+Distribution, installed-plugin and public-site checks are the remaining release
+steps. See the [artwork evidence](evidence/2026-09-13-entity-awakening.md).
+
 The [0.0.6 Mac preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.6) is published. The first Mac product targets Apple Silicon and Codex Desktop within the [accepted retained-plugin scope](evidence/2026-09-11-remote-plugin-control-limit.md): confirmed optional additional instructions and ordinary Skill disabled/manual/automatic states, with official plugins kept at their saved Normal state.
 
 The [0.0.6 qualification](evidence/2026-09-13-mac-codex-completion.md) verifies the immutable distribution, actual native installation, public HTTPS GUI/WebMCP mode operations, exact Normal restoration, independent restricted-process recovery and personal-profile preservation. The public site now selects the verified 0.0.6 download; all 22 served files match the final build. The agreed first Mac Codex release scope is complete.

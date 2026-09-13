@@ -9,6 +9,8 @@ import { prepareLayerImages } from "./appearance-layers";
 import type { LayerManifest, LayerImageLoader, PreparedLayerImages } from "./appearance-layers";
 import type { FixtureCase } from "./types";
 import type { AppearanceRecipe, AppearanceTreatment } from "./appearances";
+import { ENTITY_MODES, entityPointFits, entityEmission } from '../../src/appearances/entity-profile.mjs';
+import type { EntityLayout } from './entity-awakening';
 
 export interface Scene {
   setCondition: (condition: FixtureCase, immediate?: boolean) => void;
@@ -25,11 +27,12 @@ export interface Scene {
 // Sprites/meshes borrow these textures and never destroy their source.
 function makeLayerTextures(images: PreparedLayerImages) {
   const textures = new Map<string, Texture>(), sources: ImageSource[] = [];
+  const entityLayout:EntityLayout={}, emissions=new Map<string,Texture>();
   let destroyed = false;
   const destroy = () => {
     if (destroyed) return;
     destroyed = true;
-    try { textures.forEach(texture => texture.destroy(false)); }
+    try { textures.forEach(texture => texture.destroy(false)); emissions.forEach(texture=>texture.destroy(false)); }
     finally { try { sources.forEach(source => source.destroy()); } finally { images.destroy(); } }
   };
   try {
@@ -37,7 +40,31 @@ function makeLayerTextures(images: PreparedLayerImages) {
       const source = new ImageSource({ resource: image, scaleMode: 'nearest', alphaMode: 'premultiplied-alpha' });
       sources.push(source); textures.set(id, new Texture({ source }));
     });
-    return { parts: new Map([...images.replacements].map(([part, id]) => [part, textures.get(id)!])), destroy };
+    if(images.manifest.schemaVersion===2)for(const mode of ENTITY_MODES) {
+      const bitmap=images.images.get(images.manifest.layers.entity.poses[mode].assetId)!;
+      const canvas=document.createElement('canvas');canvas.width=canvas.height=724;
+      const ctx=canvas.getContext('2d',{willReadFrequently:true});if(!ctx)throw Error('appearance-image-decode-unavailable');
+      ctx.drawImage(bitmap,0,0);const pixels=ctx.getImageData(0,0,724,724);
+      const bounds={left:724,top:724,right:-1,bottom:-1,theme:'cyan' as 'cyan'|'amber'}, weights={cyan:0,amber:0};
+      for(let y=0;y<724;y++)for(let x=0;x<724;x++) {
+        const i=(y*724+x)*4,rgba=pixels.data;
+        if(rgba[i+3]) {
+          if(!entityPointFits(mode,x,y))throw Error('appearance-entity-poses-invalid');
+          bounds.left=Math.min(bounds.left,x);bounds.right=Math.max(bounds.right,x);bounds.top=Math.min(bounds.top,y);bounds.bottom=Math.max(bounds.bottom,y);
+        }
+        // Palette-reserved emission follows actual painted details, never a
+        // guessed eye position, and cannot illuminate ordinary white armor.
+        const light=entityEmission(rgba[i],rgba[i+1],rgba[i+2]);
+        weights[light.theme]+=light.strength*rgba[i+3];
+        rgba[i]=light.color>>16&255;rgba[i+1]=light.color>>8&255;rgba[i+2]=light.color&255;rgba[i+3]*=light.strength;
+      }
+      if(bounds.right<bounds.left)throw Error('appearance-entity-poses-invalid');
+      bounds.theme=weights.amber>weights.cyan?'amber':'cyan';
+      entityLayout[mode]=bounds;ctx.putImageData(pixels,0,0);
+      const source=new ImageSource({resource:canvas,scaleMode:'nearest'});sources.push(source);
+      emissions.set('entity-emission-'+mode,new Texture({source}));
+    }
+    return { parts: new Map<string,Texture>([...images.replacements].map(([part, id]):[string,Texture] => [part, textures.get(id)!]).concat([...emissions])), entityLayout, destroy };
   } catch (error) { destroy(); throw error; }
 }
 
@@ -164,9 +191,9 @@ export async function createScene(
           const previous = selectedLayers;
           // Commit is synchronous, after all images exist. Restore the old set
           // if installing/uploading this set throws; never manufacture success.
-          try { rig!.setLayers(candidate?.parts ?? null); drawNow(); }
+          try { rig!.setLayers(candidate?.parts ?? null,candidate?.entityLayout); drawNow(); }
           catch (error) {
-            rig!.setLayers(previous?.parts ?? null);
+            rig!.setLayers(previous?.parts ?? null,previous?.entityLayout);
             try { drawNow(); } catch { /* The original render failure is authoritative. */ }
             throw error;
           }

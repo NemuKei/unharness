@@ -235,7 +235,7 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
           else if (parsed.pathname === '/api/sources/state' && params.length === 0) sendJson(response, 200, await sourceController.state());
           else if (!recoveryBinding && parsed.pathname === '/api/sources/appearance-image' && params.length === 4 && new Set(params).size === 4
             && params.every(key => ['launchId', 'contextId', 'referenceId', 'assetId'].includes(key))) {
-            const image = await sourceController.image(Object.fromEntries(parsed.searchParams));
+            const image = await enqueue(()=>sourceController.image(Object.fromEntries(parsed.searchParams)));
             response.writeHead(200, { ...headers('image/png'), 'Content-Length': image.bytes.length }); response.end(image.bytes);
           }
           else if (parsed.pathname === '/api/sources/updates' && params.length >= 2 && params.length <= 3

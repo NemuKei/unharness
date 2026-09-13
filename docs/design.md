@@ -93,6 +93,15 @@ Original forms remain freely reusable in a local collection, including when a co
 
 ## Layered original template
 
+Original entities can use three distinct poses at one common scale, following
+[the awakening profile](spec-entity-poses.md). The humanoid example curls up
+asleep in Normal, remains curled and half awake in UNSEAL, and unfolds in TRUEFORM.
+The latter adds a slight lift confined to the crown, cyan painted-detail emission,
+thin field orbits and rising particles. Effects Off retains each static pose.
+The 49-cel hardware remains unchanged; the old single-entity renderer remains
+available for historical versions. Do not animate the whole painting or enlarge
+the person as a substitute for changing pose.
+
 The accepted original-artwork structure is AI entity, restraints and background. Use the current 724×724 scene as the first versioned template, with common coordinates, anchors, known moving restraint parts and front/back order. The three logical groups can use more than three PNGs where the mechanism needs separate pieces. Users can replace one group and keep the prepared others.
 
 The authoring Skill supplies guides and separate-part output, then previews Normal, UNSEAL and TRUEFORM before local import. Reuse the accepted mechanism for compatible parts; do not infer a new rig or physically interchangeable frames from arbitrary full-scene images. Free artwork creation does not change the state-evidence rules or the effects-off contract. See [the layered plan](superpowers/plans/2026-09-09-layered-originals.md).

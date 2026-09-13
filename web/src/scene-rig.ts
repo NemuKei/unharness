@@ -5,6 +5,9 @@ import { coreBounds, coreMask, coreNucleus, sourceArms, WORLD } from "./scene-pa
 import recipe from "../assets/hangar-v4.json";
 import { appearanceDrawing } from "./appearance-drawing";
 import type { AppearanceRecipe, AppearanceTreatment } from "./appearances";
+import { createAwakeningEntity } from './entity-awakening';
+import type { EntityLayout } from './entity-awakening';
+import { entityModeAtRelease, entityMotion } from '../../src/appearances/entity-profile.mjs';
 
 export interface RigTextures { sheet: Texture; empty: Texture }
 
@@ -15,9 +18,11 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
   const filters: Filter[] = [];
   const armSources: { id: string; texture: Texture; x: number; y: number }[] = [];
   let disposed = false;
+  let awakening:ReturnType<typeof createAwakeningEntity>|undefined;
   const destroy = () => {
     if (disposed) return;
     disposed = true;
+    awakening?.destroy();
     geometries.forEach(geometry => geometry.destroy(true));
     baked.forEach(texture => texture.destroy(true));
     cropped.forEach(texture => texture.destroy(false));
@@ -137,6 +142,7 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
     const replacementEntity = new Sprite(Texture.EMPTY);
     replacementEntity.anchor.set(coreNucleus.x / WORLD, coreNucleus.y / WORLD);
     replacementEntity.visible = false;
+    awakening=createAwakeningEntity(entity);
     entity.addChild(replacementEntity);
     const appearanceLight = new ColorMatrixFilter(), appearanceMetal = new ColorMatrixFilter();
     filters.push(appearanceLight, appearanceMetal);
@@ -238,7 +244,7 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
     return {
       // Texture ownership stays with Scene. All assignments are synchronous;
       // no load, crop, mode change or performance input occurs at this boundary.
-      setLayers(replacements: ReadonlyMap<string, Texture> | null) {
+      setLayers(replacements: ReadonlyMap<string, Texture> | null,entityLayout?:EntityLayout) {
         if (disposed) throw Error('appearance-renderer-unavailable');
         layered = replacements !== null;
         const background = replacements?.get('background');
@@ -250,11 +256,12 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
           part.replacement.texture = replacement ?? Texture.EMPTY;
           part.stock.visible = !replacement; part.layer.visible = !!replacement;
         });
+        awakening!.setLayers(replacements,entityLayout);
         const entityTexture = replacements?.get('entity');
         replacementEntity.texture = entityTexture ?? Texture.EMPTY;
         replacementEntity.visible = !!entityTexture;
-        core.visible = glow.visible = !entityTexture;
-        if (entityTexture) wideRadiance.visible = closeRadiance.visible = false;
+        core.visible = glow.visible = !entityTexture && !awakening!.active;
+        if (entityTexture || awakening!.active) wideRadiance.visible = closeRadiance.visible = false;
         panels.forEach((panel, index) => {
           const texture = replacements?.get('panel-' + sourcePanels[index].id) ?? normal;
           panel.meshes.forEach(mesh => { mesh.texture = texture; });
@@ -340,10 +347,15 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
         entity.position.set(cel.core.x, cel.core.y + (effects ? Math.sin(time * 0.85) * 3.5 : 0));
         entity.scale.set(cel.core.scale);
         entity.alpha = cel.core.alpha * (effects ? 0.90 + Math.sin(time * 1.1) ** 2 * 0.10 : 1);
+        if(awakening!.active) {
+          const mode=entityModeAtRelease(release), motion=entityMotion(mode,time,effects);
+          entity.position.set(cel.core.x,cel.core.y+motion.y);entity.scale.set(1);entity.alpha=1;
+          awakening!.render(mode,time,effects);
+        }
         const reveal = Math.max(0, Math.min(1, (release - 1.5) / 0.5));
         const radiance = effects ? reveal * reveal * (3 - 2 * reveal) : 0;
         const breath = 0.88 + Math.sin(time * 0.85) * 0.12;
-        wideRadiance.visible = closeRadiance.visible = !replacementEntity.visible && radiance > 0;
+        wideRadiance.visible = closeRadiance.visible = !replacementEntity.visible && !awakening!.active && radiance > 0;
         wideRadiance.alpha = radiance * breath * 0.65;
         closeRadiance.alpha = radiance * breath * 0.65;
         glow.alpha = 0.7 + radiance * 0.3;

@@ -67,6 +67,16 @@ The [public-page backend](domain-connection.md) is a separate route/controller a
 
 Protocol v2 adds bounded artwork projections, references and write receipts to that bridge. The public `ArtworkPort` adapts the existing appearance UI without constructing a private API client. `PublicConnection` keeps mode and artwork receipts separate, shares the write boundary with WebMCP, fingerprints image input and binds image reads to the grant lifetime. Public polling compares collection/pending identities before refreshing, so unchanged reads preserve expanded pages. Private authoring paths and source bodies never become public-port capabilities. [Client/browser evidence](evidence/2026-09-11-public-artwork-client.md) remains distinct from the actual public-origin permission test.
 
+The [entity awakening contract](spec-entity-poses.md) keeps three-pose PNG
+segmentation and uniform fitting in the local importer, with a shared pure
+profile for containment, palette emission and motion limits. The renderer owns
+pose-local meshes and light crests; the existing mechanical rig and v1 artwork
+remain intact. Private and public clients share one pure review-correspondence
+check. The introduction and prepared-look chooser use the same immutable artwork
+definitions. The chooser uses ordinary review/save or exact-version reselection,
+so it adds no source permissions or public operation. Image membership reads
+join the local operation queue to avoid crossing its own index publication.
+
 The optional [owned launcher](local-workbench.md) adds `src/gui/launch*.mjs` around the existing HTTP server. Target resolution binds an exact application context; private process receipts and an HMAC control channel prove identity before reuse or stop. The worker serves the same source controller and bundled assets. Its process/lock records live beside the source-registration directory, so initial GUI startup cannot reserve a profile or recapture Normal. Registered MCP opening uses its existing operation ledger. CLI diagnostics and source recovery do not import the MCP SDK or browser renderer for this feature.
 
 The [persistent directory boundary](../src/platform/directory-identity.mjs) keeps Mac volume-UUID acquisition separate from application loading. Source and plugin records explicitly select persistent identities; legacy records retain their original format, while transient reads and process guards keep within-operation device checks. No global metadata cache spans operations. The core's pure appearance constants remain separate from image-decoding dependencies so basic CLI configuration/status and recovery can start without presentation packages.

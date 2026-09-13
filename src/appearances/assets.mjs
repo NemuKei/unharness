@@ -54,12 +54,18 @@ function inspectPng(bytes) {
   if (decoded.buffer.length !== image.expected || decoded.engine.bytesWritten !== compressed.length) invalid();
   return image;
 }
-export function normalizeLayerPng(input) {
+export function decodeLayerPng(input) {
   try {
     if (!(input instanceof Uint8Array) || input.byteLength > LAYER_IMAGE_LIMIT) invalid();
     const original = Buffer.from(input), size = inspectPng(original);
     const decoded = PNG.sync.read(original, { checkCRC: true, skipRescale: false });
     if (decoded.width !== size.width || decoded.height !== size.height || decoded.data.length !== size.width * size.height * 4) invalid();
+    return decoded;
+  } catch { invalid(); }
+}
+export function normalizeLayerPng(input) {
+  try {
+    const decoded = decodeLayerPng(input), size = decoded;
     const data = Buffer.alloc(WORLD * WORLD * 4);
     for (let y = 0; y < WORLD; ++y) for (let x = 0; x < WORLD; ++x) {
       const from = (Math.min(size.height - 1, Math.floor((y + 0.5) * size.height / WORLD)) * size.width

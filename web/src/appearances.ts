@@ -146,6 +146,7 @@ export function appearanceErrorMessage(error: unknown) {
     'appearance-collection-full': '保存できる外観の上限に達しています。既存のコレクションは引き続き使えます。',
     'appearance-record-invalid': '外観の保存データを確認できません。装備の操作・復旧は引き続き利用できます。',
     'appearance-image-invalid': '画像を確認できません。正方形で最大2048 px、8 MiB以内の静止PNGを選んでください。',
+    'appearance-entity-poses-invalid': '3姿勢を分けて確認できません。Normal・限定解除・零式を左から同じ縮尺で並べ、背景と姿勢の間を透明にしたPNGを選んでください。',
     'appearance-import-invalid': '画像と部品の組み合わせを確認してください。',
     'appearance-image-store-invalid': '保存した画像を確認できません。元の画像と保存データを確認してください。',
     'appearance-authoring-invalid': '制作場所の状態を確認できません。独立した変更がないか確認してください。',

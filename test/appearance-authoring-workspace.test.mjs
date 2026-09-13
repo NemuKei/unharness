@@ -1,14 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { readFile, writeFile, unlink, symlink } from 'node:fs/promises';
+import { readFile, writeFile, unlink, symlink, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { PNG } from 'pngjs';
+import { entityPoseSheet } from '../test-support/entity-pose-sheet.mjs';
 import { aiProfile } from '../test-support/ai-profile.mjs';
 import { readSourceProfileFiles } from '../src/sources/owned-profile.mjs';
 import { readUserAppearance } from '../src/appearances/service.mjs';
 import { fixtureAiClient } from '../test-support/ai-client.mjs';
 import { setSourceTransactionTestHook } from '../src/sources/transaction.mjs';
+import { putRecord,recordId } from '../src/core/local-store.mjs';
 const authoring = await import('../src/appearances/authoring.mjs').catch(e => { if (e.code === 'ERR_MODULE_NOT_FOUND') return {}; throw e; });
 
 async function prepare(p, input = { creationId: randomUUID(), baseItemId: null }) {
@@ -18,25 +19,25 @@ async function prepare(p, input = { creationId: randomUUID(), baseItemId: null }
 test('an issued local creation place reopens without changing existing drafts or configuration', async t => {
   const p = await aiProfile(t), input = { creationId: randomUUID(), baseItemId: null }, place = await prepare(p, input);
   assert.equal(place.files.length, 13); assert.equal(place.referenceFiles.length, 13);
-  const entity = place.files.find(file => file.partId === 'entity');
-  assert.equal(entity.path, join(place.directory, 'entity.png'));
-  const bytes = PNG.sync.write({ width: 1, height: 1, data: Buffer.from([60, 200, 230, 255]) });
+  const entity = place.files.find(file => file.partId === 'entity-poses');
+  assert.equal(entity.path, join(place.directory, 'entity-poses.png'));
+  const bytes = entityPoseSheet();
   await writeFile(entity.path, bytes);
   assert.deepEqual(await prepare(p, input), place);
   assert.deepEqual(await readFile(entity.path), bytes);
   const reviewed = await authoring.reviewAuthoredAppearance({ workspace: p.workspace, authoringId: place.authoringId, importId: randomUUID(),
-    expectedStateId: null, name: 'Local authored entity', author: '', partIds: ['entity'] });
-  assert.deepEqual(reviewed.replacedParts, ['entity']);
+    expectedStateId: null, name: 'Local authored entity', author: '', partIds: ['entity-poses'] });
+  assert.deepEqual(reviewed.replacedParts, ['entity-poses']);
   assert.equal((await readUserAppearance({ workspace: p.workspace })).state, null);
   assert.deepEqual(await readFile(entity.path), bytes);
   assert.deepEqual(await readSourceProfileFiles(p.context), p.originalFiles);
 });
 test('authoring imports refuse links, unknown parts and independent ownership edits', async t => {
-  const p = await aiProfile(t), place = await prepare(p), entity = place.files.find(file => file.partId === 'entity').path;
+  const p = await aiProfile(t), place = await prepare(p), entity = place.files.find(file => file.partId === 'entity-poses').path;
   const outside = join(p.parent, 'private-note.txt'); await writeFile(outside, 'PRIVATE TEST DATA');
   await symlink(outside, entity);
   const args = { workspace: p.workspace, authoringId: place.authoringId, importId: randomUUID(), expectedStateId: null,
-    name: 'Selected source', author: '', partIds: ['entity'] };
+    name: 'Selected source', author: '', partIds: ['entity-poses'] };
   await assert.rejects(authoring.reviewAuthoredAppearance(args));
   await assert.rejects(authoring.reviewAuthoredAppearance({ ...args, partIds: ['../../private-note'] }));
   assert.equal(await readFile(outside, 'utf8'), 'PRIVATE TEST DATA');
@@ -51,10 +52,10 @@ test('MCP can prepare, review and save explicit local parts without taking arbit
   const place = await ai.mutate('prepare_appearance_authoring', { creationId: randomUUID(), baseItemId: null });
   const checked = await ai.call('read_appearance_authoring', { authoringId: place.authoringId });
   assert.deepEqual(checked.files, place.files);
-  const entity = place.files.find(file => file.partId === 'entity');
-  await writeFile(entity.path, PNG.sync.write({ width: 1, height: 1, data: Buffer.from([230, 160, 80, 255]) }));
+  const entity = place.files.find(file => file.partId === 'entity-poses');
+  await writeFile(entity.path, entityPoseSheet());
   const reviewed = await ai.mutate('review_authored_appearance', { authoringId: place.authoringId, importId: randomUUID(), expectedStateId: null,
-    name: 'MCP authored version', author: '', partIds: ['entity'] });
+    name: 'MCP authored version', author: '', partIds: ['entity-poses'] });
   const saved = await ai.mutate('save_appearance_import', { reviewId: reviewed.reviewId, expectedStateId: null });
   assert.equal((await ai.call('read_appearance')).selectedItem.id, saved.savedItemId);
   assert.deepEqual(await readSourceProfileFiles(p.context), p.originalFiles);
@@ -66,4 +67,17 @@ test('a changed ownership marker during issuance is preserved and makes the resu
   t.after(() => setSourceTransactionTestHook(null));
   await assert.rejects(prepare(p, input), { kind: 'appearance-authoring-invalid' });
   assert.equal(await readFile(marker, 'utf8'), 'INDEPENDENT OWNERSHIP EDIT');
+});
+test('a creation retried after an upgrade retains its v1 place and original draft',async t=>{
+  const p=await aiProfile(t),current=await prepare(p),input={creationId:randomUUID(),baseItemId:null};
+  const value={kind:'unharness-appearance-authoring',schemaVersion:1,scopeId:current.collectionScopeId,
+    creationId:input.creationId,templateId:current.templateId,baseItemId:null};
+  const id=recordId('appearance',value),directory=join(p.workspace,'appearance-authoring-'+id);
+  await mkdir(directory);await writeFile(join(directory,'authoring.json'),JSON.stringify(value));
+  await writeFile(join(directory,'entity.png'),'UNFINISHED ORIGINAL DRAFT');
+  await putRecord({store:p.workspace,type:'appearance',payload:value});
+  const reopened=await prepare(p,input);
+  assert.equal(reopened.authoringId,id);assert.equal(reopened.directory,directory);
+  assert.ok(reopened.files.some(f=>f.partId==='entity'));assert.ok(!reopened.files.some(f=>f.partId==='entity-poses'));
+  assert.equal(await readFile(join(directory,'entity.png'),'utf8'),'UNFINISHED ORIGINAL DRAFT');
 });

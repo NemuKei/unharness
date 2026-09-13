@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+<rect width="1200" height="800" fill="#13202c"/>
+<g fill="none" stroke="#7cb3c1" stroke-width="2">
+<path stroke-dasharray="8 8" d="M400 60V700M800 60V700"/>
+<circle cx="210" cy="325" r="50"/><circle cx="600" cy="325" r="50"/><circle cx="990" cy="160" r="50"/>
+<path d="M170 375Q130 445 178 540Q210 575 247 540Q285 445 250 375M560 375Q520 445 568 540Q600 575 637 540Q675 445 640 375M960 210L925 405L955 425L965 645L985 645L990 445L995 645L1015 645L1025 425L1055 405L1020 210M951 245L910 425M1029 245L1070 425"/>
+<path stroke="#a18ecf" d="M940 150H1040"/><path stroke="#53e8ed" d="M160 250H260M550 250H650M940 85H1040"/>
+</g>
+<g font-family="system-ui,sans-serif" text-anchor="middle" fill="#dce9ef">
+<text x="600" y="40" font-size="22">ENTITY AWAKENING v1 — three poses, one physical scale</text>
+<text x="210" y="90" font-size="22">Normal · asleep</text><text x="600" y="90" font-size="22">UNSEAL · half awake</text><text x="990" y="90" font-size="22">TRUEFORM · awake</text>
+<text x="210" y="605" font-size="17">Curled compactly</text><text x="600" y="605" font-size="17">Keep knees embraced</text>
+<text x="600" y="725" font-size="18">Same head size. Transparent gutters. No text, grid, background or effects in your PNG.</text>
+<text x="600" y="759" font-size="16">Crown guide: top 7.5% of the upright silhouette moves; keep the eyes and face below it.</text>
+<text x="600" y="785" font-size="16">The plugin fits all three poses together. This reference is not an importable image.</text>
+</g></svg>

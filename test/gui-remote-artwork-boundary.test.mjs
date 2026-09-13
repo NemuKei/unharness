@@ -33,6 +33,17 @@ const h = text => createHash('sha256').update(text).digest('hex');
 const PRIVATE = 'PRIVATE_TEST must not be projected';
 const operations = ['status', 'plan', 'apply', 'operation-status', 'artwork', 'artwork-item', 'artwork-image',
   'review-appearance-import', 'read-appearance-import', 'save-appearance-import', 'select-appearance', 'name-appearance', 'recover-appearance'];
+
+test('image reads join the operation queue so a selection cannot replace their collection index midway',async t=>{
+  const held=Promise.withResolvers();let queued=0;
+  const s=await fixture(t,{enqueue:async run=>{queued++;await held.promise;return run();}}),{auth}=await s.connect();
+  const pending=s.remote.request('artwork-image',{referenceId:s.item.id,assetId:s.image.asset.assetId},auth);
+  t.after(()=>held.resolve());
+  await new Promise(resolve=>setTimeout(resolve,40));
+  const reads=s.readCalls.filter(row=>row[0]==='image').length;
+  held.resolve();await pending;
+  assert.equal(queued,1);assert.equal(reads,0);
+});
 function crc32(bytes) {
   let c = 0xffffffff;
   for (const byte of bytes) { c ^= byte; for (let bit = 0; bit < 8; bit++) c = (c >>> 1) ^ (c & 1 ? 0xedb88320 : 0); }

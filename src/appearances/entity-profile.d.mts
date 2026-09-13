@@ -1,0 +1,13 @@
+export type EntityMode = 'normal' | 'unseal' | 'trueform';
+export const ENTITY_PROFILE_ID: 'entity-awakening/v1';
+export const ENTITY_MODES: readonly EntityMode[];
+export const ENTITY_ANCHOR: Readonly<{x:number;y:number}>;
+export const ENTITY_RELEASE_CENTERS: Readonly<Record<EntityMode,number>>;
+export const ENTITY_MAX_HEIGHT: number;
+export const ENTITY_CROWN_FRACTION: number;
+export function entityPointFits(mode: EntityMode,x:number,y:number): boolean;
+export function entityModeAtRelease(release:number): EntityMode;
+export function entityMotion(mode: EntityMode,time:number,effects:boolean): {y:number;emission:number;crown:number;field:number};
+export function entityAssetIds(manifest: unknown): string[];
+export function validEntityLayer(entity:unknown, version:unknown, assetIds:ReadonlySet<string>): boolean;
+export function entityEmission(r:number,g:number,b:number): {strength:number;theme:'cyan'|'amber';color:number};

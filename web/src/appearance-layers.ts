@@ -1,17 +1,26 @@
 import stock from '../../assets/appearance-templates/hangar-layered-v1/stock.json' with { type: 'json' };
+import { ENTITY_MODES, validEntityLayer, entityAssetIds } from '../../src/appearances/entity-profile.mjs';
+import type { EntityMode } from '../../src/appearances/entity-profile.mjs';
 
 export type LayerAsset = { assetId: string; format: 'png'; width: 724; height: 724; bytes: number };
-export type LayerManifest = { kind: 'unharness-layered-appearance'; schemaVersion: 1; templateId: string;
-  assets: LayerAsset[]; layers: { entity: { assetId: string }; background: { assetId: string };
-    restraints: Array<{ partId: string; assetId: string }> } };
+type CommonManifest = { kind: 'unharness-layered-appearance'; templateId: string; assets: LayerAsset[] };
+type CommonLayers = {background: {assetId:string};restraints:Array<{partId:string;assetId:string}>};
+export type LayerManifest = CommonManifest & (
+  | {schemaVersion:1;layers:CommonLayers & {entity:{assetId:string}}}
+  | {schemaVersion:2;layers:CommonLayers & {entity:{profileId:'entity-awakening/v1';poses:Record<EntityMode,{assetId:string}>}}});
 export const stockLayerManifest = stock.manifest as LayerManifest;
+export function layerManifestKey(value:LayerManifest) {
+  return JSON.stringify([value.templateId,value.schemaVersion,value.schemaVersion===2?value.layers.entity.profileId:null,
+    entityAssetIds(value),value.layers.background.assetId,[...value.layers.restraints].sort((a,b)=>a.partId.localeCompare(b.partId)).map(p=>[p.partId,p.assetId]),
+    [...value.assets].sort((a,b)=>a.assetId.localeCompare(b.assetId)).map(a=>[a.assetId,a.format,a.width,a.height,a.bytes])]);
+}
 const object = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 const exact = (value: unknown, keys: string[]): value is Record<string, unknown> => object(value)
   && Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key));
 const hash = (value: unknown): value is string => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
 export function validLayerManifest(value: unknown): value is LayerManifest {
   if (!exact(value, ['kind', 'schemaVersion', 'templateId', 'assets', 'layers']) || value.kind !== 'unharness-layered-appearance'
-    || value.schemaVersion !== 1 || value.templateId !== stock.manifest.templateId || !Array.isArray(value.assets)
+    || ![1,2].includes(value.schemaVersion as number) || value.templateId !== stock.manifest.templateId || !Array.isArray(value.assets)
     || !value.assets.length || value.assets.length > 64 || !exact(value.layers, ['entity', 'background', 'restraints'])) return false;
   const ids = new Set<string>(); let bytes = 0;
   for (const asset of value.assets) {
@@ -21,8 +30,9 @@ export function validLayerManifest(value: unknown): value is LayerManifest {
     ids.add(asset.assetId); bytes += asset.bytes;
   }
   if (bytes > 64 * 1024 * 1024) return false;
-  const used = new Set<string>();
-  for (const role of ['entity', 'background']) {
+  if(!validEntityLayer(value.layers.entity,value.schemaVersion,ids))return false;
+  const used = new Set<string>(entityAssetIds(value));
+  for (const role of ['background']) {
     const part = value.layers[role];
     if (!exact(part, ['assetId']) || !hash(part.assetId) || !ids.has(part.assetId)) return false;
     used.add(part.assetId);
@@ -143,10 +153,13 @@ export async function prepareLayerImages(manifest: LayerManifest, loadImage: Lay
     if (standard && (asset.bytes !== standard.bytes || asset.width !== standard.width || asset.height !== standard.height))
       throw Error('appearance-layer-invalid');
   }
-  const parts = new Map([['background', selected.layers.background.assetId], ['entity', selected.layers.entity.assetId],
+  const entityParts: Array<[string,string]> = selected.schemaVersion===1 ? [['entity',selected.layers.entity.assetId]]
+    : ENTITY_MODES.map(mode=>['entity-'+mode,selected.layers.entity.poses[mode].assetId]);
+  const parts = new Map<string,string>([['background', selected.layers.background.assetId], ...entityParts,
     ...selected.layers.restraints.map(part => [part.partId, part.assetId] as [string, string])]);
-  const replacements = new Map(stock.files.filter(part => parts.get(part.partId) !== part.assetId)
+  const replacements = new Map(stock.files.filter(part => parts.has(part.partId) && parts.get(part.partId) !== part.assetId)
     .map(part => [part.partId, parts.get(part.partId)!]));
+  if(selected.schemaVersion===2)for(const mode of ENTITY_MODES)replacements.set('entity-'+mode,selected.layers.entity.poses[mode].assetId);
   if (replacements.size && typeof loadImage !== 'function') throw Error('appearance-image-loader-required');
   const images = new Map<string, ImageBitmap>(); let destroyed = false;
   const destroy = () => { if (!destroyed) { destroyed = true; images.forEach(image => image.close()); images.clear(); } };
