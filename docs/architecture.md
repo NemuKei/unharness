@@ -1,8 +1,8 @@
 # Architecture boundaries
 
-The [2026-09-09 product plan](superpowers/plans/2026-09-09-mac-product-experience.md) adds a static public-domain UI with a restricted local bridge, protected Unharness control Skills and freely selected layered artwork. [Domain entry](spec-domain-entry.md) and [appearance](personalization.md) define those new boundaries. The following sections describe the currently implemented slices; they do not establish the new origin/asset behavior.
+Updated 2026-09-13. The static public-domain UI, restricted local bridge, retained Unharness controls and freely selected layered artwork are implemented. [Domain entry](spec-domain-entry.md) and [appearance](personalization.md) define their contracts; [current status](status.md) links the qualified package/site snapshots. Architecture and diagnostic code alone do not establish another host's runtime behavior.
 
-This page separates the code present on 2026-09-09 from the intended product architecture. The Node.js 24+ runtime includes inventory, source-control fixtures, desktop-record observations, local versioned records, registered optional-source preparation/recovery, private ordinary-run comparison records, frozen pre-use inputs and sequential replay. The loopback GUI connects the fixture and registered-source services to React/TypeScript and PixiJS; diagnostic/core modules do not import browser dependencies. Replay preparation, native preflight, task/result association and historical favorites share CLI/GUI operations with [scoped Mac desktop evidence](evidence/2026-09-09-replay-gui-macos.md). A registered-only [local MCP transport](spec-ai-entrypoint.md) now shares these operations; desktop AI qualification and cross-application migration remain subsequent work.
+This page describes the current code and retains the narrow evidence boundaries of its diagnostic tools. The Node.js 24+ runtime includes inventory, source-control fixtures, desktop-record observations, local versioned records, registered optional-source preparation/recovery, private ordinary-run comparison records, frozen pre-use inputs and sequential replay. The loopback GUI connects the fixture and registered-source services to React/TypeScript and PixiJS; diagnostic/core modules do not import browser dependencies. Replay preparation, native preflight, task/result association and historical favorites share CLI/GUI operations with [scoped Mac desktop evidence](evidence/2026-09-09-replay-gui-macos.md). A registered-only [local MCP transport](spec-ai-entrypoint.md) now shares these operations; the [Mac qualification](evidence/2026-09-13-mac-codex-completion.md) covers the stated native/AI routes, while Claude native qualification and Windows product delivery remain deferred.
 
 ## Current runnable architecture
 
@@ -47,7 +47,7 @@ Both diagnostics are separate from the desktop app's active session. They retain
 
 [desktop-cli.mjs](../src/codex/desktop-cli.mjs) supplies the local create/set/status/restore/recover/cleanup and observation entry points. It does not start desktop tasks. The operator opens the prepared project as a fresh local task, then the observer relates its recording to the intact preparation snapshot. A source edit during observation prevents association; results remain snapshots rather than perpetual claims about active state.
 
-The [runbook](desktop-observation.md) defines manual startup, evidence interpretation and the deliberately limited recovery scope. Corrupt/partial journals, missing lock ownership, power loss and adversarial filesystem races are not covered as automatic recovery. This fixture mechanism is not yet the shared favorite/configuration transaction engine. Mac has actual fixture loading and refresh observations; Windows still requires fresh-task evidence.
+The [runbook](desktop-observation.md) defines manual startup, evidence interpretation and the deliberately limited recovery scope. Corrupt/partial journals, missing lock ownership, power loss and adversarial filesystem races are not covered as automatic recovery. This earlier fixture mechanism remains separate from the registered favorite/configuration transaction engine. Mac has actual fixture loading and refresh observations; Windows still requires fresh-task evidence.
 
 The fixture-only `refresh` operation journals a same-case notification before touching the owned Skill timestamp. It preserves content identity and advances the preparation boundary; it is not a Codex reload API. The observer records known creation routes and rejects known forks as fresh candidates, and recognizes only known text fields in ordinary/custom tool outputs. The [Mac sequence](evidence/2026-09-06-desktop-fixture-macos.md) shows why a new task alone must not be treated as proof of a refreshed Skill catalog.
 
@@ -153,44 +153,47 @@ The registered CLI and loopback dispatcher expose twelve replay operations. [Rep
 
 Comparison removes private request/answer bodies and suppresses aggregates when records overlap or their start/Normal/runtime/qualification/budget/usage conditions cannot be compared. Historical favorite creation derives its snapshot and mode from the recorded attempt, independently of today's prepared mode. All replay results stay neutral until a separate, applicable performance rule is implemented.
 
-## Intended product architecture
+<a id="intended-product-architecture"></a>
 
-Every dotted connection below is a planned integration. The CLI and Codex integration boxes have existing diagnostic slices; that does not mean they are already connected to the future shared core or can control the desktop. The OS box represents shared responsibilities, not a library already implemented.
+## Product architecture
+
+Solid connections below are implemented code paths. The dotted Claude Desktop
+edge denotes deferred native qualification, not a missing adapter. Mac scope and
+Windows/Claude evidence remain separate; preparing files is not proof that an
+already running task loaded them.
 
 ```mermaid
 flowchart TB
-  UI["ドットGUI<br/>PixiJS演出 + HTML/CSS操作・状態"]
-  MCP["AI操作入口 / MCP<br/>自然言語の依頼"]
+  Web["公開サイト<br/>静的な画面・デモ・導入案内"]
+  Bridge["ローカル接続<br/>許可・期限・操作範囲・結果照会"]
+  UI["ローカルGUI<br/>PixiJS + HTML/CSS"]
+  MCP["AI操作入口 / MCP"]
   CLI["CLI<br/>診断・復帰"]
-  Core["共通ローカルコア<br/>装備の保存・切替・復帰<br/>比較の実行・計測・評価"]
-  Store[("ローカル保存<br/>お気に入り・比較記録<br/>復旧点・表示設定")]
-  CodexAdapter["Codex連携<br/>一覧・検証用ソースの診断"]
-  ClaudeAdapter["Claude Code連携<br/>未実装"]
-  Platform["OS差分の扱い<br/>macOS / Windows<br/>パス・ファイル・プロセス"]
-  CodexApp["Codex Desktop"]
-  ClaudeApp["Claude Code Desktop"]
-  UI -.->|"操作"| Core
-  MCP -.->|"同じ操作"| Core
-  CLI -.->|"同じ操作"| Core
-  Core -.->|"保存・読込"| Store
-  Core -.-> CodexAdapter
-  Core -.-> ClaudeAdapter
-  Core -.->|"共通処理から利用"| Platform
-  CodexAdapter -.->|"反映・確認"| CodexApp
-  ClaudeAdapter -.->|"反映・確認"| ClaudeApp
-  CodexAdapter -.->|"OS固有処理"| Platform
-  ClaudeAdapter -.->|"OS固有処理"| Platform
-  classDef planned fill:#f5f5f5,stroke:#808080,color:#303030,stroke-dasharray:5 4
-  classDef partial fill:#fff3d6,stroke:#a17929,color:#4b360b
-  classDef external fill:#eef2f7,stroke:#68778c,color:#1d2b3d
-  class UI,MCP,Core,Store,Platform,ClaudeAdapter planned
-  class CLI,CodexAdapter partial
-  class CodexApp,ClaudeApp external
+  Core["共通ローカルコア<br/>保存・準備・比較記録・復帰"]
+  Store[("ローカルの不変な記録<br/>構成・作品・比較・操作結果")]
+  CodexAdapter["Codexアダプター<br/>登録ソース・Native API・記録読取"]
+  ClaudeAdapter["Claudeアダプター<br/>実装済み・実機検証は延期"]
+  Platform["OSごとのファイル・プロセス処理"]
+  CodexApp["Codex Desktop<br/>Macの合意範囲を検証済み"]
+  ClaudeApp["Claude Code Desktop<br/>実機検証は後続"]
+  Web -->|"明示したローカル許可"| Bridge
+  Bridge --> Core
+  UI --> Core
+  MCP --> Core
+  CLI --> Core
+  Core --> Store
+  Core --> CodexAdapter
+  Core --> ClaudeAdapter
+  Core --> Platform
+  CodexAdapter -->|"準備・読取・タスク記録"| CodexApp
+  ClaudeAdapter -.->|"Native qualification pending"| ClaudeApp
+  CodexAdapter --> Platform
+  ClaudeAdapter --> Platform
 ```
 
 The Unharness-owned control, storage, artwork, and export layers run on the user's computer. Free use with no recurring operator service expense is a product constraint: no paid API or hosted backend is required. The user-selected public domain distributes static UI assets; the bundled local UI remains available. Existing Codex/Claude Code execution and optional AI authoring/judging use the user's separately chosen environment and allowance. Optional AI judging has a contract but no selected execution implementation. Default prepared layers and their composition run locally.
 
-The fixture core uses local content-addressed JSON records. The [selected visual stack](design.md#selected-rendering-stack) uses PixiJS for artwork/effects and React/TypeScript with HTML/CSS for controls and readable state, built with Vite. Production storage migration and the full desktop application/reflection mechanism remain undecided. The database symbol above represents the broader storage responsibility, not a selected database service.
+The fixture and registered-source cores use local content-addressed JSON records. The [selected visual stack](design.md#selected-rendering-stack) uses PixiJS for artwork/effects and React/TypeScript with HTML/CSS for controls and readable state, built with Vite. The storage symbol represents those local records, not a hosted database. Application loading and evidence are handled by the adapters and qualified per host; future platform work must preserve existing versions and recovery.
 
 Load PixiJS only through the browser presentation entry point. It consumes saved appearance data and the core's operation/assessment state; a ticker, asset-load completion or animation callback cannot apply settings or mark a task verified. Configuration and recovery remain usable independently of renderer availability. Bundle browser dependencies/assets locally, and keep CLI diagnostics callable without installing the presentation dependencies.
 
@@ -204,7 +207,7 @@ The core publishes operation events. An open UI reflects them and can animate th
 
 The initial execution flow handles one selected mode at a time and records the user's chosen task. It does not fan out an instruction into several modes. An explicitly requested later replay can use the saved starting conditions; simultaneous trials require separately verified per-session isolation and are outside the initial implementation scope.
 
-The proposed [appearance workflow](personalization.md) uses prepared art packs and weighted local selection by default. A renderer receives the saved recipe and observed mode/operation state. The user's AI can optionally author pixel data or a component recipe, or use an available image tool, then return assets for validated import. The core owns appearance identities, resolved recipes, art-pack versions, and assets; work-memory profiles and experiment evidence are separate. Default appearance selection does not read personal memory, and optional creation does not run inside candidate benchmark tasks. These paths are not present in the current diagnostic.
+The implemented [appearance workflow](personalization.md) preserves deterministic discovery recipes and supports named prepared looks plus validated local PNG imports. The renderer receives the saved appearance and selected mode preview. The core owns immutable appearance/asset versions and the collection; the user's AI supplies an optional creative brief and compatible images. Neither prepared selection nor ordinary rendering reads private memory or runs a model. Creation remains separate from benchmark inputs and configuration recovery.
 
 [Original creation and revision](personalization.md#creation-and-revisions) are voluntary at any time. Templates define AI entity, restraints and background, with known coordinates, compatible parts and release poses. The local core validates images/data, saves immutable asset versions and tracks technical operation identities. The user's AI provides the creative discussion and optional authoring; it cannot bypass source-recovery checks by changing an appearance.
 

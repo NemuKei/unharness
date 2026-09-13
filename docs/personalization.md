@@ -2,7 +2,7 @@
 
 Direction updated on 2026-09-09. The maintainer replaced performance-gated original creation, a fixed set of three candidates and forced GOOD/BAD treatments with freely created and selected original artwork. The user's AI helps discuss and make the images; Unharness imports and stores them locally. The accepted logical parts are **AI entity, restraints and background**. The [implementation plan](superpowers/plans/2026-09-09-layered-originals.md) follows this contract.
 
-This is the new product contract. The earlier lifecycle and its historical records are described in [spec-appearances.md](spec-appearances.md). The [local import and versioned collection API](layered-appearances.md) now preserves that history in appearance state version 2; the replacement-layer UI and native qualification are still being integrated. Updating these documents does not change already running GUIs or personal settings.
+This is the current product contract. The earlier lifecycle and its historical records are described in [spec-appearances.md](spec-appearances.md). The [local import and versioned collection API](layered-appearances.md) now preserves that history in appearance state version 2; the replacement-layer UI and scoped native authoring/save/reselection have [Mac evidence](evidence/2026-09-13-awakening-motion.md). Updating these documents does not change already running GUIs or personal settings.
 
 ## Experience
 
@@ -13,11 +13,11 @@ The user can ask for an AI entity, restraints, a background or a complete set. E
 The same entity remains recognizable across Normal, UNSEAL and TRUEFORM. The restraint template makes the release mode understandable. Appearance selection does not apply a harness configuration, establish task loading or change an evaluation.
 
 New entities use the [fixed twelve-frame awakening contract](spec-entity-poses.md): asleep,
-half awake and fully awake at one physical scale. The plugin splits a transparent
+half awake, nine intermediate poses and fully awake at one physical scale. The plugin splits a transparent
 pose sheet, fits the first two silhouettes inside the closed restraints and owns
 bounded idle, crown, light and field effects. Historical single-entity versions
-remain unchanged and selectable. The authoring AI chooses the character and
-poses; deterministic pixel checks establish fit, not semantic anatomy or expression.
+remain unchanged and selectable. The authoring AI follows the plugin's fixed count/order/scale guide while choosing the character and pose details;
+deterministic pixel checks establish fit, not semantic anatomy or expression.
 
 ## Layer template
 

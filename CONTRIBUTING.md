@@ -1,15 +1,16 @@
 # Contributing to Unharness
 
-Unharness is being prepared for an open-source release. This repository contains product/design documentation, a read-only Codex inventory CLI, a diagnostic that changes only its own temporary source fixture, and a desktop-record observer with a persistent synthetic fixture. A shared fixture-only loadout store/service also supports registration, immutable favorites, checkpoints and recording association. The full application and live personal mode switching are still under development. Use Node.js 24+ and install the locked dependencies with `npm ci --ignore-scripts` before the full `node --test` suite. The standalone diagnostics have no external package dependencies; user-source Skill policy transformations use pinned YAML. See [the inventory guide](docs/codex-probe.md) and [source-control guide](docs/source-controls.md) for real-environment checks. The [desktop observation guide](docs/desktop-observation.md) covers fresh tasks and fixture-only recovery; [the loadout guide](docs/loadouts.md) covers the shared save/restore service. The [registered user-source contract](docs/spec-user-sources.md) defines the separate preparation and recovery boundary.
+Unharness is public under the [MIT License](LICENSE), with a qualified initial Apple Silicon Mac / Codex Desktop preview. The repository contains the local core, source registration and recovery, GUI/MCP entry points, public connection, comparison records, layered artwork and diagnostic fixtures. Read [current status](docs/status.md) for the release/evidence boundary and [the continuity brief](docs/handoff.md) when resuming work in a new task. Use Node.js 24+ and install the locked dependencies with `npm ci --ignore-scripts` before the full `node --test` suite. The standalone diagnostics have no external package dependencies; user-source Skill policy transformations use pinned YAML. See [the inventory guide](docs/codex-probe.md) and [source-control guide](docs/source-controls.md) for real-environment checks. The [desktop observation guide](docs/desktop-observation.md) covers fresh tasks and fixture-only recovery; [the loadout guide](docs/loadouts.md) covers the shared save/restore service. The [registered user-source contract](docs/spec-user-sources.md) defines the separate preparation and recovery boundary.
 
 ## Presentation dependencies
 
-The local fixture GUI uses React, TypeScript and Vite with PixiJS artwork/effects and HTML/CSS controls. Exact versions and transitive dependencies are recorded in `package.json` and `package-lock.json`. Build and start it with:
+The local and public GUIs use React, TypeScript and Vite with PixiJS artwork/effects and HTML/CSS controls. Exact versions and transitive dependencies are recorded in `package.json` and `package-lock.json`. Build and start it with:
 
 ```text
 npm ci --ignore-scripts
 npm run check
 npm run build
+npm run build:site
 npm run gui
 ```
 
@@ -29,7 +30,7 @@ The executable override is optional when Playwright already has a browser instal
 
 ## Work that is useful now
 
-- Investigate actual Codex desktop loading and control behavior on macOS and Windows.
+- Investigate a concrete regression or compatibility change against the qualified Mac scope; do not restart completed qualification merely because an old plan remains in the repository.
 - Turn observed behavior into reproducible, sanitized compatibility evidence.
 - Improve the save–try–compare–favorite–restore flow and its acceptance criteria.
 - Refine documentation and the selected visual direction.
@@ -50,4 +51,4 @@ Use synthetic configuration fixtures in automated tests. Record exact revisions,
 
 ## Release preparation
 
-The license and public reporting channels have not been chosen yet. They must be established before inviting public use or accepting outside contributions under a specific license. Installation instructions, supported versions, and recovery procedures will be published after they are verified.
+The [MIT License](LICENSE), [public issue tracker](https://github.com/NemuKei/unharness/issues), [Mac installation instructions](docs/mac-installation.md) and [recovery procedure](docs/plugin-recovery.md) are established. Keep reports sanitized and follow the current qualification boundaries. A normal documentation/code push does not authorize replacing a published archive or deploying a different site. Packaging changes use a new immutable version; public-only UI changes can deploy separately without rebuilding that archive.

@@ -18,11 +18,11 @@ Use the [public site](https://unharness.deltahelmlab.com/) to explore the demo a
 
 **Free, with no required paid API or hosted backend.** Unharness is designed to run locally with no recurring operator service expense. Your existing AI subscription and usage are separate. Default artwork, layered composition, image import and card export have a local route without model calls. Optional original-artwork authoring uses your own AI. See [feasibility and limitations](docs/feasibility.md).
 
-**Planned product entry:** ask your AI to open Unharness in its in-app browser at your own domain, while settings and artwork stay on your PC. The plan includes a guided installation/demo, retained Unharness controls in TRUEFORM, and freely created entity/restraint/background layers with performance displayed separately. Public HTTPS connection is verified; the complete model-led native onboarding journey remains under verification. See the [Mac product plan](docs/superpowers/plans/2026-09-09-mac-product-experience.md).
+**Mac product entry:** use the public demo and installation guide, then ask your AI to open the registered workbench. The public screen pairs with the local runtime; settings and artwork stay on your PC. Management/recovery remains available in TRUEFORM, and original entity/restraint/background creation is independent of performance. The [Mac qualification](docs/evidence/2026-09-13-mac-codex-completion.md) links the dated installation, model-led setup and artwork journeys. Automatic tool exposure and image-generation availability still depend on the host environment.
 
 The [restricted public connection bridge](docs/domain-connection.md) now has local approval/cancellation, MCP handoff, expiring authorization and durable operation lookup. Its [static public workbench](docs/public-workbench.md) includes the demo, connection UI, artwork import/collection/cards and eleven website-tool adapters under synthetic/HTTP and built-browser tests. Artwork access requires explicit v2 local approval. [Live Mac QA](docs/evidence/2026-09-11-public-mac-qa.md) verifies publication, real HTTPS-to-loopback access under the existing browser permission, actual Codex website-tool calls, mixed GUI/AI mode restoration and public artwork/card saving.
 
-The Codex core now saves reviewed UNSEAL/TRUEFORM presets with model and official-reference provenance, separately from the original Normal. CLI, GUI operations and MCP use the same frozen versions; adoption does not change source files or the current task. The [setup contract](docs/spec-guided-setup.md) records the tested boundary and the remaining onboarding/native checks.
+The Codex core now saves reviewed UNSEAL/TRUEFORM presets with model and official-reference provenance, separately from the original Normal. CLI, GUI operations and MCP use the same frozen versions; adoption does not change source files or the current task. The [setup contract](docs/spec-guided-setup.md) records the saved-version boundary and the scoped native evidence.
 
 New Skills can be reviewed and added through the local workbench or MCP after a release setup is saved. Enrollment preserves earlier Normal versions and history and changes no configuration file. Under the new rule, review and save both modes for the expanded scope, then prepare the selected mode separately. The workbench shows inherited and additional Skills in the saved pair, with distinct setup and preparation requirements. Older favorites show how added Skills will be included. [Enrollment workflow](docs/spec-guided-setup.md#additive-skill-enrollment), [built GUI checks](docs/evidence/2026-09-10-mode-inheritance-gui.md).
 
@@ -71,7 +71,7 @@ The [workbench runbook](docs/user-source-gui.md) covers launch/resume, saved ver
 
 Skill configuration preparation preserves unrelated settings and comment placement. If the native editor would lose a comment, preparation stops before changing personal files.
 
-A [selected real-source Mac check](docs/evidence/2026-09-08-real-source-desktop-macos.md) observed all three conditions and saved-Normal restoration in fresh desktop tasks. The workbench and CLI now [associate a selected task with its prepared source version](docs/spec-user-source-observations.md), showing a dated match, mismatch, unqualified or unknown result. Older preparations without a recorded boundary need a reviewed re-preparation. A match covers the selected recorded sources; complete desktop support remains unverified.
+A [selected real-source Mac check](docs/evidence/2026-09-08-real-source-desktop-macos.md) observed all three conditions and saved-Normal restoration in fresh desktop tasks. The workbench and CLI now [associate a selected task with its prepared source version](docs/spec-user-source-observations.md), showing a dated match, mismatch, unqualified or unknown result. Older preparations without a recorded boundary need a reviewed re-preparation. A match covers the selected recorded sources; it does not establish whole-plugin runtime or support beyond the [qualified Mac scope](docs/compatibility.md).
 
 If a later independent Codex setting edit affects only retained configuration, the workbench can now show a value-free **review changes** summary and explicitly record the current settings as a new Normal version. This record-only acceptance does not rewrite managed files. Restoring an older favorite or checkpoint states that it will keep the current common settings and use the saved selected-source state; saving afterward creates a new favorite version. [Native owned-profile and built-browser checks](docs/evidence/2026-09-08-retained-settings-macos.md) cover source preservation, older saved versions and interruption recovery. They do not qualify complete desktop loading or Mac support. See the [workbench runbook](docs/user-source-gui.md) and [retained-settings contract](docs/spec-retained-settings.md).
 
@@ -79,7 +79,7 @@ The same workbench has **Equipment** and **Comparison** tabs. Comparison reviews
 
 Before a task, the collapsed **save starting conditions** form can now freeze the exact request, declared criteria, stopping budget and original working-file bytes, including uncommitted and binary content. File changes invalidate an unsaved review; saved starts remain immutable. [Mac native/profile and browser evidence](docs/evidence/2026-09-08-starting-conditions-macos.md) covers capture, readback, interruption and scope changes. This [input-capture step](docs/spec-starting-conditions.md) starts no model task.
 
-From a saved start, **replay with these conditions** prepares one owned location, checks retained settings and hands the exact request to a fresh local Codex task. Copying or opening the location repeats the check; the user sends the request. A completed task UUID brings its recorded request/source evidence, root-response usage and separate outcome files into the same Comparison screen. Results use the frozen criteria, retain attributed corrections, and can save their historical configuration as a favorite. Lost responses can be checked through explicit history. See the [replay workflow](docs/user-source-gui.md#replay-one-saved-start) and [contract](docs/spec-sequential-replay.md). Performance verdicts and full Mac product qualification remain subsequent work; the [registered desktop AI loop](docs/evidence/2026-09-09-ai-desktop-macos.md) is now checked.
+From a saved start, **replay with these conditions** prepares one owned location, checks retained settings and hands the exact request to a fresh local Codex task. Copying or opening the location repeats the check; the user sends the request. A completed task UUID brings its recorded request/source evidence, root-response usage and separate outcome files into the same Comparison screen. Results use the frozen criteria, retain attributed corrections, and can save their historical configuration as a favorite. Lost responses can be checked through explicit history. See the [replay workflow](docs/user-source-gui.md#replay-one-saved-start) and [contract](docs/spec-sequential-replay.md). Performance verdicts require applicable evidence. The [registered desktop AI loop](docs/evidence/2026-09-09-ai-desktop-macos.md) and subsequent [Mac qualification](docs/evidence/2026-09-13-mac-codex-completion.md) retain their separate dated scopes.
 
 ## Make “what if I removed this?” easy to try
 
@@ -93,7 +93,7 @@ Here, a **harness** means the surrounding skills, persistent instructions, and a
 
 ## One small experiment
 
-1. **Save what you have.** Ask “Add my current setup to favorites,” or use the star button.
+1. **Save what you have.** Ask “Add my current setup to favorites,” or use the favorite-save control.
 2. **Try another mode.** Keep your saved Normal, choose a Zero baseline, or add selected procedures on top through Limited release. See the mode targets and current implementation boundary below.
 3. **Start fresh.** Use your selected mode in a new task and record its request and starting conditions.
 4. **Review your actual work.** Inspect the output, changes, time, available usage data, and your notes alongside saved results.
@@ -121,7 +121,7 @@ These modes are starting points. A custom combination can be saved as a favorite
 
 ## Use the screen, or ask your AI
 
-The web interface and natural-language requests are intended to call the same local operations:
+The web interface and AI requests call the same registered local operations:
 
 - “Switch to limited release.”
 - “Try this request in Zero mode.”
@@ -138,13 +138,13 @@ The visual direction uses a pixel-art machine hangar: the outer equipment opens,
 
 ![Static concept: normal equipment, limited release, and the AI entity emerging in Zero mode](docs/assets/04-mecha-release-stages.png)
 
-*Original static design concept. The current fixture GUI implements a smaller, explicitly labelled diagnostic flow.*
+*Original static design concept. The current public and local workbenches use the implemented mechanical renderer; the synthetic demo remains clearly labelled.*
 
-The local GUI uses PixiJS for the equipment scene and effects, with React and HTML/CSS for controls and readable state. It reuses the original armor, supports and branching core in a 49-cel sequence against fixed architecture. Plates open about their seams, supports withdraw and the core rises; reverse travel follows the same sequence. Foreground idle motion remains continuous, and the fully released entity gains a stronger white-blue radiance when effects are on. All playback is local, with no image generation. Technical recording/ID fields are available in a collapsed development section. See [the rendering design](docs/design.md#selected-rendering-stack) and [bundled artwork](docs/gui-artwork.md). The full appearance UI and native original-artwork creation journey remain in progress.
+The local GUI uses PixiJS for the equipment scene and effects, with React and HTML/CSS for controls and readable state. It reuses the original armor, supports and branching core in a 49-cel sequence against fixed architecture. Plates open about their seams, supports withdraw and the core rises; reverse travel follows the same sequence. Foreground idle motion remains continuous, and the fully released entity gains a stronger white-blue radiance when effects are on. All playback is local, with no image generation. Technical recording/ID fields are available in a collapsed development section. See [the rendering design](docs/design.md#selected-rendering-stack) and [bundled artwork](docs/gui-artwork.md). The appearance UI, native authoring operations and saved-version reuse are covered by the [artwork qualification](docs/evidence/2026-09-13-awakening-motion.md).
 
 Equipment can also be shown as supportive armor or a resonating frame when a comparison shows it fits the work. Unmeasured setups remain neutral, and the illustration stays separate from the measured result.
 
-Original artwork uses reusable local parts for the AI entity, restraints and background. The [local workbench](docs/layered-appearances.md) reviews chosen PNG parts in three modes, saves versions, reselects earlier work and exports an appearance card with explicitly chosen public text. The approved public workbench now uses those same components through bounded image and collection operations. The bundled authoring Skill can use the private MCP to prepare a creation place and review its selected images; that private location is not exposed publicly. Actual public-origin access, image import/reselection and card saving passed the live QA. AI-led creation remains unqualified. There is no performance unlock, fixed three-candidate choice or forced BAD treatment; performance is reported separately. Choosing a look never changes the harness. See the [layered appearance contract](docs/personalization.md).
+Original artwork uses reusable local parts for the AI entity, restraints and background. The [local workbench](docs/layered-appearances.md) reviews chosen PNG parts in three modes, saves versions, reselects earlier work and exports an appearance card with explicitly chosen public text. The approved public workbench now uses those same components through bounded image and collection operations. The bundled authoring Skill can use the private MCP to prepare a creation place and review its selected images; that private location is not exposed publicly. Actual public-origin access, image import/reselection and card saving passed the live QA. The [0.0.4 model-led import/card journey](docs/evidence/2026-09-11-mac-codex-0.0.4.md) and [0.0.8 native twelve-frame authoring](docs/evidence/2026-09-13-awakening-motion.md) are distinct verified paths; access to an image generator is environment-dependent. There is no performance unlock, fixed three-candidate choice or forced BAD treatment; performance is reported separately. Choosing a look never changes the harness. See the [layered appearance contract](docs/personalization.md).
 
 Prepared looks include the default core, **白銀** (short silver hair and cyan light) and **琥珀** (long chestnut hair and amber light). The introduction shows all three side by side on desktop and pairs the default with a selectable humanoid on smaller screens, with shared mode transitions. The workbench can save and reuse those looks; original twelve-frame sheets are fitted at one common scale and use bounded awakening effects. The plugin fixes frame count, order and playback; nine intermediate poses smoothly unfold the body, and light radiates out from the crest. The original TRUEFORM light crests add a subtle visual reference. Appearance selection does not change the AI model. See the [entity-pose contract](docs/spec-entity-poses.md).
 
@@ -156,26 +156,28 @@ The interface should distinguish the requested mode, the configuration prepared 
 
 Comparison records should identify the loadout version, model and reasoning settings, request, starting files, tools, permissions, and relevant memory conditions. When a condition cannot be isolated or a metric cannot be obtained, the record should say so. One run is one observation.
 
-Recovery should restore managed configuration without silently overwriting independent edits. An external recovery path should remain available if the AI connection is lost. The exact supported recovery scope will be documented with tested procedures.
+Recovery should restore managed configuration without silently overwriting independent edits. An external recovery path should remain available if the AI connection is lost. The [independent recovery runbook](docs/plugin-recovery.md) and [Mac evidence](docs/evidence/2026-09-13-mac-codex-completion.md) state the tested scope.
 
 ## Availability and contributing
 
-Unharness is public under the MIT License, with a Mac arm64 development preview and [installation instructions](docs/mac-installation.md). The [compatibility record](docs/compatibility.md) separates verified operations from the unfinished full Mac product. Both operating systems remain design targets; Mac completion comes first:
+Unharness is public under the MIT License, with a Mac arm64 development preview and [installation instructions](docs/mac-installation.md). The [compatibility record](docs/compatibility.md) separates the qualified Mac product from deferred platform work:
 
 | Application | macOS | Windows |
 | --- | --- | --- |
-| Codex desktop | Initial Mac product, current priority | Deferred until after Mac delivery |
+| Codex desktop | Initial Apple Silicon Mac scope qualified | Deferred; native product qualification still required |
 | Claude Code desktop | Adapter retained; native qualification deferred | After Windows Codex |
 
-The initial Mac completion criteria cover Codex Desktop. Claude Code and Windows qualification follow later; their remaining work does not block that scoped release. These are delivery targets, not completed compatibility tests. See [delivery](docs/delivery.md) and [compatibility and evidence](docs/compatibility.md).
+The initial Mac completion criteria cover Codex Desktop. Claude Code and Windows qualification follow later; their remaining work does not block that scoped release. The Mac Codex cell reflects the qualified scope; the other cells remain delivery targets. See [delivery](docs/delivery.md) and [compatibility and evidence](docs/compatibility.md).
 
 Useful early contributions include reproducible compatibility observations, small comparison examples, feedback on the save–try–compare–restore flow, and documentation improvements. Unharness uses the [MIT License](LICENSE); bundled third-party components retain their own license notices. The public demo, local plugin, installation guide and verification records are available. See [CONTRIBUTING](CONTRIBUTING.md) for feedback and contribution guidance.
 
 ## Documentation
 
+- [Documentation guide and reading order](docs/README.md)
+- [Resume in a new task](docs/handoff.md)
 - [Product and positioning](docs/product.md)
 - [Modes and acceptance criteria](docs/spec.md)
-- [Official plugins and inherited modes — planned](docs/spec-mode-inheritance.md)
+- [Current ordinary Skill states and retained-plugin inheritance](docs/spec-mode-inheritance.md)
 - [Architecture](docs/architecture.md)
 - [Delivery and handoff](docs/delivery.md)
 - [Visual direction](docs/design.md)

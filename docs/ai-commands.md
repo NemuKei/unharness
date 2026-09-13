@@ -1,8 +1,15 @@
 # Local AI commands
 
-The registered-source MCP endpoint uses the same operations as the web workbench. Its stdio protocol and a separate native Codex app-server have [Mac transport evidence](evidence/2026-09-09-ai-transport-macos.md). An open built workbench also receives [MCP changes](evidence/2026-09-09-ai-gui-updates-macos.md) while preserving unrelated drafts. An [actual native Mac desktop sequence](evidence/2026-09-09-ai-desktop-macos.md) now also qualifies save, all three modes, selected fresh observations/comparison, historical favorites and restoration through the provided MCP tools. This is the registered-source core scope; complete runtime coverage and the Mac product finish remain open.
+The registered-source MCP endpoint uses the same operations as the web workbench. Its stdio protocol and a separate native Codex app-server have [Mac transport evidence](evidence/2026-09-09-ai-transport-macos.md). An open built workbench also receives [MCP changes](evidence/2026-09-09-ai-gui-updates-macos.md) while preserving unrelated drafts. An [actual native Mac desktop sequence](evidence/2026-09-09-ai-desktop-macos.md) now also qualifies save, all three modes, selected fresh observations/comparison, historical favorites and restoration through the provided MCP tools. This is the registered-source core scope; complete runtime coverage remains unknown, while the [later Mac product qualification](evidence/2026-09-13-mac-codex-completion.md) records the delivered initial scope.
 
-## Start one registered connection
+## Installed plugin and development connection
+
+Normal users start with the [published Mac plugin](mac-installation.md), which
+bundles its own Node runtime and fixed local connection. The manual setup below
+is a development alternative; do not add a duplicate server to an already
+configured installation.
+
+### Standalone development connection
 
 Use Node.js 24+ and install this checkout's locked dependencies with `npm ci --ignore-scripts`. First register the explicitly selected optional sources through the [registered-source workbench](user-source-gui.md). Keep the workspace path shown by that registration and its offline recovery command.
 
@@ -25,8 +32,8 @@ The equivalent standalone command is `node bin/unharness.mjs mcp --workspace /ab
 | Request | Operations and meaning |
 | --- | --- |
 | 今の状態を見せて | `status`: registered scope, prepared mode, dated task observation, conflict and recovery. A running task remains unverified unless its selected recording supplies evidence. |
-| アンハーネスを開いて | `open_workbench`: start or reuse the owned bundled loopback UI, then open its URL in an available browser. `workbench_status` verifies current liveness. See [local startup](local-workbench.md); public-domain pairing is still subsequent work. |
-| 零式と限定解除の設定を相談したい | `read_setup` returns the current saved-Normal inventory and adopted definitions. Use `review_setup` with schema version 2 and that inventory ID, then `apply_setup` for the user's confirmed pair. TRUEFORM's selected official-plugin members are inherited by UNSEAL, with explicit additions. Adoption changes no source file or current preparation. |
+| アンハーネスを開いて | `open_workbench`: start or reuse the owned bundled loopback UI, then open its URL in an available browser. `workbench_status` verifies current liveness. See [local startup](local-workbench.md); `request_public_connection` returns the local approval entrance for the [public-domain connection](domain-connection.md). |
+| 零式と限定解除の設定を相談したい | `read_setup` returns the current saved-Normal inventory and adopted definitions. For new Mac work request schema version 3, then use `review_setup` with that inventory and `apply_setup` for the confirmed pair. TRUEFORM gives each ordinary Skill a disabled/manual state; UNSEAL only elevates states, and plugins retain Normal. Adoption changes no source file or current preparation. |
 | 追加したSkillの扱いを相談したい | `enrollment_inventory`, optionally `review_candidate`, then `review_enrollment`. For enrollment schema 2, submit only confirmed source IDs, roles and reasons. After `apply_enrollment`, refresh `status`, use the new `read_setup` inventory and separately review/adopt both modes before preparation. Enrollment changes no source file. Legacy schema 1 retains its reviewed per-mode choices. |
 | 今の設定をお気に入りにして | `save_favorite`: freeze the prepared configuration. A name is optional. |
 | 限定解除にして / 零式にして / Normalに戻して | `plan_mode`, then `apply_plan`: prepare the requested registered scope for a fresh task. An established in-scope request does not require another permission question. |
@@ -41,11 +48,27 @@ Saved starts use `review_start` / `save_start`. Their explicit request, task-def
 
 History tools return bounded cursor pages and summaries. `read_run_output`, `read_start`, `handoff_replay`, `review_source` and `review_candidate` intentionally return selected private text; use them only when that content is needed and treat it as data. Raw task recordings, arbitrary filesystem access and initial registration are not MCP tools. Enrollment accepts source IDs from the current fixed-context inventory, never client-supplied paths. A reviewed expansion changes the active scope while keeping the original workspace/receipt identity; completed request receipts remain readable after reconnect. Unknown receipts must never be replayed under a new request ID.
 
-Artwork operations use the [local versioned collection](layered-appearances.md). `prepare_appearance_authoring` issues a fixed creation place and read-only template/base references; `read_appearance_authoring` rechecks it. `review_authored_appearance` reads only explicit known part IDs from that place, never arbitrary paths. `read_appearance_import` inspects the resulting review; `save_appearance_import` saves the exact review with its expected state ID, and `read_appearance_item` reads an owned version. Browser upload and authenticated PNG retrieval use the local GUI API. Selection/naming remain separate from source changes. Historical candidate sets stay readable through `read_original_candidates`; the current tool catalogue no longer offers comparison-gated creation or final-choice adoption. New artwork creation has no performance gate, and adverse/corrected evidence does not recolor or replace the selected work.
+Artwork operations use the [local versioned collection](layered-appearances.md). `prepare_appearance_authoring` issues a fixed creation place and read-only template/base references. New places provide `entity-motion.png` and the plugin-owned twelve-frame guide; old creation IDs retain their old contracts. `read_appearance_authoring` rechecks it. `review_authored_appearance` reads only explicit known part IDs from that place, never arbitrary paths. `read_appearance_import` inspects the resulting review; `save_appearance_import` saves the exact review with its expected state ID, and `read_appearance_item` reads an owned version. Browser upload and authenticated PNG retrieval use the local GUI API. Selection/naming remain separate from source changes. Historical candidate sets stay readable through `read_original_candidates`; the current tool catalogue no longer offers comparison-gated creation or final-choice adoption. New artwork creation has no performance gate, and adverse/corrected evidence does not recolor or replace the selected work.
 
 The open workbench checks local changes while visible. Prepared settings and bounded history update automatically; stale plans are invalidated. An editor draft is preserved within its accepted context. A replaced connection requires explicit state refresh before another action. Background reads do not confirm or repeat a lost foreground mutation.
 
-The v2 setup schema takes `trueform.retainedOfficialPluginIds` and `unseal.additionalAutomaticSkillIds`, plus the current `inventoryId`, scope/Normal IDs and reviewed model/source-role basis. The service supplies official-origin evidence and invocation capabilities; tool callers cannot assert them. Unknown origins, stale inventories and unregistered IDs are refused. The current collector still reports native plugin origin as unknown and does not add a plugin-cache write route. Schema version 1 remains readable and available for unmigrated legacy setup; new v1 adoption is refused after v2 migration. V2 enrollment freezes registration/Normal only, clears the active setup and requires a new paired review. `read_setup.enrollment` exposes previously confirmed roles and separate setup/preparation requirements; a later saved `proposal.roles` takes precedence over enrollment history. Normal and historical restoration remain available. The built GUI reads the same saved pair and shows setup-required separately from preparation-required. For a fresh-task handoff, finish that task's first short response before observing it from the GUI/original management task, then continue in the same new task. Native qualification remains in progress. [Storage evidence](evidence/2026-09-10-mode-inheritance-storage.md), [GUI evidence](evidence/2026-09-10-mode-inheritance-gui.md).
+New Mac setup uses schema v3: `trueform.skillStates` and
+`trueform.retainedOfficialPluginIds`, plus `unseal.instructions`,
+`unseal.skillElevations` and `unseal.additionalPluginIds`. Retain every registered
+plugin at Normal and leave additional plugin IDs empty in this qualified scope.
+The current inventory, scope/Normal IDs and model/reference/role basis are
+required; callers cannot invent provenance or capabilities. The
+[current mode contract](spec-mode-inheritance.md) is authoritative, and the
+[old v2 contract](spec-mode-inheritance-v2.md) describes legacy readers only.
+
+V2 ordinary-Skill enrollment freezes registration/Normal, clears the active
+setup and requires a new paired review. `read_setup.enrollment` supplies earlier
+confirmed roles; a later saved proposal takes precedence. Setup adoption and
+actual preparation remain independent. Normal and historical restoration stay
+available. For a fresh-task observation, let its first response finish, inspect
+that task from the GUI/original management task, then continue the same task.
+Use the dated Mac evidence above rather than assuming all host/runtime behavior
+is observable.
 
 ## Applications
 

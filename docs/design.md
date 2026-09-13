@@ -24,11 +24,11 @@ These are static design concepts, not screenshots of implemented behavior.
 
 The original generation inputs for these selected assets are preserved in [design-prompts.md](design-prompts.md).
 
-Suggested animation sequence: casing opens → a brief visual pause → rings and particles expand → the AI rises → the scene settles to an idle state. Timing, sound, and motion amplitude are not yet specified. Preserve readable controls and an unambiguous status area throughout.
+Suggested animation sequence: casing opens → a brief visual pause → rings and particles expand → the AI rises → the scene settles to an idle state. That concept did not specify timing or motion amplitude; the implemented timing and effects are defined in the continuous-motion section and entity profile below. Sound is not an implemented feature. Preserve readable controls and an unambiguous status area throughout.
 
 ## Selected rendering stack
 
-On 2026-09-07 the maintainer selected **PixiJS** for the first GUI and explicitly accepted the additional dependencies. The [local fixture GUI](gui.md) now draws 49 coherent poses from the same original armor, supports and branching entity. Each armor piece folds about its seam as a rigid prism; the architecture stays fixed. The [bundled artwork](gui-artwork.md) preserves original foreground material and uses an empty background plate where the apparatus previously hid the wall. Comparison views and the full appearance/collection system remain future work.
+On 2026-09-07 the maintainer selected **PixiJS** for the first GUI and explicitly accepted the additional dependencies. The [local fixture GUI](gui.md) now draws 49 coherent poses from the same original armor, supports and branching entity. Each armor piece folds about its seam as a rigid prism; the architecture stays fixed. The [bundled artwork](gui-artwork.md) preserves original foreground material and uses an empty background plate where the apparatus previously hid the wall. Comparison views, appearance collection and free authoring are implemented; see [current status](status.md) for their dated qualification.
 
 | Responsibility | Selected approach |
 | --- | --- |
@@ -66,7 +66,7 @@ Keep ordinary use to a mode choice. The accepted [scope refinement](harness-scop
 
 The visible lower interface centers on favorites and returning to a recorded pre-change setting, with short explanations of what each operation does. Older recovery points remain available in an expandable history. Task UUIDs, project paths, manual recording checks and CLI recovery coordinates belong in a closed development-details section. Record/plan identifiers remain available when their details are expanded.
 
-This improves readability in the fixture GUI; the eventual product centers on selecting a mode, using it for work, reviewing evidence and keeping a useful setup. Routine users should not have to interpret hashes or manually associate raw task IDs. The verified desktop/AI integration must provide that simpler path. Current diagnostic access remains available until those integrations exist.
+This improves readability in the fixture GUI; the eventual product centers on selecting a mode, using it for work, reviewing evidence and keeping a useful setup. Routine users should not have to interpret hashes or manually associate raw task IDs. The registered GUI/AI integration provides that path within the qualified Mac scope. The earlier fixture diagnostics remain available for bounded investigations.
 
 ## Effects and product state
 
@@ -126,7 +126,7 @@ The view keeps ordinary records neutral, shows attributed checks/ratings/notes o
 
 The maintainer prefers a random discovery over a taste-optimized appearance. The proposed default selects from prepared entities and compatible variations with weighted probabilities, without using personal memories to infer taste. Keep the selected body recognizable across release states and app restarts; sample another appearance only when creating an entity or explicitly requested. The user can keep/name a discovery and associate it with a build card.
 
-Prepared sprites, code-drawn pixel grids, and optional image-model generation are distinct creation routes. Pixel art does not require an image model. The [appearance and memory proposal](personalization.md) defines these routes, reproducible local selection, optional creation skills, and benchmark separation. Random visual rarity is independent of measured performance. The GUI animates fixed bundled reference art; random assembly, the collection runtime and distribution skill remain unimplemented.
+Prepared sprites, code-drawn pixel grids, and optional image-model generation are distinct creation routes. Pixel art does not require an image model. The [appearance and memory proposal](personalization.md) defines these routes, reproducible local selection, optional creation skills, and benchmark separation. Random visual rarity is independent of measured performance. The GUI supports deterministic prepared recipes and named layered examples, with the local collection and bundled authoring Skill. Newly drawn parts use the fixed entity/motion and restraint contracts; no arbitrary runtime code is imported.
 
 ## Freely create an original form
 

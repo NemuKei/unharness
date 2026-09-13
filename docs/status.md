@@ -1,28 +1,43 @@
 # Project status
 
-Updated: 2026-09-13.
+As of 2026-09-13. Read [the documentation guide](README.md) for the canonical
+contracts and [the continuity brief](handoff.md) when starting another task.
+The current work is at a completed checkpoint; no next implementation task has
+been selected. Resume in standby after checking live state.
 
-The [0.0.8 artwork refinement](https://github.com/NemuKei/unharness/releases/tag/v0.0.8)
-is published and installed. It adds fixed twelve-frame authoring, nine intermediate
-awakening poses, outward crest/bloom, side-by-side character choices and the
-creation-focused introduction. The verified archive, actual native MCP authoring,
-personal-source/old-artwork preservation and public HTTPS selection all passed.
-All 48 served files match the final build. Existing works and their old presentation
-profiles remain intact; see the [motion evidence](evidence/2026-09-13-awakening-motion.md).
+## Available now
 
-The [0.0.7 artwork update](https://github.com/NemuKei/unharness/releases/tag/v0.0.7)
-is published and installed. It added **白銀** and **琥珀**, original authoring,
-awakening effects and an interactive comparison. Archive, actual native MCP,
-personal preservation and all 30 public-file hashes were verified; see the
-[artwork evidence](evidence/2026-09-13-entity-awakening.md).
+The [0.0.8 Mac preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.8)
+is published and installed. The agreed initial product scope is Apple Silicon
+and Codex Desktop: save Normal, prepare the three supported modes, inspect fresh
+task evidence, compare recorded work, reuse favorites and recover independently.
+The [Mac qualification](evidence/2026-09-13-mac-codex-completion.md) is the
+mode/control/recovery baseline and links earlier fresh-model and setup evidence.
 
-The [0.0.6 Mac preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.6) is published. The first Mac product targets Apple Silicon and Codex Desktop within the [accepted retained-plugin scope](evidence/2026-09-11-remote-plugin-control-limit.md): confirmed optional additional instructions and ordinary Skill disabled/manual/automatic states, with official plugins kept at their saved Normal state.
+0.0.8 adds fixed twelve-frame authoring, nine intermediate awakening poses,
+outward crests and bloom, free appearance save/reselection and the 白銀/琥珀
+examples. Its archive, installed native MCP authoring, personal-source/old-artwork
+preservation and actual public HTTPS selection passed; see
+[the motion evidence](evidence/2026-09-13-awakening-motion.md).
 
-The [0.0.6 qualification](evidence/2026-09-13-mac-codex-completion.md) verifies the immutable distribution, actual native installation, public HTTPS GUI/WebMCP mode operations, exact Normal restoration, independent restricted-process recovery and personal-profile preservation. Its 22 served files matched that dated build. The agreed first Mac Codex release scope is complete.
+The public introduction subsequently changed to three columns at widths of
+960px or more: default, 白銀 and 琥珀 share mode/effects controls. Smaller screens
+retain the character chooser. This was a site-only update; the 0.0.8 archive and
+personal configuration were not changed for that layout work.
 
-The [0.0.4 native journey](evidence/2026-09-11-mac-codex-0.0.4.md) supplies initial installation and saving, all three ordinary Skill states, three fresh Desktop input observations, AI-led paired setup, ordinary comparisons, old favorites, original artwork, collection reselection and image-card saving. Those are dated observations; they are not retroactively relabeled as 0.0.6 model runs.
+## Release and site are separate snapshots
 
-The [retained configuration fix](evidence/2026-09-13-retained-separator-merge.md) lets old saved modes survive native reinstallation adding a blank separator or moving an unrelated table. Typed selected/retained proofs and conflict rejection remain mandatory. Old Normal, v1/v2/v3 setups, favorites, comparisons and artwork records stay immutable.
+| Surface | Verified revision | Evidence |
+| --- | --- | --- |
+| Published 0.0.8 package | e4f557d204f6beb48602616143fe98ac0ca5d390 | [Archive and native checks](evidence/2026-09-13-awakening-motion.md#release-evidence) |
+| Public site, including desktop three-column layout | 9a4bce8be11baafc425e1fa875219fd6598fa992 | [Public layout follow-up](evidence/2026-09-13-awakening-motion.md#public-only-desktop-layout-follow-up) |
+| Current repository | Re-read main/remote and local changes | Later documentation commits do not rebuild the archive or redeploy the site |
+
+The latest site deployment is 8c2a707f-18a2-4b1f-a274-00d4c6979d47 on the dedicated
+`deltahelmlab-unharness` Pages project. All 48 served files matched its build.
+Release availability, published asset digests, deployment metadata and the
+absence of open GitHub issues were rechecked at this documentation checkpoint.
+An empty issue list does not mean all future platform work is implemented.
 
 ## Current limits
 
@@ -31,6 +46,6 @@ The [retained configuration fix](evidence/2026-09-13-retained-separator-merge.md
 - macOS 26.6.2 on Apple Silicon is the qualified platform. Exact desktop/native versions are recorded in the evidence. Intel Mac, Claude Code and Windows are not added by these results.
 - Independent edits require review; recovery never silently overwrites them. The management and recovery entrance remains available across supported modes.
 
-## Follow-on work
+## Deferred work
 
 Resume Claude Code's existing adapter and [native qualification](claude-native-qualification.md) when the maintainer has capacity, then continue Windows Codex before Windows Claude Code. Preserve the existing adapters and evidence boundaries. Reusable artwork packs and a public gallery remain separate future decisions. See [delivery](delivery.md), [compatibility](compatibility.md) and the [completed Mac experience plan](superpowers/plans/2026-09-09-mac-product-experience.md).

@@ -1,6 +1,6 @@
 # Feasibility and limits
 
-Initial assessment recorded on 2026-09-06, with product direction updated on 2026-09-09. This page distinguishes feasibility from qualification. The desktop-control chronology below records earlier evidence; consult [current status](status.md) and [compatibility](compatibility.md) for subsequent verified slices. The new domain/AI entry and free layered artwork still require implementation and their own evidence.
+Initial assessment recorded on 2026-09-06, with product direction updated on 2026-09-09. This page distinguishes feasibility from qualification. The desktop-control chronology below records earlier evidence; consult [current status](status.md) and [compatibility](compatibility.md) for subsequent verified slices. The public-domain/AI entry and free layered artwork now have the scoped [Mac](evidence/2026-09-13-mac-codex-completion.md) and [artwork](evidence/2026-09-13-awakening-motion.md) qualifications. Earlier assessment questions below retain their historical context.
 
 The maintainer accepted these limits and selected clipboard-image copy plus an editable X composer with the public OSS link as the initial sharing workflow. This acceptance permits development within the stated boundaries; it does not replace desktop or browser verification.
 
@@ -12,7 +12,7 @@ Do not rely on a third-party free-tier quota to call this zero recurring cost. A
 
 ## Initial desktop-control assessment (historical)
 
-The [Mac probe](evidence/2026-09-06-codex-macos.md) successfully read configuration/skill/hook inventory from a separately started Codex App Server. It did not attach to the active desktop session, change a setting, start a model task, verify a mode, or collect desktop task usage. Windows has not yet supplied a real probe result. Claude Code integration remains unimplemented.
+The [Mac probe](evidence/2026-09-06-codex-macos.md) successfully read configuration/skill/hook inventory from a separately started Codex App Server. It did not attach to the active desktop session, change a setting, start a model task, verify a mode, or collect desktop task usage. At that initial assessment, Windows had no real probe result and the Claude adapter was not yet implemented. Later bounded Windows evidence and the implemented/deferred Claude adapter are distinguished in compatibility.
 
 The subsequent [fixture investigation](evidence/2026-09-06-source-controls-macos.md) verified selected source controls in a separately rendered CLI input: manual-only catalog exclusion, effective file-based skill disablement, fixed-only AGENTS override, and restoration of marker visibility. It changed only temporary test files. These results support implementation of source controls but do not answer the actual desktop-loading boundary below.
 
@@ -20,7 +20,7 @@ A subsequent [desktop-record observation](evidence/2026-09-06-desktop-observatio
 
 The [registered fixture loadout core](loadouts.md) now supplies immutable settings, checkpoints, guarded restoration and an observation association API. Its native smoke is a local service/filesystem loop with generated data. The [saved-version desktop loop](evidence/2026-09-07-saved-loadout-desktop-macos.md) subsequently observed that association on Mac with generated sources. Real source classification, complete control coverage and Windows evidence remain separate gates. A minimal GUI can now expose this scoped loop without claiming personal-configuration support.
 
-The full product cannot yet be promised merely because local settings files can be edited. The next scoped investigation must determine:
+Editing settings alone did not resolve the initial desktop-control assessment. The investigation questions were:
 
 1. Which user-added optional instruction/Skill/hook sources the real desktop task loads, distinguishing them from provider/managed sources outside the initial release set.
 2. Which of those sources can be managed without changing fixed instructions or permissions, and whether the scope is task-local or affects other tasks.
@@ -31,14 +31,14 @@ Continue toward full desktop support only with concrete results for these bounda
 
 The [scope refinement](harness-scope.md) preserves existing memory and native task-continuity settings. Controlling those retained features is not a release-mode requirement; observing their conditions still matters for fair comparisons. The new [read-only source inventory](source-inventory.md) establishes candidate metadata, not ownership, role or desktop control. A minimal instruction guide versus no selected extra instructions is a proposed comparison, not an automatic improvement or a universal official template.
 
-The maintainer clarified that initial use selects one mode at a time. Simultaneous multi-mode dispatch is not required. The [App Server thread APIs](https://learn.chatgpt.com/docs/app-server) provide a way to address separate conversations, but do not establish independent desktop harnesses or memory for concurrent trials. Sequential use avoids requiring that concurrent boundary, while source discovery, fresh-task application, restoration, and honest measurement still need verification.
+The maintainer clarified that initial use selects one mode at a time. Simultaneous multi-mode dispatch is not required. The [App Server thread APIs](https://learn.chatgpt.com/docs/app-server) provide a way to address separate conversations, but do not establish independent desktop harnesses or memory for concurrent trials. Sequential use avoids requiring that concurrent boundary, while the [qualified Mac evidence](evidence/2026-09-13-mac-codex-completion.md) establishes only its stated source/loading/restoration/measurement scope.
 
 ## Limits to accept upfront
 
 | Area | Feasible target | Limit |
 | --- | --- | --- |
 | Zero and UNSEAL | Manage registered optional sources and verify supported states for a fresh task | No promise to erase instructions already loaded into the current conversation, remove provider/managed rules, or unload every host-injected source |
-| Numerical comparison | Observed token/time/attempt data, acceptance checks, and task-specific scorecards | Complete desktop usage still needs a live test; missing fields and child usage remain unknown rather than invented totals |
+| Numerical comparison | Observed token/time/attempt data, acceptance checks, and task-specific scorecards | Recorded root-response usage has scoped live evidence; missing fields and child usage remain unknown rather than invented totals |
 | Quality | Fixed task criteria and distinguishable human/AI judgments | No universal objective quality score or guarantee that one loadout is generally superior |
 | Artwork | Local prepared layers, voluntary user-AI creation and validated image import for entity, restraints and background | Templates constrain compatible placement and movement; image creation still needs visual review |
 | Creative revisions | Freely revise or select earlier local work; technical retries are idempotent | The user's AI allowance, validated file limits and local storage capacity remain practical limits |

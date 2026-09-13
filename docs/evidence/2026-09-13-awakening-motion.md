@@ -81,3 +81,21 @@ local tab to the personal installation, where the old selected artwork remained.
 
 Native model-level mode qualification remains the dated 0.0.6 baseline; this
 refinement does not claim new model trials or expand supported source controls.
+
+## Public-only desktop layout follow-up
+
+The later public introduction change is source
+`9a4bce8be11baafc425e1fa875219fd6598fa992`, deployed as
+`8c2a707f-18a2-4b1f-a274-00d4c6979d47` on the same dedicated Pages project.
+At widths of 960px or more it displays default, 白銀 and 琥珀 in three equal
+columns with shared mode/effects controls. Narrower widths retain the humanoid
+chooser and mount only the two visible scenes; resizing preserves that choice.
+The 0.0.8 package, its asset versions and personal configuration were not changed
+for this public-page refinement.
+
+The focused built-browser check passed at 1237px, 1024px, 760px and 390px,
+including all-three mode animation, resize/reselection, effects-off, reduced
+motion, no horizontal overflow and no configuration requests. Type/CSP and both
+builds passed. All 48 public files matched the resulting build and retained the
+security headers. The actual in-app browser displayed the live three-column
+layout in its wide viewport and the chooser in its narrow viewport.
