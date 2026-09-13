@@ -2,8 +2,8 @@
 
 As of 2026-09-13. Read [the documentation guide](README.md) for the canonical
 contracts and [the continuity brief](handoff.md) when starting another task.
-The current work is at a completed checkpoint; no next implementation task has
-been selected. Resume in standby after checking live state.
+The next platform priority is Windows Codex, followed by Claude Code. Read the
+current user request and live state before starting platform implementation.
 
 ## Available now
 
@@ -24,6 +24,13 @@ The public introduction subsequently changed to three columns at widths of
 960px or more: default, 白銀 and 琥珀 share mode/effects controls. Smaller screens
 retain the character chooser. This was a site-only update; the 0.0.8 archive and
 personal configuration were not changed for that layout work.
+
+The repository's introduction now leads with “モデルは変わった。装備は、そのまま？”
+and connects save/try/restore guidance with illustrative mode settings and the
+existing appearance preview. It makes the demo the primary entrance and shows
+Mac Codex availability separately from Windows Codex and Claude Code plans.
+This introduction revision requires a separate site deployment; the published
+snapshot below and the 0.0.8 archive remain its independent release boundaries.
 
 ## Release and site are separate snapshots
 
@@ -48,4 +55,4 @@ An empty issue list does not mean all future platform work is implemented.
 
 ## Deferred work
 
-Resume Claude Code's existing adapter and [native qualification](claude-native-qualification.md) when the maintainer has capacity, then continue Windows Codex before Windows Claude Code. Preserve the existing adapters and evidence boundaries. Reusable artwork packs and a public gallery remain separate future decisions. See [delivery](delivery.md), [compatibility](compatibility.md) and the [completed Mac experience plan](superpowers/plans/2026-09-09-mac-product-experience.md).
+The maintainer set the next-platform priority on 2026-09-13: **Mac Codex → Windows Codex → Claude Code**. Windows Codex is next; afterward resume Claude Code's existing adapter and [native qualification](claude-native-qualification.md). Both applications on macOS and Windows remain the target. Preserve existing adapters and evidence boundaries; this order does not establish new support. Reusable artwork packs and a public gallery remain separate future decisions. See [delivery](delivery.md), [compatibility](compatibility.md) and the [completed Mac experience plan](superpowers/plans/2026-09-09-mac-product-experience.md).

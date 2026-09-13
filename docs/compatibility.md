@@ -16,11 +16,11 @@ Recorded selected Skill inputs and unknown whole-plugin runtime are separate evi
 | OS | Application | Delivery phase | Current evidence |
 | --- | --- | --- | --- |
 | macOS, Apple Silicon | Codex desktop | 1 and 3 | Initial Mac scope qualified through native installation, GUI/AI operations, dated fresh-task evidence, artwork and recovery; full runtime coverage remains unknown |
-| macOS | Claude Code desktop, Code tab | 2 | Adapter implemented and qualified on owned fixtures, the built interface and a real recording; fresh native mode loading and the native AI connection remain unverified |
-| Windows | Codex desktop | 4, deferred | Native inventory, six-case source controls, current-task projection, fixture/loadout recovery, GUI smoke, and one qualified fresh task completed; baseline recording did not match, so successful saved-version association remains pending |
+| Windows | Codex desktop | 4, next platform | Native inventory, six-case source controls, current-task projection, fixture/loadout recovery, GUI smoke, and one qualified fresh task completed; baseline recording did not match, so successful saved-version association remains pending |
+| macOS | Claude Code desktop, Code tab | 2, after Windows Codex | Adapter implemented and qualified on owned fixtures, the built interface and a real recording; fresh native mode loading and the native AI connection remain unverified |
 | Windows | Claude Code desktop, Code tab | 5, deferred | Test environment available per maintainer; no test result yet |
 
-Both OSes remain design targets. The initial Mac product combines Codex Phases 1 and 3. Claude Code Phase 2 is deferred until the maintainer has capacity; Windows follows in Phases 4–5. Phase 6 later reconciles all four combinations. These priorities do not enable unqualified Windows or Claude writes. See [delivery](delivery.md).
+Both applications on both OSes remain design targets. The 2026-09-13 priority is Mac Codex (Phases 1 and 3), then Windows Codex (Phase 4), then Claude Code (Phases 2 and 5). Phase 6 later reconciles all four combinations. These priorities do not enable unqualified Windows or Claude writes. See [delivery](delivery.md).
 
 Record the desktop app version, embedded or external runtime version, CPU architecture, and execution environment. Native Windows and WSL results must not be merged into one undifferentiated “Windows passed” result. The [native Windows baseline](evidence/2026-09-07-windows-baseline.md) records a Windows 11 x64 result separately; it does not satisfy the remaining fresh-task or full desktop criteria. See [the probe guide](codex-probe.md).
 

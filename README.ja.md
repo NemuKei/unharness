@@ -1,12 +1,18 @@
 # Unharness
 
+**モデルは変わった。装備は、そのまま？**
+
+書き直す前に、一度外して使ってみる。
+
+いつもの構成を保存して、選んだ追加指示を外したり、自作・外部Skillの自動使用を抑えたり。ふだんの仕事で試して、必要なら戻せます。モードの変身やオリジナルの姿で、ハーネスの見直しをゲームの装備変更のように楽しめます。切り替えた構成は新しいタスクで使い、軽い構成による性能向上は約束しません。
+
 [0.0.8 Macプレビュー](https://github.com/NemuKei/unharness/releases/tag/v0.0.8)を公開しました。[導入・公開画面での操作・復旧の実機検証](docs/evidence/2026-09-13-mac-codex-completion.md)に、確認範囲と以前のAI操作・作品の検証をまとめています。
 
 [外観更新の検証](docs/evidence/2026-09-13-awakening-motion.md)には、この配布物・実機導入・公開画面の確認を記録しています。
 
 Mac初回版はApple SiliconとCodex Desktopを対象に、保存したNormalを保ち、確認済みの自作・外部Skillを無効・手動・自動から選びます。公式プラグインは元の状態で保持します。確認したCodexでは[公式プラグインの個別OFFが反映されません](docs/evidence/2026-09-11-remote-plugin-control-limit.md)。以前の保存版と独立したオフライン復旧を維持し、Skill入力の対応と未確認の実行状態を分けて表示します。
 
-[公開サイト](https://unharness.deltahelmlab.com/)からデモと導入案内へ進めます。[配布ページ](https://github.com/NemuKei/unharness/releases)で検証したZIPとチェックサムを公開し、Mac配布物にはNode・画面・MCP・管理／設定相談／作画Skillを同梱します。正確な検証版と制約は[対応状況](docs/compatibility.md)で確認できます。Claude Codeの実機対応とWindowsは後続です。
+[公開サイト](https://unharness.deltahelmlab.com/)からデモと導入案内へ進めます。[配布ページ](https://github.com/NemuKei/unharness/releases)で検証したZIPとチェックサムを公開し、Mac配布物にはNode・画面・MCP・管理／設定相談／作画Skillを同梱します。正確な検証版と制約は[対応状況](docs/compatibility.md)で確認できます。開発順は **Mac版Codex → Windows版Codex → Claude Code**。最終的にはmacOS・Windowsで両アプリへの対応を目指します。現在の検証済み範囲はMac版Codexです。
 
 **無料で使え、有料APIや運用サーバーを必要としない設計です。** Unharnessの継続的な運用サービス費はゼロを前提とし、ユーザーが使うAIの契約・使用量は別に扱います。標準の外観、レイヤーの合成、画像の読み込みとカード出力は、モデルを呼ばずローカルで行う方針です。任意のオリジナル制作には、自分のAIを使えます。[実現性と制約](docs/feasibility.md)を参照してください。
 
@@ -156,10 +162,10 @@ UnharnessはMITライセンスで公開し、Mac arm64向けの開発プレビ�
 
 | アプリ | macOS | Windows |
 | --- | --- | --- |
-| Codexデスクトップ | Apple Siliconの初回Mac範囲を検証済み | 後続・ネイティブの製品検証が必要 |
-| Claude Codeデスクトップ | 既存の連携実装を保持・実機確認は後続 | WindowsのCodex版の後 |
+| Codexデスクトップ | Apple Siliconの初回Mac範囲を検証済み | 次に取り組む対象・ネイティブの製品検証が必要 |
+| Claude Codeデスクトップ | Windows版Codexの後・既存の連携実装を保持 | Windows版Codexの後 |
 
-初回のMac版の完成条件はCodex Desktopを対象にします。Claude CodeとWindowsの検証は後続とし、その未完了を初回の完成条件にしません。Mac Codexの欄は検証済みの範囲を示し、それ以外の欄は今後の対象です。[開発順](docs/delivery.md)と[互換性・検証記録](docs/compatibility.md)を参照してください。
+初回のMac版の完成条件はCodex Desktopを対象にします。次にWindows版Codex、その後にClaude Codeへ取り組み、両OS・両アプリの対応を目指します。その未完了を初回Mac版の完成条件にはしません。Mac Codexの欄は検証済みの範囲を示し、それ以外の欄は今後の対象です。[開発順](docs/delivery.md)と[互換性・検証記録](docs/compatibility.md)を参照してください。
 
 初期には、互換性を確かめられる再現情報、小さな比較例、保存・お試し・比較・復帰の流れへのフィードバック、Docsの改善が役立ちます。Unharnessは[MITライセンス](LICENSE)を採用し、同梱する外部コンポーネントのライセンス表示は保持します。Webで触れるデモ、手元で使うプラグイン、導入手順と検証記録を公開しています。フィードバックや貢献の案内は[CONTRIBUTING](CONTRIBUTING.md)を参照してください。
 

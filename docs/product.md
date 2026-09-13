@@ -26,27 +26,29 @@ Skillや常設の指示を積み上げると、どれが今の仕事に役立っ
 
 ## 一文で伝える
 
-推奨する短いコピー：
+公開ページの冒頭では、モデルが変わったときの具体的な疑問から入る：
 
-> **ハーネスを、気軽に試着する。**
-> 外して、比べて、気に入ったら残す。
+> **モデルは変わった。装備は、そのまま？**
+> 書き直す前に、一度外して使ってみる。
 
 説明文：
 
-> Skillや追加指示を気軽に着脱し、同じ仕事で違いを確かめる。今のモデルと環境に合う組み合わせを見つけたら、お気に入りに保存してまた使える、ローカルのハーネス比較ツール。
+> いつもの構成を保存して、選んだ追加指示を外したり、自作・外部Skillの自動使用を抑えたり。ふだんの仕事で試して、必要なら戻せます。
 
 英語の草案：
 
-> **Try on your AI harness.**
-> Take it off. Compare. Keep what fits.
+> **New model. Same old harness?**
+> Before rewriting it, try taking it off.
 
-> Try different combinations of skills and instructions on your own work. Find what fits your current model and environment, and save the setups you want to use again.
+> Save your usual setup, then try your everyday work with selected instructions removed or optional Skills called only when you choose. Restore what you need and keep the setups that fit.
 
-「見直し」「整理」「最適化」は利用の結果として説明できる。導入部は、利用者が軽い気持ちで試せることと、その比較が判断に役立つことから始める。
+公開ページは「新モデルへの問い → 保存・新しいタスクで使う・戻す → 設定例と連動した変身プレビュー → 自分だけの外観 → 導入と対応予定」の順で伝える。デモを主な入口、導入を次点にし、導入済みの接続は控えめに置く。デモは設定例と外観の体験で、AIの回答や性能を測定しない。
+
+「比べる」より先に、自分の普段の依頼で使って確かめる行動を説明する。モデル更新は強い入口として使い、仕事に合わないと感じたときにも試せることを添える。遊び心は、設定例と姿が一緒に変わる体験で伝える。外観を選んでも設定や性能評価は変わらない。
 
 ## 最初に届ける利用者と場面
 
-最初に届けるのは、MacのCodexデスクトップへ自分のSkillや指示を追加しており、構成の違いを実際の仕事で試したい人。初回のMac Codex製品は合意した範囲で完成し、Claude Codeの実機確認は作者に余裕ができた時の後続とする。Windowsも設計対象として保ち、Mac版の完成後にCodex、Claude Codeの順で対応する。
+最初に届けるのは、MacのCodexデスクトップへ自分のSkillや指示を追加しており、構成の違いを実際の仕事で試したい人。初回のMac Codex製品は合意した範囲で完成している。2026-09-13に、次はWindows版Codex、その後にClaude Codeへ取り組む順序を採用した。最終的にはmacOS・Windowsで両アプリへの対応を目指す。
 
 - モデルを変えたので、いつもの装備が引き続き合うか確かめたい。
 - AIの進め方が仕事に合わず、どの追加指示が影響しているか試したい。
@@ -128,6 +130,6 @@ READMEは現在使える価値と対応範囲を明示し、将来案と過去�
 
 製品名は **Unharness**。モードの演出上の呼び名は **限定解除 — UNSEAL** と **零式 — TRUEFORM**。
 
-対象OSはmacOSとWindows、対象アプリはCodexデスクトップとClaude Codeデスクトップ。2026-09-08に、まずMac版を完成させる順序へ変更した。2026-09-09の変更後は、Mac Codex版を先に完成させ、Mac Claude Codeの実機対応とCodexレビューを後続とする。その後、WindowsでもCodex、Claude Code、統合確認の順で対応する。Claude Codeは自分の連携実装・検証を担当し、Codexが全体の整合性を確認する。
+対象OSはmacOSとWindows、対象アプリはCodexデスクトップとClaude Codeデスクトップ。2026-09-13の開発順は **Mac版Codex → Windows版Codex → Claude Code対応 → 統合確認**。Claude Codeは自分の連携実装・検証を担当し、Codexが全体の整合性を確認する。対応予定と、実機で確認した利用可能範囲を分けて案内する。
 
 この順序は [delivery.md](delivery.md) に受け渡す成果と受け入れ条件を含めて記載した。専用repoの初期化は完了時点での出発点であり、各組み合わせの対応完了は実機検証に基づいて判断する。

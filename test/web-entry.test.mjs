@@ -8,23 +8,35 @@ import { readSourceProfileFiles } from '../src/sources/owned-profile.mjs';
 test('public entry, synthetic demo and platform guidance do not connect or change real settings', publicBrowserCase, async t => {
   const s = await publicBrowser(t, { clipboardFails: true }), { page } = s;
   await page.goto(PUBLIC_WEB_ORIGIN);
-  await page.getByRole('button', { name: '01 ／ デモ 試してみる 架空の設定で、3つのモードを体験。' }).waitFor();
+  await page.getByRole('button', { name: '設定を変えずにデモを試す', exact: true }).waitFor();
   assert.match(await page.title(), /Unharness/); assert.equal(new URL(page.url()).origin, PUBLIC_WEB_ORIGIN);
   assert.equal(await page.locator('vite-error-overlay').count(), 0);
   await page.getByLabel('標準外観のプレビュー', { exact: true }).locator('.scene-indicator').filter({ hasText: /静止画表示/ }).waitFor();
-  assert.equal(await page.locator('.original-example-comparison figure').count(), 2);
+  assert.equal(await page.locator('.original-example-comparison figure').count(), 3);
   await s.screenshot('public-entry-desktop.png');
   await page.setViewportSize({ width: 1280, height: 720 });
   assert.equal(await page.locator('.entry-choices').evaluate(element => {
     const box = element.getBoundingClientRect(); return box.top >= 0 && box.bottom <= innerHeight;
-  }), true, 'all three entrances fit the native desktop viewport before scrolling');
+  }), true, 'demo and installation actions fit the native desktop viewport before scrolling');
   await s.screenshot('public-entry-short-desktop.png');
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   await s.screenshot('public-entry-mobile.png');
   await page.setViewportSize({ width: 1440, height: 1050 });
+  const modes = page.getByRole('group', { name: '比較プレビューのモード', exact: true });
+  const summary = page.getByRole('region', { name: 'このモードで試せること', exact: true });
+  for (const [name, instruction, externalSkill] of [
+    ['零式', '選んだ追加指示を外す', '使わない'],
+    ['限定解除', '最小ガイドを使う', '自分で呼び出して使う'],
+    ['通常', '保存した指示を使う', '自動で使う'],
+  ]) {
+    await modes.getByRole('button', { name, exact: true }).click();
+    await summary.getByText(instruction, { exact: true }).waitFor();
+    assert.equal(await summary.locator('dl > div').filter({ hasText: '外部Skillの例' }).locator('dd').innerText(), externalSkill);
+  }
+  assert.equal(s.posts.length, 0, 'landing-page mode previews never call local operations');
   assert.equal(await page.getByRole('link', { name: 'DeltaHelm Lab', exact: true }).getAttribute('href'), 'https://deltahelmlab.com/');
-  await page.getByRole('button', { name: /01.*試してみる/ }).click();
+  await page.getByRole('button', { name: '設定を変えずにデモを試す', exact: true }).click();
   for (const name of ['TRUEFORM', 'UNSEAL', 'Normal']) await page.getByRole('button', { name: new RegExp('^' + name) }).click();
   await page.getByText('このデモは架空のデータです。モードを選んでも、あなたのAI設定は変わりません。', { exact: true }).waitFor();
   assert.equal((await s.callPageTool('unharness_plan_mode', { mode: 'unseal', requestId: randomUUID() })).ok, false);

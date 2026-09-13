@@ -1,10 +1,10 @@
 # Unharness
 
-Try on your AI harness.
+**New model. Same old harness?**
 
-**Take it off. Compare. Keep what fits.**
+Before rewriting it, try taking it off.
 
-Try different combinations of skills and instructions on your own work. Find what fits your current model and environment, and save the setups you want to use again.
+Save your usual setup, then try your everyday work with selected instructions removed or optional Skills called only when you choose. Restore what you need and keep the setups that fit. Mode changes and original artwork make trying a different harness feel like changing equipment in a game. Prepare a configuration, then use it in a fresh task; a lighter setup does not promise better performance.
 
 [日本語](README.ja.md)
 
@@ -14,7 +14,7 @@ The [artwork update evidence](docs/evidence/2026-09-13-awakening-motion.md) reco
 
 The first Mac version targets Apple Silicon and Codex Desktop. It keeps your saved Normal and lets you choose disabled, manual or automatic states for confirmed optional ordinary Skills. Official plugins remain enabled or disabled as they already were: individual remote-plugin OFF is [unavailable on the inspected Codex version](docs/evidence/2026-09-11-remote-plugin-control-limit.md). Older saved versions and independent offline recovery are preserved. Recorded Skill inputs and unknown runtime state are shown separately.
 
-Use the [public site](https://unharness.deltahelmlab.com/) to explore the demo and installation guidance. The [release page](https://github.com/NemuKei/unharness/releases) supplies the verified archive and checksum; the Mac package bundles Node, UI, MCP and management/setup/artwork Skills. See [compatibility and verification](docs/compatibility.md) for the exact qualified release and remaining limits. Claude Code native qualification and Windows delivery are later work.
+Use the [public site](https://unharness.deltahelmlab.com/) to explore the demo and installation guidance. The [release page](https://github.com/NemuKei/unharness/releases) supplies the verified archive and checksum; the Mac package bundles Node, UI, MCP and management/setup/artwork Skills. See [compatibility and verification](docs/compatibility.md) for the exact qualified release and remaining limits. The order is **Mac Codex → Windows Codex → Claude Code**. Both applications on macOS and Windows remain the final target; only the stated Mac Codex scope is currently qualified.
 
 **Free, with no required paid API or hosted backend.** Unharness is designed to run locally with no recurring operator service expense. Your existing AI subscription and usage are separate. Default artwork, layered composition, image import and card export have a local route without model calls. Optional original-artwork authoring uses your own AI. See [feasibility and limitations](docs/feasibility.md).
 
@@ -164,10 +164,10 @@ Unharness is public under the MIT License, with a Mac arm64 development preview 
 
 | Application | macOS | Windows |
 | --- | --- | --- |
-| Codex desktop | Initial Apple Silicon Mac scope qualified | Deferred; native product qualification still required |
-| Claude Code desktop | Adapter retained; native qualification deferred | After Windows Codex |
+| Codex desktop | Initial Apple Silicon Mac scope qualified | Next platform; native product qualification still required |
+| Claude Code desktop | After Windows Codex; existing adapter retained | After Windows Codex |
 
-The initial Mac completion criteria cover Codex Desktop. Claude Code and Windows qualification follow later; their remaining work does not block that scoped release. The Mac Codex cell reflects the qualified scope; the other cells remain delivery targets. See [delivery](docs/delivery.md) and [compatibility and evidence](docs/compatibility.md).
+The initial Mac completion criteria cover Codex Desktop. Windows Codex is next, followed by Claude Code support. Both applications on both OSes remain the target; their remaining work does not block the scoped Mac release. The Mac Codex cell reflects the qualified scope; the other cells remain delivery targets. See [delivery](docs/delivery.md) and [compatibility and evidence](docs/compatibility.md).
 
 Useful early contributions include reproducible compatibility observations, small comparison examples, feedback on the save–try–compare–restore flow, and documentation improvements. Unharness uses the [MIT License](LICENSE); bundled third-party components retain their own license notices. The public demo, local plugin, installation guide and verification records are available. See [CONTRIBUTING](CONTRIBUTING.md) for feedback and contribution guidance.
 

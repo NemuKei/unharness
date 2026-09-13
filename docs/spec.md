@@ -9,7 +9,7 @@ The requirements below define the current product contract. The initial Apple Si
 | macOS | Phase 1 / Phase 3 initial scope qualified | Phase 2 native qualification deferred; adapter retained |
 | Windows | Phase 4, deferred | Phase 5, deferred |
 
-The current sequence follows the 2026-09-09 decision in [delivery](delivery.md): finish the Mac Codex product first, retaining the existing Claude adapter while deferring its native qualification. Neither Claude nor Windows qualification blocks that scoped release. Preserve portable boundaries and existing evidence; later Windows work remains Codex before Claude Code, with a final cross-platform review. The target is the desktop experience using local work, not an assumption that a successful CLI run covers it. Windows native and WSL execution must be identified separately in evidence.
+The current sequence follows the 2026-09-13 decision in [delivery](delivery.md): start with Mac Codex, work on Windows Codex next, then resume Claude Code support. Both applications on macOS and Windows remain the final target. Retain the existing Claude adapter and its evidence; Claude qualification does not block either Codex delivery. Preserve portable boundaries and use a final cross-platform review. The target is the desktop experience using local work, not an assumption that a successful CLI run covers it. Windows native and WSL execution must be identified separately in evidence.
 
 ## One useful loop
 

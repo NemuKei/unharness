@@ -10,6 +10,18 @@ npm exec vite -- preview --config vite.site.config.mjs --host 127.0.0.1
 
 The source entry is `site/index.html` → `web/src/public-main.tsx`; generated `site-dist/` is ignored. A local preview can demonstrate the static entry, but cannot redeem a public-origin connection. The connection origin is exactly `https://unharness.deltahelmlab.com`, fixed in the local bridge and browser protocol. The [published Mac QA](evidence/2026-09-11-public-mac-qa.md) verifies the real site at that origin and its native in-app-browser connection.
 
+## Public introduction
+
+The public introduction explains trying a selected harness before rewriting it:
+save the usual selected-source configuration, use a prepared mode in a fresh
+task, then restore or keep what fits. The demo is the primary entrance;
+installation and already-installed connection are separate actions. The
+appearance preview and the dedicated demo share the same illustrative mode
+settings; neither reads or changes visitor settings nor measures AI performance.
+The availability section distinguishes the current Apple Silicon Mac Codex
+preview from Windows Codex next and Claude Code later. The current source
+and published site can differ; see [status](status.md).
+
 ## Connection and operations
 
 The one-time v2 fragment is removed before network requests. Exact keys, protocol, canonical port and launch/ticket identifiers are validated before constructing a loopback URL. The grant includes the exact registered scope, root artwork collection and thirteen ordered capabilities; v1 fragments/grants are refused, not expanded. Public requests use CORS, omitted credentials, no referrer, no cache and no redirects. The native browser's own local-network permission remains in force.

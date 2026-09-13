@@ -8,12 +8,14 @@ automatic instruction to start the next platform.
 
 On 2026-09-09, the maintainer made the complete Mac Codex product the active goal and deferred Claude Code until they have capacity. The initial Mac release therefore requires Codex Desktop and the shared product experience; neither Claude native qualification nor Windows completion is a release gate. Preserve the existing Claude adapter and both Windows design/evidence boundaries. Phase numbers below remain stable so older evidence links retain their meaning; Phases 1 and 3 are complete for the accepted Mac scope; Phase 2 remains deferred.
 
+On 2026-09-13, the maintainer prioritized **Mac Codex → Windows Codex → Claude Code**. Both Codex and Claude Code on macOS and Windows remain the final target. Windows Codex is the next platform to work on; Claude qualification follows it. The phase numbers below identify historical work packages, not numerical execution order. This priority does not establish support or authorize unqualified real-configuration writes.
+
 | Phase | Implementation and validation owner | Target | Completion evidence |
 | --- | --- | --- | --- |
 | 1 | Codex | Codex desktop core on macOS — qualified | Save, three modes, fresh comparison, favorites and recovery work through the web and AI entry points on Mac |
 | 3 | Codex | Initial Mac Codex product review and finish — qualified | Codex integration, shared features, domain entry, onboarding, free original art, cards and recovery meet the declared Mac Codex scope |
-| 2 | Claude Code, then Codex review | Claude Code desktop on macOS — deferred | Its adapter meets the same contract after native loading and AI connection qualification; existing implementation remains preserved |
-| 4 | Codex | Codex desktop on Windows | Native Windows filesystem/process behavior and the same core loop are qualified without regressing Mac |
+| 4 | Codex | Codex desktop on Windows — next platform | Native Windows filesystem/process behavior and the same core loop are qualified without regressing Mac |
+| 2 | Claude Code, then Codex review | Claude Code desktop on macOS — after Windows Codex | Its adapter meets the same contract after native loading and AI connection qualification; existing implementation remains preserved |
 | 5 | Claude Code | Claude Code desktop on Windows | Its Windows adapter meets the same contract and preserves both Codex baselines |
 | 6 | Codex | Cross-platform review and finish | All four combinations, recovery behavior, UX, and documentation are reconciled |
 
@@ -45,10 +47,11 @@ execution plan is not a reason to repeat its source writes or recapture Normal.
 The product uses one selected mode at a time; simultaneous multi-mode dispatch
 remains outside the initial scope.
 
-When the maintainer chooses to resume Claude Code, inspect the existing adapter
-and its remaining native-qualification runbook first. Recheck the actual host,
-app version and state, then agree the bounded qualification/fix scope. Windows
-results remain deferred rather than prerequisites for that Mac work.
+The next platform work targets Windows Codex. Recheck the actual Windows host,
+app version, existing evidence and remaining preparation/recovery gates before
+choosing the bounded implementation and qualification scope. After Windows
+Codex, resume Claude Code from its existing adapter and native-qualification
+runbook, with fresh evidence for each OS. Preserve the qualified Mac behavior.
 
 ## What Claude Code receives
 
