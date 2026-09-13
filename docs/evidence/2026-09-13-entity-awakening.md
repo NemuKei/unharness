@@ -48,6 +48,24 @@ ownership checks and uncertain-operation handling were preserved.
 
 ## Release evidence
 
-The immutable 0.0.7 distribution, installed-plugin artwork journey and public
-deployment still require their release checks. The currently published 0.0.6
-[Mac evidence](2026-09-13-mac-codex-completion.md) remains a separate dated result.
+The [0.0.7 prerelease](https://github.com/NemuKei/unharness/releases/tag/v0.0.7)
+was published and anonymously downloaded. The ZIP has 98,636,558 bytes and
+SHA-256 `e09df97262117306f5d4f4c108fc6181687b1d3cc44743087250b9900eddb9cd`.
+Its distribution ID is `716ffa9aab9f0cfbdd218ed9de4ec0431cfd9eee3d0cead166bc073cad606f3f`,
+with 7,472 indexed files from source `12647cd10a94819550d8fb08320af07772ca5d0b`.
+Independent extraction reproduced the distribution, executable bits and signed
+bundled Node. The tag, anonymous archive and sidecar checksum agree.
+
+Native Codex loaded the installed 0.0.7 MCP on an owned profile, issued an
+authoring place, reviewed/saved both actual example sheets, accepted an exact
+retry and reselected an earlier work. Registered source files and source state
+were preserved. The personal update retained its pre-existing selected v1
+artwork and collection, all registered source bytes and old Normal version.
+Its reviewed retained-only adoption changed zero managed files.
+
+The public site deployed source `c8d773d5774c8ffa11bba46c94dd4ccbeb60a19e`;
+all 30 served files matched the build and the security headers were checked.
+The actual Codex in-app browser rendered both characters and their transitions.
+Paired website-tool status returned the owned native profile's prepared Normal.
+The [0.0.6 Mac qualification](2026-09-13-mac-codex-completion.md) remains the
+separate baseline for native mode/control/recovery acceptance.

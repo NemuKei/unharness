@@ -79,3 +79,6 @@
   .art-collection-grid .secondary { font-size: 12px; padding: 10px 6px; }
   .artwork-actions button { flex: 1 1 auto; }
 }
+.art-motion-modes { display:flex; gap:6px; margin:16px 0; }
+.art-motion-modes button { flex:1; min-height:44px; }
+.art-motion-modes button[aria-pressed=true] { background:#b8e2d5; color:#102125; }

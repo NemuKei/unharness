@@ -158,7 +158,7 @@
 .original-mode-buttons button { min-height: 44px; padding: 10px 24px; color: #dae6e6; border: 0; background: transparent; font-size: 14px; }
 .original-mode-buttons button[aria-pressed=true] { background: #b8e2d5; color: #102125; }
 .original-example-picker { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; }
-.original-example-picker select { width: auto; max-width: 100%; background: #10212a; color: var(--text); border: 1px solid #3b535b; min-height: 44px; padding: 8px 12px; font: inherit; }
+.original-example-picker > span { white-space: nowrap; }
 .original-example-mode-note { color: #b3d5cf; font-size: 14px; margin: 0 0 18px; }
 .original-example-comparison figcaption { align-items: flex-start; flex-direction: column; }
 @media (max-width: 560px) {

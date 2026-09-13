@@ -4,18 +4,22 @@ The [layered appearance contract](personalization.md) has a local import/storage
 
 ## Local screen
 
-The Equipment tab has a small appearance area. “オリジナルイメージを作成” prepares a copyable request for the user's AI. “作品を読み込む” accepts a transparent three-pose entity sheet, a background and explicitly mapped restraint parts. It reviews all three modes before enabling save, using the current layered version or an explicitly chosen standard base. The optional motion preview shows half/full awakening without preparing source settings. A legacy recipe remains in the collection and requires an explicit standard-base choice for a new layered work.
+The Equipment tab has a small appearance area. “オリジナルイメージを作成” prepares a copyable request for the user's AI. “作品を読み込む” accepts a transparent twelve-frame entity sheet, a background and explicitly mapped restraint parts. It reviews all three modes before enabling save, using the current layered version or an explicitly chosen standard base. The optional motion preview shows half/full awakening without preparing source settings. A legacy recipe remains in the collection and requires an explicit standard-base choice for a new layered work.
 
-The [v2 entity contract](spec-entity-poses.md) adds `entity-poses` as a single input,
-which becomes three normalized PNG assets and the fixed `entity-awakening/v1`
-profile. Normal and UNSEAL fit within the closed capsule, while TRUEFORM can
-unfold at the same scale. The corresponding review has three output-image rows
-named `entity-poses-normal`, `entity-poses-unseal` and `entity-poses-trueform`.
-The row's `resized` flag still reports the source-canvas size change; silhouette
-fitting applies even when the input canvas is already 724px. New authoring places
-use this input. Older v1 places and single-image imports remain compatible, and
-retrying an old creationId reopens its original place. New work is saved as a new
-item; no existing collection, Normal, favorite or artwork record is rewritten.
+The [entity contract](spec-entity-poses.md) uses one `entity-motion` input for
+new work. It expands into twelve normalized PNGs under `entity-awakening/v2`:
+three canonical mode references and nine ordered `unfold` references. Review
+rows use the `entity-motion-` prefix plus `normal`, `unseal`, `unfold-0` through
+`unfold-8`, or `trueform`. The plugin fixes this frame count, order and playback.
+Normal and UNSEAL fit the closed capsule; intermediate frames and TRUEFORM fit
+the released envelope at the same common scale.
+
+The old `entity-poses` input remains supported and produces its original three
+rows under `entity-awakening/v1`. The row's `resized` flag reports source-canvas
+size change; silhouette fitting also applies to a 724px input. New authoring
+places use schema v3 and the twelve-frame guide. Retrying a v1/v2 creationId
+reopens its original place and input contract. Saving produces a new artwork
+item; no existing collection, Normal, favorite or historical image is rewritten.
 
 The collection shows version names and static thumbnails through one offscreen renderer, then lets the user select an older work. One damaged image does not stop later thumbnails. No mode configuration is prepared by image review, selection or card creation. Read-only artwork requests do not disable mode controls or accept a replacement source context; a changed context requires explicit confirmation through the source refresh action. Accepted artwork writes retain their original operation ID when the response is uncertain.
 

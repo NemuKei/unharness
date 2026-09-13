@@ -7,7 +7,7 @@ import { appearanceDrawing } from "./appearance-drawing";
 import type { AppearanceRecipe, AppearanceTreatment } from "./appearances";
 import { createAwakeningEntity } from './entity-awakening';
 import type { EntityLayout } from './entity-awakening';
-import { entityModeAtRelease, entityMotion } from '../../src/appearances/entity-profile.mjs';
+import { entityModeAtRelease, entityMotion,ENTITY_MOTION_PROFILE_ID } from '../../src/appearances/entity-profile.mjs';
 
 export interface RigTextures { sheet: Texture; empty: Texture }
 
@@ -349,8 +349,9 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
         entity.alpha = cel.core.alpha * (effects ? 0.90 + Math.sin(time * 1.1) ** 2 * 0.10 : 1);
         if(awakening!.active) {
           const mode=entityModeAtRelease(release), motion=entityMotion(mode,time,effects);
-          entity.position.set(cel.core.x,cel.core.y+motion.y);entity.scale.set(1);entity.alpha=1;
-          awakening!.render(mode,time,effects);
+          const center=awakening!.profileId===ENTITY_MOTION_PROFILE_ID?375-60*Math.max(0,Math.min(1,release-1)):cel.core.y;
+          entity.position.set(cel.core.x,center+motion.y);entity.scale.set(1);entity.alpha=1;
+          awakening!.render(release,time,effects);
         }
         const reveal = Math.max(0, Math.min(1, (release - 1.5) / 0.5));
         const radiance = effects ? reveal * reveal * (3 - 2 * reveal) : 0;
@@ -371,6 +372,7 @@ export function createHangarRig(stage: Container, textures: RigTextures, rendere
         return cel.index;
       },
       destroy,
+      get entityFrame(){return awakening!.active?awakening!.frame:null;},
     };
   } catch (error) { destroy(); throw error; }
 }

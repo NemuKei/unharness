@@ -1,6 +1,6 @@
 # 本体の3姿勢と覚醒
 
-新しい制作場所で`entity-poses`が返された場合に使う。
+旧制作場所を再開し、`entity-poses`が返された場合に使う。新しい制作は[12コマの覚醒](entity-motion.md)を使う。
 [姿勢ガイド](../../../assets/appearance-templates/entity-awakening-v1/guide.svg)は参照専用。
 本体1枚の旧版はそのまま再選択できる。旧制作場所を再開した場合は旧契約を保ち、
 3姿勢へ更新する制作は新しいcreationIdで始める。以前の画像や作品を上書きしない。

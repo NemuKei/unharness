@@ -2,7 +2,7 @@
 // appearance/evidence records. Core ownership and PNG decoding remain local.
 import { createHash } from 'node:crypto';
 import { getAppearanceTemplate } from '../appearances/template.mjs';
-import { ENTITY_MODES, entityAssetIds, validEntityLayer } from '../appearances/entity-profile.mjs';
+import { ENTITY_MODES,ENTITY_SHEETS,ENTITY_MOTION_PROFILE_ID,entityAssetIds, validEntityLayer } from '../appearances/entity-profile.mjs';
 import { isHash, isRevision, remoteFail, REMOTE_IMAGE_LIMIT, REMOTE_SET_LIMIT } from './remote-policy.mjs';
 
 const template = getAppearanceTemplate();
@@ -34,9 +34,11 @@ function manifest(value) {
   check(ids.size === m.assets.length && m.assets.reduce((n, a) => n + a.bytes, 0) <= REMOTE_SET_LIMIT);
   const layers = pick(m.layers, ['entity', 'background', 'restraints']);
   if(m.schemaVersion===2) {
-    const entity=pick(layers.entity,['profileId','poses']), poses=pick(entity.poses,ENTITY_MODES);
+    const motion=layers.entity?.profileId===ENTITY_MOTION_PROFILE_ID;
+    const entity=pick(layers.entity,motion?['profileId','poses','unfold']:['profileId','poses']), poses=pick(entity.poses,ENTITY_MODES);
     for(const mode of ENTITY_MODES)poses[mode]=pick(poses[mode],['assetId']);
-    layers.entity={profileId:entity.profileId,poses};
+    if(motion)check(Array.isArray(entity.unfold) && entity.unfold.length===ENTITY_SHEETS['entity-motion'].frames.length-3);
+    layers.entity={profileId:entity.profileId,poses,...(motion?{unfold:entity.unfold.map(row=>pick(row,['assetId']))}:{})};
   } else layers.entity=pick(layers.entity,['assetId']);
   check(validEntityLayer(layers.entity,m.schemaVersion,ids));
   for(const id of entityAssetIds({...m,layers}))used.add(id);
@@ -107,7 +109,7 @@ export function projectArtworkReview(value, binding) {
   check(isHash(v.reviewId) && isHash(v.proposedItemId) && nullableHash(v.expectedStateId) && nullableHash(v.baseItemId)
     && text(v.name) && v.name.trim().length > 0 && text(v.author));
   v.manifest = manifest(v.manifest);
-  const parts = [...template.parts.map(part => part.id),'entity-poses'], assetIds = new Set(v.manifest.assets.map(a => a.assetId));
+  const parts = [...template.parts.map(part => part.id),...Object.keys(ENTITY_SHEETS)], assetIds = new Set(v.manifest.assets.map(a => a.assetId));
   check(Array.isArray(v.replacedParts) && v.replacedParts.length > 0 && v.replacedParts.length <= parts.length
     && new Set(v.replacedParts).size === v.replacedParts.length && v.replacedParts.every(p => parts.includes(p)));
   v.replacedParts = [...v.replacedParts];

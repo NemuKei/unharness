@@ -1,7 +1,7 @@
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { entityPoseSheet } from './entity-pose-sheet.mjs';
+import { entityMotionSheet } from './entity-pose-sheet.mjs';
 import { aiProfile } from './ai-profile.mjs';
 import { startGuiServer } from '../src/gui/server.mjs';
 
@@ -10,7 +10,7 @@ export async function importEntity(s, name) {
   await page.getByRole('button', { name: '作品を読み込む', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('作品名', { exact: true }).fill(name);
-  await dialog.getByLabel('本体の3ポーズPNG', { exact: true }).setInputFiles(s.image);
+  await dialog.getByLabel('本体のアニメーションPNG', { exact: true }).setInputFiles(s.image);
   await dialog.getByRole('button', { name: '画像を確認', exact: true }).click();
   await dialog.getByRole('img', { name: 'TRUEFORMの合成プレビュー', exact: true }).waitFor();
   return dialog;
@@ -32,7 +32,7 @@ export async function artworkBrowser(t, { clipboardFails = false } = {}) {
   page.on('pageerror', error => errors.push(error.message));
   page.on('request', request => { if (request.method() === 'POST') posts.push({ path: new URL(request.url()).pathname, body: request.postDataJSON() }); });
   const sourceState = await readFile(join(p.workspace, 'state.json'));
-  const image = join(p.parent, 'entity-poses.png'); await writeFile(image, entityPoseSheet());
+  const image = join(p.parent, 'entity-motion.png'); await writeFile(image, entityMotionSheet());
   async function screenshot(name) {
     if (!process.env.UNHARNESS_ARTWORK_SCREENSHOT_DIR) return;
     await mkdir(process.env.UNHARNESS_ARTWORK_SCREENSHOT_DIR, { recursive: true });

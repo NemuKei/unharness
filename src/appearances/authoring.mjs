@@ -13,7 +13,7 @@ import { readStockAppearance, readStockImage } from './stock.mjs';
 import { readAppearanceStore } from './store.mjs';
 import { readAppearanceImage } from './image-store.mjs';
 import { reviewAppearanceImport } from './import.mjs';
-import { ENTITY_MODES } from './entity-profile.mjs';
+import { ENTITY_SHEETS,entityFrameAssets } from './entity-profile.mjs';
 
 const hash = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
 const uuid = value => typeof value === 'string' && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(value);
@@ -22,9 +22,10 @@ const invalid = () => fail('appearance-authoring-invalid');
 const request = (args, keys) => exactKeys(args, ['workspace', ...keys], [], 'invalid-request');
 const templateDirectory = fileURLToPath(new URL('../../assets/appearance-templates/hangar-layered-v1/', import.meta.url));
 const markerBytes = value => Buffer.from(JSON.stringify(value, fields));
+const entityInput=version=>version===1?'entity':version===2?'entity-poses':'entity-motion';
 function validate(value, w, authoringId) {
   exactKeys(value, fields, [], 'appearance-authoring-invalid');
-  if (value.kind !== 'unharness-appearance-authoring' || ![1,2].includes(value.schemaVersion) || value.scopeId !== (w.rootScopeId ?? w.scopeId)
+  if (value.kind !== 'unharness-appearance-authoring' || ![1,2,3].includes(value.schemaVersion) || value.scopeId !== (w.rootScopeId ?? w.scopeId)
     || !uuid(value.creationId) || value.baseItemId !== null && !hash(value.baseItemId)
     || value.templateId !== getAppearanceTemplate().id || recordId('appearance', value) !== authoringId) invalid();
   return value;
@@ -54,7 +55,7 @@ async function referenceFiles(w, baseItemId) {
   const stored = await readAppearanceStore(w), item = stored.state?.items.find(item => item.id === baseItemId);
   if (item?.kind !== 'layered') fail('appearance-not-owned');
   const rows = template.parts.flatMap(part => part.id==='entity' && item.manifest.schemaVersion===2
-    ? ENTITY_MODES.map(mode=>({partId:'entity-'+mode,assetId:item.manifest.layers.entity.poses[mode].assetId}))
+    ? entityFrameAssets(item.manifest).map(row=>({partId:'entity-'+row.frameId,assetId:row.assetId}))
     : [{ partId: part.id, assetId: ['entity', 'background'].includes(part.id)
       ? item.manifest.layers[part.id].assetId : item.manifest.layers.restraints.find(row => row.partId === part.id).assetId }]);
   for (const asset of item.manifest.assets) {
@@ -70,8 +71,8 @@ async function summary(w, authoringId, place) {
   return { scopeId: w.scopeId, collectionScopeId: w.rootScopeId ?? w.scopeId, authoringId, directory: place.directory,
     templateId: template.id, templatePath: join(templateDirectory, 'template.json'), baseItemId: place.value.baseItemId,
     guidePaths: [...['all', 'entity', 'restraints', 'background'].map(role => ({ role, path: join(templateDirectory, 'guide-' + role + '.png') })),
-      ...(place.value.schemaVersion===2 ? [{role:'entity-poses',path:fileURLToPath(new URL('../../assets/appearance-templates/entity-awakening-v1/guide.svg',import.meta.url))}]:[])],
-    files: template.parts.map(part => {const partId=part.id==='entity' && place.value.schemaVersion===2 ? 'entity-poses':part.id;
+      ...(place.value.schemaVersion>=2 ? [{role:entityInput(place.value.schemaVersion),path:fileURLToPath(new URL('../../assets/appearance-templates/entity-awakening-v'+(place.value.schemaVersion-1)+'/guide.svg',import.meta.url))}]:[])],
+    files: template.parts.map(part => {const partId=part.id==='entity' ? entityInput(place.value.schemaVersion):part.id;
       return {partId,path:join(place.directory,partId+'.png')};}),
     referenceFiles: references, referencesReadOnly: true };
 }
@@ -81,15 +82,17 @@ export async function prepareAppearanceAuthoring(args) {
   const creationId = args.creationId, baseItemId = args.baseItemId;
   return withAppearanceWorkspace(args.workspace, async w => {
     await referenceFiles(w, baseItemId);
-    const value = { kind: 'unharness-appearance-authoring', schemaVersion: 2, scopeId: w.rootScopeId ?? w.scopeId,
+    const value = { kind: 'unharness-appearance-authoring', schemaVersion: 3, scopeId: w.rootScopeId ?? w.scopeId,
       creationId, templateId: getAppearanceTemplate().id, baseItemId };
     // A retry of a pre-upgrade creation keeps its historical contract/place.
-    // New UUIDs use v2; an upgrade cannot create a second place for the same job.
-    const legacy={...value,schemaVersion:1},legacyId=recordId('appearance',legacy);
-    let old=null;
-    try {old=await readRecord({store:w.workspace,type:'appearance',id:legacyId});}
-    catch(error){if(error.kind!=='record-not-found')throw error;}
-    if(old)return summary(w,legacyId,await load(w,legacyId));
+    // New UUIDs use v3; an upgrade cannot create a second place for the same job.
+    for(const schemaVersion of [1,2]) {
+      const legacy={...value,schemaVersion},legacyId=recordId('appearance',legacy);
+      let old=null;
+      try {old=await readRecord({store:w.workspace,type:'appearance',id:legacyId});}
+      catch(error){if(error.kind!=='record-not-found')throw error;}
+      if(old)return summary(w,legacyId,await load(w,legacyId));
+    }
     const authoringId = recordId('appearance', value), directory = join(w.workspace, 'appearance-authoring-' + authoringId);
     let exists = true;
     try { await lstat(directory); } catch (e) { if (e.code !== 'ENOENT') throw e; exists = false; }
@@ -116,13 +119,13 @@ export async function readAppearanceAuthoring(args) {
 export async function reviewAuthoredAppearance(args) {
   request(args, ['authoringId', 'importId', 'expectedStateId', 'name', 'author', 'partIds']);
   recordId('appearance', { ...args, workspace: null });
-  const partIds = [...getAppearanceTemplate().parts.map(part => part.id),'entity-poses'];
+  const partIds = [...getAppearanceTemplate().parts.map(part => part.id),...Object.keys(ENTITY_SHEETS)];
   if (!Array.isArray(args.partIds) || !args.partIds.length || args.partIds.length > partIds.length
     || new Set(args.partIds).size !== args.partIds.length || args.partIds.some(id => !partIds.includes(id))) fail('invalid-request');
   const selected = [...args.partIds];
   const captured = await withAppearanceWorkspace(args.workspace, async w => {
     const place = await load(w, args.authoringId), files = [];
-    if(place.value.schemaVersion===2 && selected.includes('entity') || place.value.schemaVersion===1 && selected.includes('entity-poses')) invalid();
+    if(['entity',...Object.keys(ENTITY_SHEETS)].some(id=>selected.includes(id) && id!==entityInput(place.value.schemaVersion)))invalid();
     for (const partId of selected) {
       const file = await captureFileBytes(join(place.directory, partId + '.png'), LAYER_IMAGE_LIMIT);
       if (!file) invalid();

@@ -9,7 +9,7 @@ import { prepareLayerImages } from "./appearance-layers";
 import type { LayerManifest, LayerImageLoader, PreparedLayerImages } from "./appearance-layers";
 import type { FixtureCase } from "./types";
 import type { AppearanceRecipe, AppearanceTreatment } from "./appearances";
-import { ENTITY_MODES, entityPointFits, entityEmission } from '../../src/appearances/entity-profile.mjs';
+import { entityFrameAssets,entityPointFits, entityEmission } from '../../src/appearances/entity-profile.mjs';
 import type { EntityLayout } from './entity-awakening';
 
 export interface Scene {
@@ -40,8 +40,9 @@ function makeLayerTextures(images: PreparedLayerImages) {
       const source = new ImageSource({ resource: image, scaleMode: 'nearest', alphaMode: 'premultiplied-alpha' });
       sources.push(source); textures.set(id, new Texture({ source }));
     });
-    if(images.manifest.schemaVersion===2)for(const mode of ENTITY_MODES) {
-      const bitmap=images.images.get(images.manifest.layers.entity.poses[mode].assetId)!;
+    if(images.manifest.schemaVersion===2)entityLayout.profileId=images.manifest.layers.entity.profileId;
+    for(const {frameId,mode,assetId} of entityFrameAssets(images.manifest)) {
+      const bitmap=images.images.get(assetId)!;
       const canvas=document.createElement('canvas');canvas.width=canvas.height=724;
       const ctx=canvas.getContext('2d',{willReadFrequently:true});if(!ctx)throw Error('appearance-image-decode-unavailable');
       ctx.drawImage(bitmap,0,0);const pixels=ctx.getImageData(0,0,724,724);
@@ -60,9 +61,9 @@ function makeLayerTextures(images: PreparedLayerImages) {
       }
       if(bounds.right<bounds.left)throw Error('appearance-entity-poses-invalid');
       bounds.theme=weights.amber>weights.cyan?'amber':'cyan';
-      entityLayout[mode]=bounds;ctx.putImageData(pixels,0,0);
+      entityLayout[frameId]=bounds;ctx.putImageData(pixels,0,0);
       const source=new ImageSource({resource:canvas,scaleMode:'nearest'});sources.push(source);
-      emissions.set('entity-emission-'+mode,new Texture({source}));
+      emissions.set('entity-emission-'+frameId,new Texture({source}));
     }
     return { parts: new Map<string,Texture>([...images.replacements].map(([part, id]):[string,Texture] => [part, textures.get(id)!]).concat([...emissions])), entityLayout, destroy };
   } catch (error) { destroy(); throw error; }
@@ -149,6 +150,7 @@ export async function createScene(
       host.dataset.motion = pose.moving ? "transition" : "idle";
       host.dataset.release = pose.release.toFixed(3);
       host.dataset.cel = String(cel);
+      if(rig!.entityFrame)host.dataset.entityFrame=rig!.entityFrame;else delete host.dataset.entityFrame;
     };
     const syncTicker = () => {
       if (effects && visible) app.start();

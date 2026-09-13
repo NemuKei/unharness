@@ -32,6 +32,7 @@ export function PublicWorkbench({ client, view }: { client: PublicConnection; vi
   const [selected, select] = useState<SourceMode>(view.state?.preparedMode ?? "normal"), [notice, setNotice] = useState("");
   const lookupField = useRef<HTMLInputElement>(null), lookupLock = useRef(false);
   const [checkingResult, setCheckingResult] = useState(false);
+  const [effects,setEffects]=useState(true);
   const current = publicModes[selected], plan = view.plan, last = view.lastOperation;
   const localUrl = client.getLocalWorkbenchUrl();
   const artwork = usePublicAppearance(client, view), lastArtwork = view.lastArtworkOperation;
@@ -92,7 +93,9 @@ export function PublicWorkbench({ client, view }: { client: PublicConnection; vi
     {(view.phase === "connected" || !!last || !!lastArtwork) && <div className="public-two-column"><section className="public-mode-stage">
       <p className="eyebrow">モード <span>／ 選択プレビュー</span></p><h1>{current.title}</h1><p className="scene-subtitle">{current.label}</p>
       <p className="entry-lead">保存したこのモードの構成で、次のタスクを準備する。</p>
-      <PublicModeChoices mode={selected} choose={select}/><Hangar condition={current.scene} effects={false} artwork={selectedArtwork} imageLoader={imageLoader}/>
+      <PublicModeChoices mode={selected} choose={select}/>
+      <label className="original-example-effects"><input type="checkbox" checked={effects} onChange={event=>setEffects(event.target.checked)}/>アニメーション</label>
+      <Hangar condition={current.scene} effects={effects} artwork={selectedArtwork} imageLoader={imageLoader}/>
       <p className="scene-caption">選択した外観のモード別プレビューです。作品の読込や画像カードでは設定を切り替えません。実行中のタスクの状態は表していません。</p>
       <AppearancePanel controller={artwork}/>
       {lastArtwork && <section className="public-operation" aria-label="最後の作品操作結果"><h3>最後の作品操作結果</h3>

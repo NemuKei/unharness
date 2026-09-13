@@ -1,10 +1,17 @@
 import { PNG } from 'pngjs';
 import { decodeLayerPng, normalizeLayerPng } from './assets.mjs';
-import { ENTITY_ANCHOR, ENTITY_MODES, ENTITY_MAX_HEIGHT, entityPointFits } from './entity-profile.mjs';
+import { ENTITY_ANCHOR, ENTITY_MODES, ENTITY_MAX_HEIGHT, ENTITY_MOTION_FRAMES, entityPointFits } from './entity-profile.mjs';
 import { fail } from '../sources/errors.mjs';
 
 const invalid = () => fail('appearance-entity-poses-invalid');
 export function normalizeEntityPoseSheet(input) {
+  return normalizeEntitySheet(input,false);
+}
+export function normalizeEntityMotionSheet(input) {
+  return normalizeEntitySheet(input,true);
+}
+function normalizeEntitySheet(input,motion) {
+  const frames=motion?ENTITY_MOTION_FRAMES:ENTITY_MODES,count=frames.length;
   const png = decodeLayerPng(input), side = png.width;
   // Below 8/255 alpha is export dust, not a silhouette guide. Clear it before
   // silhouette detection and fitting so invisible specks cannot shrink the body.
@@ -32,8 +39,8 @@ export function normalizeEntityPoseSheet(input) {
     groups.push({id,left,right,top,bottom,points});
   }
   groups.sort((a,b)=>b.points.length-a.points.length);
-  if(groups.length<3 || groups[2].points.length<32)invalid();
-  const primary=groups.slice(0,3), dust=groups.slice(3);
+  if(groups.length<count || groups[count-1].points.length<32)invalid();
+  const primary=groups.slice(0,count), dust=groups.slice(count);
   // Tiny disconnected export flecks may be reassociated only by nearby pixels.
   // A fourth substantive part/pose is never silently discarded or merged.
   if(dust.some(g=>g.points.length>32) || dust.reduce((n,g)=>n+g.points.length,0)>Math.max(8,opaque*0.001))invalid();
@@ -53,9 +60,25 @@ export function normalizeEntityPoseSheet(input) {
       for(const [x,y] of group.points){labels[y*side+x]=owner;to.points.push([x,y]);to.left=Math.min(to.left,x);to.right=Math.max(to.right,x);to.top=Math.min(to.top,y);to.bottom=Math.max(to.bottom,y);}
     }
   }
-  const regions=primary.sort((a,b)=>(a.left+a.right)-(b.left+b.right)).map((r,i)=>{
+  let ordered;
+  if(motion) {
+    // Logical rows, not equal-height crops: curled bodies and standing bodies
+    // occupy different heights. Pixel ownership still isolates overlapping boxes.
+    const byRow=[...primary].sort((a,b)=>(a.top+a.bottom)-(b.top+b.bottom));
+    const rows=Array.from({length:3},(_,row)=>byRow.slice(row*4,row*4+4));
+    for(let row=0;row<3;row++) {
+      const centers=rows[row].map(r=>(r.top+r.bottom)/2);
+      if(Math.max(...centers)-Math.min(...centers)>side/8)invalid();
+      if(row && Math.min(...centers)-Math.max(...rows[row-1].map(r=>(r.top+r.bottom)/2))<side/10)invalid();
+      rows[row].sort((a,b)=>(a.left+a.right)-(b.left+b.right));
+      for(let col=0;col<4;col++)if(Math.abs((rows[row][col].left+rows[row][col].right)/2-(col+.5)*side/4)>side/10)invalid();
+    }
+    ordered=rows.flat();
+  } else ordered=primary.sort((a,b)=>(a.left+a.right)-(b.left+b.right));
+  const regions=ordered.map((r,i)=>{
     if(r.left<1 || r.right>=side-1 || r.top<1 || r.bottom>=side-1)invalid();
-    return {...r,mode:ENTITY_MODES[i],cx:(r.left+r.right)/2,cy:(r.top+r.bottom)/2};
+    const frameId=frames[i],mode=ENTITY_MODES.includes(frameId)?frameId:'trueform';
+    return {...r,frameId,mode,cx:(r.left+r.right)/2,cy:(r.top+r.bottom)/2};
   });
   let low=0,high=ENTITY_MAX_HEIGHT/Math.max(...regions.map(r=>r.bottom-r.top+1));
   const fits = scale => regions.every(r => r.points.every(([x,y])=>
@@ -75,7 +98,7 @@ export function normalizeEntityPoseSheet(input) {
       png.data.copy(data,to,from,from+4);
     }
     const image=normalizeLayerPng(PNG.sync.write({width:724,height:724,data}));
-    return {...image,mode:r.mode,sourceWidth:side,sourceHeight:side,resized:side!==724};
+    return {...image,mode:r.mode,...(motion?{frameId:r.frameId}:{}),sourceWidth:side,sourceHeight:side,resized:side!==724};
   });
   return {scale,poses};
 }

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { entityPoseSheet } from '../test-support/entity-pose-sheet.mjs';
+import { entityMotionSheet } from '../test-support/entity-pose-sheet.mjs';
 import { publicBrowser, publicBrowserCase } from '../test-support/public-browser.mjs';
 import { readSourceProfileFiles } from '../src/sources/owned-profile.mjs';
 import { readUserArtwork, renameUserAppearance, discoverUserAppearance } from '../src/sources/service.mjs';
@@ -20,7 +20,7 @@ async function review(s,name,shade=230) {
   const page=s.page;
   await page.getByRole('button',{name:'作品を読み込む',exact:true}).click();
   await page.getByLabel('作品名',{exact:true}).fill(name);
-  await page.getByLabel('本体の3ポーズPNG',{exact:true}).setInputFiles({name:'synthetic-entity-poses.png',mimeType:'image/png',buffer:entityPoseSheet()});
+  await page.getByLabel('本体のアニメーションPNG',{exact:true}).setInputFiles({name:'synthetic-entity-poses.png',mimeType:'image/png',buffer:entityMotionSheet()});
   await page.getByRole('button',{name:'画像を確認',exact:true}).click();
   for(const mode of ['Normal','UNSEAL','TRUEFORM']) {
     const image=page.getByAltText(mode+'の合成プレビュー',{exact:true});await image.waitFor();

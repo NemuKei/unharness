@@ -67,7 +67,7 @@ The [public-page backend](domain-connection.md) is a separate route/controller a
 
 Protocol v2 adds bounded artwork projections, references and write receipts to that bridge. The public `ArtworkPort` adapts the existing appearance UI without constructing a private API client. `PublicConnection` keeps mode and artwork receipts separate, shares the write boundary with WebMCP, fingerprints image input and binds image reads to the grant lifetime. Public polling compares collection/pending identities before refreshing, so unchanged reads preserve expanded pages. Private authoring paths and source bodies never become public-port capabilities. [Client/browser evidence](evidence/2026-09-11-public-artwork-client.md) remains distinct from the actual public-origin permission test.
 
-The [entity awakening contract](spec-entity-poses.md) keeps three-pose PNG
+The [entity awakening contract](spec-entity-poses.md) keeps three-pose and twelve-frame PNG
 segmentation and uniform fitting in the local importer, with a shared pure
 profile for containment, palette emission and motion limits. The renderer owns
 pose-local meshes and light crests; the existing mechanical rig and v1 artwork

@@ -2,6 +2,7 @@
 // GUI/MCP schema, whose registration and private readers remain local only.
 import { createHash } from 'node:crypto';
 import { getAppearanceTemplate, LAYER_IMAGE_LIMIT, LAYER_SET_LIMIT, APPEARANCE_UPLOAD_BODY_LIMIT } from '../appearances/template.mjs';
+import {ENTITY_SHEETS} from '../appearances/entity-profile.mjs';
 
 export const REMOTE_PROTOCOL_VERSION = 2;
 export const PUBLIC_WEB_ORIGIN = 'https://unharness.deltahelmlab.com';
@@ -14,7 +15,7 @@ export const REMOTE_OPERATIONS = Object.freeze(['status', 'plan', 'apply', 'oper
 export const REMOTE_IMAGE_LIMIT = LAYER_IMAGE_LIMIT;
 export const REMOTE_SET_LIMIT = LAYER_SET_LIMIT;
 export const REMOTE_UPLOAD_BODY_LIMIT = APPEARANCE_UPLOAD_BODY_LIMIT;
-const template = getAppearanceTemplate(), partIds = [...template.parts.map(part => part.id),'entity-poses'];
+const template = getAppearanceTemplate(), partIds = [...template.parts.map(part => part.id),...Object.keys(ENTITY_SHEETS)];
 const fileId = value => typeof value === 'string' && /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/.test(value);
 const optionalHash = value => value === null || isHash(value);
 const text = (value, empty = false) => typeof value === 'string' && value.length <= 80

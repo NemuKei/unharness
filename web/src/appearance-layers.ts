@@ -1,5 +1,5 @@
 import stock from '../../assets/appearance-templates/hangar-layered-v1/stock.json' with { type: 'json' };
-import { ENTITY_MODES, validEntityLayer, entityAssetIds } from '../../src/appearances/entity-profile.mjs';
+import { validEntityLayer, entityAssetIds,entityFrameAssets } from '../../src/appearances/entity-profile.mjs';
 import type { EntityMode } from '../../src/appearances/entity-profile.mjs';
 
 export type LayerAsset = { assetId: string; format: 'png'; width: 724; height: 724; bytes: number };
@@ -7,7 +7,7 @@ type CommonManifest = { kind: 'unharness-layered-appearance'; templateId: string
 type CommonLayers = {background: {assetId:string};restraints:Array<{partId:string;assetId:string}>};
 export type LayerManifest = CommonManifest & (
   | {schemaVersion:1;layers:CommonLayers & {entity:{assetId:string}}}
-  | {schemaVersion:2;layers:CommonLayers & {entity:{profileId:'entity-awakening/v1';poses:Record<EntityMode,{assetId:string}>}}});
+  | {schemaVersion:2;layers:CommonLayers & {entity:({profileId:'entity-awakening/v1'}|{profileId:'entity-awakening/v2';unfold:Array<{assetId:string}>}) & {poses:Record<EntityMode,{assetId:string}>}}});
 export const stockLayerManifest = stock.manifest as LayerManifest;
 export function layerManifestKey(value:LayerManifest) {
   return JSON.stringify([value.templateId,value.schemaVersion,value.schemaVersion===2?value.layers.entity.profileId:null,
@@ -154,12 +154,12 @@ export async function prepareLayerImages(manifest: LayerManifest, loadImage: Lay
       throw Error('appearance-layer-invalid');
   }
   const entityParts: Array<[string,string]> = selected.schemaVersion===1 ? [['entity',selected.layers.entity.assetId]]
-    : ENTITY_MODES.map(mode=>['entity-'+mode,selected.layers.entity.poses[mode].assetId]);
+    : entityFrameAssets(selected).map(row=>['entity-'+row.frameId,row.assetId]);
   const parts = new Map<string,string>([['background', selected.layers.background.assetId], ...entityParts,
     ...selected.layers.restraints.map(part => [part.partId, part.assetId] as [string, string])]);
   const replacements = new Map(stock.files.filter(part => parts.has(part.partId) && parts.get(part.partId) !== part.assetId)
     .map(part => [part.partId, parts.get(part.partId)!]));
-  if(selected.schemaVersion===2)for(const mode of ENTITY_MODES)replacements.set('entity-'+mode,selected.layers.entity.poses[mode].assetId);
+  if(selected.schemaVersion===2)for(const [partId,assetId] of entityParts)replacements.set(partId,assetId);
   if (replacements.size && typeof loadImage !== 'function') throw Error('appearance-image-loader-required');
   const images = new Map<string, ImageBitmap>(); let destroyed = false;
   const destroy = () => { if (!destroyed) { destroyed = true; images.forEach(image => image.close()); images.clear(); } };

@@ -1,34 +1,39 @@
 import { BlurFilter, Container, Graphics, Mesh, MeshGeometry, Texture } from 'pixi.js';
-import { ENTITY_ANCHOR, ENTITY_MODES, ENTITY_CROWN_FRACTION, entityMotion } from '../../src/appearances/entity-profile.mjs';
-import type { EntityMode } from '../../src/appearances/entity-profile.mjs';
+import { ENTITY_ANCHOR, ENTITY_MODES, ENTITY_MOTION_FRAMES, ENTITY_PROFILE_ID,ENTITY_MOTION_PROFILE_ID,ENTITY_CROWN_FRACTION, entityMotion,entityModeAtRelease,entityFrameAtRelease } from '../../src/appearances/entity-profile.mjs';
+import type { EntityFrameId,EntityProfileId } from '../../src/appearances/entity-profile.mjs';
+import {createEntityRadiance} from './entity-radiance';
 
 export type EntityBounds = {left:number;top:number;right:number;bottom:number;theme:'cyan'|'amber'};
-export type EntityLayout = Partial<Record<EntityMode,EntityBounds>>;
+export type EntityLayout = Partial<Record<EntityFrameId,EntityBounds>> & {profileId?:EntityProfileId};
 
 /** Pose-local motion only. Texture ownership remains with the scene selection. */
 export function createAwakeningEntity(parent:Container) {
   const root=new Container(), field=new Graphics();
   root.position.set(-ENTITY_ANCHOR.x,-ENTITY_ANCHOR.y);
   root.addChild(field); parent.addChild(root); root.visible=false;
+  const radiance=createEntityRadiance(root);
   const glow=new BlurFilter({strength:3,quality:2});
-  let active=false;
-  const poses=ENTITY_MODES.map(mode=>{
+  let active=false,profileId:EntityProfileId=ENTITY_PROFILE_ID,shownFrame:EntityFrameId|null=null;
+  const poses=ENTITY_MOTION_FRAMES.map(frameId=>{
     const positions=new Float32Array(9*4*2), uvs=positions.slice(), indices=[];
     for(let y=0;y<3;y++)for(let x=0;x<8;x++) {const a=y*9+x;indices.push(a,a+1,a+9,a+1,a+10,a+9);}
     const geometry=new MeshGeometry({positions,uvs,indices:new Uint32Array(indices)});
     const emission=new Mesh({texture:Texture.EMPTY,geometry}), body=new Mesh({texture:Texture.EMPTY,geometry});
     emission.blendMode='add';emission.filters=[glow];
     root.addChild(body,emission);
-    return {mode,geometry,body,emission,bounds:{left:0,top:0,right:724,bottom:724,theme:'cyan'} as EntityBounds,rest:positions.slice()};
+    return {frameId,geometry,body,emission,bounds:{left:0,top:0,right:724,bottom:724,theme:'cyan'} as EntityBounds,rest:positions.slice()};
   });
   function setLayers(textures:ReadonlyMap<string,Texture>|null,layout:EntityLayout={}) {
-    active=ENTITY_MODES.every(mode=>textures?.has('entity-'+mode) && layout[mode]);
+    profileId=layout.profileId??ENTITY_PROFILE_ID;
+    const frames=profileId===ENTITY_MOTION_PROFILE_ID?ENTITY_MOTION_FRAMES:ENTITY_MODES;
+    active=frames.every(frame=>textures?.has('entity-'+frame) && layout[frame]);
+    shownFrame=null;
     root.visible=active;
     for(const pose of poses) {
-      pose.body.texture=textures?.get('entity-'+pose.mode)??Texture.EMPTY;
-      pose.emission.texture=textures?.get('entity-emission-'+pose.mode)??Texture.EMPTY;
-      if(!active)continue;
-      pose.bounds=layout[pose.mode]!;
+      pose.body.texture=textures?.get('entity-'+pose.frameId)??Texture.EMPTY;
+      pose.emission.texture=textures?.get('entity-emission-'+pose.frameId)??Texture.EMPTY;
+      if(!active || !layout[pose.frameId])continue;
+      pose.bounds=layout[pose.frameId]!;
       const b=pose.bounds, rows=[0,b.top,b.top+(b.bottom-b.top+1)*ENTITY_CROWN_FRACTION,724];
       for(let y=0;y<4;y++)for(let x=0;x<9;x++) {
         const i=(y*9+x)*2, px=x*724/8, py=rows[y];
@@ -38,17 +43,19 @@ export function createAwakeningEntity(parent:Container) {
       pose.geometry.positions.set(pose.rest);pose.geometry.getBuffer('aUV').update();pose.geometry.getBuffer('aPosition').update();
     }
   }
-  function render(mode:EntityMode,time:number,effects:boolean) {
+  function render(release:number,time:number,effects:boolean) {
     if(!active)return;
+    const mode=entityModeAtRelease(release),frame=entityFrameAtRelease(profileId,release);
+    shownFrame=frame;
     const motion=entityMotion(mode,time,effects);
     for(const pose of poses) {
-      pose.body.visible=pose.mode===mode;pose.emission.visible=pose.mode===mode && motion.emission>0;
-      if(pose.mode!==mode)continue;
-      pose.emission.alpha=motion.emission;
+      pose.body.visible=pose.frameId===frame;pose.emission.visible=pose.frameId===frame && motion.emission>0;
+      if(pose.frameId!==frame)continue;
+      pose.emission.alpha=motion.emission*(profileId===ENTITY_MOTION_PROFILE_ID?1.5:1);
       pose.geometry.positions.set(pose.rest);
       // Only the crown row moves; the next row pins the forehead/face and all
       // remaining pixels exactly. No whole-body stretch or inferred skeleton.
-      if(motion.crown)for(let x=0;x<9;x++) {
+      if(motion.crown && frame==='trueform')for(let x=0;x<9;x++) {
         const i=(9+x)*2, px=pose.rest[i], center=(pose.bounds.left+pose.bounds.right)/2;
         const distance=Math.abs(px-center)/Math.max(1,(pose.bounds.right-pose.bounds.left)/2);
         const influence=Math.max(0,1-distance);
@@ -57,9 +64,12 @@ export function createAwakeningEntity(parent:Container) {
       }
       pose.geometry.getBuffer('aPosition').update();
     }
-    field.clear();field.visible=motion.field>0;
-    if(motion.field) {
-      const b=poses[2].bounds,cx=(b.left+b.right)/2,cy=(b.top+b.bottom)/2,color=b.theme==='amber'?0xffbf69:0x7bf4ff;
+    const trueform=poses.find(p=>p.frameId==='trueform')!.bounds;
+    const reveal=Math.max(0,Math.min(1,(release-1.3)/.7));
+    radiance.render(trueform,time,profileId===ENTITY_MOTION_PROFILE_ID && effects?reveal*reveal*(3-2*reveal):0);
+    field.clear();field.visible=profileId===ENTITY_PROFILE_ID && motion.field>0;
+    if(field.visible) {
+      const b=trueform,cx=(b.left+b.right)/2,cy=(b.top+b.bottom)/2,color=b.theme==='amber'?0xffbf69:0x7bf4ff;
       // Original geometric light crests, not official marks. They live behind
       // the opaque body and share the profile's effects-off/reduced-motion gate.
       const crestY=cy-64,turn=time*0.09;
@@ -100,5 +110,5 @@ export function createAwakeningEntity(parent:Container) {
       }
     }
   }
-  return {setLayers,render,get active(){return active;},destroy(){poses.forEach(p=>p.geometry.destroy(true));glow.destroy();}};
+  return {setLayers,render,get active(){return active;},get profileId(){return profileId;},get frame(){return shownFrame;},destroy(){poses.forEach(p=>p.geometry.destroy(true));glow.destroy();radiance.destroy();}};
 }

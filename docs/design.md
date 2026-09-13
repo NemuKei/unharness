@@ -93,11 +93,11 @@ Original forms remain freely reusable in a local collection, including when a co
 
 ## Layered original template
 
-Original entities can use three distinct poses at one common scale, following
+Original entities use twelve frames at one common scale, following
 [the awakening profile](spec-entity-poses.md). The humanoid example curls up
 asleep in Normal, remains curled and half awake in UNSEAL, and unfolds in TRUEFORM.
 The latter adds a slight lift confined to the crown, cyan painted-detail emission,
-thin field orbits and rising particles. Effects Off retains each static pose.
+a recognizable crest with outward light trails and wide/close bloom. Nine intermediate drawings unfold the body continuously from UNSEAL to TRUEFORM. Effects Off retains each static pose.
 The 49-cel hardware remains unchanged; the old single-entity renderer remains
 available for historical versions. Do not animate the whole painting or enlarge
 the person as a substitute for changing pose.

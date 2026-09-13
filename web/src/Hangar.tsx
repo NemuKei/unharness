@@ -26,6 +26,8 @@ export function Hangar({
   const [graphicsState, setGraphicsState] = useState<
     "loading" | "ready" | "failed"
   >("loading");
+  const [loadedArtwork,setLoadedArtwork]=useState<{id:string|null;loader:ArtworkImageLoader|undefined}|null>(null);
+  const artworkReady=graphicsState==='ready' && loadedArtwork?.id===(artwork?.id??null) && loadedArtwork?.loader===imageLoader;
   const [reduced, setReduced] = useState(false);
   const [moving, setMoving] = useState(false);
   useEffect(() => {
@@ -58,9 +60,12 @@ export function Hangar({
         renderer.setCondition(conditionRef.current, true);
         syncPlayback();
         const generation = ++artGeneration.current;
+        const selectedArtwork=artworkRef.current,selectedLoader=loaderRef.current;
         try {
-          await setSceneArtwork(renderer, artworkRef.current, loaderRef.current);
-          if (!controller.signal.aborted && generation === artGeneration.current) setGraphicsState("ready");
+          await setSceneArtwork(renderer, selectedArtwork, selectedLoader);
+          if (!controller.signal.aborted && generation === artGeneration.current) {
+            setLoadedArtwork({id:selectedArtwork?.id??null,loader:selectedLoader});setGraphicsState("ready");
+          }
         } catch {
           if (!controller.signal.aborted && generation === artGeneration.current) setGraphicsState('failed');
         }
@@ -92,18 +97,18 @@ export function Hangar({
     const generation = ++artGeneration.current;
     setGraphicsState('loading');
     void setSceneArtwork(renderer, artwork, imageLoader)
-      .then(() => { if (generation === artGeneration.current) setGraphicsState('ready'); })
+      .then(() => { if (generation === artGeneration.current) {setLoadedArtwork({id:artwork?.id??null,loader:imageLoader});setGraphicsState('ready');} })
       .catch(() => { if (generation === artGeneration.current) setGraphicsState('failed'); });
     return () => { if (generation === artGeneration.current) ++artGeneration.current; };
   }, [artwork?.id, imageLoader]);
   return (
     <div className="hangar-scene">
-      <div className={`static-scene frame-${condition}`} aria-hidden="true" hidden={graphicsState === 'ready' || artwork !== null}>
+      <div className={`static-scene frame-${condition}`} aria-hidden="true" hidden={artworkReady || artwork !== null}>
         <img src={fallbackArtwork} alt="" />
       </div>
-      <div className="pixi-host" ref={host} style={{ visibility: graphicsState === 'ready' ? 'visible' : 'hidden' }} />
+      <div className="pixi-host" ref={host} data-artwork-id={artworkReady?loadedArtwork?.id??'default':undefined} style={{ visibility: artworkReady ? 'visible' : 'hidden' }} />
       <span className="scene-indicator">
-        {graphicsState === "loading"
+        {graphicsState === "loading" || graphicsState==='ready' && !artworkReady
           ? "描画を準備中…"
           : graphicsState === "failed"
           ? artwork ? "外観を表示できません · 装備の操作は利用できます" : "静止画表示 · 操作は利用できます"

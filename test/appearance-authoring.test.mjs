@@ -110,7 +110,7 @@ test('three previews are artwork-only and missing composition is not declared ve
 });
 test('new authoring names the pose sheet, common scale, transparency and bounded awakening guide',async()=>{
   const body=await skill(),ref=await text(new URL('skills/unharness-original/references/entity-poses.md',root));
-  required(body,[/entity-poses\.png/,/同じ頭.*縮尺/,/実際.*アルファ/,/7\.5%/,/目と顔/,/演出OFF/,/プラグイン/]);
+  required(body,[/entity-motion\.png/,/12コマ/,/コマ数.*順序.*再生速度.*プラグイン/,/同じ頭.*縮尺/,/実際.*アルファ/,/7\.5%/,/目と顔/,/演出OFF/,/プラグイン/]);
   required(ref,[/entity-awakening\/v1/,/partIds: \["entity-poses"\]/,/同じ倍率/,/8\/255/,/旧制作場所/,/髪の自動認識ではない/]);
   const guide=links(ref).find(link=>link.endsWith('/guide.svg'));assert.ok(guide);assert.ok((await stat(new URL(guide,new URL('skills/unharness-original/references/entity-poses.md',root)))).isFile());
 });

@@ -42,6 +42,7 @@ function ImportArtwork({ controller: c, close }: { controller: AppearanceControl
   const [error, setError] = useState(''), [encoding, setEncoding] = useState(false), [previews, setPreviews] = useState<string[]>([]);
   const [rendering, setRendering] = useState(false), [renderError, setRenderError] = useState('');
   const [showMotion,setShowMotion]=useState(false);
+  const [motionCondition,setMotionCondition]=useState<'baseline'|'manual-only'|'fixed-only'>('manual-only');
   const readController = useRef<AbortController | null>(null), previewHeading = useRef<HTMLHeadingElement>(null);
   const readImage = c.image;
   const reviewId=c.review?.reviewId;
@@ -68,7 +69,7 @@ function ImportArtwork({ controller: c, close }: { controller: AppearanceControl
   async function review() {
     if (!c.view || blocked) return;
     const selected: Array<{ partId: string; file: File }> = [
-      ...(entity ? [{ partId: 'entity-poses', file: entity }] : []), ...(background ? [{ partId: 'background', file: background }] : []),
+      ...(entity ? [{ partId: 'entity-motion', file: entity }] : []), ...(background ? [{ partId: 'background', file: background }] : []),
       ...restraints.map(({ partId, file }) => ({ partId, file })),
     ];
     if (!base || !name.trim() || !selected.length || selected.some(row => !row.partId) || new Set(selected.map(row => row.partId)).size !== selected.length) {
@@ -100,7 +101,7 @@ function ImportArtwork({ controller: c, close }: { controller: AppearanceControl
       <option value="stock">標準のパーツ</option>
     </select></label>
     {current?.kind === 'recipe' && <p className="muted">この旧形式の外観は、そのままパーツとして引き継げません。新しい作品に使う素材を選んでください。以前の外観はコレクションに残ります。</p>}
-    <div className="art-part-inputs"><section><label>本体の3ポーズPNG<input type="file" accept="image/png" disabled={blocked} onChange={event => changeInput(() => setEntity(event.target.files?.[0] ?? null))}/></label><UploadedImage file={entity}/><p className="muted">左から、眠ったNormal・半覚醒の限定解除・完全覚醒の零式を並べた透明PNG。3つの姿を同じ縮尺で描き、間に透明な余白を残してください。収まる大きさと動きはUnharnessが調整します。</p></section>
+    <div className="art-part-inputs"><section><label>本体のアニメーションPNG<input type="file" accept="image/png" disabled={blocked} onChange={event => changeInput(() => setEntity(event.target.files?.[0] ?? null))}/></label><UploadedImage file={entity}/><p className="muted">Unharnessの制作ガイドに沿ってAIが用意した、12コマの透明PNGを選びます。コマ数・姿勢の順序・表示の大きさと速さはUnharnessが揃えます。</p></section>
       <section><label>背景のPNG<input type="file" accept="image/png" disabled={blocked} onChange={event => changeInput(() => setBackground(event.target.files?.[0] ?? null))}/></label><UploadedImage file={background}/></section></div>
     <details className="art-restraints"><summary>拘束具を作り替える</summary><p className="muted">支持部・装甲などの部品PNGを選び、AIから受け取った部品名に合わせます。</p>
       <label>拘束具のPNG<input type="file" accept="image/png" multiple disabled={blocked} onChange={event => {
@@ -117,14 +118,15 @@ function ImportArtwork({ controller: c, close }: { controller: AppearanceControl
     {(error || c.error) && <p className="art-error" role="alert">{error || c.error}</p>}
     <button className="secondary" disabled={blocked} onClick={() => void review()}>{encoding || c.mutating ? '画像を確認中…' : '画像を確認'}</button>
     {c.review && <section className="art-preview"><h3 ref={previewHeading} tabIndex={-1}>3モードの見た目を確認</h3>
-      <p>{c.review.name} ／ {c.review.replacedParts.map(part => part === 'entity-poses' ? '本体の3姿勢' : part === 'entity' ? '本体' : part === 'background' ? '背景' : partNames[part]).join('・')}を変更します。</p>
+      <p>{c.review.name} ／ {c.review.replacedParts.map(part => part === 'entity-motion' ? '本体のアニメーション' : part === 'entity-poses' ? '本体の3姿勢' : part === 'entity' ? '本体' : part === 'background' ? '背景' : partNames[part]).join('・')}を変更します。</p>
       {rendering && <p role="status">合成表示を準備中…</p>}{renderError && <p className="art-error" role="alert">{renderError}</p>}
       <div className="art-preview-grid">{previews.map((url, index) => <figure key={modeNames[index]}><img src={url} alt={`${modeNames[index]}の合成プレビュー`}/><figcaption>{modeNames[index]}</figcaption></figure>)}</div>
       {previews.length===3 && c.review.manifest.schemaVersion===2 && <>
         <button className="secondary" type="button" onClick={()=>setShowMotion(value=>!value)}>{showMotion?'動きの確認を閉じる':'半覚醒と完全覚醒の動きを確認'}</button>
-        {showMotion && <div className="art-preview-grid">{(['baseline','manual-only','fixed-only'] as const).map((condition,index)=><figure key={condition}>
-          <Hangar condition={condition} effects={true} artwork={motionArtwork} imageLoader={motionImage}/>
-          <figcaption>{modeNames[index]}</figcaption></figure>)}</div>}
+        {showMotion && <div><div className="art-motion-modes" role="group" aria-label="作品レビューのモード">
+          {(['baseline','manual-only','fixed-only'] as const).map((condition,index)=><button type="button" key={condition} aria-pressed={condition===motionCondition}
+            onClick={()=>setMotionCondition(condition)}>{modeNames[index]}</button>)}
+          </div><Hangar condition={motionCondition} effects={true} artwork={motionArtwork} imageLoader={motionImage}/></div>}
       </>}
       <p className="muted">このプレビューでは装備の設定を切り替えません。</p>
       <button className="primary" disabled={blocked || rendering || previews.length !== 3 || !!renderError} onClick={async () => { if (await c.saveReview()) close(); }}>この作品を保存</button>

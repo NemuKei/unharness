@@ -121,7 +121,7 @@ test('a review response for different requested parts is refused before a save i
   await page.goto(s.gui.url);
   await page.getByRole('button', { name: '作品を読み込む', exact: true }).click();
   const dialog = page.getByRole('dialog');
-  await dialog.getByLabel('本体の3ポーズPNG', { exact: true }).setInputFiles(s.image);
+  await dialog.getByLabel('本体のアニメーションPNG', { exact: true }).setInputFiles(s.image);
   await dialog.getByRole('button', { name: '画像を確認', exact: true }).click();
   await dialog.getByRole('alert').waitFor();
   assert.equal(await dialog.getByRole('button', { name: 'この作品を保存', exact: true }).count(), 0);
@@ -137,7 +137,7 @@ test('the import form maps a complete set to all thirteen fixed parts without pr
   await page.goto(s.gui.url);
   await page.getByRole('button', { name: '作品を読み込む', exact: true }).click();
   const dialog = page.getByRole('dialog');
-  await dialog.getByLabel('本体の3ポーズPNG', { exact: true }).setInputFiles(s.image);
+  await dialog.getByLabel('本体のアニメーションPNG', { exact: true }).setInputFiles(s.image);
   await dialog.getByLabel('背景のPNG', { exact: true }).setInputFiles(s.image);
   await dialog.getByText('拘束具を作り替える', { exact: true }).click();
   await dialog.getByLabel('拘束具のPNG', { exact: true }).setInputFiles(files);
@@ -149,7 +149,7 @@ test('the import form maps a complete set to all thirteen fixed parts without pr
   assert.equal(saved.layers.restraints.length, 11);
   assert.equal(saved.schemaVersion,2);
   assert.equal(new Set([saved.layers.background.assetId, ...saved.layers.restraints.map(part => part.assetId)]).size,1);
-  assert.equal(new Set([...entityAssetIds(saved),saved.layers.background.assetId]).size,4);
+  assert.equal(new Set([...entityAssetIds(saved),saved.layers.background.assetId]).size,13);
   assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
   assert.equal(s.posts.filter(row => /\/(apply|plan|register)$/.test(row.path)).length, 0);
   assert.deepEqual(s.errors, []);

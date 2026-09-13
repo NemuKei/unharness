@@ -1,3 +1,4 @@
+import {ENTITY_SHEETS} from '../../src/appearances/entity-profile.mjs';
 // Public wire validation, not the private API or an image decoder. Accepted
 // metadata is copied; images are separately checked by the existing renderer.
 import stock from '../../assets/appearance-templates/hangar-layered-v1/stock.json' with { type: 'json' };
@@ -35,7 +36,7 @@ const nullable = (v: unknown) => v === null || hash(v);
 const count = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v >= 0;
 const label = (v: unknown, empty = true): v is string => typeof v === 'string' && v.length <= 80 && (empty || !!v.trim()) && !/[\u0000-\u001f\u007f-\u009f]/.test(v);
 const fileId = (v: unknown): v is string => typeof v === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(v);
-const parts = ['entity', 'entity-poses', 'background', ...stock.manifest.layers.restraints.map(p => p.partId)];
+const parts = ['entity', ...Object.keys(ENTITY_SHEETS), 'background', ...stock.manifest.layers.restraints.map(p => p.partId)];
 export const isArtworkWrite = (v: unknown): v is ArtworkWrite => typeof v === 'string' && (ARTWORK_WRITES as readonly string[]).includes(v);
 export function readLayerAsset(value: unknown): LayerAsset {
   const v = record(value); fields(v, ['assetId', 'format', 'width', 'height', 'bytes']);

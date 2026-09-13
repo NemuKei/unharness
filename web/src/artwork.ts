@@ -1,4 +1,5 @@
 import { validAppearanceRecipe } from './appearances';
+import {ENTITY_SHEETS} from '../../src/appearances/entity-profile.mjs';
 import type { AppearanceRecipe } from './appearances';
 import { stockLayerManifest, validLayerManifest } from './appearance-layers';
 import type { LayerAsset, LayerManifest } from './appearance-layers';
@@ -59,7 +60,7 @@ export function validArtworkView(v: unknown, scopeId: string, collectionScopes: 
 export function validArtworkReview(v: unknown, scopeId: string, collectionScopes: string[]): v is ArtworkReview {
   if (!object(v) || !validLayerManifest(v.manifest)) return false;
   const manifest = v.manifest;
-  const partIds = ['entity', 'entity-poses', 'background', ...stockLayerManifest.layers.restraints.map(part => part.partId)];
+  const partIds = ['entity', ...Object.keys(ENTITY_SHEETS), 'background', ...stockLayerManifest.layers.restraints.map(part => part.partId)];
   return exact(v, ['scopeId', 'collectionScopeId', 'reviewId', 'expectedStateId', 'proposedItemId', 'baseItemId', 'name', 'author', 'manifest', 'replacedParts', 'images'])
     && v.scopeId === scopeId && hash(v.collectionScopeId) && collectionScopes.includes(v.collectionScopeId)
     && hash(v.reviewId) && hash(v.proposedItemId) && nullableHash(v.expectedStateId) && nullableHash(v.baseItemId)
