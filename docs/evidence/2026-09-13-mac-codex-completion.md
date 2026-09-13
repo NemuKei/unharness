@@ -113,9 +113,23 @@ release's qualified scope.
 ## Public introduction
 
 The public introduction displays the requested original AI-persona example
-in three poses. The 0.0.4 site rollout's 22 served files matched the build and
-the actual in-app browser rendered the example. Release coordinates now pin
-the verified 0.0.6 archive; the final static rollout and readback are next.
+in three poses. Final site source 674e8942684cdc56a84b89535dd4830ccbccc9f2
+was deployed to the existing dedicated Pages project as
+cef3e95d-cfe6-402b-aa23-9f799b6640f2. All 22 served files match the build,
+including the self-only script policy and the exact 0.0.6 release coordinates.
+
+The actual in-app browser displayed 0.0.6 and the expected archive URL, SHA-256,
+distribution ID and source revision in its installation request. Its copy
+action reported success. Three final built-browser installation/entry cases
+passed without skips. The final page connected to the installed 0.0.6 runtime
+and WebMCP read the owned profile's Normal state without conflict or pending
+recovery. Local revocation returned expired with state null. The owned
+verification server was then stopped without removing saved data.
+
+The public example rendered at the narrow in-app viewport, with the three
+poses in its horizontal gallery. The final page reported no warning or error
+logs. Together with the dated model, setup and artwork evidence above, these
+checks satisfy the agreed first Mac Codex release scope.
 
 Raw configurations, private paths, authentication, connection tickets,
 personal task recordings and artwork data remain outside this report and Git.

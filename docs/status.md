@@ -4,7 +4,7 @@ Updated: 2026-09-13.
 
 The [0.0.6 Mac preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.6) is published. The first Mac product targets Apple Silicon and Codex Desktop within the [accepted retained-plugin scope](evidence/2026-09-11-remote-plugin-control-limit.md): confirmed optional additional instructions and ordinary Skill disabled/manual/automatic states, with official plugins kept at their saved Normal state.
 
-The [0.0.6 qualification](evidence/2026-09-13-mac-codex-completion.md) verifies the immutable distribution, actual native installation, public HTTPS GUI/WebMCP mode operations, exact Normal restoration, independent restricted-process recovery and personal-profile preservation. The public site is being synchronized to the verified 0.0.6 download.
+The [0.0.6 qualification](evidence/2026-09-13-mac-codex-completion.md) verifies the immutable distribution, actual native installation, public HTTPS GUI/WebMCP mode operations, exact Normal restoration, independent restricted-process recovery and personal-profile preservation. The public site now selects the verified 0.0.6 download; all 22 served files match the final build. The agreed first Mac Codex release scope is complete.
 
 The [0.0.4 native journey](evidence/2026-09-11-mac-codex-0.0.4.md) supplies initial installation and saving, all three ordinary Skill states, three fresh Desktop input observations, AI-led paired setup, ordinary comparisons, old favorites, original artwork, collection reselection and image-card saving. Those are dated observations; they are not retroactively relabeled as 0.0.6 model runs.
 
