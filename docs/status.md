@@ -31,7 +31,8 @@ local/public workbench uses mode/settings/appearance pages, nearby mode
 confirmation and actionable blocked states. Initial registration and local
 approval remain explicit; conflicts offer an AI inspection prompt without
 enabling a source write. These UI and management-Skill changes are included in the 0.0.9 package;
-the corresponding site upload is pending. Its isolated native installation,
+the public site also serves the revised interface and verified 0.0.9 download.
+Its isolated native installation,
 packaged MCP and archive checks are recorded in [the release evidence](evidence/2026-09-14-workbench-release.md).
 The published snapshots below remain independent.
 
@@ -40,10 +41,10 @@ The published snapshots below remain independent.
 | Surface | Verified revision | Evidence |
 | --- | --- | --- |
 | Published 0.0.9 package | 45a9a4c721ff03a002ab3e09dac451b7aa3923d4 | [Archive and isolated native checks](evidence/2026-09-14-workbench-release.md) |
-| Public site, including desktop three-column layout | 9a4bce8be11baafc425e1fa875219fd6598fa992 | [Public layout follow-up](evidence/2026-09-13-awakening-motion.md#public-only-desktop-layout-follow-up) |
+| Public site, including revised entry/workbench and 0.0.9 download | b682ca0d13d2fc631707f7c414d800af063f37e7 | [Publication checks](evidence/2026-09-14-workbench-release.md#public-site) |
 | Current repository | Re-read main/remote and local changes | Later documentation commits do not rebuild the archive or redeploy the site |
 
-The latest site deployment is 8c2a707f-18a2-4b1f-a274-00d4c6979d47 on the dedicated
+The latest site deployment is f735df57-7fa6-49a7-946e-04196149667a on the dedicated
 `deltahelmlab-unharness` Pages project. All 48 served files matched its build.
 Release availability, published asset digests and the anonymous download were
 rechecked for 0.0.9. The installed personal profile was not updated by this

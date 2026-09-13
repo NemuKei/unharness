@@ -46,3 +46,28 @@ installation and saved settings were not changed by this distribution task.
 The published asset digest, anonymously downloaded ZIP, checksum sidecar and
 tag source all matched the values above. Earlier published versions remain
 available as separate immutable releases.
+
+## Public site
+
+The dedicated `deltahelmlab-unharness` Pages project deployed clean source
+`b682ca0d13d2fc631707f7c414d800af063f37e7` to production as
+`f735df57-7fa6-49a7-946e-04196149667a`. The custom domain is
+[unharness.deltahelmlab.com](https://unharness.deltahelmlab.com/).
+All 48 served files (10,279,667 bytes) matched the built bytes using anonymous
+HTTP reads. CSP, no-referrer, nosniff, DENY and document no-cache headers matched.
+No domain, analytics rule, user source or access policy was changed.
+
+Type/CSP and the final site build passed. Seven focused tests passed with no
+skips, covering installation, introduction, initial/conflicted workbench UX and
+public mode operations. These built-browser cases use synthetic sources and
+transport; they do not establish new native model trials.
+
+The actual public HTTPS page in Chrome showed the 0.0.9 introduction, four chat
+entrances and pinned installation request. The request contains the verified
+ZIP, checksum, distribution identity and exact source revision. Its copy action
+reported success. The public demo switched from Normal to TRUEFORM; no browser
+warnings or errors were recorded for this flow. This live check did not apply a
+mode to a personal profile or create a new local pairing grant.
+
+The package tag and site revision are intentionally separate snapshots. Later
+documentation commits do not rebuild that ZIP or change deployed asset bytes.
