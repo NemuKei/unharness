@@ -82,6 +82,7 @@
 .original-example-heading > div > p:not(.eyebrow) { line-height: 1.8; }
 .original-example-lead { font-size: 20px; font-weight: 600; }
 .original-example-comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.original-example-comparison[data-layout=all] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .original-example-comparison figure { margin: 0; min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 7px; background: #081216; }
 .original-example-comparison .hangar-scene { aspect-ratio: 1; }
 .original-example-comparison figcaption { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 16px 18px; border-top: 1px solid var(--line); }

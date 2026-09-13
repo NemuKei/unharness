@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useState,useSyncExternalStore} from 'react';
 import {Hangar} from '../Hangar';
 import {preparedAppearances} from '../prepared-appearances';
 import type {PreparedAppearanceId} from '../prepared-appearances';
@@ -9,11 +9,19 @@ const modes=[
   {label:'限定解除',condition:'manual-only',description:'外装がほどけ、半覚醒の姿へ。'},
   {label:'零式',condition:'fixed-only',description:'身体を開き、完全覚醒。'},
 ] as const;
+const desktopQuery='(min-width: 960px)';
+const isDesktop=()=>matchMedia(desktopQuery).matches;
+const subscribeViewport=(notify:()=>void)=>{
+  const media=matchMedia(desktopQuery);media.addEventListener('change',notify);
+  return ()=>media.removeEventListener('change',notify);
+};
+const humanoids=preparedAppearances.filter(look=>look.id!=='default');
 export function OriginalAppearanceExample({onInstall}:{onInstall:()=>void}) {
   const [condition,setCondition]=useState<FixtureCase>('manual-only');
   const [appearance,setAppearance]=useState<PreparedAppearanceId>('silver');
   const [effects,setEffects]=useState(true);
-  const selected=preparedAppearances.find(look=>look.id===appearance)!;
+  const showAll=useSyncExternalStore(subscribeViewport,isDesktop,()=>false);
+  const visibleHumanoids=showAll?humanoids:humanoids.filter(look=>look.id===appearance);
   return <section className="original-example" aria-labelledby="original-example-title">
     <div className="original-example-heading">
       <div><p className="eyebrow">ORIGINAL APPEARANCE</p><h2 id="original-example-title">AIの姿も、<br/><span>自分仕様に。</span></h2></div>
@@ -24,21 +32,21 @@ export function OriginalAppearanceExample({onInstall}:{onInstall:()=>void}) {
       <div className="original-mode-buttons" role="group" aria-label="比較プレビューのモード">
         {modes.map(mode=><button type="button" key={mode.condition} aria-pressed={condition===mode.condition} onClick={()=>setCondition(mode.condition)}>{mode.label}</button>)}
       </div>
-      <div className="original-example-picker"><span>擬人化の外観</span><div className="original-mode-buttons" role="group" aria-label="擬人化の外観">
-        {preparedAppearances.filter(look=>look.id!=='default').map(look=><button type="button" key={look.id} aria-pressed={appearance===look.id} onClick={()=>setAppearance(look.id)}>{look.label}</button>)}
-      </div></div>
+      {!showAll && <div className="original-example-picker"><span>擬人化の外観</span><div className="original-mode-buttons" role="group" aria-label="擬人化の外観">
+        {humanoids.map(look=><button type="button" key={look.id} aria-pressed={appearance===look.id} onClick={()=>setAppearance(look.id)}>{look.label}</button>)}
+      </div></div>}
       <label className="original-example-effects"><input type="checkbox" checked={effects} onChange={event=>setEffects(event.target.checked)}/>アニメーション</label>
     </div>
     <p className="original-example-mode-note" aria-live="polite">{modes.find(mode=>mode.condition===condition)?.description}</p>
-    <div className="original-example-comparison" role="region" aria-label="デフォルトと擬人化の比較">
+    <div className="original-example-comparison" data-layout={showAll?'all':'selected'} role="region" aria-label="デフォルトと擬人化の比較">
       <figure aria-label="比較プレビュー：デフォルト">
         <Hangar condition={condition} effects={effects}/>
         <figcaption><strong>デフォルト</strong><span>枝状の光を宿すコア</span></figcaption>
       </figure>
-      <figure aria-label={'比較プレビュー：'+selected.label}>
-        <Hangar condition={condition} effects={effects} artwork={selected.artwork} imageLoader={selected.image}/>
-        <figcaption><strong>{selected.label}</strong><span>{selected.description}</span></figcaption>
-      </figure>
+      {visibleHumanoids.map(look=><figure key={look.id} aria-label={'比較プレビュー：'+look.label}>
+        <Hangar condition={condition} effects={effects} artwork={look.artwork} imageLoader={look.image}/>
+        <figcaption><strong>{look.label}</strong><span>{look.description}</span></figcaption>
+      </figure>)}
     </div>
     <div className="original-example-footer">
       <p>導入後は「見た目」から、この外観を選んだり、自分のAIと新しい姿を作ったりできます。まずはモードを切り替えて、目覚める様子を見てみてください。</p>

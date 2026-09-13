@@ -102,9 +102,11 @@ export. The original-creation Skill includes these previews before saving.
 ## Prepared appearances and introduction
 
 The introduction leads with original creation: “メカも、擬人化も。好きな姿を、いつものAIに。”
-It pairs the default rig with one selected humanoid, controlled by the same
-通常/限定解除/零式 buttons. Side-by-side **白銀**/**琥珀** buttons show the active
-choice without a dropdown. **白銀** uses short silver hair and cyan
+At widths of 960px or more it displays the default rig, **白銀** and **琥珀** in
+three equal columns to reduce the section's height. All three share the same
+通常/限定解除/零式 controls. Smaller screens pair the default with one humanoid;
+side-by-side **白銀**/**琥珀** buttons preserve the choice across resizes. Only
+the visible two or three scenes are mounted. **白銀** uses short silver hair and cyan
 light; **琥珀** uses long chestnut hair and amber light. The product calls them by
 those character names. Their TRUEFORM crests carry subtle references without
 spelling out the inspiration; selecting one does not select an AI model.
