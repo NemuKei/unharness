@@ -4,9 +4,11 @@ import { pathToFileURL } from 'node:url';
 import { entityMotionSheet } from './entity-pose-sheet.mjs';
 import { aiProfile } from './ai-profile.mjs';
 import { startGuiServer } from '../src/gui/server.mjs';
+import { openWorkbenchPage } from './workbench-navigation.mjs';
 
 export async function importEntity(s, name) {
   const { page } = s;
+  await openWorkbenchPage(page, '外観');
   await page.getByRole('button', { name: '作品を読み込む', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('作品名', { exact: true }).fill(name);

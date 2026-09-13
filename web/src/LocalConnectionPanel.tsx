@@ -6,8 +6,8 @@ import type { LocalConnectionAction, LocalConnectionRequest, LocalPairing } from
 import { PublicOperationLookup } from "./PublicOperationLookup";
 
 type Pending = { action: LocalConnectionAction; input: { requestId: string; pairingId?: string } };
-export function LocalConnectionPanel({ view, enabled, request }: {
-  view: SourceView; enabled: boolean; request: LocalConnectionRequest;
+export function LocalConnectionPanel({ view, enabled, request, onOpen }: {
+  view: SourceView; enabled: boolean; request: LocalConnectionRequest; onOpen?: () => void;
 }) {
   const [open, setOpen] = useState(false), [pairingId, setPairingId] = useState<string | null>(null);
   const [pairing, setPairing] = useState<LocalPairing | null>(null), [busy, setBusy] = useState(false);
@@ -34,12 +34,12 @@ export function LocalConnectionPanel({ view, enabled, request }: {
       if (!id) return;
       if (incoming) history.replaceState(history.state, "", location.pathname + location.search);
       ++epoch.current; locked.current = false; setBusy(false); setPending(null); setPairing(null); setError("");
-      remember(id); setOpen(true);
+      remember(id); setOpen(true); onOpen?.();
     }
     const changed = () => handoff();
     handoff(true); window.addEventListener("hashchange", changed);
     return () => { alive.current = false; ++epoch.current; window.removeEventListener("hashchange", changed); };
-  }, [storageKey]);
+  }, [storageKey, onOpen]);
   useEffect(() => { if (open) heading.current?.focus(); }, [open]);
   useEffect(() => {
     if (!open || !pairingId) return;
@@ -100,7 +100,7 @@ export function LocalConnectionPanel({ view, enabled, request }: {
     catch { linkField.current?.focus(); linkField.current?.select(); setCopyNotice("コピーできませんでした。接続用リンクを選択してコピーしてください。"); }
   }
   return <section className="local-connection" aria-label="公開画面との接続">
-    <button className="secondary" aria-expanded={open} onClick={() => setOpen(!open)}>公開画面と接続</button>
+    <button className="secondary" aria-expanded={open} onClick={() => setOpen(!open)}>操作画面への接続を確認</button>
     {open && <div className="connection-review">
       <div className="section-heading"><h2 ref={heading} tabIndex={-1}>このMacへの接続許可</h2><span role="status">{status}</span></div>
       <dl className="source-context">
@@ -124,7 +124,7 @@ export function LocalConnectionPanel({ view, enabled, request }: {
       </div>
       {busy && <p role="status">接続許可の記録を確認しています…</p>}
       {link && <div className="connection-link">
-        <a className="primary" href={link} target="_blank" rel="noopener noreferrer">公開画面を開く</a>
+        <a className="primary" href={link} target="_blank" rel="noopener noreferrer">いつもの操作画面を開く</a>
         <details><summary>Codex内ブラウザーへ接続用リンクを渡す</summary>
           <p className="boundary">この一時リンクは接続先のAIにだけ渡してください。</p>
           <label>接続用リンク<textarea aria-label="接続用リンク" ref={linkField} readOnly value={link} rows={3} /></label>

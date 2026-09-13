@@ -1,3 +1,4 @@
+import { openWorkbenchPage } from '../test-support/workbench-navigation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -46,11 +47,11 @@ test('AI-issued local handoff requires visible approval, permits cancellation, a
   assert.match(await page.title(), /Unharness/i);
   assert.equal(await page.locator('vite-error-overlay').count(), 0);
   assert.equal(await page.getByRole('heading', { name: 'このMacへの接続許可' }).evaluate(e => document.activeElement === e), true);
-  assert.equal(await page.getByRole('link', { name: '公開画面を開く', exact: true }).count(), 0);
+  assert.equal(await page.getByRole('link', { name: 'いつもの操作画面を開く', exact: true }).count(), 0);
   await page.getByText(PUBLIC_WEB_ORIGIN, { exact: true }).waitFor();
   await page.getByText(/作品の画像・コレクションの読込、画像レビュー・保存・選択・名前変更・作品保存の復旧/).waitFor();
   await page.getByRole('button', { name: 'このサイトへの接続を許可', exact: true }).click();
-  const link = page.getByRole('link', { name: '公開画面を開く', exact: true }); await link.waitFor();
+  const link = page.getByRole('link', { name: 'いつもの操作画面を開く', exact: true }); await link.waitFor();
   const url = new URL(await link.getAttribute('href')), fragment = new URLSearchParams(url.hash.slice(1));
   assert.equal(url.origin, PUBLIC_WEB_ORIGIN); assert.equal(fragment.get('ticket'), ticket.ticket);
   assert.equal(fragment.get('unharness'), '2');
@@ -84,7 +85,8 @@ test('AI-issued local handoff requires visible approval, permits cancellation, a
 test('lost issuance is retried with the same ID; clipboard fallback, mobile, expiry and refusal remain usable', browserCase, async t => {
   const s = await setup(t, { clipboardFails: true }), { page } = s;
   await page.goto(s.gui.url);
-  await page.getByRole('button', { name: '公開画面と接続', exact: true }).click();
+  await openWorkbenchPage(page, '接続・復旧');
+  await page.getByRole('button', { name: '操作画面への接続を確認', exact: true }).click();
   let drop = true;
   await page.route('**/api/remote/issue', async route => {
     if (drop) { drop = false; await route.fetch(); await route.abort(); } else await route.continue();
@@ -96,7 +98,7 @@ test('lost issuance is retried with the same ID; clipboard fallback, mobile, exp
   assert.equal(issued.length, 2); assert.deepEqual(issued[0].body, issued[1].body);
   await page.route('**/api/remote/approve', async route => { await route.fetch(); await route.abort(); });
   await page.getByRole('button', { name: 'このサイトへの接続を許可', exact: true }).click();
-  await page.getByRole('link', { name: '公開画面を開く', exact: true }).waitFor();
+  await page.getByRole('link', { name: 'いつもの操作画面を開く', exact: true }).waitFor();
   await page.getByText('Codex内ブラウザーへ接続用リンクを渡す', { exact: true }).click();
   await page.getByRole('button', { name: '接続用リンクをコピー', exact: true }).click();
   await page.getByText('コピーできませんでした。接続用リンクを選択してコピーしてください。', { exact: true }).waitFor();
@@ -107,7 +109,7 @@ test('lost issuance is retried with the same ID; clipboard fallback, mobile, exp
   if (process.env.UNHARNESS_CONNECTION_SCREENSHOT_DIR) await page.screenshot({ path: join(process.env.UNHARNESS_CONNECTION_SCREENSHOT_DIR, 'connection-approval-mobile.png') });
   s.advance(PAIRING_TTL_MS);
   await page.getByText('期限切れ', { exact: true }).waitFor();
-  assert.equal(await page.getByRole('link', { name: '公開画面を開く', exact: true }).count(), 0);
+  assert.equal(await page.getByRole('link', { name: 'いつもの操作画面を開く', exact: true }).count(), 0);
   await page.getByRole('button', { name: '接続許可を確認する', exact: true }).click();
   await page.getByRole('button', { name: '許可しない', exact: true }).click();
   await page.getByText('無効', { exact: true }).waitFor();
@@ -119,14 +121,15 @@ test('unconfirmed polling hides the approved link and fresh state must restore i
   const s = await setup(t), { page } = s, ticket = await s.gui.requestPublicPairing();
   await page.goto(s.gui.url + '/#pairing=' + ticket.pairingId);
   await page.getByRole('button', { name: 'このサイトへの接続を許可', exact: true }).click();
-  await page.getByRole('link', { name: '公開画面を開く', exact: true }).waitFor();
+  await page.getByRole('link', { name: 'いつもの操作画面を開く', exact: true }).waitFor();
   await page.route('**/api/remote/details', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ pairingId: ticket.pairingId, status: 'connected', connection: { token: 'unexpected' } }) }));
   await page.getByText('接続状態を確認できません。接続用リンクと許可操作を停止しています。', { exact: true }).waitFor();
-  assert.equal(await page.getByRole('link', { name: '公開画面を開く', exact: true }).count(), 0);
+  assert.equal(await page.getByRole('link', { name: 'いつもの操作画面を開く', exact: true }).count(), 0);
   assert.equal(await page.getByRole('button', { name: 'このサイトへの接続を許可', exact: true }).count(), 0);
   await page.unroute('**/api/remote/details');
-  await page.getByRole('link', { name: '公開画面を開く', exact: true }).waitFor();
-  await page.getByRole('button', { name: '公開画面と接続', exact: true }).click();
+  await page.getByRole('link', { name: 'いつもの操作画面を開く', exact: true }).waitFor();
+  await openWorkbenchPage(page, '接続・復旧');
+  await page.getByRole('button', { name: '操作画面への接続を確認', exact: true }).click();
   await page.locator('a.wordmark').click();
   assert.equal(new URL(page.url()).hash, '#main');
   assert.equal(await page.getByRole('heading', { name: 'このMacへの接続許可' }).count(), 0);

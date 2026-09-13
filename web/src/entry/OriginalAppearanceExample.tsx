@@ -41,7 +41,8 @@ export function OriginalAppearanceExample({onInstall}:{onInstall:()=>void}) {
     </div>
     <section className="original-mode-summary" aria-label="このモードで試せること" aria-live="polite">
       <p className="original-example-mode-note"><strong>{selected.title} ／ {selected.label}</strong><span>{selected.description}</span></p>
-      <dl><div><dt>追加指示の例</dt><dd>{sample.instructions}</dd></div><div><dt>自作Skillの例</dt><dd>{sample.authoredSkill}</dd></div><div><dt>外部Skillの例</dt><dd>{sample.externalSkill}</dd></div></dl>
+      <dl><div><dt>グローバルAGENTS.mdの例</dt><dd>{sample.instructions}</dd></div><div><dt>自作Skillの例</dt><dd>{sample.authoredSkill}</dd></div><div><dt>外部Skillの例</dt><dd>{sample.externalSkill}</dd></div></dl>
+      <p className="original-scope-note">リポジトリ内のAGENTS.mdは、各モードで保持します。</p>
     </section>
     <p className="original-example-note">設定例と外観を体験するデモです。あなたのAI設定は変わりません。姿の変化はモードの演出で、性能の優劣を表しません。</p>
     <div className="original-example-comparison" data-layout={showAll?'all':'selected'} role="region" aria-label="デフォルトと擬人化の比較">

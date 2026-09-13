@@ -6,6 +6,8 @@ Before rewriting it, try taking it off.
 
 Save your usual setup, then try your everyday work with selected instructions removed or optional Skills called only when you choose. Restore what you need and keep the setups that fit. Mode changes and original artwork make trying a different harness feel like changing equipment in a game. Prepare a configuration, then use it in a fresh task; a lighter setup does not promise better performance.
 
+**Use the screen, or ask in chat.** Initial setup, configuration review, mode switching and original artwork are available through the Codex chat where Unharness is installed. Ask it to set up Unharness, review the TRUEFORM/UNSEAL Skill choices, switch to TRUEFORM, or create an original appearance. Initial source registration and connection approval still lead to the required local confirmation screen. See [chat operations](docs/ai-commands.md).
+
 [日本語](README.ja.md)
 
 The [0.0.8 Mac preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.8) is available. See the [installation, public operation and recovery checks](docs/evidence/2026-09-13-mac-codex-completion.md) for its verified scope and earlier model/artwork evidence.

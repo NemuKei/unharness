@@ -11,6 +11,11 @@ test('public entry, synthetic demo and platform guidance do not connect or chang
   await page.getByRole('button', { name: '設定を変えずにデモを試す', exact: true }).waitFor();
   assert.match(await page.title(), /Unharness/); assert.equal(new URL(page.url()).origin, PUBLIC_WEB_ORIGIN);
   assert.equal(await page.locator('vite-error-overlay').count(), 0);
+  await page.getByRole('button', { name: '「零式に切り替えて」', exact: true }).click();
+  await page.getByText('コピーできませんでした。下の依頼文を選択してコピーしてください。', { exact: true }).waitFor();
+  assert.match(await page.getByLabel('AIへの依頼文', { exact: true }).inputValue(), /アプリ内ブラウザで操作画面も開いて/);
+  assert.equal(s.posts.length, 0, 'chat-entry copying never connects or switches visitor settings');
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.getByLabel('標準外観のプレビュー', { exact: true }).locator('.scene-indicator').filter({ hasText: /静止画表示/ }).waitFor();
   assert.equal(await page.locator('.original-example-comparison figure').count(), 3);
   await s.screenshot('public-entry-desktop.png');

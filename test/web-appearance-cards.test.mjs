@@ -1,3 +1,5 @@
+import { openWorkbenchPage } from '../test-support/workbench-navigation.mjs';
+import { siteConfig } from '../web/src/site-config.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -26,7 +28,7 @@ async function setup(t, failure = false) {
       return failure ? null : { opener: 'unconfirmed', location: { replace: url => { window.__cardOpened.push({ destination: url }); } } };
     };
   }, { failure });
-  await s.page.goto(s.gui.url);
+  await s.page.goto(s.gui.url); await openWorkbenchPage(s.page, '外観');
   return s;
 }
 async function card(s) {
@@ -68,7 +70,7 @@ test('the real PNG card contains chosen public text, downloads, and passes ident
   const destination = new URL(open[1].destination);
   assert.equal(destination.origin, 'https://x.com'); assert.equal(destination.pathname, '/intent/tweet');
   assert.match(destination.searchParams.get('text'), /金色の機械竜/);
-  assert.equal(destination.searchParams.has('url'), false);
+  assert.equal(destination.searchParams.get('url'), siteConfig.publicRepositoryUrl);
   assert.equal(JSON.stringify(open).includes('PRIVATE_TEST'), false);
   assert.deepEqual(await readUserAppearance({ workspace: s.workspace }), before);
   assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
@@ -95,7 +97,7 @@ test('clipboard and popup refusal keep the prepared card and an editable explici
   assert.equal(await dialog.getByRole('button', { name: '画像をコピーしてXへ', exact: true }).isDisabled(), true);
   assert.equal(await dialog.getByRole('link', { name: 'Xの投稿画面を開く', exact: true }).count(), 0);
   await dialog.getByRole('button', { name: '投稿文をコピー', exact: true }).click();
-  assert.equal((await page.evaluate(() => window.__cardClipboard))[0].text, 'あ'.repeat(141));
+  assert.equal((await page.evaluate(() => window.__cardClipboard))[0].text, 'あ'.repeat(141) + (siteConfig.publicRepositoryUrl ? '\n' + siteConfig.publicRepositoryUrl : ''));
   await s.screenshot('appearance-card-mobile.png');
   assert.equal((await readUserAppearance({ workspace: s.workspace })).state, null);
   assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);

@@ -1,3 +1,4 @@
+import { openWorkbenchPage } from '../test-support/workbench-navigation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -15,9 +16,11 @@ async function connect(s) {
   await s.page.goto(await s.approveLink());
   await s.page.getByRole('button',{name:'このMacに接続',exact:true}).click();
   await s.page.locator('.prepared-mode').filter({hasText:/^Normal$/}).waitFor();
+  await openWorkbenchPage(s.page, '外観');
 }
 async function review(s,name,shade=230) {
   const page=s.page;
+  await openWorkbenchPage(page, '外観');
   await page.getByRole('button',{name:'作品を読み込む',exact:true}).click();
   await page.getByLabel('作品名',{exact:true}).fill(name);
   await page.getByLabel('本体のアニメーションPNG',{exact:true}).setInputFiles({name:'synthetic-entity-poses.png',mimeType:'image/png',buffer:entityMotionSheet()});
@@ -122,7 +125,9 @@ test('public artwork polling reports collection read failures and recovers witho
   await s.page.locator('.art-error').waitFor();
   assert.match(await s.page.locator('.public-connection-status').innerText(),/接続中/);
   assert.equal(await s.page.locator('.prepared-mode').innerText(),'Normal');
-  assert.equal(await s.page.getByRole('button',{name:'変更計画を確認',exact:true}).isEnabled(),true);
+  await openWorkbenchPage(s.page, 'モード');
+  assert.equal(await s.page.getByRole('button',{name:'変更内容を確認',exact:true}).isEnabled(),true);
+  await openWorkbenchPage(s.page, '外観');
   await s.page.unroute(s.gui.url+'/remote/v2/artwork');
   await s.page.locator('.art-error').waitFor({state:'hidden'});
   assert.deepEqual(await readFile(join(s.workspace,'state.json')),before);

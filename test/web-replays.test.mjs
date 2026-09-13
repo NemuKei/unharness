@@ -1,3 +1,4 @@
+import { openWorkbenchPage } from '../test-support/workbench-navigation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -121,7 +122,7 @@ test('built Comparison prepares one replay, hands off its request, saves a quali
       Object.defineProperty(navigator, 'clipboard', { value: { writeText: async value => { window.__replayClipboard = value; } } }); });
     const page = await context.newPage(); page.setDefaultTimeout(6000);
     const errors = []; page.on('pageerror', e => errors.push(e.message));
-    await page.goto(s.url); await page.getByRole('navigation', { name: 'ワークベンチ' }).getByRole('button', { name: '比較', exact: true }).click();
+    await page.goto(s.url); await openWorkbenchPage(page, '比較・記録');
     await page.getByText('実行前に条件を保存', { exact: true }).click();
     await page.getByRole('button', { name: '保存した開始条件を読む', exact: true }).click();
     await page.getByRole('button', { name: '詳細を開く', exact: true }).click();
@@ -153,7 +154,7 @@ test('built Comparison prepares one replay, hands off its request, saves a quali
     await page.getByRole('button', { name: 'この試行の設定をお気に入りへ', exact: true }).click();
     await page.getByText('試行時の設定をお気に入りに保存しました。', { exact: false }).waitFor();
     assert.equal((await service.listUserFavorites({ workspace: s.workspace })).favorites.length, 1);
-    await page.reload(); await page.getByRole('navigation', { name: 'ワークベンチ' }).getByRole('button', { name: '比較', exact: true }).click();
+    await page.reload(); await openWorkbenchPage(page, '比較・記録');
     await page.getByRole('button', { name: '再実行の履歴を読む', exact: true }).click();
     await page.getByRole('button', { name: '再実行の結果を開く', exact: true }).click();
     await page.getByText('記録上の条件が一致', { exact: true }).waitFor();
@@ -180,7 +181,7 @@ async function inReplayBrowser(t, action) {
     const page = await context.newPage(); page.setDefaultTimeout(7000);
     const errors = []; page.on('pageerror', e => errors.push(e.message));
     await page.goto(s.url);
-    await page.getByRole('navigation', { name: 'ワークベンチ' }).getByRole('button', { name: '比較', exact: true }).click();
+    await openWorkbenchPage(page, '比較・記録');
     await page.getByText('実行前に条件を保存', { exact: true }).click();
     await page.getByRole('button', { name: '保存した開始条件を読む', exact: true }).click();
     await page.getByRole('button', { name: '詳細を開く', exact: true }).click();
@@ -266,7 +267,7 @@ test('built replay resolves dropped prepare and save replies through explicit hi
     await panel.getByRole('button', { name: '再実行の結果を開く', exact: true }).click();
     await panel.getByText('保存した再実行の結果を開きました。', { exact: true }).waitFor();
     assert.equal(prepares, 1); assert.equal(saves, 1);
-    await page.getByRole('navigation', { name: 'ワークベンチ' }).getByRole('button', { name: '装備', exact: true }).click();
+    await page.getByRole('navigation', { name: 'ワークベンチ' }).getByRole('button', { name: 'モード', exact: true }).click();
     await page.getByRole('button', { name: '状態を再取得', exact: true }).click();
     assert.equal((await service.userSourceState({ workspace: s.workspace })).recovery.pending, false);
   });
@@ -280,7 +281,7 @@ test('built replay blocks a handoff after a second client changes modes, retaini
     await panel.getByRole('alert').waitFor();
     assert.equal(await panel.locator('.replay-handoff').count(), 0);
     assert.equal((await service.readUserReplay({ workspace: s.workspace, attemptId: h.attemptId })).conditionIssue, 'replay-preparation-stale');
-    await page.getByRole('navigation', { name: 'ワークベンチ' }).getByRole('button', { name: '装備', exact: true }).click();
+    await page.getByRole('navigation', { name: 'ワークベンチ' }).getByRole('button', { name: 'モード', exact: true }).click();
     await page.getByRole('button', { name: '状態を再取得', exact: true }).click();
     assert.equal((await service.userSourceState({ workspace: s.workspace })).preparedMode, 'unseal');
     assert.equal((await service.userSourceState({ workspace: s.workspace })).recovery.pending, false);
@@ -315,7 +316,7 @@ test('built replay rejects malformed nested result data without losing Equipment
     await panel.getByRole('alert').filter({ hasText: '再実行の応答を確認できません。' }).waitFor();
     assert.equal(await panel.locator('.replay-assessment').count(), 0);
     assert.equal(await panel.getByText('タスクの記録と成果物を確認しています。', { exact: true }).count(), 0);
-    await page.getByRole('navigation', { name: 'ワークベンチ' }).getByRole('button', { name: '装備', exact: true }).click();
+    await page.getByRole('navigation', { name: 'ワークベンチ' }).getByRole('button', { name: 'モード', exact: true }).click();
     await page.getByRole('button', { name: '状態を再取得', exact: true }).click();
   });
 });

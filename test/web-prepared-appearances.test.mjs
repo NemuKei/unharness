@@ -1,3 +1,4 @@
+import { openWorkbenchPage } from '../test-support/workbench-navigation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
@@ -8,7 +9,7 @@ import {readUserAppearance} from '../src/appearances/service.mjs';
 import {readSourceProfileFiles} from '../src/sources/owned-profile.mjs';
 
 test('prepared appearances save through review and reuse their immutable versions after reload',artworkBrowserCase,async t=>{
-  const s=await artworkBrowser(t),{page}=s;await page.goto(s.gui.url);
+  const s=await artworkBrowser(t),{page}=s;await page.goto(s.gui.url); await openWorkbenchPage(page, '外観');
   const group=page.getByRole('group',{name:'用意された外観',exact:true});
   for(const label of ['白銀','琥珀','デフォルト']) {
     await group.getByRole('button',{name:new RegExp('^'+label)}).click();
@@ -16,7 +17,7 @@ test('prepared appearances save through review and reuse their immutable version
     await page.waitForFunction(()=>document.querySelector('.pixi-host')?.dataset.appearance==='layered');
   }
   const before=await readUserAppearance({workspace:s.workspace}),count=before.state.items.length;
-  await page.reload();
+  await page.reload(); await openWorkbenchPage(page, '外観');
   await group.getByRole('button',{name:/^白銀/}).click();
   await page.locator('.artwork-panel-heading strong').filter({hasText:'白銀'}).waitFor();
   const after=await readUserAppearance({workspace:s.workspace});assert.equal(after.state.items.length,count);

@@ -1,3 +1,4 @@
+import { openWorkbenchPage, openSetupDetails, openSourceSettings } from '../test-support/workbench-navigation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, mkdir, mkdtemp, realpath, rm } from 'node:fs/promises';
@@ -27,12 +28,14 @@ async function fixture(t) {
   page.on('console', m => { if (m.type() === 'error' && !m.text().includes('net::ERR_FAILED')) errors.push(m.text()); });
   page.on('request', r => { if (r.method() === 'POST') posts.push(new URL(r.url()).pathname); });
   await page.goto(gui.url);
-  await page.getByRole('button', { name: '設定をAIに相談', exact: true }).waitFor();
+  await openSetupDetails(page);
+  await page.getByRole('button', { name: '設定をAIと見直す', exact: true }).waitFor();
   assert.equal(await page.locator('vite-error-overlay').count(), 0);
   return { ...p, newSkill, page, browserContext: context, errors, posts };
 }
 async function reviewOnScreen(s) {
   const { page } = s;
+  await openSourceSettings(page);
   await page.getByText('未登録のSkillを確認する', { exact: true }).click();
   await page.getByRole('button', { name: '追加候補の一覧を確認', exact: true }).click();
   await page.getByText('登録済み 1件 / 未登録の候補 1件', { exact: true }).waitFor();
@@ -71,20 +74,23 @@ test('built GUI reviews source roles, enrolls without file writes, then prepares
     await page.screenshot({ path: join(process.env.UNHARNESS_ENROLLMENT_SCREENSHOT_DIR, 'enrollment-mobile.png') });
   }
   await page.getByRole('button', { name: 'この内容で登録', exact: true }).click();
+  await openWorkbenchPage(page, 'モード');
   await page.getByText(/登録が更新されました/).waitFor();
   assert.equal((await openWorkspace(s.workspace)).reg.skills.length, 2);
   assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
   assert.deepEqual(await readFile(s.newSkill.path), s.newSkill.bytes);
+  await openWorkbenchPage(page, 'モード');
   await page.getByRole('button', { name: /TRUEFORM/ }).click();
-  await page.getByRole('button', { name: 'この計画で準備する', exact: true }).and(page.locator(':enabled')).waitFor();
-  await page.getByRole('button', { name: 'この計画で準備する', exact: true }).click();
+  await page.getByRole('button', { name: 'この内容で確定する', exact: true }).and(page.locator(':enabled')).waitFor();
+  await page.getByRole('button', { name: 'この内容で確定する', exact: true }).click();
   await page.locator('.control-column .selected-name').filter({ hasText: 'TRUEFORM' }).waitFor();
   assert.match(await readFile(join(s.newSkill.path, '..', 'agents', 'openai.yaml'), 'utf8'), /allow_implicit_invocation: false/);
   assert.equal(await page.getByText(/登録が更新されました/).count(), 0);
+  await openWorkbenchPage(page, '比較・記録');
   await page.getByRole('button', { name: '保存版を表示', exact: true }).click();
   await page.getByRole('button', { name: /追加前のNormal.*追加したSkill 1件を含む/ }).click();
   await page.getByText('追加後のSkillを含めて準備', { exact: true }).waitFor();
-  await page.getByRole('button', { name: 'この計画で準備する', exact: true }).click();
+  await page.getByRole('button', { name: 'この内容で確定する', exact: true }).click();
   await page.locator('.control-column .selected-name').filter({ hasText: 'Normal' }).waitFor();
   assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
   await assert.rejects(readFile(join(s.newSkill.path, '..', 'agents', 'openai.yaml')), { code: 'ENOENT' });
@@ -108,6 +114,7 @@ test('a lost enrollment response does not resend; explicit readback reveals the 
   assert.equal(attempts, 1);
   assert.equal((await openWorkspace(s.workspace)).reg.skills.length, 2);
   await page.getByRole('button', { name: '状態を再取得', exact: true }).click();
+  await openWorkbenchPage(page, 'モード');
   await page.getByText(/登録が更新されました/).waitFor();
   assert.equal(attempts, 1);
   assert.equal(s.posts.filter(path => path.endsWith('/apply-enrollment')).length, 1);
@@ -140,13 +147,14 @@ test('a directory-only rebind keeps the source count and never tells the user th
   await page.goto(gui.url);
   await page.locator('.scope-enrollment-notice').waitFor();
   assert.doesNotMatch(await page.locator('#main').innerText(), /Skillの登録範囲が増えました|追加したSkillを含む|追加後の2構成/);
-  await page.getByRole('button', { name: '設定をAIに相談', exact: true }).click();
+  await openSetupDetails(page);
   const prompt = await page.getByLabel('設定相談の依頼文', { exact: true }).inputValue();
   assert.doesNotMatch(prompt, /追加登録後/);
   assert.match(prompt, /以前の選択を置き換えない/);
+  await openWorkbenchPage(page, '比較・記録');
   await page.getByRole('button', { name: /再確認前のNormal/ }).click();
   await page.getByText('再確認した場所へ保存内容を準備', { exact: true }).waitFor();
-  await page.getByRole('button', { name: 'この計画で準備する', exact: true }).click();
+  await page.getByRole('button', { name: 'この内容で確定する', exact: true }).click();
   await page.locator('.scope-enrollment-notice').waitFor({ state: 'detached' });
   assert.deepEqual(await readSourceProfileFiles(p.context), p.originalFiles);
 });

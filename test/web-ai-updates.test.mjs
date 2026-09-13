@@ -1,3 +1,4 @@
+import { openWorkbenchPage } from '../test-support/workbench-navigation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -27,7 +28,7 @@ async function setup(t) {
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', message => { if (['warning', 'error'].includes(message.type())) consoleMessages.push({ type: message.type(), text: message.text(), url: message.location().url }); });
   page.on('request', r => { if (r.method() === 'POST') posts.push(new URL(r.url()).pathname); });
-  const tab = name => page.getByRole('navigation', { name: 'ワークベンチ' }).getByRole('button', { name, exact: true }).click();
+  const tab = name => openWorkbenchPage(page, name === '比較' ? '比較・記録' : name);
   const expectMode = mode => page.locator('.control-column .selected-name').filter({ hasText: mode }).waitFor();
   return { ...p, gui, ai, browser, browserContext: context, page, errors, posts, consoleMessages, tab, expectMode };
 }
@@ -39,15 +40,17 @@ test('an open built GUI receives MCP modes, favorites and histories while preser
   assert.equal(new URL(page.url()).origin, s.gui.url);
   assert.equal(await page.locator('vite-error-overlay').count(), 0);
   await ai.mutate('save_favorite', { name: 'AI side favorite' });
+  await s.tab('比較・記録');
   await page.locator('.source-favorites').getByRole('button', { name: 'AI side favorite · Normal', exact: true }).waitFor();
+  await s.tab('モード');
   await page.getByRole('button', { name: /TRUEFORM/ }).click();
-  await page.getByRole('button', { name: 'この計画で準備する', exact: true }).and(page.locator(':enabled')).waitFor();
+  await page.getByRole('button', { name: 'この内容で確定する', exact: true }).and(page.locator(':enabled')).waitFor();
   await s.tab('比較');
   await page.getByText('実行前に条件を保存', { exact: true }).click();
   await page.getByLabel('依頼文', { exact: true }).fill('KEEP THIS UNSAVED REQUEST');
   await ai.mode('unseal');
-  await s.tab('装備'); await s.expectMode('UNSEAL');
-  assert.equal(await page.getByRole('button', { name: 'この計画で準備する', exact: true }).isDisabled(), true);
+  await s.tab('モード'); await s.expectMode('UNSEAL');
+  assert.equal(await page.getByRole('button', { name: 'この内容で確定する', exact: true }).isDisabled(), true);
   await s.tab('比較');
   assert.equal(await page.getByLabel('依頼文', { exact: true }).inputValue(), 'KEEP THIS UNSAVED REQUEST');
 
@@ -74,7 +77,7 @@ test('an open built GUI receives MCP modes, favorites and histories while preser
   await page.locator('.replay-history').getByText(/^取り消し済み ／/).waitFor();
   assert.equal(await page.getByLabel('依頼文', { exact: true }).inputValue(), 'KEEP THIS UNSAVED REQUEST');
   assert.equal(s.posts.filter(path => /save|apply|prepare|cancel|observe|review-start/.test(path)).length, 0);
-  await ai.mode('normal'); await s.tab('装備'); await s.expectMode('Normal');
+  await ai.mode('normal'); await s.tab('モード'); await s.expectMode('Normal');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => window.scrollTo(0, 0));
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
@@ -111,13 +114,13 @@ test('a delayed background snapshot cannot undo a completed GUI mode change or c
   try { await Promise.race([ready, new Promise((_, reject) => { deadline = setTimeout(() => reject(Error('background poll did not start')), 10000); })]); }
   finally { clearTimeout(deadline); }
   await page.getByRole('button', { name: /TRUEFORM/ }).click();
-  await page.getByRole('button', { name: 'この計画で準備する', exact: true }).click();
+  await page.getByRole('button', { name: 'この内容で確定する', exact: true }).click();
   await s.expectMode('TRUEFORM');
   const response = page.waitForResponse(r => r.url().includes('/api/sources/updates?'));
   release(); await response;
   assert.match(await page.locator('.control-column .selected-name').textContent(), /TRUEFORM/);
   await page.getByRole('button', { name: /Normal/ }).click();
-  const nextPlan = page.getByRole('button', { name: 'この計画で準備する', exact: true });
+  const nextPlan = page.getByRole('button', { name: 'この内容で確定する', exact: true });
   await nextPlan.and(page.locator(':enabled')).waitFor();
   await page.waitForResponse(r => r.url().includes('/api/sources/updates?'));
   assert.equal(await nextPlan.isEnabled(), true);
@@ -135,12 +138,14 @@ test('background readback does not confirm or repeat an uncertain GUI applicatio
   });
   await page.goto(s.gui.url); await s.expectMode('Normal');
   await page.getByRole('button', { name: /TRUEFORM/ }).click();
-  await page.getByRole('button', { name: 'この計画で準備する', exact: true }).click();
+  await page.getByRole('button', { name: 'この内容で確定する', exact: true }).click();
   await page.getByText('結果は未確認です。状態を再取得してください。自動再送は行いません。', { exact: true }).first().waitFor();
-  await s.expectMode('最後に確認した保存状態：TRUEFORM');
+  await s.expectMode('TRUEFORM');
+  await page.getByText('前回確認した構成です。現在の状態を確認してください。', { exact: true }).waitFor();
   assert.equal(s.posts.filter(path => path.endsWith('/apply')).length, 1);
-  assert.equal(await page.getByRole('button', { name: 'この計画で準備する', exact: true }).isDisabled(), true);
-  await s.ai.mode('normal'); await s.expectMode('最後に確認した保存状態：Normal');
+  assert.equal(await page.getByRole('button', { name: 'この内容で確定する', exact: true }).isDisabled(), true);
+  await s.ai.mode('normal'); await s.expectMode('Normal');
+  await page.getByText('前回確認した構成です。現在の状態を確認してください。', { exact: true }).waitFor();
   await page.getByRole('button', { name: '状態を再取得', exact: true }).click();
   await page.locator('.control-column .selected-name').filter({ hasText: /^Normal$/ }).waitFor();
   assert.deepEqual(s.errors, []);
@@ -163,7 +168,7 @@ test('malformed background history leaves Equipment usable and retries without l
   await warning.waitFor();
   corrupt = false;
   await warning.waitFor({ state: 'hidden' });
-  await s.ai.mode('unseal'); await s.tab('装備'); await s.expectMode('UNSEAL');
+  await s.ai.mode('unseal'); await s.tab('モード'); await s.expectMode('UNSEAL');
   assert.deepEqual(s.errors, []);
   await s.ai.mode('normal');
 });
@@ -173,7 +178,7 @@ test('a same-port replacement stays unaccepted until the user refreshes the new 
   await page.goto(s.gui.url); await s.expectMode('Normal');
   await s.tab('比較'); await page.getByText('実行前に条件を保存', { exact: true }).click();
   await page.getByLabel('依頼文', { exact: true }).fill('DRAFT IN ORIGINAL SCOPE');
-  await s.tab('装備');
+  await s.tab('モード');
   const second = await aiProfile(t, { skills: false });
   await s.gui.close();
   const replacement = await startGuiServer({ manageSources: second.context, assetsDirectory: resolve('dist'), port: Number(new URL(s.gui.url).port) });

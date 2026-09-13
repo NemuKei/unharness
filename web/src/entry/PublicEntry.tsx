@@ -5,6 +5,7 @@ import type { SourceMode } from "../sources";
 import { siteConfig, type MacCodexRelease } from "../site-config";
 import { OriginalAppearanceExample } from './OriginalAppearanceExample';
 import { publicModes, demoSources } from './public-modes';
+import { ChatEntries } from './ChatEntries';
 
 export { publicModes } from './public-modes';
 export function PublicModeChoices({ mode, choose }: { mode: SourceMode; choose: (mode: SourceMode) => void }) {
@@ -29,15 +30,7 @@ export function PublicEntry({ choose }: { choose: (page: "demo" | "install" | "c
       <p className="entry-boundary">無料・アカウント不要。設定と作品は手元のPCに。<br/>切り替えた構成は、新しいタスクで使います。</p>
     </section>
     <section className="entry-art" aria-label="標準外観のプレビュー"><Hangar condition="baseline" effects={false}/><p className="scene-caption">いつもの装備を残して、次の構成を試そう。</p></section>
-    <section className="entry-journey" aria-labelledby="entry-journey-title">
-      <p className="eyebrow">いつもの依頼で、使って確かめる。</p>
-      <h2 id="entry-journey-title">外す。比べる。自分に合う形へ。</h2>
-      <ol>
-        <li><span aria-hidden="true">01</span><h3>いつもの構成を残す</h3><p>対象として確認した指示・Skillの構成をNormalに保存。戻れる基準を、先に用意します。</p></li>
-        <li><span aria-hidden="true">02</span><h3>外した構成で使う</h3><p>モードを選び、新しいタスクでいつもの依頼を。<br/>自分の仕事に合うかを確かめます。</p></li>
-        <li><span aria-hidden="true">03</span><h3>戻す。選び直す。</h3><p>必要なものを戻し、気に入った構成を保存。<br/>いつもの構成を選び直してもかまいません。</p></li>
-      </ol>
-    </section>
+    <ChatEntries/>
     <OriginalAppearanceExample onInstall={() => choose('install')}/>
     <section className="entry-availability" aria-labelledby="entry-availability-title">
       <p className="eyebrow">自分のAIで、はじめる。</p><h2 id="entry-availability-title">Mac版Codexから。次はWindowsへ。</h2>
@@ -70,7 +63,8 @@ export function PublicDemo() {
     <p className="entry-lead">{selected.description}</p>
     <PublicModeChoices mode={mode} choose={choose}/><Hangar condition={selected.scene} effects={false}/>
   </section><aside className="public-panel"><p className="eyebrow">このデモの架空の構成</p><h2>組み合わせを変えてみる。</h2>
-    <dl className="demo-sources"><dt>追加した指示</dt><dd>{sample.instructions}</dd>
+    <dl className="demo-sources"><dt>グローバルAGENTS.mdの例</dt><dd>{sample.instructions}</dd>
+      <dt>リポジトリのAGENTS.md</dt><dd>保持する</dd>
       <dt>公式プラグイン（例）</dt><dd>元の状態で保持する</dd>
       <dt>自作の手順Skill（例）</dt><dd>{sample.authoredSkill}</dd>
       <dt>使用頻度の低い外部Skill（例）</dt><dd>{sample.externalSkill}</dd>

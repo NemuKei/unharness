@@ -1,5 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Hangar } from "./Hangar";
+import { WorkbenchNavigation, workbenchPageFromHash } from "./WorkbenchNavigation";
+import type { WorkbenchPage } from "./WorkbenchNavigation";
+import { ModeActions, InstructionScopeNote } from "./ModeActions";
+import { modeBlocker } from "./mode-blocker";
+import { AiRequestButton, stateCheckPrompt } from "./AiRequestButton";
+import { bindChatScope, modeChatRequest } from './chat-requests';
+import "./workbench.css";
 import { ComparisonWorkbench } from "./ComparisonWorkbench";
 import { SetupHandoff, FreshTaskHandoff } from "./SetupHandoff";
 import { releaseModeDescription } from "./setup";
@@ -50,9 +57,14 @@ export function SourceWorkbench() {
   const imageLoader = useMemo<ArtworkImageLoader | undefined>(() => artwork?.kind === 'layered'
     ? (asset, signal) => art.image(artwork.id, asset, signal, art.key) : undefined, [art.key, artwork?.id, art.image]);
   const [effects, setEffects] = useState(displayPreference);
-  const [activeTab, setActiveTab] = useState<"equipment" | "comparison">(
-    "equipment",
-  );
+  const [activeTab, setActiveTab] = useState<WorkbenchPage>(() => workbenchPageFromHash(location.hash) ?? 'mode');
+  const initialContext = useRef<{ id: string; registered: boolean } | null>(null);
+  const showConnection = useCallback(() => setActiveTab('support'), []);
+  useEffect(() => {
+    const changed = (event: HashChangeEvent) => { const page = workbenchPageFromHash(new URL(event.newURL).hash); if (page) setActiveTab(page); };
+    window.addEventListener('hashchange', changed);
+    return () => window.removeEventListener('hashchange', changed);
+  }, []);
   const [comparisonTask, setComparisonTask] = useState<{
     taskId: string;
     contextKey: string;
@@ -68,8 +80,25 @@ export function SourceWorkbench() {
     !source.conflict &&
     !source.recovery.pending &&
     !c.busy;
-  return (
-    <div className="app-shell source-workbench">
+  useEffect(() => {
+    if (!c.view || !c.confirmed) return;
+    const id = c.view.metadata.contextId, registered = !!c.view.source;
+    if (!registered) setActiveTab('settings');
+    else if (initialContext.current && !initialContext.current.registered) setActiveTab('mode');
+    initialContext.current = { id, registered };
+  }, [c.view?.metadata.contextId, !!source, c.confirmed]);
+  const blocker = modeBlocker({ busy: c.busy, connected: true, confirmed: c.confirmed,
+    registered: !!source, conflict: !!source?.conflict, recoveryPending: !!source?.recovery.pending,
+    setupRequired: !!source?.setup?.setupRequired }, c.selected);
+  const modeNotice = ['状態を再取得しました。実行中のタスクは未検証です。', '接続情報を確認しています。'].includes(c.notice) ? undefined : c.notice;
+  const resolveBlocker = blocker && blocker.kind !== 'busy' ? <>
+    {blocker.kind === 'refresh' ? <button className="secondary" onClick={() => void c.refresh()}>もう一度状態を確認</button>
+      : blocker.kind === 'initial' || blocker.kind === 'settings'
+        ? <button className="secondary" onClick={() => setActiveTab('settings')}>{blocker.kind === 'initial' ? '初期設定へ' : '設定を見直す'}</button>
+        : <button className="secondary" onClick={() => setActiveTab('support')}>{blocker.kind === 'recovery' ? 'このMacで復旧する' : 'このMacで差分を確認する'}</button>}
+    {['changes', 'recovery', 'refresh', 'operation'].includes(blocker.kind) && <AiRequestButton label="状態の確認をAIに頼む" prompt={bindChatScope(stateCheckPrompt, source?.registration.scopeId)} recipient={c.view?.metadata.application === 'claude' ? 'Claude Code' : 'Codex'}/>}
+  </> : null;
+  return <div className="app-shell source-workbench">
       <header className="topbar">
         <a className="wordmark" href="#main">
           UNHARNESS<span>装備を見直す。</span>
@@ -96,75 +125,112 @@ export function SourceWorkbench() {
           </label>
         </div>
       </header>
-      <nav className="workbench-tabs" aria-label="ワークベンチ">
-        <button
-          aria-current={activeTab === "equipment" ? "page" : undefined}
-          onClick={() => setActiveTab("equipment")}
-        >
-          装備
-        </button>
-        <button
-          aria-current={activeTab === "comparison" ? "page" : undefined}
-          onClick={() => setActiveTab("comparison")}
-        >
-          比較
-        </button>
-      </nav>
-      {c.view?.source && <LocalConnectionPanel key={c.view.metadata.launchId + ":" + c.view.metadata.contextId + ":" + c.view.source.registration.scopeId}
-        view={c.view} enabled={c.confirmed && !c.busy} request={c.requestConnection} />}
-      {c.syncNotice && <p className={`source-sync-notice muted${c.syncIssue ? "" : " quiet"}`} role="status">{c.syncNotice}</p>}
-      <main id="main">
-        <div hidden={activeTab !== "comparison"}>
-          <ComparisonWorkbench
-            key={comparisonKey}
-            sourceController={c}
-            taskHandoff={
-              comparisonTask?.contextKey === comparisonKey
-                ? comparisonTask
-                : undefined
-            }
-          />
-          <footer>
-            <span>UNHARNESS</span>
-            <span className="muted">通常利用の観測記録をローカルで比較</span>
-          </footer>
-        </div>
-        <div hidden={activeTab !== "equipment"}>
+    <WorkbenchNavigation page={activeTab} select={setActiveTab}/>
+    <div className="workbench-place"><p>このMacの画面です。対象確認・接続許可・復旧をここで行い、オフラインでも操作できます。</p>
+      <button className="text-button" disabled={c.busy} onClick={() => void c.refresh()}>状態を再取得</button></div>
+    {c.syncNotice && c.syncIssue && <p className="source-sync-notice muted" role="status">{c.syncNotice}</p>}
+    <main id="main">
+      <div hidden={activeTab !== 'mode'}>
         <div className="hangar-layout">
           <section className="visual-column" aria-label="選択したモード">
-            <div className="scene-heading">
-              <p className="eyebrow">
-                装備変更 <span>／ 選択中</span>
-              </p>
-              <h1>{presentation.title}</h1>
-              <p className="scene-subtitle">{presentation.label}</p>
-              <p className="scene-description">{presentation.description}</p>
-            </div>
-            <Hangar
-              condition={presentation.scene}
-              effects={effects && activeTab === "equipment"}
-              artwork={artwork}
-              imageLoader={imageLoader}
-            />
-            <p className="scene-caption">
-              姿は選択プレビューです。実行中のタスクの状態を表すものではありません。
-            </p>
-            <ModeChoices
-              key={
-                c.selectionKey +
-                ":" +
-                (source?.registration.normalId ?? "setup") + ":" + (source?.setup?.setupId ?? "legacy")
-              }
-              controller={c}
-              usable={usable}
-            />
-            {source && <AppearancePanel controller={art}/>}
-            {c.view && <SetupHandoff key={c.view.metadata.contextId + ":" + (source?.setup?.setupId ?? "initial")}
-              view={c.view} confirmed={c.confirmed} busy={c.busy} execute={c.executeAuxiliary} />}
-            <EnrollmentPanel key={c.view?.metadata.contextId + ":" + source?.revision} controller={c} />
-            <PluginEnrollmentPanel key={c.view?.metadata.contextId + ":plugins:" + source?.revision} controller={c} />
+            <div className="scene-heading"><p className="eyebrow">モード ／ 選択プレビュー</p>
+              <h1>{presentation.title}</h1><p className="scene-subtitle">{presentation.label}</p></div>
+            {activeTab === 'mode' && <Hangar condition={presentation.scene} effects={effects} artwork={artwork} imageLoader={imageLoader}/>}
+            <p className="scene-caption">選択したモードの姿です。確定するまで設定は変わりません。</p>
           </section>
           <aside className="control-column" aria-label="設定と保存">
+            <section className="mode-current control-section"><div className="section-heading"><h2>現在の準備</h2></div>
+              <p className="selected-name">{source ? modePresentation[source.preparedMode].title : c.confirmed ? '通常装備はまだ保存されていません' : '確認中'}</p>
+              {source && (!c.confirmed || source.conflict || source.recovery.pending) && <p className="muted">前回確認した構成です。現在の状態を確認してください。</p>}
+              {source?.registration.modeChangeRequired && <p className="scope-enrollment-notice" role="status">登録が更新されました。次のタスク用の設定を、まだ準備していません。{source.setup?.setupRequired ? '先に「設定をAIと見直す」で両モードの構成を確認・保存してください。Normalと過去の保存版には戻せます。' : '使うモードを選び、変更内容を確認してください。'}</p>}
+            </section>
+            <InstructionScopeNote application={c.view?.metadata.application} compact/>
+            <ModeChoices key={c.selectionKey + ':' + (source?.registration.normalId ?? 'setup') + ':' + (source?.setup?.setupId ?? 'legacy')} controller={c} usable={usable}/>
+            <ModeActions title={presentation.title} blocker={blocker} planReady={!!c.plan && c.plan.preparedMode === c.selected}
+              review={() => c.choose(c.selected)} confirm={() => { if (usable && c.plan) void c.run('apply', { planId: c.plan.planId }); }} resolve={resolveBlocker} statusMessage={activeTab === 'mode' ? modeNotice : undefined}>
+                  {c.plan && source ? (
+                    <>
+                      <p className="mode-plan-description">{presentation.description}</p>
+                      {c.plan.adaptation && (
+                        <RestoreAdaptationNotice
+                          adaptation={c.plan.adaptation}
+                        />
+                      )}
+                      {!c.plan.changedFiles.length && (
+                        <p className="muted">
+                          ファイル内容の変更はありません。
+                        </p>
+                      )}
+                      <p className="muted">
+                        変更するファイル {c.plan.changedFiles.length}{" "}
+                        件。未選択の設定は通常装備の内容を維持します。
+                      </p>
+                      <details>
+                        <summary>変更する項目を確認</summary>
+                        <ul className="source-changes">{c.plan.changedFiles.map(file => <li key={file.id}>{file.label}</li>)}</ul>
+                        <code>{c.plan.planId}</code>
+                        {c.plan.skillStates.map((row) => (
+                          <p key={row.id}>
+                            {
+                              source.registration.sources.find(
+                                (s) => s.id === row.id,
+                              )?.label
+                            }
+                            :{" "}
+                            {row.enabled
+                              ? row.manualOnly
+                                ? "手動のみ"
+                                : "有効"
+                              : "無効"}
+                          </p>
+                        ))}
+                        {(c.plan.pluginStates ?? []).map(row => <p key={row.pluginId}>
+                          {source.registration.plugins?.find(p => p.id === row.pluginId)?.label ?? row.pluginId}：
+                          {row.state === 'disabled' ? 'プラグイン全体を無効にする設定' : row.enabled ? 'Normalを保持（有効）' : 'Normalを保持（無効）'}
+                        </p>)}
+                        {!!c.plan.pluginStates?.length && <p className="muted">プラグイン全体の設定を準備します。各機能が新しいタスクでどう読み込まれたかは、別に確認します。</p>}
+                      </details>
+                    </>
+                  ) : (
+                    <p className="muted">
+                      モードまたは保存版を選び、変更計画を確認してください。
+                    </p>
+                  )}
+            </ModeActions>
+            {!blocker && <details className="chat-mode-entry"><summary>チャットでこのモードを頼む</summary><AiRequestButton label="切替の依頼文をコピー" prompt={bindChatScope(modeChatRequest(c.selected), source?.registration.scopeId)}/></details>}
+            {c.view && source && <FreshTaskHandoff view={c.view} disabled={!usable || !!source.registration.modeChangeRequired}/>}
+            <button className="text-button" onClick={() => setActiveTab('settings')}>各モードの指示・Skillを見直す</button>
+          </aside>
+        </div>
+      </div>
+      <section className="workbench-pane" hidden={activeTab !== 'settings'} aria-label="設定の見直し">
+        {c.view ? <SetupHandoff key={c.view.metadata.contextId + ':' + (source?.setup?.setupId ?? 'initial')}
+          view={c.view} confirmed={c.confirmed} busy={c.busy} execute={c.executeAuxiliary}/>
+          : <p>状態を確認しています。</p>}
+        {!source ? <details className="settings-manual"><summary>このMacで対象を確認・登録する</summary><Setup key={c.selectionKey} controller={c}/></details>
+          : <details className="settings-manual"><summary>このMacで構成と対象を確認・編集する</summary>
+            <div className="saved-mode-settings">{source.setup?.schemaVersion === 3 && source.setup.setupId && (['unseal', 'trueform'] as const).map(mode =>
+              <div data-mode={mode} key={mode}><SourceStateEditor key={c.view!.metadata.contextId + ':' + source.revision + ':' + mode} controller={c} mode={mode}/></div>)}</div>
+            <EnrollmentPanel key={c.view?.metadata.contextId + ':' + source.revision} controller={c}/>
+            <PluginEnrollmentPanel key={c.view?.metadata.contextId + ':plugins:' + source.revision} controller={c}/>
+          </details>}
+        <InstructionScopeNote application={c.view?.metadata.application}/>
+      </section>
+      <section className="workbench-pane appearance-workbench" hidden={activeTab !== 'appearance'} aria-label="外観の変更">
+        <h1>外観</h1><p>好きな姿で使えます。指示・Skillの構成や性能の評価は変わりません。</p>
+        <div className="appearance-workbench-layout">{activeTab === 'appearance' && <Hangar condition={presentation.scene} effects={effects} artwork={artwork} imageLoader={imageLoader}/>}
+          {source ? <AppearancePanel controller={art}/> : <div><p>外観の保存には、対象の確認とNormalの保存が必要です。</p><button className="secondary" onClick={() => setActiveTab('settings')}>初期設定へ</button></div>}</div>
+      </section>
+      <section hidden={activeTab !== 'history'} className="workbench-pane" aria-label="比較と記録">
+        <ComparisonWorkbench key={comparisonKey} sourceController={c} taskHandoff={comparisonTask?.contextKey === comparisonKey ? comparisonTask : undefined}/>
+        {source && <Save controller={c} usable={usable && !source.registration.modeChangeRequired}/>}
+      </section>
+      <section hidden={activeTab !== 'support'} className="workbench-pane" aria-label="このMacの接続と復旧">
+        <h1>接続・復旧</h1>
+        <p>接続許可や手元のファイルの確認を行います。完了したら「モード」に戻って操作できます。</p>
+        {c.view?.source && <LocalConnectionPanel key={c.view.metadata.launchId + ':' + c.view.metadata.contextId + ':' + c.view.source.registration.scopeId}
+          view={c.view} enabled={c.confirmed && !c.busy} request={c.requestConnection} onOpen={showConnection}/>}
+        <div className="support-state">
             <section className="control-section">
               <div className="section-heading">
                 <h2>現在の準備</h2>
@@ -194,19 +260,6 @@ export function SourceWorkbench() {
                     ? "ファイルの準備と、タスクへの読み込みは別です。使用時は新しいタスクを作成してください。"
                     : "対象を確認し、追加した任意の指示・Skillだけを選んで保存します。"}
               </p>
-              {source?.registration.modeChangeRequired && <p className="scope-enrollment-notice" role="status">
-                登録が更新されました。次のタスクで使う設定は、まだ準備していません。
-                {source.setup?.setupRequired ? '先に「設定をAIに相談」で両モードの構成を確認・保存してください。Normalと過去の保存版には戻せます。'
-                  : '使うモードを選び、差分を確認して準備してください。'}
-              </p>}
-              <button
-                className="text-button"
-                disabled={c.busy}
-                onClick={() => void c.refresh()}
-              >
-                状態を再取得
-              </button>
-              {c.view && source && <FreshTaskHandoff view={c.view} disabled={!usable || !!source.registration.modeChangeRequired} />}
               {source?.conflict &&
                 (source.recovery.pending ? (
                   <details>
@@ -249,110 +302,27 @@ export function SourceWorkbench() {
                   usable={usable}
                   onCompareTask={(taskId) => {
                     setComparisonTask({ taskId, contextKey: comparisonKey });
-                    setActiveTab("comparison");
+                    setActiveTab("history");
                   }}
                 />
               )}
             </section>
-            {!source ? (
-              <Setup key={c.selectionKey} controller={c} />
-            ) : (
-              <>
-                <section className="control-section plan-section">
-                  <div className="section-heading">
-                    <h2>変更計画</h2>
-                    <span>選択中</span>
-                  </div>
-                  {c.plan ? (
-                    <>
-                      <p>
-                        {modePresentation[c.plan.preparedMode].title}{" "}
-                        を次のタスク用に準備
-                      </p>
-                      {c.plan.adaptation && (
-                        <RestoreAdaptationNotice
-                          adaptation={c.plan.adaptation}
-                        />
-                      )}
-                      <ul className="source-changes">
-                        {c.plan.changedFiles.map((file) => (
-                          <li key={file.id}>{file.label}</li>
-                        ))}
-                      </ul>
-                      {!c.plan.changedFiles.length && (
-                        <p className="muted">
-                          ファイル内容の変更はありません。
-                        </p>
-                      )}
-                      <p className="boundary">
-                        このCodex
-                        homeを使う今後のタスクで共有する設定です。元に戻すまで準備した内容が続きます。
-                      </p>
-                      <p className="muted">
-                        変更するファイル {c.plan.changedFiles.length}{" "}
-                        件。未選択の設定は通常装備の内容を維持します。
-                      </p>
-                      <details>
-                        <summary>計画の詳細</summary>
-                        <code>{c.plan.planId}</code>
-                        {c.plan.skillStates.map((row) => (
-                          <p key={row.id}>
-                            {
-                              source.registration.sources.find(
-                                (s) => s.id === row.id,
-                              )?.label
-                            }
-                            :{" "}
-                            {row.enabled
-                              ? row.manualOnly
-                                ? "手動のみ"
-                                : "有効"
-                              : "無効"}
-                          </p>
-                        ))}
-                        {(c.plan.pluginStates ?? []).map(row => <p key={row.pluginId}>
-                          {source.registration.plugins?.find(p => p.id === row.pluginId)?.label ?? row.pluginId}：
-                          {row.state === 'disabled' ? 'プラグイン全体を無効にする設定' : row.enabled ? 'Normalを保持（有効）' : 'Normalを保持（無効）'}
-                        </p>)}
-                        {!!c.plan.pluginStates?.length && <p className="muted">プラグイン全体の設定を準備します。各機能が新しいタスクでどう読み込まれたかは、別に確認します。</p>}
-                      </details>
-                    </>
-                  ) : (
-                    <p className="muted">
-                      モードまたは保存版を選び、変更計画を確認してください。
-                    </p>
-                  )}
-                  <button
-                    className="primary"
-                    disabled={!usable || !c.plan}
-                    onClick={() =>
-                      c.plan && void c.run("apply", { planId: c.plan.planId })
-                    }
-                  >
-                    この計画で準備する
-                  </button>
-                </section>
-                <Save controller={c} usable={usable && !source?.registration.modeChangeRequired} />
-              </>
-            )}
-          </aside>
         </div>
-        <div className="status-strip">
-          <span className="status-symbol" aria-hidden="true">
-            ◇
-          </span>
-          <div role="status" aria-live="polite">
-            {c.notice}
-          </div>
-          <span className="evidence-status">
-            実行中の状態・モード切替：未検証
-          </span>
-        </div>
-        {c.error && (
-          <div className="global-error" role="alert">
-            {c.error}
-          </div>
-        )}
+        <details className="developer-details">
+          <summary>対象・保持する設定・対応状況</summary>
+          <Context controller={c} />
+          <p>
+            メモリ、タスク継続、実行権限、プロジェクト要件、提供元・管理者の設定、未選択のソースは保持します。
+          </p>
+          <p>
+            フックは変更しません。Windowsの実設定書き込みとデスクトップ読み込みは未検証です。
+          </p>
+          {source?.registration.sources.map((row) => (
+            <SourceDetail key={row.id} row={row} controller={c} />
+          ))}
+        </details>
+      </section>
+      <div hidden={activeTab !== 'history' && activeTab !== 'support'} className="workbench-pane workbench-records">
         <div className="records-grid">
           <section className="control-section">
             <div className="section-heading">
@@ -373,13 +343,14 @@ export function SourceWorkbench() {
                   <button
                     className="secondary"
                     disabled={!usable}
-                    onClick={() =>
+                    onClick={() => {
+                      setActiveTab('mode');
                       void c.run<SourcePlan>(
                         "favorite",
                         { favoriteId: f.favoriteId },
                         c.setPlan,
-                      )
-                    }
+                      );
+                    }}
                   >
                     {f.name} · {modePresentation[f.preparedMode].title}
                     {f.addedPluginIds?.length ? ` · 追加したプラグイン ${f.addedPluginIds.length}件はNormal` : ''}
@@ -413,13 +384,14 @@ export function SourceWorkbench() {
               <button
                 className="secondary"
                 disabled={!source?.recovery.lastCheckpointId || c.busy}
-                onClick={() =>
+                onClick={() => {
+                  setActiveTab('mode');
                   void c.run<SourcePlan>(
                     "checkpoint",
                     { checkpointId: source!.recovery.lastCheckpointId },
                     c.setPlan,
-                  )
-                }
+                  );
+                }}
               >
                 変更前への復帰を確認
               </button>
@@ -456,28 +428,14 @@ export function SourceWorkbench() {
             )}
           </section>
         </div>
-        <details className="developer-details">
-          <summary>対象・保持する設定・対応状況</summary>
-          <Context controller={c} />
-          <p>
-            メモリ、タスク継続、実行権限、プロジェクト要件、提供元・管理者の設定、未選択のソースは保持します。
-          </p>
-          <p>
-            フックは変更しません。Windowsの実設定書き込みとデスクトップ読み込みは未検証です。
-          </p>
-          {source?.registration.sources.map((row) => (
-            <SourceDetail key={row.id} row={row} controller={c} />
-          ))}
-        </details>
-        <footer>
-          <span>UNHARNESS</span>
-          <span className="muted">次のタスク用の設定をローカルで準備</span>
-        </footer>
-        </div>
-      </main>
-    </div>
-  );
+      </div>
+      {activeTab !== 'mode' && <div className="status-strip"><div role="status" aria-live="polite">{c.notice}</div></div>}
+      {c.error && <div className="global-error" role="alert">{c.error}</div>}
+      <footer><span>UNHARNESS</span><span className="muted">画面でも、チャットでも。同じ設定を使えます。</span></footer>
+    </main>
+  </div>;
 }
+
 type Controller = ReturnType<typeof useSourceController>;
 
 const expectedLabels: Record<TaskObservation["sources"][number]["expected"], string> = {
@@ -877,8 +835,6 @@ function ModeChoices({
               <small>{modePresentation[mode].label}</small>
             </span>
           </button>
-          {mode !== 'normal' && c.view?.source?.setup?.schemaVersion === 3 && c.view.source.setup.setupId &&
-            <SourceStateEditor key={c.view.metadata.contextId + ':' + c.view.source.revision + ':' + mode} controller={c} mode={mode} />}
           {mode !== "normal" && c.view?.source && !c.view.source.setup?.setupId && !c.view.source.setup?.setupRequired && (
             <details>
               <summary>対象を調整</summary>

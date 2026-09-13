@@ -1,3 +1,4 @@
+import { openWorkbenchPage, openSetupDetails, openSourceSettings } from '../test-support/workbench-navigation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, mkdir } from 'node:fs/promises';
@@ -34,11 +35,12 @@ async function fixture(t) {
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   page.on('request', r => { if (r.method() === 'POST') posts.push({ path: new URL(r.url()).pathname, body: r.postDataJSON() }); });
   await page.goto(gui.url);
-  await page.getByRole('button', { name: '設定をAIに相談', exact: true }).waitFor();
+  await openSetupDetails(page);
+  await page.getByRole('button', { name: '設定をAIと見直す', exact: true }).waitFor();
   return { ...p, proposal, setup, newSkill, page, browserContext: context, errors, posts };
 }
 async function showSaved(page) {
-  await page.getByRole('button', { name: '設定をAIに相談', exact: true }).click();
+  await openSetupDetails(page);
   const read = page.getByRole('button', { name: '保存した2構成を確認', exact: true });
   await read.focus(); await page.keyboard.press('Enter');
   await page.getByRole('heading', { name: '零式から引き継ぐもの', exact: true }).waitFor();
@@ -66,6 +68,7 @@ test('built v2 GUI separates saved inheritance, role-only registration, setup ap
   await screenshot(page, 'inheritance-mobile');
   await page.setViewportSize({ width: 1440, height: 1100 });
 
+  await openSourceSettings(page);
   await page.getByText('未登録のSkillを確認する', { exact: true }).click();
   await page.getByRole('button', { name: '追加候補の一覧を確認', exact: true }).click();
   await page.getByText('登録済み 1件 / 未登録の候補 1件', { exact: true }).waitFor();
@@ -79,12 +82,16 @@ test('built v2 GUI separates saved inheritance, role-only registration, setup ap
   const addition = s.posts.findLast(r => r.path.endsWith('/review-enrollment')).body.additions[0];
   assert.deepEqual(Object.keys(addition).sort(), ['origin', 'reason', 'sourceId']);
   await page.getByRole('button', { name: 'この内容で登録', exact: true }).click();
-  await page.getByText(/先に「設定をAIに相談」で両モード/).waitFor();
+  await openWorkbenchPage(page, 'モード');
+  await page.getByText(/先に「設定をAIと見直す」で両モード/).waitFor();
+  await openWorkbenchPage(page, 'モード');
   assert.equal(await page.getByRole('button', { name: /TRUEFORM/ }).isDisabled(), true);
+  await openWorkbenchPage(page, 'モード');
   assert.equal(await page.getByRole('button', { name: /UNSEAL/ }).isDisabled(), true);
+  await openWorkbenchPage(page, 'モード');
   assert.equal(await page.getByRole('button', { name: /^Normal/ }).isEnabled(), true);
   assert.equal(await page.getByText('対象を調整', { exact: true }).count(), 0);
-  await page.getByRole('button', { name: '設定をAIに相談', exact: true }).click();
+  await openSetupDetails(page);
   assert.equal(await page.getByLabel('現在の構成から相談する', { exact: true }).isChecked(), true);
   const prompt = await page.getByLabel('設定相談の依頼文', { exact: true }).inputValue();
   assert.match(prompt, /登録更新後/); assert.match(prompt, /read_setup/);
@@ -98,16 +105,20 @@ test('built v2 GUI separates saved inheritance, role-only registration, setup ap
     roles: status.enrollment.roles, unseal: { ...s.proposal.unseal, additionalAutomaticSkillIds: status.enrollment.roles.map(r => r.sourceId) } };
   const review = await ai.mutate('review_setup', { proposal });
   const saved = await ai.mutate('apply_setup', { reviewId: review.reviewId });
+  await openSetupDetails(page);
   await page.getByText(/解除設定は保存済みです。 次に解除モード/).waitFor();
   assert.equal((await openWorkspace(s.workspace)).state.scopePreparationRequired, true);
   assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
+  await openWorkbenchPage(page, 'モード');
   await page.getByRole('button', { name: /TRUEFORM/ }).click();
-  const apply = page.getByRole('button', { name: 'この計画で準備する', exact: true });
+  const apply = page.getByRole('button', { name: 'この内容で確定する', exact: true });
   await apply.and(page.locator(':enabled')).waitFor(); await apply.click();
   await page.locator('.control-column .selected-name').filter({ hasText: 'TRUEFORM' }).waitFor();
+  await openSetupDetails(page);
   await page.getByText(/現在の準備にもこの保存版/).waitFor();
   assert.equal((await openWorkspace(s.workspace)).state.preparedSetupId, saved.setupId);
   assert.match(await readFile(join(s.newSkill.path, '..', 'agents/openai.yaml'), 'utf8'), /allow_implicit_invocation: false/);
+  await openWorkbenchPage(page, '比較・記録');
   await page.getByRole('button', { name: '保存版を表示', exact: true }).click();
   await page.getByRole('button', { name: /登録前のNormal.*追加したSkill 1件/ }).click();
   await apply.and(page.locator(':enabled')).waitFor(); await apply.click();
@@ -141,7 +152,7 @@ test('render-only provenance fixture keeps inherited choices read-only and expos
   await page.getByText(/unverified-package.*公式由来は未確認/).waitFor();
   assert.equal(await summary.locator('input, select').count(), 0);
   assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
-  await page.getByRole('button', { name: '設定をAIに相談', exact: true }).click();
-  assert.equal(await summary.count(), 0);
+  await page.locator('.setup-conversation > summary').click();
+  assert.equal(await summary.isVisible(), false);
   assert.deepEqual(s.errors, []);
 });

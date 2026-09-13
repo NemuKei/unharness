@@ -25,12 +25,13 @@ The public introduction subsequently changed to three columns at widths of
 retain the character chooser. This was a site-only update; the 0.0.8 archive and
 personal configuration were not changed for that layout work.
 
-The repository's introduction now leads with “モデルは変わった。装備は、そのまま？”
-and connects save/try/restore guidance with illustrative mode settings and the
-existing appearance preview. It makes the demo the primary entrance and shows
-Mac Codex availability separately from Windows Codex and Claude Code plans.
-This introduction revision requires a separate site deployment; the published
-snapshot below and the 0.0.8 archive remain its independent release boundaries.
+The repository's introduction leads with “モデルは変わった。装備は、そのまま？”
+and shows the same four functions through screen and chat entry points. The
+local/public workbench uses mode/settings/appearance pages, nearby mode
+confirmation and actionable blocked states. Initial registration and local
+approval remain explicit; conflicts offer an AI inspection prompt without
+enabling a source write. These UI and management-Skill changes need separate
+site and package publication; the published snapshots below remain independent.
 
 ## Release and site are separate snapshots
 

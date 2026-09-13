@@ -1,3 +1,4 @@
+import { openWorkbenchPage, openSetupDetails, openSourceSettings } from '../test-support/workbench-navigation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile,mkdir,writeFile} from 'node:fs/promises';
@@ -23,7 +24,8 @@ async function fixture(t,{enroll=true,setup=true,selector=true}={}){
   const errors=[],posts=[];
   page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   page.on('request',r=>{if(r.method()==='POST')posts.push({path:new URL(r.url()).pathname,body:r.postDataJSON()});});
-  await page.goto(gui.url);await page.getByText('プラグインの登録を確認する',{exact:true}).waitFor();
+  await page.goto(gui.url);await openSourceSettings(page);
+  await page.getByText('プラグインの登録を確認する',{exact:true}).waitFor();
   return{...s,page,browserContext,errors,posts};
 }
 async function screenshot(s,name){
@@ -33,13 +35,14 @@ async function screenshot(s,name){
 }
 test('built v3 GUI reviews both states before saving, then prepares separately and preserves Normal',browserCase,async t=>{
   const s=await fixture(t),{page}=s,before=await openWorkspace(s.workspace),files=await readFile(s.configPath);
-  await page.getByRole('button',{name:'設定をAIに相談',exact:true}).click();
+  await openSetupDetails(page);
   await page.getByRole('button',{name:'保存した2構成を確認',exact:true}).click();
   const summary=page.getByRole('region',{name:'保存した2構成',exact:true});
   await summary.getByRole('heading',{name:'零式から引き継ぐプラグイン',exact:true}).waitFor();
   assert.match(await summary.innerText(),/通常Skill：無効 0件 \/ 手動 1件 \/ 自動 0件/);
   assert.match(await summary.innerText(),/プラグイン：1件/);
-  const editor=page.locator('.source-mode').nth(2).locator('.source-state-editor');
+  await openSourceSettings(page);
+  const editor=page.locator('.saved-mode-settings [data-mode="trueform"] .source-state-editor');
   await editor.locator('summary').first().click();
   const load=editor.getByRole('button',{name:'保存した対象を編集',exact:true});await load.focus();await page.keyboard.press('Enter');
   await editor.getByLabel('example',{exact:true}).selectOption('disabled');
@@ -57,10 +60,12 @@ test('built v3 GUI reviews both states before saving, then prepares separately a
   await page.waitForFunction(()=>!document.querySelector('.source-state-editor .enrollment-review'));
   const saved=await readSetup({workspace:s.workspace,schemaVersion:3});assert.notEqual(saved.setupId,before.state.setupId);
   assert.deepEqual(await readFile(s.configPath),files);
+  await openWorkbenchPage(page, 'モード');
   await page.getByRole('button',{name:/TRUEFORM/}).click();
-  const apply=page.getByRole('button',{name:'この計画で準備する',exact:true});await apply.and(page.locator(':enabled')).waitFor();await apply.click();
+  const apply=page.getByRole('button',{name:'この内容で確定する',exact:true});await apply.and(page.locator(':enabled')).waitFor();await apply.click();
   await page.locator('.control-column .selected-name').filter({hasText:'TRUEFORM'}).waitFor();
   assert.match(await readFile(s.configPath,'utf8'),/enabled = false/);
+  await openWorkbenchPage(page, 'モード');
   await page.getByRole('button',{name:/通常装備/}).click();await apply.and(page.locator(':enabled')).waitFor();await apply.click();
   await page.locator('.control-column .selected-name').filter({hasText:'Normal'}).waitFor();
   assert.equal(await readFile(s.configPath,'utf8'),s.originalConfig);
@@ -68,6 +73,7 @@ test('built v3 GUI reviews both states before saving, then prepares separately a
 });
 test('built plugin registration confirms optional role, freezes impact and accepts the reviewed scope transition',browserCase,async t=>{
   const s=await fixture(t,{enroll:false,setup:false}),{page}=s,before=await openWorkspace(s.workspace),files=await readFile(s.configPath);
+  await openSourceSettings(page);
   await page.getByText('プラグインの登録を確認する',{exact:true}).click();
   await page.getByRole('button',{name:'導入済みプラグインを確認',exact:true}).click();
   await page.getByLabel('登録するプラグイン',{exact:true}).selectOption(s.pluginId);
@@ -84,6 +90,7 @@ test('built plugin registration confirms optional role, freezes impact and accep
   await panel.getByRole('button',{name:'このプラグインを登録',exact:true}).click();
   await page.getByText('この登録の2構成は確認・保存待ちです。以前の保存版はそのまま残っています。',{exact:true}).waitFor();
   const after=await openWorkspace(s.workspace);assert.notEqual(after.scopeId,before.scopeId);assert.equal(after.state.setupId,null);
+  await openWorkbenchPage(page, 'モード');
   assert.deepEqual(await readFile(s.configPath),files);assert.equal(await page.getByRole('button',{name:/TRUEFORM/}).isDisabled(),true);
   assert.equal(s.posts.filter(p=>p.path==='/api/sources/apply-plugin-enrollment').length,1);assert.deepEqual(s.errors,[]);
 });
@@ -91,7 +98,8 @@ test('the built editor retains unsupported official plugins while editing ordina
   const s=await fixture(t),{page}=s,before=await openWorkspace(s.workspace),files=await readFile(s.configPath);
   const fixtureFile=join(s.context.codexHome,'.fixture-plugins.json');
   await writeFile(fixtureFile,JSON.stringify({...JSON.parse(await readFile(fixtureFile,'utf8')),ignorePluginOverrides:true}));
-  const editor=page.locator('.source-mode').nth(2).locator('.source-state-editor');
+  await openSourceSettings(page);
+  const editor=page.locator('.saved-mode-settings [data-mode="trueform"] .source-state-editor');
   await editor.locator('summary').first().click();await editor.getByRole('button',{name:'保存した対象を編集',exact:true}).click();
   const plugin=editor.getByRole('checkbox',{name:/個別OFF未対応のため保持/});
   await plugin.waitFor();assert.equal(await plugin.isChecked(),true);assert.equal(await plugin.isDisabled(),true);
@@ -110,6 +118,7 @@ test('the built editor retains unsupported official plugins while editing ordina
 });
 test('a lost plugin adoption response offers no automatic repeat',browserCase,async t=>{
   const s=await fixture(t,{enroll:false,setup:false}),{page}=s;
+  await openSourceSettings(page);
   await page.getByText('プラグインの登録を確認する',{exact:true}).click();
   await page.getByRole('button',{name:'導入済みプラグインを確認',exact:true}).click();
   await page.getByLabel('登録するプラグイン',{exact:true}).selectOption(s.pluginId);
@@ -129,6 +138,7 @@ test('built task observation separates plugin input mismatch/match from unavaila
   const plan=await sources.planUserMode({workspace:s.workspace,mode:'trueform'});
   await sources.applyUserPlan({workspace:s.workspace,planId:plan.planId});
   await page.reload();
+  await openWorkbenchPage(page, '接続・復旧');
   await page.getByText('タスク記録で確認',{exact:true}).click();
   const w=await openWorkspace(s.workspace),files=await loadSnapshot(s.workspace,w.reg,w.state.snapshotId);
   const global=(files.override?.text?.trim()?files.override.text:files.base?.text??'').trim();
@@ -139,6 +149,7 @@ test('built task observation separates plugin input mismatch/match from unavaila
       catalog:'### Available skills\n'+(present?'- fixture-state:fixture: Plugin fixture (file: '+join(s.packageRoot,'skills/fixture/SKILL.md')+')\n':'')});
     await mkdir(join(s.context.codexHome,'sessions'),{recursive:true});
     await writeFile(join(s.context.codexHome,'sessions','rollout-'+taskId+'.jsonl'),records.map(JSON.stringify).join('\n')+'\n');
+    await openWorkbenchPage(page, '接続・復旧');
     await page.locator('.task-observation').getByLabel('タスクUUID',{exact:true}).fill(taskId);
     await page.getByRole('button',{name:'このタスクの記録を確認',exact:true}).click();
     const observed=page.getByRole('region',{name:'プラグインの確認範囲',exact:true});

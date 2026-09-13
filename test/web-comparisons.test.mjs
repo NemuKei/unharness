@@ -1,3 +1,4 @@
+import { openWorkbenchPage } from '../test-support/workbench-navigation.mjs';
 import test from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -688,6 +689,7 @@ test("built comparison workbench accepts repeated observation handoffs", {
     await context.addInitScript(() => localStorage.setItem("unharness.effects.v1", "off"));
     const page = await context.newPage();
     await page.goto(s.url);
+    await openWorkbenchPage(page, "接続・復旧");
     await page.locator(".task-observation summary").click();
     await page.locator("#source-task-id").fill(taskId);
     await page.getByRole("button", { name: "このタスクの記録を確認", exact: true }).click();
@@ -699,8 +701,7 @@ test("built comparison workbench accepts repeated observation handoffs", {
     await waitForTask();
     const input = page.locator(".comparison-workbench").getByLabel("タスクUUID", { exact: true });
     await input.fill(randomUUID());
-    await page.getByRole("navigation", { name: "ワークベンチ" })
-      .getByRole("button", { name: "装備", exact: true }).click();
+    await openWorkbenchPage(page, "接続・復旧");
     await handoff();
     await waitForTask();
     assert.equal(await input.inputValue(), taskId);

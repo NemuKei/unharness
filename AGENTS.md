@@ -40,6 +40,7 @@ Unharness makes it easy to take off, compare, and save AI harness configurations
 - `docs/spec.md`: modes, shared behavior, and acceptance criteria; read before feature work.
 - `docs/spec-domain-entry.md`: public-domain UI, protected local pairing, in-app browser entry, installation and offline fallback; read before changing the GUI origin or launcher.
 - `docs/spec-guided-setup.md`: AI-led setup, model-aware review, protected Unharness controls, new Skill handling and saved-preset migration.
+- `docs/spec-workbench-ux.md`: shared mode/settings/appearance navigation, chat entry points, nearby confirmation and actionable blocked states; read before changing local/public workbench flows.
 - `docs/spec-mode-inheritance.md`: current official-plugin eligibility and TRUEFORM → UNSEAL inheritance target; read before changing mode selection or setup schemas.
 - `docs/superpowers/plans/2026-09-10-official-plugin-mode-inheritance.md`: implementation and native-acceptance sequence for that target; supersedes the independent mode-selection rules in the 2026-09-09 setup plan.
 - `docs/personalization.md`: free layered original artwork, template compatibility and independent appearance/performance semantics; read before appearance work. `docs/spec-appearances.md` records the earlier implemented lifecycle and its migration boundary.

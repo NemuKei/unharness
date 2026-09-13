@@ -1,3 +1,4 @@
+import { openWorkbenchPage } from '../test-support/workbench-navigation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, writeFile } from 'node:fs/promises';
@@ -13,7 +14,7 @@ import { entityAssetIds } from '../src/appearances/entity-profile.mjs';
 
 test('creation stays available without comparison and copying a brief does not send it or change settings', artworkBrowserCase, async t => {
   const s = await artworkBrowser(t, { clipboardFails: true }), { page } = s;
-  await page.goto(s.gui.url);
+  await page.goto(s.gui.url); await openWorkbenchPage(page, '外観');
   await page.getByRole('button', { name: 'オリジナルイメージを作成', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('作りたいイメージ（任意）', { exact: true }).fill('金色の小さな機械竜');
@@ -33,7 +34,7 @@ test('creation stays available without comparison and copying a brief does not s
 
 test('entity import shows three modes, saves a version, survives reload and reselects the older work', artworkBrowserCase, async t => {
   const s = await artworkBrowser(t), { page } = s;
-  await page.goto(s.gui.url);
+  await page.goto(s.gui.url); await openWorkbenchPage(page, '外観');
   let dialog = await importEntity(s, '金色の本体');
   assert.equal(await dialog.getByRole('img').count(), 3);
   await s.screenshot('import-three-modes-desktop.png');
@@ -41,7 +42,7 @@ test('entity import shows three modes, saves a version, survives reload and rese
   await page.getByText('作品をコレクションに保存しました。', { exact: true }).waitFor();
   const first = await readUserAppearance({ workspace: s.workspace });
   assert.equal(first.state.items.at(-1).name, '金色の本体');
-  await page.reload();
+  await page.reload(); await openWorkbenchPage(page, '外観');
   await page.locator('.artwork-panel-heading strong').filter({ hasText: '金色の本体' }).waitFor();
   dialog = await importEntity(s, '金色の本体・次の版');
   await dialog.getByRole('button', { name: 'この作品を保存', exact: true }).click();
@@ -71,7 +72,7 @@ test('entity import shows three modes, saves a version, survives reload and rese
 
 test('a lost save response is checked with the original operation ID and creates one version', artworkBrowserCase, async t => {
   const s = await artworkBrowser(t), { page } = s;
-  await page.goto(s.gui.url);
+  await page.goto(s.gui.url); await openWorkbenchPage(page, '外観');
   const dialog = await importEntity(s, '返答を確認する作品');
   let drop = true;
   await page.route('**/api/sources/save-appearance-import', async route => {
@@ -101,7 +102,7 @@ test('a damaged older image is identified while later collection thumbnails rema
   }
   const damagedPath = join(s.workspace, 'appearance-assets', firstImageId + '.png');
   await writeFile(damagedPath, 'INDEPENDENT DAMAGED PNG');
-  await page.goto(s.gui.url);
+  await page.goto(s.gui.url); await openWorkbenchPage(page, '外観');
   await page.getByRole('button', { name: 'コレクション', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByRole('img', { name: '青い作品の見た目', exact: true }).waitFor();
@@ -118,7 +119,7 @@ test('a review response for different requested parts is refused before a save i
     data.result.replacedParts = ['background'];
     await route.fulfill({ response, json: data });
   });
-  await page.goto(s.gui.url);
+  await page.goto(s.gui.url); await openWorkbenchPage(page, '外観');
   await page.getByRole('button', { name: '作品を読み込む', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('本体のアニメーションPNG', { exact: true }).setInputFiles(s.image);
@@ -134,7 +135,7 @@ test('the import form maps a complete set to all thirteen fixed parts without pr
   const parts = template.parts.filter(part => part.role === 'restraints'), files = [];
   for (const part of parts) { const path = join(s.parent, part.id + '.png'); await writeFile(path, await readFile(s.image)); files.push(path); }
   assert.equal(parts.length, 11);
-  await page.goto(s.gui.url);
+  await page.goto(s.gui.url); await openWorkbenchPage(page, '外観');
   await page.getByRole('button', { name: '作品を読み込む', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('本体のアニメーションPNG', { exact: true }).setInputFiles(s.image);

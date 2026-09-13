@@ -7,6 +7,7 @@ import { startGuiServer } from '../src/gui/server.mjs';
 import { aiProfile } from '../test-support/ai-profile.mjs';
 import { fixtureAiClient } from '../test-support/ai-client.mjs';
 import { readSourceProfileFiles } from '../src/sources/owned-profile.mjs';
+import { openWorkbenchPage, openSetupDetails } from '../test-support/workbench-navigation.mjs';
 
 const browserCase = { timeout: 45000, skip: process.platform !== 'darwin' ? 'Mac setup browser qualification'
   : !process.env.UNHARNESS_PLAYWRIGHT_MODULE && 'Browser plugin not available; set UNHARNESS_PLAYWRIGHT_MODULE for built Playwright checks' };
@@ -25,7 +26,8 @@ async function fixture(t, { clipboardFails = false } = {}) {
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   page.on('request', r => { if (r.method() === 'POST') posts.push({ path: new URL(r.url()).pathname, body: r.postDataJSON() }); });
   await page.goto(gui.url);
-  await page.getByRole('button', { name: 'AIと初期設定を作る', exact: true }).waitFor();
+  await openSetupDetails(page);
+  await page.getByRole('button', { name: '設定をAIと見直す', exact: true }).waitFor();
   assert.match(await page.title(), /Unharness/i);
   assert.equal(new URL(page.url()).origin, gui.url);
   assert.equal(await page.locator('vite-error-overlay').count(), 0);
@@ -35,26 +37,27 @@ async function fixture(t, { clipboardFails = false } = {}) {
 test('initial setup and fresh-task handoffs are copyable, bounded, and do not prepare a mode', browserCase, async t => {
   const s = await fixture(t), { page } = s;
   const before = await readFile(join(s.workspace, 'state.json'));
-  await page.getByRole('button', { name: 'AIと初期設定を作る', exact: true }).click();
+  await page.getByRole('button', { name: '設定をAIと見直す', exact: true }).click();
   assert.equal(await page.getByLabel('零式で初期設定を見直す（推奨）').isChecked(), true);
   const prompt = await page.getByLabel('設定相談の依頼文', { exact: true }).inputValue();
-  assert.ok(prompt.indexOf('退避') < prompt.indexOf('確認済みの対象だけを準備'));
+  assert.ok(prompt.indexOf('Normalとして退避') < prompt.indexOf('別操作で零式を準備'));
   assert.ok(prompt.includes(s.normalId));
   assert.ok(!prompt.includes(s.context.codexHome));
   assert.ok(!prompt.includes(s.context.project));
   assert.ok(!prompt.includes('PRIVATE_TEST'));
-  await page.locator('.setup-handoff').getByRole('button', { name: '依頼文をコピー', exact: true }).click();
-  await page.getByText('コピーしました。AIの入力欄に貼り付けて送信してください。', { exact: true }).waitFor();
+  await page.getByText('依頼文をコピーしました。Codexに貼り付けて送ってください。', { exact: true }).waitFor();
   assert.equal(await page.evaluate(() => navigator.clipboard.readText()), prompt);
   await page.getByLabel('現在の構成から相談する', { exact: true }).check();
   assert.match(await page.getByLabel('設定相談の依頼文', { exact: true }).inputValue(), /自動で零式へ切り替えない/);
-  assert.equal(await page.getByText('コピーしました。AIの入力欄に貼り付けて送信してください。', { exact: true }).count(), 0);
+  assert.equal(await page.getByText('依頼文をコピーしました。Codexに貼り付けて送ってください。', { exact: true }).count(), 0);
+  await openWorkbenchPage(page, 'モード');
   await page.getByText('この設定で新しいタスクを始める', { exact: true }).click();
   assert.match(await page.getByLabel('新しいタスクへの依頼文', { exact: true }).inputValue(), /古いタスク/);
   assert.deepEqual(await readFile(join(s.workspace, 'state.json')), before);
   assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
   assert.equal(s.posts.filter(r => /\/(plan|apply|register|review-setup|apply-setup|recover)$/.test(r.path)).length, 0);
   assert.deepEqual(s.errors, []);
+  await openSetupDetails(page);
   if (process.env.UNHARNESS_SETUP_SCREENSHOT_DIR) {
     await mkdir(process.env.UNHARNESS_SETUP_SCREENSHOT_DIR, { recursive: true });
     await page.locator('.setup-handoff').scrollIntoViewIfNeeded();
@@ -71,19 +74,21 @@ test('initial setup and fresh-task handoffs are copyable, bounded, and do not pr
   if (process.env.UNHARNESS_SETUP_SCREENSHOT_DIR) await page.screenshot({ path: join(process.env.UNHARNESS_SETUP_SCREENSHOT_DIR, 'setup-mobile.png') });
 });
 
-test('clipboard failure leaves a selectable prompt and source conflicts suspend handoffs', browserCase, async t => {
+test('clipboard failure leaves a selectable prompt and conflicts offer a state-check handoff', browserCase, async t => {
   const s = await fixture(t, { clipboardFails: true }), { page } = s;
-  await page.getByRole('button', { name: 'AIと初期設定を作る', exact: true }).click();
-  await page.locator('.setup-handoff').getByRole('button', { name: '依頼文をコピー', exact: true }).click();
-  await page.getByText('コピーできませんでした。上の依頼文を選択してコピーしてください。', { exact: true }).waitFor();
+  await page.getByRole('button', { name: '設定をAIと見直す', exact: true }).click();
+  await page.getByText('コピーできませんでした。下の依頼文を選択してコピーしてください。', { exact: true }).waitFor();
   const selection = await page.getByLabel('設定相談の依頼文', { exact: true }).evaluate(e => ({ active: e === document.activeElement, count: e.selectionEnd - e.selectionStart, length: e.value.length }));
   assert.equal(selection.active, true); assert.equal(selection.count, selection.length);
   const { writeFile } = await import('node:fs/promises');
   await writeFile(join(s.context.codexHome, 'AGENTS.md'), '# An independent edit\n');
+  await openWorkbenchPage(page, 'モード');
   await page.getByRole('button', { name: '状態を再取得', exact: true }).click();
-  await page.getByText(/外部の変更を確認してください/).waitFor();
-  assert.equal(await page.getByRole('button', { name: 'AIと初期設定を作る', exact: true }).isDisabled(), true);
-  assert.equal(await page.getByLabel('設定相談の依頼文', { exact: true }).count(), 0);
+  await page.getByText('保存時と今の設定が異なるため、切替を止めています。', { exact: true }).waitFor();
+  assert.equal(await page.getByRole('button', { name: 'この内容で確定する', exact: true }).isDisabled(), true);
+  await openWorkbenchPage(page, '設定');
+  assert.equal(await page.getByRole('button', { name: '状態の確認をAIに頼む', exact: true }).isEnabled(), true);
+  assert.match(await page.getByLabel('設定相談の依頼文', { exact: true }).inputValue(), /確認なしに設定変更/);
   assert.deepEqual(s.errors, []);
 });
 
@@ -97,13 +102,14 @@ test('MCP-adopted presets refresh the open GUI and TRUEFORM prepares manual invo
     unseal: { instructions: 'minimal', automaticSkillIds: skills.map(skill => skill.id) }, trueform: { automaticExternalSkillIds: [] } };
   const review = await ai.mutate('review_setup', { proposal });
   const saved = await ai.mutate('apply_setup', { reviewId: review.reviewId });
-  await page.getByRole('button', { name: '設定をAIに相談', exact: true }).waitFor();
+  await page.getByText(/解除設定は保存済みです/).waitFor();
   assert.equal(await page.getByText('対象を調整', { exact: true }).count(), 0);
-  await page.getByRole('button', { name: '設定をAIに相談', exact: true }).click();
+  await openSetupDetails(page);
   assert.equal(await page.getByLabel('現在の構成から相談する', { exact: true }).isChecked(), true);
   assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
+  await openWorkbenchPage(page, 'モード');
   await page.getByRole('button', { name: /TRUEFORM/ }).click();
-  const apply = page.getByRole('button', { name: 'この計画で準備する', exact: true });
+  const apply = page.getByRole('button', { name: 'この内容で確定する', exact: true });
   await apply.and(page.locator(':enabled')).waitFor();
   await page.getByText('選んだ追加指示を外す。自作Skillは明示的に呼び出す。', { exact: true }).waitFor();
   const request = s.posts.findLast(r => r.path.endsWith('/plan')).body;

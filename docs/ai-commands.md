@@ -1,5 +1,22 @@
 # Local AI commands
 
+## 画面とチャットの入口
+
+初期設定・設定の見直し・モード切替・外観づくりは、画面でも、Unharnessを導入したCodexのチャットでも始められる。
+
+| やりたいこと | チャットの依頼例 |
+| --- | --- |
+| 初期設定 | アンハーネスの初期設定をして |
+| 設定変更 | 零式と限定解除のSkill構成を見直して |
+| モード切替 | 零式に切り替えて |
+| 外観づくり | アンハーネスのオリジナルイメージを作成したい |
+
+初回の対象確認・Normal保存・接続許可など、必要な確認はこのMacの画面へ案内する。依頼文のコピーはAIへの送信や操作完了ではない。登録済みの切替はMCPで計画・適用でき、開いている画面は同じ保存状態を読み直す。画面表示と演出の成否は、設定の準備結果と分ける。新しいタスクへの読み込みは別に確認する。
+
+公開画面のWebMCPと同梱のローカルMCPは同じ決定的な処理を使う。WebMCPは現在の接続で許可した操作だけを受け付け、初回登録や任意パスの操作へ権限を広げない。ローカルMCPでの操作に公開接続を必須としない。[操作画面の仕様](spec-workbench-ux.md)と[公開接続](public-workbench.md)を参照。
+
+## Verified command boundaries
+
 The registered-source MCP endpoint uses the same operations as the web workbench. Its stdio protocol and a separate native Codex app-server have [Mac transport evidence](evidence/2026-09-09-ai-transport-macos.md). An open built workbench also receives [MCP changes](evidence/2026-09-09-ai-gui-updates-macos.md) while preserving unrelated drafts. An [actual native Mac desktop sequence](evidence/2026-09-09-ai-desktop-macos.md) now also qualifies save, all three modes, selected fresh observations/comparison, historical favorites and restoration through the provided MCP tools. This is the registered-source core scope; complete runtime coverage remains unknown, while the [later Mac product qualification](evidence/2026-09-13-mac-codex-completion.md) records the delivered initial scope.
 
 ## Installed plugin and development connection

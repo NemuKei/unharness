@@ -5,6 +5,8 @@ import type { SetupRoute } from './setup';
 import type { useSourceController } from './useSourceController';
 import { SavedSetupSummary, readableSetup } from './SavedSetupSummary';
 import type { SetupRead } from './SavedSetupSummary';
+import { AiRequestButton, stateCheckPrompt } from './AiRequestButton';
+import { bindChatScope } from './chat-requests';
 
 export function PromptCopy({ prompt, label }: { prompt: string; label: string }) {
   const fieldId = useId();
@@ -35,6 +37,7 @@ export function SetupHandoff({ view, confirmed, busy, execute }: { view: SourceV
   const configured = !!view.source?.setup?.setupId;
   const setupRequired = !!view.source?.setup?.setupRequired;
   const hasHistory = configured || setupRequired;
+  const registered = !!view.source;
   const [open, setOpen] = useState(false);
   const [route, setRoute] = useState<SetupRoute>(hasHistory ? 'current' : 'zero-first');
   const [saved, setSaved] = useState<{ key: string; data: SetupRead } | null>(null);
@@ -42,7 +45,6 @@ export function SetupHandoff({ view, confirmed, busy, execute }: { view: SourceV
   const key = `${view.metadata.contextId}:${view.source?.revision}`;
   const supported = view.metadata.application === 'codex';
   const reliable = confirmed && !view.source?.conflict && !view.source?.recovery.pending;
-  const usable = reliable && !busy;
   async function readSaved() {
     setSaved(null); setReadError('');
     const result = await execute<SetupRead>('setup', {});
@@ -54,14 +56,19 @@ export function SetupHandoff({ view, confirmed, busy, execute }: { view: SourceV
     setSaved({ key, data: result.result });
   }
   return <section className="control-section setup-handoff" aria-label="AIへの設定相談">
-    <button type="button" className="secondary" aria-expanded={open} disabled={!supported || !usable}
-      onClick={() => setOpen(value => !value)}>{hasHistory ? '設定をAIに相談' : 'AIと初期設定を作る'}</button>
+    <h2>{registered ? '各モードの構成を見直す' : '初期設定'}</h2>
+    <AiRequestButton primary disabled={!supported || busy}
+      label={!reliable ? '状態の確認をAIに頼む' : registered ? '設定をAIと見直す' : '初期設定をAIに頼む'}
+      prompt={!reliable ? bindChatScope(stateCheckPrompt, view.source?.registration.scopeId) : setupHandoffPrompt(view, route)} fieldLabel="設定相談の依頼文"
+      description={!reliable ? 'まず差分や中断を確認します。相談のコピーでは設定を変更しません。'
+        : '依頼文をコピーしてCodexに貼り付けます。対象の確認と登録は、このMacの確認画面で行います。'}/>
     {!supported ? <p className="muted">Claude Codeの設定相談への対応は後続です。</p>
-      : <p className="muted">Normalを残して、限定解除と零式の構成を相談できます。</p>}
+      : <p className="muted">{registered ? 'いつものNormalを残して、零式と限定解除に残す指示・Skillを相談します。保存した構成を使うときは「モード」から切り替えます。'
+        : 'まず対象を確認し、いつもの構成をNormalとして保存します。その後、零式と限定解除の構成をAIと相談します。'}</p>}
     {view.source?.setup?.setupId && <p className="setup-saved" role="status">解除設定は保存済みです。
       {view.source.setup.preparedSetupId !== view.source.setup.setupId || view.source.registration.modeChangeRequired ? ' 次に解除モードを準備するときに使います。' : ' 現在の準備にもこの保存版を使っています。'}</p>}
     {setupRequired && <p className="setup-saved" role="status">この登録の2構成は確認・保存待ちです。以前の保存版はそのまま残っています。</p>}
-    {open && reliable && <div className="setup-conversation">
+    {reliable && <details className="setup-conversation" open={open} onToggle={event => setOpen(event.currentTarget.open)}><summary>保存した構成・相談方法を確認</summary>
       {configured && <>
         <button type="button" className="secondary" aria-disabled={busy} aria-busy={busy} onClick={() => { if (!busy) void readSaved(); }}>保存した2構成を確認</button>
         {readError && <p role="alert">{readError}</p>}
@@ -75,8 +82,7 @@ export function SetupHandoff({ view, confirmed, busy, execute }: { view: SourceV
       </fieldset>
       <p className="muted">零式を選ぶ場合も、元のNormalの保存と対象の確認が先です。準備後は新しいタスクへ移って相談します。</p>
       <p className="muted">設定の準備は同じCodex環境で共有され、次の新規タスクに使われます。</p>
-      <PromptCopy prompt={setupHandoffPrompt(view, route)} label="設定相談の依頼文" />
-    </div>}
+    </details>}
   </section>;
 }
 

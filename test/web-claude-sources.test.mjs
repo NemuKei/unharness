@@ -1,3 +1,4 @@
+import { openWorkbenchPage, openSourceSettings } from '../test-support/workbench-navigation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
@@ -61,11 +62,10 @@ async function setup(t, options = {}) {
 }
 
 async function registerThroughBrowser(page) {
+  await openSourceSettings(page);
+  await openSourceSettings(page);
   await page.getByRole('button', { name: '追加設定の候補を確認', exact: true }).click();
-  const targets = page
-    .locator('details')
-    .filter({ has: page.locator('summary', { hasText: '対象の選択と任意の役割の確認' }) })
-    .first();
+  const targets = page.locator('.source-setup summary').filter({ hasText: '対象の選択と任意の役割の確認' }).locator('..');
   await targets.locator(':scope > summary').click();
   for (const label of ['Global Claude Code instructions', 'example'])
     await page.getByRole('checkbox', { name: label, exact: true }).check();
@@ -81,14 +81,12 @@ test('the built workbench registers, prepares and restores a Claude profile', br
   const s = await setup(t);
   const { page } = s;
   await page.goto(s.gui.url);
-  // Before registration the panel says so rather than naming a mode.
-  await page
-    .locator('.control-column .selected-name')
-    .filter({ hasText: '通常装備はまだ保存されていません' })
-    .waitFor();
+  // Before registration, initial setup is shown rather than an applied mode.
+  await page.getByRole('heading', { name: '初期設定', exact: true }).waitFor();
 
   // The launch identity names the application and its own fields.
   const details = page.locator('.source-context').last();
+  await openWorkbenchPage(page, '接続・復旧');
   await page.getByText('対象・保持する設定・対応状況', { exact: true }).click();
   await details.getByText('Claude Code', { exact: true }).waitFor();
   await details.getByText('Claude home', { exact: true }).waitFor();
@@ -100,7 +98,7 @@ test('the built workbench registers, prepares and restores a Claude profile', br
 
   // UNSEAL: review the plan, then prepare it.
   await page.getByRole('button', { name: /UNSEAL/ }).click();
-  const prepare = page.getByRole('button', { name: 'この計画で準備する', exact: true });
+  const prepare = page.getByRole('button', { name: 'この内容で確定する', exact: true });
   await prepare.and(page.locator(':enabled')).waitFor();
   await prepare.click();
   await page.locator('.control-column .selected-name').filter({ hasText: 'UNSEAL' }).waitFor();
@@ -116,7 +114,7 @@ test('the built workbench registers, prepares and restores a Claude profile', br
 
   // Back to the saved Normal, byte for byte.
   await page.getByRole('button', { name: /Normal/ }).first().click();
-  const back = page.getByRole('button', { name: 'この計画で準備する', exact: true });
+  const back = page.getByRole('button', { name: 'この内容で確定する', exact: true });
   await back.and(page.locator(':enabled')).waitFor();
   await back.click();
   await page.locator('.control-column .selected-name').filter({ hasText: 'Normal' }).waitFor();
@@ -141,11 +139,9 @@ test('the workbench explains an unselectable Claude source instead of hiding it'
   });
   const { page } = s;
   await page.goto(s.gui.url);
+  await openSourceSettings(page);
   await page.getByRole('button', { name: '追加設定の候補を確認', exact: true }).click();
-  const targets = page
-    .locator('details')
-    .filter({ has: page.locator('summary', { hasText: '対象の選択と任意の役割の確認' }) })
-    .first();
+  const targets = page.locator('.source-setup summary').filter({ hasText: '対象の選択と任意の役割の確認' }).locator('..');
   await targets.locator(':scope > summary').click();
   // The selectable Skill is offered; the shadowed one is explained, not hidden.
   await page.getByRole('checkbox', { name: 'second-example', exact: true }).waitFor();
@@ -184,14 +180,11 @@ test('the Claude workbench stays usable at a narrow width with effects off', bro
   const { page } = s;
   await page.setViewportSize({ width: 420, height: 900 });
   await page.goto(s.gui.url);
-  await page
-    .locator('.control-column .selected-name')
-    .filter({ hasText: '通常装備はまだ保存されていません' })
-    .waitFor();
+  await page.getByRole('heading', { name: '初期設定', exact: true }).waitFor();
   await registerThroughBrowser(page);
   await page.locator('.control-column .selected-name').filter({ hasText: 'Normal' }).waitFor();
   await page.getByRole('button', { name: /TRUEFORM/ }).click();
-  const prepare = page.getByRole('button', { name: 'この計画で準備する', exact: true });
+  const prepare = page.getByRole('button', { name: 'この内容で確定する', exact: true });
   await prepare.and(page.locator(':enabled')).waitFor();
   await prepare.click();
   await page.locator('.control-column .selected-name').filter({ hasText: 'TRUEFORM' }).waitFor();
@@ -265,6 +258,7 @@ test('an external Claude observation reaches an open workbench through backgroun
   assert.equal(observed.conditions.runtimeVersion, '2.1.260');
 
   // The open page picks it up without a reload and without an error notice.
+  await openWorkbenchPage(page, '接続・復旧');
   await page.locator('.task-observation-result.matched-record').waitFor();
   await page.getByText('選択範囲の記録が一致', { exact: true }).waitFor();
   assert.equal(

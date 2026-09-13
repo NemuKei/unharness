@@ -62,7 +62,7 @@ test('GUI and page tools can repeatedly read running without enabling another mu
     const running = await s.callPageTool('unharness_operation_status', { operationId: id });
     assert.equal(running.ok, true); assert.equal(running.result.state, 'running');
     assert.equal(await page.getByLabel('操作ID', { exact: true }).inputValue(), id);
-    assert.equal(await page.getByRole('button', { name: '変更計画を確認', exact: true }).isDisabled(), true);
+    assert.equal(await page.getByRole('button', { name: '変更内容を確認', exact: true }).isDisabled(), true);
     const blocked = await s.callPageTool('unharness_plan_mode', { mode: 'normal', requestId: randomUUID() });
     assert.equal(blocked.ok, false); assert.equal(blocked.error.kind, 'remote-operation-in-progress');
   }

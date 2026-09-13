@@ -12,15 +12,24 @@ The source entry is `site/index.html` → `web/src/public-main.tsx`; generated `
 
 ## Public introduction
 
-The public introduction explains trying a selected harness before rewriting it:
-save the usual selected-source configuration, use a prepared mode in a fresh
-task, then restore or keep what fits. The demo is the primary entrance;
+The public introduction explains trying a selected harness before rewriting it,
+then shows initial setup, configuration review, mode switching and artwork with
+both screen and chat entry points. The demo is the primary entrance;
 installation and already-installed connection are separate actions. The
 appearance preview and the dedicated demo share the same illustrative mode
 settings; neither reads or changes visitor settings nor measures AI performance.
 The availability section distinguishes the current Apple Silicon Mac Codex
 preview from Windows Codex next and Claude Code later. The current source
 and published site can differ; see [status](status.md).
+
+Connected operation uses **モード・設定・外観**. Mode selection, change review,
+confirmation and an actionable blocking reason share one area. Read-only AI
+inspection prompts remain usable when changes are blocked. The public snapshot
+does not expose initial-registration or saved-setup details beyond its existing
+fields; a connected scope is already registered, and unavailable state must not
+be guessed as initial setup. Purpose-labelled local links use an allowlisted
+client-side `view` fragment to open settings, history or support without changing
+the selected scope or granting any operation. See [workbench UX](spec-workbench-ux.md).
 
 ## Connection and operations
 

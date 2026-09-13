@@ -1,11 +1,22 @@
 ---
 name: unharness
-description: Open Unharness (アンハーネス), check its local connection, prepare Normal / UNSEAL / TRUEFORM, compare saved work, use favorites or recover a saved configuration. Use for operating the installed product; development of the Unharness repository alone does not activate this workflow.
+description: Open Unharness (アンハーネス), start initial setup, review mode settings, switch Normal / UNSEAL / TRUEFORM, or route requested original artwork creation. Use for chat requests to the installed product; development of the Unharness repository alone does not activate this workflow.
 ---
 
 # Unharness
 
 Use the Unharness plugin's local MCP tools. The plugin runs on the user's Mac; opening a screen and preparing a mode are separate operations. A lighter configuration is a comparison condition, with no promised improvement.
+
+## Start from the requested function
+
+The GUI and chat are two entrances to the same saved configuration. Carry out the requested operation through the existing local MCP instead of merely telling the user which GUI button to press. Use an already connected public page's WebMCP when it covers the requested operation; both paths use the same local operations. Do not require public pairing for a local MCP operation.
+
+- **「アンハーネスの初期設定をして」**: check the connection, open the local target/Normal confirmation screen if registration is missing, then read [Unharness Setup](../unharness-setup/SKILL.md). Guide required source-role and Normal confirmation; no MCP tool performs initial registration. Preserve an existing Normal instead of recapturing it.
+- **「零式と限定解除のSkill構成を見直して」**: read [Unharness Setup](../unharness-setup/SKILL.md). Review and save the confirmed pair separately from applying a mode. A conflict or unknown operation first needs state/recovery inspection, not an automatic write.
+- **「零式に切り替えて」**: follow the saved-scope operation below. Reuse the matching open Unharness screen, or check `workbench_status` and use `open_workbench` to open its verified URL in the current app's browser so the prepared state is visible. Open before applying when possible so its normal polling can show the transition. Respect effects-off and reduced-motion settings. If a screen cannot open, continue the authorized configuration operation when otherwise usable and report the display limitation separately. Never repeat a mode operation just to replay an animation.
+- **「アンハーネスのオリジナルイメージを作成したい」**: read [Unharness Original](../unharness-original/SKILL.md) for the user's explicit artwork request. Creation and appearance selection do not change the instruction/Skill configuration.
+
+Use purpose-based transitions such as **このMacで対象を確認する**, **このMacで接続を許可する** and **このMacで復旧する**. Initial confirmation and pairing approval still belong to the user. Do not treat a copied prompt, an opened page, an animation or a saved proposal as an applied/verified mode.
 
 ## Open or connect
 
@@ -33,6 +44,7 @@ Keep the original request ID after a lost issuance response. Its receipt does no
 
 - For a requested mode, call `plan_mode`, inspect the plan, and call `apply_plan` for that plan. The user's requested switch authorizes both within the established source scope; do not add another confirmation. Refuse or explain a reported conflict. Report **prepared for a fresh task**, including any limited/unknown conditions the core returns.
 - Keep existing memory, native continuity, execution permissions, managed/provider sources and required project conditions. This management Skill and its local MCP connection remain available in every mode. This Mac release retains official plugins because individual remote-plugin OFF is unavailable on the qualified Codex version. Switching targets are confirmed optional global instructions and ordinary self/external Skills. Never edit provider caches or use a global plugin switch as a substitute.
+- Explain the instruction target concretely: the selected optional global instructions loaded as AGENTS.md. The existing Codex operation uses AGENTS.override.md while preserving the base AGENTS.md and repository AGENTS.md. Its global effect is shared by fresh tasks using that Codex home, including other projects; leaving the repository file unchanged does not isolate the effect to one project.
 - For favorites and recovery, use the corresponding saved-version plan and shared recovery tools. Never rewrite configuration files directly or restore a backup over an independent edit. The local workbench and Node-only recovery remain separate from a model's availability.
 - Before an explicitly requested plugin removal or update, run `scripts/unharness plugin recovery --data-directory <verified native data directory>` from the installed root and retain the returned `Open Unharness Recovery.command` path. That command opens the local recovery screen after cache removal; it performs no automatic mode switch. The screen permits only its own Normal/retained-setting review and recovery actions. Retained-only conflict review needs the selected local Codex executable, but no model call. See [offline recovery](../../docs/plugin-recovery.md). Do not delete the user's saved data or older recovery copies with the plugin.
 - For comparisons, use explicitly selected saved runs or replay results. Preserve unknown evidence and evaluator attribution. Do not start duplicate tasks in multiple modes. Native task observations require an explicitly selected fresh completed task; preparing files does not verify loading into the current conversation.
