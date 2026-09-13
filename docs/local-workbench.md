@@ -1,6 +1,6 @@
 # Local workbench startup
 
-The development server also contains the [restricted public connection backend and local approval screen](domain-connection.md). MCP can request its local approval URL without granting permission or receiving a ticket. The local screen shows the site/scope/operations and permits approval, cancellation and old public-operation lookup. Ordinary startup returns the bundled local origin. The [static public client](public-workbench.md) is implemented; publication and real HTTPS/browser qualification remain unfinished.
+The development server also contains the [restricted public connection backend and local approval screen](domain-connection.md). MCP can request its local approval URL without granting permission or receiving a ticket. The local screen shows the site/scope/operations and permits approval, cancellation and old public-operation lookup. Ordinary startup returns the bundled local origin. The [static public client](public-workbench.md) is implemented; [Mac qualification](evidence/2026-09-13-mac-codex-completion.md) records the published HTTPS/browser route and its limits.
 
 The owned launcher starts or reuses the bundled loopback workbench for one locally selected context. Opening the UI does not prepare a mode, save a new Normal, or establish task loading. Plugin onboarding and the public-origin bridge are separate parts of the [Mac product plan](superpowers/plans/2026-09-09-mac-product-experience.md).
 
@@ -16,7 +16,7 @@ The commands produce one JSON result on stdout, or a safe error kind on stderr. 
 
 The registered MCP tools `open_workbench` and `workbench_status` call this same implementation. Opening uses the existing connection/request UUID receipt contract. After reconnect, an earlier completed open result remains historical: use `workbench_status` to check that its launch is still running. If a confirmed completed launch has since stopped, a new explicit open is a new logical request. Never invent a new request ID for an unconfirmed earlier operation.
 
-The internal launcher also accepts one fixed application context before registration. Its browser can only use the existing reviewed discovery/registration operations for that context. The launcher keeps its process identity across the initial Normal save, and the resulting registered workspace reuses the same process. This internal capability is not yet a complete end-user installation flow.
+The internal launcher also accepts one fixed application context before registration. Its browser can only use the existing reviewed discovery/registration operations for that context. The launcher keeps its process identity across the initial Normal save, and the resulting registered workspace reuses the same process. The bundled installation flow and its initial Normal save are covered by the [native journey](evidence/2026-09-11-mac-codex-0.0.4.md).
 
 ## Process ownership and recovery
 
@@ -28,4 +28,4 @@ A private lock serializes concurrent opens and stops. Interrupted receipt stages
 
 If the launcher itself is unavailable, the original [direct local GUI command](user-source-gui.md) and the registered [Node-only recovery command](ai-commands.md#lost-responses-and-recovery) remain available. Do not delete source reservations, Normal records or configuration files to repair a launch receipt. The source core keeps its own locks, conflict checks and recovery journals.
 
-The [Mac evidence](evidence/2026-09-09-workbench-launch-macos.md) covers owned process behavior, MCP/CLI reuse and an actual Codex in-app browser check. It does not qualify the later public HTTPS origin, pairing, complete plugin installer or Windows desktop behavior.
+The [Mac evidence](evidence/2026-09-09-workbench-launch-macos.md) covers owned process behavior, MCP/CLI reuse and an actual Codex in-app browser check. That earlier record does not qualify later features; the current [Mac qualification](evidence/2026-09-13-mac-codex-completion.md) supplies the public/installer follow-through. Windows desktop behavior remains separate.

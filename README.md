@@ -8,7 +8,7 @@ Try different combinations of skills and instructions on your own work. Find wha
 
 [日本語](README.ja.md)
 
-The [0.0.4 Mac preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.4) is available. See the [native installation, input, artwork and recovery checks](docs/evidence/2026-09-11-mac-codex-0.0.4.md) for its verified scope.
+The [0.0.6 Mac preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.6) is available. See the [installation, public operation and recovery checks](docs/evidence/2026-09-13-mac-codex-completion.md) for its verified scope and earlier model/artwork evidence.
 
 The first Mac version targets Apple Silicon and Codex Desktop. It keeps your saved Normal and lets you choose disabled, manual or automatic states for confirmed optional ordinary Skills. Official plugins remain enabled or disabled as they already were: individual remote-plugin OFF is [unavailable on the inspected Codex version](docs/evidence/2026-09-11-remote-plugin-control-limit.md). Older saved versions and independent offline recovery are preserved. Recorded Skill inputs and unknown runtime state are shown separately.
 

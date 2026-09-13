@@ -7,7 +7,7 @@ On 2026-09-09, the maintainer made the complete Mac Codex product the active goa
 | Phase | Implementation and validation owner | Target | Completion evidence |
 | --- | --- | --- | --- |
 | 1 | Codex | Codex desktop core on macOS | Save, three modes, fresh comparison, favorites and recovery work through the web and AI entry points on Mac |
-| 3 | Codex | Initial Mac Codex product review and finish — active | Codex integration, shared features, domain entry, onboarding, free original art, cards and recovery meet the declared Mac Codex scope |
+| 3 | Codex | Initial Mac Codex product review and finish — qualified | Codex integration, shared features, domain entry, onboarding, free original art, cards and recovery meet the declared Mac Codex scope |
 | 2 | Claude Code, then Codex review | Claude Code desktop on macOS — deferred | Its adapter meets the same contract after native loading and AI connection qualification; existing implementation remains preserved |
 | 4 | Codex | Codex desktop on Windows | Native Windows filesystem/process behavior and the same core loop are qualified without regressing Mac |
 | 5 | Claude Code | Claude Code desktop on Windows | Its Windows adapter meets the same contract and preserves both Codex baselines |
@@ -21,17 +21,19 @@ The maintainer subsequently adopted the [2026-09-09 Mac product experience plan]
 
 On 2026-09-10 the maintainer authorized merging [PR #1](https://github.com/NemuKei/unharness/pull/1) and continuing the revised goal. Phase 3 now also requires the [official-plugin and inheritance plan](superpowers/plans/2026-09-10-official-plugin-mode-inheritance.md): verified, explicitly selected optional TRUEFORM plugins; all of their registered Skill selections inherited by UNSEAL; reviewed additions; paired versioned storage; legacy restoration and the new Mac native checks. The earlier v1 qualification remains historical evidence. Investigate provenance and control capability before extending the saved policy; do not equate official listing with provider authorship, alter plugin caches to supply a missing control, or make marketplace access a prerequisite for offline Normal recovery.
 
+The [0.0.6 qualification](evidence/2026-09-13-mac-codex-completion.md), together with the dated [0.0.4 model and artwork journey](evidence/2026-09-11-mac-codex-0.0.4.md), records the delivered initial Mac Codex scope. The earlier execution notes below retain their historical context.
+
 ## Phase 1: complete the Mac Codex core
 
 The maintainer subsequently accepted the [native remote-plugin control limit](evidence/2026-09-11-remote-plugin-control-limit.md) on 2026-09-11: retain official plugins and complete the Mac release within the explicitly stated ordinary-Skill/additional-instruction scope. Reliable individual remote-plugin OFF is deferred. Neither a successful config edit nor a synthetic control peer establishes that capability. Existing records and recovery remain intact; unsupported forward OFF work must stop before source publication.
 
 The 2026-09-11 [v3 source-state revision](spec-mode-inheritance.md) supersedes
 the v2 optional-control choices for new setups: ordinary Skills explicitly use
-disabled/manual/automatic states, and separately registered optional plugins
-use whole-plugin disabled/Normal. This changes no historical v1/v2 records or
+disabled/manual/automatic states. Official plugins stay at Normal in the
+accepted initial Mac scope; individual OFF remains deferred. This changes no historical v1/v2 records or
 deferred-platform gates. [Current qualification](evidence/2026-09-11-source-states-v3-macos.md)
 separates prepared configuration, recorded Skill inputs and unobserved runtime
-components; the new real Mac journey remains required.
+components; the later Mac journey is recorded in the qualification above.
 
 Start with a read-only probe of desktop configuration sources, supported controls, application scope, and evidence available after a fresh task. Keep the user's real setup unchanged during inventory.
 

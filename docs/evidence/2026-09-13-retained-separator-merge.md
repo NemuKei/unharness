@@ -35,6 +35,7 @@ GUI UNSEAL preparation and WebMCP Normal restoration. Independent readback
 matched all selected file bytes and metadata to current Normal, preserved the
 original saved setup and corroborated all three operation receipts.
 
-A new immutable 0.0.6 package will carry the complete fix; the existing 0.0.4
-archive remains unchanged. The internal 0.0.5 candidate was not published.
-Distribution and installed-package round-trip verification are the next checks.
+The [immutable 0.0.6 package](2026-09-13-mac-codex-completion.md) carries the
+complete fix. Its actual native installation, public GUI/WebMCP round trip
+and restricted-process recovery passed. The existing 0.0.4 archive remains
+unchanged; the internal 0.0.5 candidate was not published.

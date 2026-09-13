@@ -1,36 +1,27 @@
 # Compatibility and evidence
 
-The [real remote-plugin control check](evidence/2026-09-11-remote-plugin-control-limit.md)
-found individual OFF unavailable on Codex 0.153.4. The maintainer accepted
-retaining official plugins for the first Mac product; confirmed optional
-instructions and ordinary Skill disabled/manual/automatic states remain the
-switching scope. Whole-plugin OFF is deferred. The 0.0.4 candidate rejects
-unsupported OFF before publication and reports the present capability
-separately from saved records. Its complete native journey is the next check.
+The [0.0.6 Mac qualification](evidence/2026-09-13-mac-codex-completion.md) covers Apple Silicon macOS 26.6.2, Codex Desktop 26.903.71938 and Codex 0.153.4. The archive, native installation, HTTPS-to-loopback GUI/WebMCP operations, exact Normal restoration and independent recovery are verified. The [0.0.4 native journey](evidence/2026-09-11-mac-codex-0.0.4.md) records the earlier first-install, fresh-model, setup, comparison and artwork checks on its stated desktop build.
 
-The earlier [v3 source-state checks](evidence/2026-09-11-source-states-v3-macos.md) add
-native 0.153.4 read-only plugin provenance and a separately guarded user-enabled
-configuration boundary, plus owned-profile v3 restoration and local GUI/MCP
-coverage. Task-record schema 3 reports plugin Skill input matches separately
-from unknown whole-plugin runtime state. This is not complete plugin-runtime
-qualification; the new immutable package and real v3 preparation remain pending.
+The [remote-plugin control check](evidence/2026-09-11-remote-plugin-control-limit.md) found individual OFF unavailable on Codex 0.153.4. The maintainer accepted official plugins remaining at Normal for the initial Mac product. Confirmed optional instructions and ordinary Skill disabled/manual/automatic states are the switching scope. Unsupported forward OFF stops before writes, and current capability is shown separately from immutable old records.
 
-The [installed-plugin Normal task](evidence/2026-09-11-native-desktop-origin.md) corroborates one fresh 0.153.4 native agent-created task using `codex_work_desktop` with source `vscode`. Source readers recognize that exact tuple while retaining all existing identity, route, freshness and no-fork checks. This adds one Normal recording match; the installed 0.0.2 package still predates the recognition fix and the remaining native product journey is open.
-
-The [published Mac preview QA](evidence/2026-09-11-public-mac-qa.md) adds actual public download/install, HTTPS-to-loopback access, Codex WebMCP, mixed GUI/AI mode restoration, artwork/card saving and revocation on the recorded Mac/app version. It does not establish the remaining fresh Desktop model-task journey or nonempty official-plugin automatic-use control.
+Recorded selected Skill inputs and unknown whole-plugin runtime are separate evidence. The current release does not establish full MCP/hook/app/scheduled-task runtime coverage or a performance improvement.
 
 ## Target matrix
 
 | OS | Application | Delivery phase | Current evidence |
 | --- | --- | --- | --- |
-| macOS | Codex desktop | 1 | Registered-source core loop qualified through GUI and actual desktop AI on the recorded Mac/app version; full runtime coverage and Mac product finish remain open |
+| macOS, Apple Silicon | Codex desktop | 1 and 3 | Initial Mac scope qualified through native installation, GUI/AI operations, dated fresh-task evidence, artwork and recovery; full runtime coverage remains unknown |
 | macOS | Claude Code desktop, Code tab | 2 | Adapter implemented and qualified on owned fixtures, the built interface and a real recording; fresh native mode loading and the native AI connection remain unverified |
 | Windows | Codex desktop | 4, deferred | Native inventory, six-case source controls, current-task projection, fixture/loadout recovery, GUI smoke, and one qualified fresh task completed; baseline recording did not match, so successful saved-version association remains pending |
 | Windows | Claude Code desktop, Code tab | 5, deferred | Test environment available per maintainer; no test result yet |
 
-Both OSes remain design targets. The current delivery goal is Mac completion: Phase 1 qualifies the Codex core on Mac, Phase 2 adds Claude Code on Mac, and Phase 3 finishes the Mac product. Windows delivery follows in Phases 4–5; its unfinished qualification does not block Mac completion. Phase 6 reconciles all four combinations. This order does not change any evidence result or enable unqualified Windows writes. See [delivery](delivery.md); this table is a target, not a support guarantee.
+Both OSes remain design targets. The initial Mac product combines Codex Phases 1 and 3. Claude Code Phase 2 is deferred until the maintainer has capacity; Windows follows in Phases 4–5. Phase 6 later reconciles all four combinations. These priorities do not enable unqualified Windows or Claude writes. See [delivery](delivery.md).
 
 Record the desktop app version, embedded or external runtime version, CPU architecture, and execution environment. Native Windows and WSL results must not be merged into one undifferentiated “Windows passed” result. The [native Windows baseline](evidence/2026-09-07-windows-baseline.md) records a Windows 11 x64 result separately; it does not satisfy the remaining fresh-task or full desktop criteria. See [the probe guide](codex-probe.md).
+
+## Earlier investigation records
+
+The following records retain the limitations observed at their dates.
 
 The [Mac source-inventory pass](evidence/2026-09-08-source-inventory-macos.md) adds the optional real-source read panel and standard instruction candidate census. It verifies read-only collection, UI/reconnection and privacy boundaries on native Mac, not personal-source control or full desktop modes. The new slice has no native Windows or Claude Code result yet.
 
