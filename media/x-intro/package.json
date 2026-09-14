@@ -1,0 +1,34 @@
+{
+  "name": "unharness-x-intro",
+  "version": "1.0.0",
+  "description": "Unharness introduction for X, built in Remotion",
+  "repository": {},
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "@remotion/cli": "4.0.524",
+    "@remotion/media": "4.0.524",
+    "@remotion/transitions": "4.0.524",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.524"
+  },
+  "devDependencies": {
+    "@remotion/eslint-config-flat": "4.0.524",
+    "@types/react": "19.2.7",
+    "@types/web": "0.0.166",
+    "eslint": "9.19.0",
+    "prettier": "3.8.1",
+    "typescript": "5.9.3"
+  },
+  "scripts": {
+    "prepare": "node scripts/prepare-assets.mjs && node scripts/make-soundtrack.mjs",
+    "dev": "remotion studio --no-open",
+    "check": "tsc --noEmit",
+    "render": "remotion render src/index.ts Unharness-X-Intro out/unharness-x-intro.mp4 --codec=h264 --crf=18 --pixel-format=yuv420p --audio-codec=aac",
+    "still": "remotion still src/index.ts Unharness-X-Intro out/poster.png --frame=48"
+  },
+  "sideEffects": [
+    "*.css"
+  ]
+}
