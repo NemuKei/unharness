@@ -1,5 +1,8 @@
 # Codex feasibility probe
 
+For current Windows product work, start with the [Windows handoff](handoff-windows-codex.md).
+This page describes the narrower read-only probe and its historical transfer route.
+
 This first development tool collects a read-only, sanitized inventory from the installed Codex runtime. It is intended to run with the same code on macOS and Windows. It does not switch modes, create model tasks, change configuration, or attach to the desktop app's active conversation.
 
 ## Prerequisites
@@ -8,7 +11,7 @@ This first development tool collects a read-only, sanitized inventory from the i
 - The native Codex executable used by the desktop installation, or another explicitly identified native Codex executable available on PATH.
 - A checkout of the exact Unharness revision being compared.
 
-There are no package dependencies to install and no separate API key to configure for these local read requests.
+There are no package dependencies to install and no separate API key to configure for these local read requests. The full current test suite includes later features and requires `npm ci --ignore-scripts` first.
 
 ## Run it
 
@@ -16,6 +19,7 @@ From the repository root, on either OS:
 
 ```text
 node --version
+npm ci --ignore-scripts
 node --test
 node bin/unharness.mjs inspect --cwd . --output local-evidence/codex-probe.json
 ```
@@ -68,9 +72,9 @@ Use `--codex` if the PATH entry resolves to a launcher instead of the native bin
 
 Return the safe JSON and test summary through the working conversation. Keep the local raw diagnostic/schema files out of commits. A second installation or later version needs its own evidence; this command alone never establishes fresh-task or mode behavior.
 
-### Moving the repository without publishing it
+### Historical standalone-probe bundle transfer
 
-If the checkout is delivered as a Git bundle, copy `unharness-codex-probe.bundle` to Windows and create a local checkout:
+This is the earlier bootstrap-only transfer route, not the current Windows product baseline. For current work use latest main and the Windows handoff above. If that historical checkout is delivered as a Git bundle, copy `unharness-codex-probe.bundle` to Windows and create a local checkout:
 
 ```text
 git clone --branch codex/bootstrap unharness-codex-probe.bundle unharness

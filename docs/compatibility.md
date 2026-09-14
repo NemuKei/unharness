@@ -1,5 +1,10 @@
 # Compatibility and evidence
 
+The [0.0.10 guided-entry release](evidence/2026-09-14-guided-product.md) adds
+Japanese/English, read-only update discovery and native Mac package/source
+reconciliation. It does not add Windows qualification. Windows work starts from
+[its dedicated handoff](handoff-windows-codex.md).
+
 The [0.0.9 workbench release](evidence/2026-09-14-workbench-release.md) adds the simplified screen/chat entry points, verified archive and isolated native installation. Its support scope remains the Mac baseline below.
 
 The [0.0.8 artwork qualification](evidence/2026-09-13-awakening-motion.md) adds

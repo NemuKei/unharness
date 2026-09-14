@@ -1,6 +1,6 @@
 # Delivery and AI handoff
 
-Updated 2026-09-13. For a new task, use the [continuity brief](handoff.md) and
+Updated 2026-09-14. For a new task, use the [continuity brief](handoff.md) and
 [current status](status.md). This page records delivery boundaries, not an
 automatic instruction to start the next platform.
 
@@ -52,6 +52,18 @@ app version, existing evidence and remaining preparation/recovery gates before
 choosing the bounded implementation and qualification scope. After Windows
 Codex, resume Claude Code from its existing adapter and native-qualification
 runbook, with fresh evidence for each OS. Preserve the qualified Mac behavior.
+
+## What Windows Codex receives
+
+Use [the Windows handoff](handoff-windows-codex.md) and its
+[execution plan](superpowers/plans/2026-09-14-windows-codex-qualification.md).
+The work starts with native environment/current-source diagnostics, then closes
+fixture loading, Windows filesystem/transaction gates, packaging/independent
+recovery and the real Desktop product loop. The September 7 diagnostic result
+is a baseline; the unmatched fresh-task catalog and Mac-only write/package
+boundaries remain outstanding. Personal-profile operations, host permission
+changes and publication need their own concrete authorization. This preparation
+has not dispatched a Windows task or run Windows commands from the Mac.
 
 ## What Claude Code receives
 

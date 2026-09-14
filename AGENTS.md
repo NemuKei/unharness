@@ -52,6 +52,7 @@ Unharness makes it easy to take off, compare, and save AI harness configurations
 - `docs/source-inventory.md`: real-source read-only census, opt-in GUI context, privacy projection and limits of ownership/role classification.
 - `docs/spec-user-sources.md`: registered user-source preparation, preserved metadata and offline recovery; read before changing personal-source discovery, registration, plans or writes.
 - `docs/comparison-metrics.md`: resource usage, quality criteria, and aggregation rules; read when implementing comparisons or scoring.
+- `docs/handoff-windows-codex.md`: entry for Windows Codex implementation and native qualification; read before starting Windows work and follow its linked execution plan.
 - `docs/delivery.md`: Codex → Claude Code → Codex handoff and completion criteria; read when starting or handing off a phase.
 - `docs/design.md`: selected visual direction and effect behavior; read for UI/asset work.
 - `docs/status.md`: current implementation state and next unresolved step; update at meaningful handoffs.

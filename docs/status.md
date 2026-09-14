@@ -4,6 +4,9 @@ As of 2026-09-14. Read [the documentation guide](README.md) for the canonical
 contracts and [the continuity brief](handoff.md) when starting another task.
 The next platform priority is Windows Codex, followed by Claude Code. Read the
 current user request and live state before starting platform implementation.
+The [Windows Codex handoff](handoff-windows-codex.md) now gives the native
+preflight, remaining Mac-only boundaries and staged implementation/acceptance
+plan. Preparing that handoff does not qualify or publish a Windows build.
 
 ## Available now
 

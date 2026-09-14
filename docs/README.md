@@ -33,6 +33,7 @@ The canonical contracts are split by responsibility:
 | Artwork, motion and immutable asset versions | [Entity poses](spec-entity-poses.md), [appearance rules](personalization.md), [design](design.md) |
 | Module ownership and dependencies | [Architecture](architecture.md) |
 | Distribution and platform claims | [Plugin distribution](spec-plugin-distribution.md), [assembly](plugin-package.md), [compatibility](compatibility.md) |
+| Windows Codex implementation and qualification | [Windows handoff](handoff-windows-codex.md), [execution plan](superpowers/plans/2026-09-14-windows-codex-qualification.md) |
 | Deferred platform work and handoffs | [Delivery](delivery.md) |
 
 ## Evidence and history
