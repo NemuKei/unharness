@@ -7,7 +7,7 @@ current user request and live state before starting platform implementation.
 
 ## Available now
 
-The [0.0.9 Mac preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.9)
+The [0.0.10 Mac preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.10)
 is published. The agreed initial product scope is Apple Silicon
 and Codex Desktop: save Normal, prepare the three supported modes, inspect fresh
 task evidence, compare recorded work, reuse favorites and recover independently.
@@ -40,14 +40,14 @@ The published snapshots below remain independent.
 
 | Surface | Verified revision | Evidence |
 | --- | --- | --- |
-| Published 0.0.9 package | 45a9a4c721ff03a002ab3e09dac451b7aa3923d4 | [Archive and isolated native checks](evidence/2026-09-14-workbench-release.md) |
+| Published 0.0.10 package | 6ca76702fefc867a66416c8fa434256e99025d0c | [Archive and isolated native checks](evidence/2026-09-14-guided-product.md) |
 | Public site, including revised entry/workbench and 0.0.9 download | b682ca0d13d2fc631707f7c414d800af063f37e7 | [Publication checks](evidence/2026-09-14-workbench-release.md#public-site) |
 | Current repository | Re-read main/remote and local changes | Later documentation commits do not rebuild the archive or redeploy the site |
 
 The latest site deployment is f735df57-7fa6-49a7-946e-04196149667a on the dedicated
 `deltahelmlab-unharness` Pages project. All 48 served files matched its build.
 Release availability, published asset digests and the anonymous download were
-rechecked for 0.0.9. The installed personal profile was not updated by this
+rechecked for 0.0.10. The installed personal profile was not updated by this
 release task.
 
 ## Current limits

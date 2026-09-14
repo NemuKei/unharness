@@ -70,9 +70,23 @@ not current. This is native installation/MCP and synthetic registered-source
 qualification. Host-selected fresh Desktop tasks and a user-profile update were
 not performed by this check.
 
-## Publication boundary
+## Published distribution
 
-The published catalog remains 0.0.9 until a verified replacement archive is
-published. A source build is not a new installed MCP, a fresh-task Skill check,
-a native draft handoff or a deployed HTTPS page. The earlier user-confirmed
-Mac prefill is documented in [the concept evidence](../guided-entry-preview.md).
+The [0.0.10 Mac preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.10)
+was published on 2026-09-14 at 04:32:16 UTC. Its clean source is
+`6ca76702fefc867a66416c8fa434256e99025d0c`. Assembly and standard Mac ZIP extraction
+verified all 7,534 indexed files and executable modes.
+
+- Archive: 106,252,502 bytes.
+- SHA256: `6cb6b171af3f3f2c84aa923f65d72e96fa5978f88ea16a3e6271bacda2c364bd`.
+- Distribution ID: `1cdca75fa41f38ee7d43f54aeb017d77647dad617dbcece4ca1794436f52a200`.
+
+The final extracted archive passed the full native update/retention/rollback
+sequence above. An anonymous HTTPS download matched its exact bytes/digest and
+sidecar; the public tag resolves to the stated source. The static release catalog
+now records that verified archive. The public site deployment remains a separate
+step until its served assets are checked.
+
+The earlier user-confirmed Mac prefill is documented in
+[the concept evidence](../guided-entry-preview.md). A fresh native Desktop task
+and the maintainer's personal installation were not changed by this release.

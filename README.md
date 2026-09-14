@@ -10,7 +10,7 @@ Save your usual setup, then try your everyday work with selected instructions re
 
 [日本語](README.ja.md)
 
-The [0.0.9 Mac preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.9) is available with the simplified workbench and chat entry points. See the [0.0.9 distribution checks](docs/evidence/2026-09-14-workbench-release.md). See the [installation, public operation and recovery checks](docs/evidence/2026-09-13-mac-codex-completion.md) for its verified scope and earlier model/artwork evidence.
+The [0.0.10 Mac preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.10) is available with the bilingual workbench, Codex draft entry and guided startup. See the [0.0.10 distribution checks](docs/evidence/2026-09-14-guided-product.md). See the [installation, public operation and recovery checks](docs/evidence/2026-09-13-mac-codex-completion.md) for its verified scope and earlier model/artwork evidence.
 
 The current source adds a bilingual [guided product entry](docs/guided-product-entry.md): open a Codex draft, explore synthetic setup/update examples, and use the real workbench in Japanese or English. The management Skill uses [read-only update discovery](docs/plugin-update.md) and guides from the actual installed state. Source implementation and the published snapshots above are separate.
 
