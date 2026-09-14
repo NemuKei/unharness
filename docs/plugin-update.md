@@ -107,6 +107,24 @@ version removed it. Never use that cache as the rollback or user-data store.
 Do not run `plugin remove` as an extra step, edit provider cache files directly,
 or delete the old extracted source, Normal, artwork or comparison records.
 
+### Preserve the new native source without resetting Normal
+
+Native source replacement changes the selected `[marketplaces]` entry in Codex's
+configuration. A registered Unharness workspace can therefore report a retained
+configuration conflict immediately after an otherwise successful update. This is
+not a reason to recapture initial Normal or copy an old configuration over it.
+
+Compare before/after locally: require exactly the approved marketplace source
+change (and any explicitly reviewed native plugin enablement), with selected
+instructions, Skill states, memory, permissions and unrelated settings retained.
+Use `plan_retained_settings` to review that retained-only change and
+`accept_retained_settings` for that exact approved plan. This records a new active
+Normal version without writing managed files; the original Normal, earlier
+favorites and their snapshots stay immutable. Subsequent restoration keeps the
+new native source while restoring the saved selected instructions/Skills. Explain
+this versioned retention as part of the concrete update. Unexpected differences
+need their own review and must not be accepted merely because an update ran.
+
 If a step fails, re-read the selected source and installation before retrying.
 A lost response is not permission to repeat the whole sequence. If the source
 replacement must be rolled back and the selected source still matches this

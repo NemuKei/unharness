@@ -12,11 +12,14 @@ branches from actual installation state; missing tools do not imply uninstalled.
 Language is independent of mode, reviewed plans, source IDs and entered artwork
 text. The real public connection and operation controller remain in place.
 
-Type/CSP, both product builds and the separate guided build pass. Built Chrome
-checks cover the published-entry contract, language/selection retention, clipboard
-fallback, local source review and independent recovery. The focused 107-case run
-passed 105; the remaining accessibility selector and stale-client test timing
-were corrected and both passed on recheck. The full final run is still pending.
+Type/CSP, both product builds and the separate guided build pass. The final
+combined run completed **1,366 tests: 1,365 passed, 0 failed, 1 skipped** (the
+explicitly unqualified-platform guard) in 594 seconds. It includes the real
+controllers, saved-version/recovery regressions and built Chrome checks for the
+published entry, language/selection retention, clipboard fallback, source review,
+artwork and independent recovery. The late-response test fixes the client in a
+stale view while asserting that a second client's changed mode cannot be copied
+into a handoff; background invalidation has its separate regression coverage.
 
 Reviewed screenshots include the English local mode/plan at 1440×1050, comparison
 history at 390×844, and independent recovery at 390px. The original artwork and
@@ -43,6 +46,29 @@ new version. The new install deleted the old cache. Re-registering the preserved
 old source restored the old version, with unrelated fixture configuration intact.
 No real profile, credentials, model calls or user records were used. This is
 source/cache evidence, not full-distribution or Desktop update qualification.
+
+## Full-distribution native update
+
+On macOS 26.6.2 with native Codex CLI 0.153.4, a new isolated profile installed
+the complete 0.0.9 distribution, saved synthetic Normal and prepared TRUEFORM.
+Its source adapter was hermetic and handled the native TOML layout; no model
+turn or personal profile was used. Native source replacement installed the full
+0.0.10 candidate and removed the old cache while its previous MCP was still open.
+The independent old recovery copy still passed full file verification.
+
+The new packaged MCP started with version 0.0.10 and 66 tools, including
+`check_updates`. Original Normal and prepared selected sources remained. Codex's
+new marketplace path appeared as an expected retained-only conflict. Reviewing
+and accepting that exact change recorded a new active Normal without changing
+managed files; the original Normal remained immutable. Restoring Normal kept the
+approved new marketplace source and exactly restored the selected sources.
+Unrelated configuration values, the fixture comment and file metadata were
+preserved. Reinstalling from the preserved 0.0.9 source also succeeded.
+
+Before the catalog was deployed, the real fixed-URL check returned `unavailable`,
+not current. This is native installation/MCP and synthetic registered-source
+qualification. Host-selected fresh Desktop tasks and a user-profile update were
+not performed by this check.
 
 ## Publication boundary
 
