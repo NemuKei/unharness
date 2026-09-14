@@ -71,12 +71,17 @@ are observed implementation details, not a promise of a stable public API.
 The dedicated plugin-install route first looks up a known marketplace entry;
 it does not establish first-time registration of Unharness's ZIP marketplace.
 
-The native app UI check is pending. Computer Use rejected access to
-com.openai.codex for safety reasons. The handoff was therefore not invoked by
-automation through an alternate route. Browser link inspection and a round-trip
-encoding test cover the prepared link; a user must verify that clicking it opens
-Codex with the expected unsent request. Do not claim launch, prefill or
-installation success from constructing the link.
+On 2026-09-14, the user clicked the local preview's link and confirmed the
+handoff with a screenshot of Codex's composer containing the expected Japanese
+startup request, still unsent. This establishes user-verified native prefill on
+that Mac. It does not establish request execution, installation/update success
+or the handoff from the published HTTPS page.
+
+Computer Use had rejected access to com.openai.codex for safety reasons; the
+handoff was not invoked by automation through an alternate route. Browser link
+inspection and a round-trip encoding test separately cover the prepared link.
+Do not infer launch, prefill or installation success from link construction or
+the page's click event alone.
 
 The existing Hangar component accepts an optional locale; its Japanese
 default and renderer lifecycle are unchanged. Appearance selection and effects
