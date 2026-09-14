@@ -52,6 +52,12 @@ release task.
 
 ## Current limits
 
+The repository also contains a [guided-entry screen concept](guided-entry-preview.md)
+with Japanese/English navigation, GitHub links and first-time/update/returning
+sample flows. It is a separate local preview. Update discovery, installation and
+configuration changes are simulated; neither the public site nor the 0.0.9
+archive is replaced by that design work.
+
 - Individual remote-plugin OFF is unavailable on the qualified Codex 0.153.4 and is deferred by the maintainer. Unsupported forward OFF plans stop before source writes.
 - Prepared files, recorded selected inputs and unknown whole-plugin runtime remain distinct. No performance improvement is promised or inferred from a lighter configuration.
 - macOS 26.6.2 on Apple Silicon is the qualified platform. Exact desktop/native versions are recorded in the evidence. Intel Mac, Claude Code and Windows are not added by these results.

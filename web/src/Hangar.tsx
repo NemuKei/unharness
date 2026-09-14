@@ -4,17 +4,32 @@ import type { FixtureCase } from "./types";
 import type { Scene } from "./renderer";
 import { setSceneArtwork } from './artwork-render';
 import type { ArtworkImageLoader, ArtworkItem } from './artwork';
+const sceneLabels = {
+  ja: {
+    loading: '描画を準備中…', artworkFailed: '外観を表示できません · 装備の操作は利用できます',
+    failed: '静止画表示 · 操作は利用できます', reduced: '静止画表示 · 動きを減らす設定',
+    moving: '変形中 · プレビュー', idle: '待機モーション · プレビュー', still: '静止画表示',
+  },
+  en: {
+    loading: 'Preparing preview…', artworkFailed: 'Appearance unavailable · Controls still work',
+    failed: 'Static image · Controls still work', reduced: 'Static preview · Reduced motion',
+    moving: 'Transforming · Preview', idle: 'Idle motion · Preview', still: 'Static preview',
+  },
+};
 export function Hangar({
   condition,
   effects,
   artwork = null,
   imageLoader,
+  locale = 'ja',
 }: {
   condition: FixtureCase;
   effects: boolean;
   artwork?: ArtworkItem | null;
   imageLoader?: ArtworkImageLoader;
+  locale?: 'ja' | 'en';
 }) {
+  const labels = sceneLabels[locale];
   const host = useRef<HTMLDivElement>(null);
   const scene = useRef<Scene | null>(null);
   const conditionRef = useRef(condition);
@@ -109,14 +124,14 @@ export function Hangar({
       <div className="pixi-host" ref={host} data-artwork-id={artworkReady?loadedArtwork?.id??'default':undefined} style={{ visibility: artworkReady ? 'visible' : 'hidden' }} />
       <span className="scene-indicator">
         {graphicsState === "loading" || graphicsState==='ready' && !artworkReady
-          ? "描画を準備中…"
+          ? labels.loading
           : graphicsState === "failed"
-          ? artwork ? "外観を表示できません · 装備の操作は利用できます" : "静止画表示 · 操作は利用できます"
+          ? artwork ? labels.artworkFailed : labels.failed
           : reduced
-            ? "静止画表示 · 動きを減らす設定"
+            ? labels.reduced
             : effects
-              ? moving ? "変形中 · プレビュー" : "待機モーション · プレビュー"
-              : "静止画表示"}
+              ? moving ? labels.moving : labels.idle
+              : labels.still}
       </span>
     </div>
   );
