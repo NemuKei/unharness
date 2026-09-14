@@ -10,7 +10,7 @@
 
 [0.0.10 Macプレビュー](https://github.com/NemuKei/unharness/releases/tag/v0.0.10)を公開しました。日英の操作画面と、導入状況に応じた開始案内を追加し、[0.0.10の配布確認](docs/evidence/2026-09-14-guided-product.md)をまとめています。[導入・公開画面での操作・復旧の実機検証](docs/evidence/2026-09-13-mac-codex-completion.md)に、確認範囲と以前のAI操作・作品の検証をまとめています。
 
-現在のソースには、日英の[AIによる開始案内](docs/guided-product-entry.md)を組み込みました。Codexへの依頼文、合成データによる初回・更新デモ、実際の操作画面を日英で使えます。管理Skillは[読み取り専用の更新確認](docs/plugin-update.md)を行い、導入状況に応じて案内します。ソースの実装と、上記の公開済み配布物・サイトは別の状態です。
+0.0.10には、日英の[AIによる開始案内](docs/guided-product-entry.md)を組み込みました。Codexへの依頼文、合成データによる初回・更新デモ、実際の操作画面を日英で使えます。管理Skillは[読み取り専用の更新確認](docs/plugin-update.md)を行い、導入状況に応じて案内します。配布物と公開サイトは、それぞれ実物を照合して確認しています。
 
 [0.0.8の外観更新の検証](docs/evidence/2026-09-13-awakening-motion.md)には、以前の実機作画・公開画面での作品操作の確認を記録しています。
 

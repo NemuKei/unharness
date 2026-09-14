@@ -84,9 +84,29 @@ verified all 7,534 indexed files and executable modes.
 The final extracted archive passed the full native update/retention/rollback
 sequence above. An anonymous HTTPS download matched its exact bytes/digest and
 sidecar; the public tag resolves to the stated source. The static release catalog
-now records that verified archive. The public site deployment remains a separate
-step until its served assets are checked.
+now records that verified archive. Its publication is verified independently
+from the public site below.
 
 The earlier user-confirmed Mac prefill is documented in
 [the concept evidence](../guided-entry-preview.md). A fresh native Desktop task
 and the maintainer's personal installation were not changed by this release.
+
+## Public site
+
+The production `deltahelmlab-unharness` Pages project deployed
+`789ad538af4411f798366a0fa7abbabd26bb5c99` as
+`a9d86b5f-c2c0-4f22-99fd-8a8c9fa02bc5`. All 49 served files at
+`https://unharness.deltahelmlab.com/` match the clean local build. The release
+catalog is HTTP 200 with `Cache-Control: no-store`.
+
+The final packaged MCP read the actual public catalog and returned `current` for
+0.0.10 with matching archive SHA256 and distribution ID. `hostSelection` and
+`freshTaskLoading` remain unknown as designed. The in-app browser displayed the
+published 0.0.10 entry in both languages and preserved the synthetic deferred
+update while changing language. The native `codex://` link was inspected but
+not invoked by automation. No personal installation was updated.
+
+An independent headless Chrome check used the actual HTTPS site at 1440px and
+390px, with no routed/mock transport. Both languages, the 0.0.10 draft metadata
+and deferred sample state passed; no horizontal overflow, write request or
+console error was observed. Native draft execution remains outside that check.

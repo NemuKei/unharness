@@ -30,8 +30,10 @@ and shows the same four functions through screen and chat entry points. The
 local/public workbench uses mode/settings/appearance pages, nearby mode
 confirmation and actionable blocked states. Initial registration and local
 approval remain explicit; conflicts offer an AI inspection prompt without
-enabling a source write. These UI and management-Skill changes are included in the 0.0.9 package;
-the public site also serves the revised interface and verified 0.0.9 download.
+enabling a source write. These UI and management-Skill changes first shipped in
+0.0.9. Version 0.0.10 adds the bilingual product journey, Codex draft handoff and
+read-only update discovery. The public site now serves that interface and the
+verified 0.0.10 download.
 Its isolated native installation,
 packaged MCP and archive checks are recorded in [the release evidence](evidence/2026-09-14-workbench-release.md).
 The published snapshots below remain independent.
@@ -41,11 +43,11 @@ The published snapshots below remain independent.
 | Surface | Verified revision | Evidence |
 | --- | --- | --- |
 | Published 0.0.10 package | 6ca76702fefc867a66416c8fa434256e99025d0c | [Archive and isolated native checks](evidence/2026-09-14-guided-product.md) |
-| Public site, including revised entry/workbench and 0.0.9 download | b682ca0d13d2fc631707f7c414d800af063f37e7 | [Publication checks](evidence/2026-09-14-workbench-release.md#public-site) |
+| Public bilingual site, guided demo and 0.0.10 catalog/download | 789ad538af4411f798366a0fa7abbabd26bb5c99 | [Publication checks](evidence/2026-09-14-guided-product.md#public-site) |
 | Current repository | Re-read main/remote and local changes | Later documentation commits do not rebuild the archive or redeploy the site |
 
-The latest site deployment is f735df57-7fa6-49a7-946e-04196149667a on the dedicated
-`deltahelmlab-unharness` Pages project. All 48 served files matched its build.
+The latest site deployment is a9d86b5f-c2c0-4f22-99fd-8a8c9fa02bc5 on the dedicated
+`deltahelmlab-unharness` Pages project. All 49 served files matched its build.
 Release availability, published asset digests and the anonymous download were
 rechecked for 0.0.10. The installed personal profile was not updated by this
 release task.

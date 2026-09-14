@@ -71,6 +71,6 @@ implementation's synthetic checks. Publication is a separate commitment.
   catalog/file refresh alone is not completion. Never downgrade a newer install.
 - [x] Run targeted core and browser regressions, check/build both products, review
   changed contracts and inspect the built public page at desktop/mobile sizes.
-- [ ] Record final evidence and update README/README.ja and relevant specifications.
+- [x] Record final evidence and update README/README.ja and relevant specifications.
   Commit/push scoped changes to main after verification. Prepare any required
   new package from clean source; keep publication/live evidence distinct.

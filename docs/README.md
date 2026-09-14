@@ -37,6 +37,8 @@ The canonical contracts are split by responsibility:
 
 ## Evidence and history
 
+- [0.0.10 guided product entry](evidence/2026-09-14-guided-product.md): Japanese/English, startup/update guidance, native source reconciliation and verified publication.
+
 - [0.0.9 workbench release](evidence/2026-09-14-workbench-release.md): simplified screen/chat entry points, current archive and publication checks.
 
 - [0.0.6 Mac qualification](evidence/2026-09-13-mac-codex-completion.md):
