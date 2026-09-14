@@ -7,6 +7,7 @@ import type { SourceMode } from '../sources';
 import { siteConfig } from '../site-config';
 import { copy } from './copy';
 import type { Locale, Scenario, Stage } from './copy';
+import { codexDraftLink, startupRequest } from './codex-start';
 
 type Page = 'home' | 'guide' | 'how' | 'install';
 type RequestKind = 'install' | 'open' | 'settings' | 'skill' | 'fresh';
@@ -20,22 +21,13 @@ function initialLocale(): Locale {
 }
 
 function requestText(kind: RequestKind, locale: Locale, mode: SourceMode) {
-  const release = siteConfig.macCodexRelease!;
-  if (kind === 'install') {
-    const instructions = locale === 'ja'
-      ? 'このApple Silicon Macで使うCodex DesktopへUnharness ' + release.version + 'を導入してください。配布物のSHA-256と内容を確認し、展開した「はじめに.md」に従って進めてください。実際のプロファイルとプロジェクトを確認し、保存済みのNormal・設定・作品・メモリ・権限を保持してください。導入後は接続と復旧経路を確認し、初回の対象確認とNormal保存へ案内してください。'
-      : 'Install Unharness ' + release.version + ' for Codex Desktop on this Apple Silicon Mac. Verify the archive SHA-256 and contents, then follow the bundled はじめに.md. Confirm the actual profile and project. Preserve existing Normal, settings, artwork, memory and permissions. Check the connection and recovery path, then guide me through reviewing the initial targets and saving Normal. Please guide me in English.';
-    return instructions + '\n\nZIP: ' + release.archiveUrl + '\nSHA-256: ' + release.archiveSha256
-      + '\nDistribution ID: ' + release.distributionId + '\nSource: ' + release.sourceUrl;
-  }
+  if (kind === 'install' || kind === 'open') return startupRequest(siteConfig.macCodexRelease, locale);
   const ja = {
-    open: 'アンハーネスを開いて。接続先と現在の状態を確認し、次にできることを案内してください。',
     settings: 'アンハーネスの限定解除と零式のSkill構成を見直したいです。現在の状態とモデルを確認し、保存済みNormalを保持して構成案を提案してください。まだ設定は変更しないでください。',
     skill: '選んだ自作Skillの内容を見直したいです。対象と現在使っているモデルを確認し、そのモデルの公式ガイドを参考に改善案を作ってください。提供元の版更新やUnharnessのモード変更とは分け、採用前に元の内容を書き換えないでください。',
     fresh: 'アンハーネスで' + publicModes[mode].title + 'を試したいです。まず実際の状態を確認してください。この画面案では設定を準備していません。必要な準備と、新しいタスクで使う手順を案内してください。',
   };
   const en = {
-    open: 'Open Unharness. Check the connection and current state, then suggest the next useful action. Please guide me in English.',
     settings: 'Help me review my UNSEAL and TRUEFORM Skill choices in Unharness. Check my current state and model, preserve saved Normal, and propose a pair of configurations. Do not change the settings yet. Please guide me in English.',
     skill: 'Help me review selected Skills I authored. Confirm the targets and my current model, then use official guidance for that model to propose improvements. Keep content editing separate from upstream version updates and Unharness mode changes. Preserve the originals until I adopt a change. Please guide me in English.',
     fresh: 'Help me try ' + publicModes[mode].title + ' in Unharness. Check my real state first: the concept preview did not prepare any settings. Guide the required preparation and how to use a fresh task. Please guide me in English.',
@@ -61,6 +53,7 @@ export function GuidedPreview() {
   const copyAttempt = useRef(0);
   const previousPage = useRef(page);
   const t = copy[locale], look = preparedAppearances.find(item => item.id === appearance)!;
+  const startLink = codexDraftLink(startupRequest(siteConfig.macCodexRelease, locale));
 
   useEffect(() => {
     document.documentElement.lang = locale;
@@ -151,9 +144,11 @@ export function GuidedPreview() {
             <h1>{t.heroFirst}<br/><span>{t.heroSecond}</span></h1>
             <p className="gp-lead">{t.heroLead}</p><p className="gp-hero-body">{t.heroBody}</p>
             <div className="gp-actions">
-              <button type="button" className="gp-primary" onClick={() => startScenario('first')}>{t.heroPrimary}<span aria-hidden="true"> →</span></button>
-              <button type="button" className="gp-secondary" onClick={() => setPage('install')}>{t.heroSecondary}</button>
+              <a className="gp-primary" href={startLink}>{t.startInCodex} ↗</a>
+              <button type="button" className="gp-secondary" onClick={() => startScenario('first')}>{t.heroPrimary}<span aria-hidden="true"> →</span></button>
             </div>
+            <p className="gp-native-hint">{t.nativeHint}</p>
+            <button type="button" className="gp-text-button" onClick={() => openRequest('install')}>{t.copyAlternative}</button>
             <button type="button" className="gp-text-button" onClick={() => startScenario('returning')}>{t.installedEntry} ↗</button>
             <div className="gp-availability"><p>{t.availability}</p><p>{t.future}</p></div>
           </div>
@@ -226,15 +221,17 @@ export function GuidedPreview() {
         <div className="gp-install-layout"><div className="gp-install-main">
           <div className="gp-target"><span>{t.targetLabel}</span><strong>{t.targetValue}</strong><p>{t.future}</p></div>
           <p className="gp-release">{t.releasePrefix} <strong>{siteConfig.macCodexRelease?.version}</strong></p>
-          <button type="button" className="gp-primary" onClick={() => void copyRequest('install')}>{t.installCopy} ↗</button>
-          <p className="gp-hint">{t.copyBoundary}</p>
+          <a className="gp-primary" href={startLink}>{t.startInCodex} ↗</a>
+          <p className="gp-native-hint">{t.nativeHint}</p>
+          <button type="button" className="gp-text-button" onClick={() => openRequest('install')}>{t.copyAlternative}</button>
           <details className="gp-downloads"><summary>{t.advanced}</summary>
             <a href={siteConfig.macCodexRelease?.archiveUrl} referrerPolicy="no-referrer">{t.zip} ↗</a>
             <a href={github + '/releases/tag/v' + siteConfig.macCodexRelease?.version} target="_blank" rel="noopener noreferrer">{t.release} ↗</a>
             <a href={github} target="_blank" rel="noopener noreferrer">{t.source} ↗</a>
           </details>
         </div><aside className="gp-install-after"><p className="gp-eyebrow">{t.installAfter}</p><h2>“{t.installOpen}”</h2><p>{t.installAfterBody}</p>
-          <button type="button" className="gp-text-button" onClick={() => void copyRequest('open')}>{t.copy} ↗</button>
+          <a className="gp-text-button" href={startLink}>{t.openInCodex} ↗</a>
+          <button type="button" className="gp-text-button" onClick={() => openRequest('open')}>{t.copyAlternative}</button>
           <button type="button" className="gp-secondary" onClick={() => startScenario('first')}>{t.seeFirst} →</button>
         </aside></div><p className="gp-offline">{t.offline}</p>
       </section>}
@@ -254,7 +251,11 @@ export function GuidedPreview() {
       <div className="gp-dialog-heading"><h2 id="gp-request-title">{t.dialogLabel}</h2><button type="button" onClick={closeRequest}>{t.dialogClose}</button></div>
       <p>{t.copyBoundary}</p>
       <label>{t.requestLabel}<textarea readOnly value={request ? requestText(request, locale, mode) : ''} onFocus={e => e.currentTarget.select()}/></label>
-      <button type="button" className="gp-primary" onClick={() => { if (request) void copyRequest(request); }}>{t.copy}</button>
+      <div className="gp-actions">
+        {request && <a className="gp-primary" href={codexDraftLink(requestText(request, locale, mode))}>{t.openInCodex} ↗</a>}
+        <button type="button" className="gp-secondary" onClick={() => { if (request) void copyRequest(request); }}>{t.copy}</button>
+      </div>
+      <p className="gp-native-hint">{t.nativeHint}</p>
       <p className="gp-copy-status" role="status">{copyState === 'copied' ? t.copied : copyState === 'failed' ? t.copyFailed : ''}</p>
     </dialog>
   </div>;

@@ -23,8 +23,9 @@ do not include this entry.
 ## Review the journey
 
 1. **Introduction:** the existing world, artwork and renderer remain. The main
-   action opens an AI-guided sample; installation and already-installed use
-   have separate entrances. Header links expose the guide, installation,
+   action hands a startup request to Codex; the interactive sample has its own
+   entrance. Installation details and already-installed sample use remain
+   separate. Header links expose the guide, installation,
    language and the actual public GitHub repository.
 2. **First time:** review synthetic source groups, confirm the sample targets,
    keep sample Normal and inspect TRUEFORM/UNSEAL suggestions. Preview selection
@@ -34,8 +35,8 @@ do not include this entry.
    preparation, the remaining reload/runtime check, then a simulated completion.
 4. **Already set up:** keep sample Normal and go directly to previewing and
    preparing a mode. The optional Skill-content review stays separate.
-5. **Installation:** show the qualified Apple Silicon Mac/Codex target, copy an
-   installation request and continue to the first-time guide. The copied request
+5. **Installation:** show the qualified Apple Silicon Mac/Codex target and offer
+   opening a startup request in Codex, with review/copy as a fallback. The request
    carries the release URL, digest, distribution identity and source from the
    existing siteConfig; platform limitations remain visible.
 
@@ -52,10 +53,30 @@ source registration or saved-data write. The static entry restricts script and
 connection origins to itself. Its persistent concept banner identifies this
 boundary throughout the flow.
 
-GitHub, published download and release links are real. Clipboard operations are
-real and include a selectable fallback. Copying never sends the request. The
+GitHub, published download, release and open-in-Codex links are real. Clipboard
+operations are real and include a selectable fallback. Copying never sends the request. The
 next-task request explicitly tells the receiving AI to read real state first,
 because this concept did not prepare a mode.
+
+The native handoff uses codex://new with only mode=codex and an encoded prompt.
+No project path, project ID, browser URL or configuration parameters are sent.
+The receiving AI is asked to inspect installation and target identity first.
+An existing installation must not be automatically reinstalled, downgraded or
+initialized again. Installation requires an explanation and user confirmation.
+
+The installed Mac app 26.903.71938 (8576) registers the codex protocol. Its
+inspected parser accepts the new-composer route, codex mode and prompt; its
+navigation handler passes the prompt into the composer prefill state. These
+are observed implementation details, not a promise of a stable public API.
+The dedicated plugin-install route first looks up a known marketplace entry;
+it does not establish first-time registration of Unharness's ZIP marketplace.
+
+The native app UI check is pending. Computer Use rejected access to
+com.openai.codex for safety reasons. The handoff was therefore not invoked by
+automation through an alternate route. Browser link inspection and a round-trip
+encoding test cover the prepared link; a user must verify that clicking it opens
+Codex with the expected unsent request. Do not claim launch, prefill or
+installation success from constructing the link.
 
 The existing Hangar component accepts an optional locale; its Japanese
 default and renderer lifecycle are unchanged. Appearance selection and effects
