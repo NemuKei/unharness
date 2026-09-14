@@ -1,3 +1,4 @@
+import { text as t } from './locale.ts';
 import { ApiError } from "./api.ts";
 import { validPluginEvidence } from './plugin-evidence.ts';
 import type { SourceMode, SourceView, PluginObservation, PluginCoverage } from "./sources";
@@ -42,8 +43,8 @@ export type ReplayComparison = {
   aggregate: { recordCount: number; acceptedCount: number; totalTokens: number | null; tokensPerAcceptedRun: number | null; reasons: string[] };
   reasons: string[]; assessment: "neutral"; creationEligible: false;
 };
-export const phaseLabels: Record<ReplayPhase, string> = { preparing: "準備中・要確認", prepared: "作業場所の準備済み", ready: "新規タスクの実行待ち", "preparation-failed": "準備を完了できませんでした", cancelled: "取り消し済み", recorded: "結果を保存済み" };
-export const qualificationLabels: Record<ReplayQualification["status"], string> = { "matched-record": "記録上の条件が一致", "not-matched-record": "記録上の条件が不一致", "unqualified-record": "この試行の対象外", "unknown-record": "条件を確認できません" };
+export const phaseLabels: Record<ReplayPhase, string> = { get preparing() { return t("準備中・要確認", "Preparing / needs review"); }, get prepared() { return t("作業場所の準備済み", "Work location prepared"); }, get ready() { return t("新規タスクの実行待ち", "Waiting for a new task"); }, get "preparation-failed"() { return t("準備を完了できませんでした", "Preparation failed"); }, get cancelled() { return t("取り消し済み", "Cancelled"); }, get recorded() { return t("結果を保存済み", "Result saved"); } };
+export const qualificationLabels: Record<ReplayQualification["status"], string> = { get "matched-record"() { return t("記録上の条件が一致", "Recorded conditions match"); }, get "not-matched-record"() { return t("記録上の条件が不一致", "Recorded conditions do not match"); }, get "unqualified-record"() { return t("この試行の対象外", "Outside this attempt's scope"); }, get "unknown-record"() { return t("条件を確認できません", "Conditions unconfirmed"); } };
 export const isReplayMutation = (op: string) => !["replays", "replay", "replay-result", "compare-replays"].includes(op);
 export function replayPreparationKey(view: SourceView | null) {
   const s = view?.source;
@@ -51,29 +52,29 @@ export function replayPreparationKey(view: SourceView | null) {
     s?.revision, s?.preparedMode, s?.preparation?.id, s?.conflict?.kind, s?.recovery.pending]);
 }
 export function replayError(error: unknown) {
-  if (!(error instanceof ApiError) || error.disposition === "uncertain") return "操作結果は未確認です。再実行の履歴を読み、保存状態を確認してください。";
+  if (!(error instanceof ApiError) || error.disposition === "uncertain") return t("操作結果は未確認です。再実行の履歴を読み、保存状態を確認してください。", "Operation result unconfirmed. Load replay history and check the saved state.");
   return replayIssue(error.kind);
 }
 export function replayIssue(kind: string) {
   const labels: Record<string, string> = {
-    "replay-active-attempt": "別の再実行が進行中です。結果を保存するか、取り消してから次を準備してください。",
-    "replay-preparation-stale": "装備の準備状態が変わりました。再実行の内容を確認し直してください。",
-    "replay-attempt-budget-exhausted": "この開始条件とモードの試行上限に達しました。",
-    "replay-destination-changed": "確認後に作業場所のファイルが変わりました。変更は保持しています。",
-    "replay-git-state-changed": "開始前のGit状態が変わりました。変更は保持しています。",
-    "replay-record-invalid": "再実行の保存記録を確認できません。設定の復帰は「装備」で利用できます。",
-    "replay-retained-conditions-changed": "プロジェクトの指示や共通設定が変わり、同じ開始条件を確認できません。",
-    "replay-native-conditions-unavailable": "Codexの設定やソース情報を確認できません。",
-    "replay-desktop-open-unavailable": "インストール済みのMac版Codexを開けません。下の作業場所を手動で開いてください。",
-    "source-conflict": "外部で設定が変更されています。「装備」で内容を確認してください。",
-    "recovery-required": "「装備」で保留中の復帰を確認してください。",
-    "replay-task-record-unavailable": "指定したタスクのローカル記録が見つかりません。",
-    "replay-task-record-invalid": "指定したタスクの記録を読み取れません。",
-    "replay-task-record-changed": "取り込み中にタスクの記録が変わりました。完了後に確認し直してください。",
-    "replay-assessment-conflict": "結果の保存版が変わっています。履歴から現在の結果を開き直してください。",
-    "replay-result-unavailable": "この記録から試行時の設定を確定できません。",
+    "replay-active-attempt": t("別の再実行が進行中です。結果を保存するか、取り消してから次を準備してください。", "Another replay is active. Save its result or cancel it before preparing the next."),
+    "replay-preparation-stale": t("装備の準備状態が変わりました。再実行の内容を確認し直してください。", "The prepared loadout changed. Review the replay again."),
+    "replay-attempt-budget-exhausted": t("この開始条件とモードの試行上限に達しました。", "The attempt limit for these conditions and mode was reached."),
+    "replay-destination-changed": t("確認後に作業場所のファイルが変わりました。変更は保持しています。", "Work files changed after review. Changes are preserved."),
+    "replay-git-state-changed": t("開始前のGit状態が変わりました。変更は保持しています。", "Git state changed before starting. Changes are preserved."),
+    "replay-record-invalid": t("再実行の保存記録を確認できません。設定の復帰は「装備」で利用できます。", "Saved replay records could not be verified. Restore settings in Loadout."),
+    "replay-retained-conditions-changed": t("プロジェクトの指示や共通設定が変わり、同じ開始条件を確認できません。", "Project instructions or shared settings changed. Identical starting conditions cannot be confirmed."),
+    "replay-native-conditions-unavailable": t("Codexの設定やソース情報を確認できません。", "Codex settings or source information could not be verified."),
+    "replay-desktop-open-unavailable": t("インストール済みのMac版Codexを開けません。下の作業場所を手動で開いてください。", "Could not open the installed Mac Codex. Open the work location below manually."),
+    "source-conflict": t("外部で設定が変更されています。「装備」で内容を確認してください。", "Settings changed externally. Review them in Loadout."),
+    "recovery-required": t("「装備」で保留中の復帰を確認してください。", "Review pending recovery in Loadout."),
+    "replay-task-record-unavailable": t("指定したタスクのローカル記録が見つかりません。", "The local record for this task was not found."),
+    "replay-task-record-invalid": t("指定したタスクの記録を読み取れません。", "This task's record could not be read."),
+    "replay-task-record-changed": t("取り込み中にタスクの記録が変わりました。完了後に確認し直してください。", "The task record changed during import. Recheck after completion."),
+    "replay-assessment-conflict": t("結果の保存版が変わっています。履歴から現在の結果を開き直してください。", "The saved result changed. Reopen its current version from history."),
+    "replay-result-unavailable": t("この記録から試行時の設定を確定できません。", "The loadout used during the attempt cannot be established from this record."),
   };
-  return labels[kind] ?? `確認できない条件があります（${kind}）。`;
+  return labels[kind] ?? t(`確認できない条件があります（${kind}）。`, `Some conditions are unconfirmed (${kind}).`);
 }
 const hash = (x: unknown) => typeof x === "string" && /^[a-f0-9]{64}$/.test(x);
 const mode = (x: unknown) => typeof x === "string" && ["normal", "unseal", "trueform"].includes(x);

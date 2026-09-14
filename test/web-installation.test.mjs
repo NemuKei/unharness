@@ -51,7 +51,7 @@ test('built published installation copies the pinned request and withholds it fo
     configurable: true, value: async text => { window.__copiedInstallation = text; },
   }));
   await page.goto(PUBLIC_WEB_ORIGIN);
-  await page.getByRole('button', { name: '導入方法を見る', exact: true }).click();
+  await page.getByRole('button', { name: '開かない場合・導入方法を見る', exact: true }).click();
   await page.getByRole('heading', { name: 'Codexに導入を頼む', exact: true }).waitFor();
   const field = page.getByRole('textbox', { name: 'Codexへの導入依頼', exact: true });
   const request = await field.inputValue();

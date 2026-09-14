@@ -1,0 +1,25 @@
+{
+  "kind": "unharness-release-catalog",
+  "schemaVersion": 1,
+  "platform": "darwin-arm64",
+  "channel": "mac-preview",
+  "release": {
+    "version": "0.0.9",
+    "archiveUrl": "https://github.com/NemuKei/unharness/releases/download/v0.0.9/unharness-0.0.9-macos-arm64.zip",
+    "archiveSha256": "d0e57db8b420e1c9e6891c9273f9137a0c330764200bae318f6c325be15dfdbd",
+    "distributionId": "4c5fe814d629a869df5ccdd30cdeff0680f5fa6d2dc4eb57b452203ad2c8b89b",
+    "sourceUrl": "https://github.com/NemuKei/unharness/tree/45a9a4c721ff03a002ab3e09dac451b7aa3923d4",
+    "releaseUrl": "https://github.com/NemuKei/unharness/releases/tag/v0.0.9",
+    "publishedAt": "2026-09-13T23:30:35Z",
+    "changes": {
+      "ja": [
+        "画面とチャットから、同じモード・設定・外観の操作へ進める入口にしました。",
+        "モードの準備状態と次の操作を整理し、問題がある場合はAIへの相談へ進めます。"
+      ],
+      "en": [
+        "Use the same mode, settings and appearance operations from the screen or chat.",
+        "See the prepared mode and next action, with AI guidance when an operation needs attention."
+      ]
+    }
+  }
+}

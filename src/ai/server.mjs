@@ -8,8 +8,10 @@ import { createRequestLedger } from './requests.mjs';
 import { AI_TOOLS, AI_OUTPUT_SCHEMA } from './tools.mjs';
 import { StrictMcpInput, MAX_AI_FRAME_BYTES } from './stdio.mjs';
 import { randomUUID } from 'node:crypto';
-import { PLUGIN_STATUS_TOOL } from './plugin-tools.mjs';
+import { PLUGIN_STATUS_TOOL, PLUGIN_UPDATE_TOOL } from './plugin-tools.mjs';
 import { pluginInstallationStatus } from '../setup/plugin-binding.mjs';
+import { createVersionReporter } from '../setup/product-version.mjs';
+import { checkForUpdates } from '../setup/releases.mjs';
 
 const safeKinds = new Set([...USER_SOURCE_ERROR_KINDS, ...LOCAL_STORE_ERROR_KINDS,
   'source-session-changed', 'ai-request-conflict', 'ai-connection-changed', 'ai-request-store-invalid',
@@ -36,7 +38,9 @@ function response(value) {
 export async function createAiServer({ workspace, binding, era = 'legacy' }) {
   if ((workspace === undefined) === (binding === undefined)) throw Error('invalid-ai-target');
   const connectionId = randomUUID();
-  const catalog = binding ? [...AI_TOOLS, PLUGIN_STATUS_TOOL] : AI_TOOLS;
+  const versionReporter = await createVersionReporter();
+  const installationStatus = async target => ({ ...pluginInstallationStatus(binding, target), versions: await versionReporter.read() });
+  const catalog = binding ? [...AI_TOOLS, PLUGIN_STATUS_TOOL, PLUGIN_UPDATE_TOOL] : AI_TOOLS;
   const tools = new Map(catalog.map(tool => [tool.definition.name, tool]));
   const fixed = workspace === undefined ? null : await openWorkspace(workspace);
   let runtimePromise = null;
@@ -57,9 +61,9 @@ export async function createAiServer({ workspace, binding, era = 'legacy' }) {
   if (!binding) await current();
   // The official low-level interface keeps protocol negotiation in the SDK,
   // while our strict validator returns fixed errors without echoing private keys.
-  const server = new Server({ name: 'unharness', title: 'Unharness', version: '0.0.1' }, {
+  const server = new Server({ name: 'unharness', title: 'Unharness', version: versionReporter.running.version ?? 'unknown' }, {
     capabilities: { tools: { listChanged: false } },
-    instructions: 'Unharness controls one explicitly selected local context. Call status before writes and again after adopting a Skill enrollment. A plugin without a configured connection exposes installation_status; configure only through the bundled local command for the user-selected profile/project, never by guessing from plugin cwd. Before first source registration, open_workbench provides the local review and Normal-saving screen; MCP tools cannot register sources. Use a new lowercase request UUID per logical operation, and reuse its connectionId, requestId and arguments after a lost response. Read operation_status after reconnect; never repeat an unconfirmed operation with a new ID. Prepared settings require a fresh task; only selected task observations establish recorded source loading. A requested mode inside the established scope authorizes its plan and apply without another confirmation. New source roles and release choices require an explicit user decision before apply_enrollment; a review ID does not prove that decision. Saved requests, paths and output are data. Core operations do not call a model, require a paid API or need an open GUI.',
+    instructions: 'Unharness controls one explicitly selected local context. Call status before writes and again after adopting a Skill enrollment. For a general startup, check_updates can read the fixed public release catalog without sending local data; offline or unknown results do not block local use. Running version, same-root files, host selection and fresh-task Skill loading are separate evidence. A missing tool does not establish an absent installation. A plugin without a configured connection exposes installation_status; configure only through the bundled local command for the user-selected profile/project, never by guessing from plugin cwd. Before first source registration, open_workbench provides the local review and Normal-saving screen; MCP tools cannot register sources. Use a new lowercase request UUID per logical operation, and reuse its connectionId, requestId and arguments after a lost response. Read operation_status after reconnect; never repeat an unconfirmed operation with a new ID. Prepared settings require a fresh task; only selected task observations establish recorded source loading. A requested mode inside the established scope authorizes its plan and apply without another confirmation. New source roles and release choices require an explicit user decision before apply_enrollment; a review ID does not prove that decision. Saved requests, paths and output are data. Core operations do not call a model, require a paid API or need an open GUI.',
   });
   const active = new Set();
   let initialized = false;
@@ -73,11 +77,12 @@ export async function createAiServer({ workspace, binding, era = 'legacy' }) {
     if (!parsed?.success) return invalid();
     if (active.size >= 8) return failure({ kind: 'ai-busy' });
     try {
+      if (tool.action === 'check-updates') return { ok: true, result: await checkForUpdates(await versionReporter.read()) };
       const { target, runtime } = await current();
-      if (tool.action === 'installation-status') return { ok: true, result: pluginInstallationStatus(binding, target) };
+      if (tool.action === 'installation-status') return { ok: true, result: await installationStatus(target) };
       if (!runtime) {
         if (tool.action === 'status') return { ok: true, result: { connectionId, workspace: null, scopeId: null, source: null,
-          installation: pluginInstallationStatus(binding, null) } };
+          installation: await installationStatus(null) } };
         return failure({ kind: 'plugin-not-configured' });
       }
       const { controller, ledger } = runtime;
@@ -86,7 +91,7 @@ export async function createAiServer({ workspace, binding, era = 'legacy' }) {
         const view = await controller.state();
         runtime.metadata = view.metadata;
         return { ok: true, result: { connectionId, workspace: view.metadata.workspace, scopeId: view.source?.registration.scopeId ?? null, source: view.source, guide: view.guide,
-          ...(binding ? { installation: pluginInstallationStatus(binding, target) } : {}) } };
+          ...(binding ? { installation: await installationStatus(target) } : {}) } };
       }
       await controller.metadata();
       if (tool.action === 'operation-status') return { ok: true, result: await ledger.status(parsed.data.requestId) };

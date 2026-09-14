@@ -11,6 +11,7 @@ export const NODE_RUNTIME = Object.freeze({ version: '24.20.0', platform: 'darwi
   url: 'https://nodejs.org/dist/v24.20.0/node-v24.20.0-darwin-arm64.tar.gz' });
 export const distributionFail = () => { throw Object.assign(Error('distribution-invalid'), { kind: 'distribution-invalid' }); };
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
+export const distributionIdentity = manifest => digest(JSON.stringify(manifest));
 const exact = (v, keys) => v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).sort().join() === keys.sort().join();
 const same = (a, b) => a.dev === b.dev && a.ino === b.ino;
 const roots = new Set(['plugin.json', '.codex-plugin', 'mcp.json', 'skills', 'scripts', 'runtime', 'bin', 'src', 'dist', 'assets',
@@ -99,7 +100,7 @@ export async function readDistribution(root) {
     const manifest = await json(root, 'distribution.json');
     validateMetadata(manifest);
     if (manifest.version !== await versionOf(root) || !isDeepStrictEqual(manifest.files, await filesIn(root))) distributionFail();
-    return { id: digest(JSON.stringify(manifest)), root, manifest };
+    return { id: distributionIdentity(manifest), root, manifest };
   } catch { distributionFail(); }
 }
 export async function indexDistribution(root, { platform, sourceRevision, sourceDirty }) {

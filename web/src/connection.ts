@@ -53,6 +53,7 @@ export class PublicConnection {
   #listeners = new Set<() => void>();
   #fetch: typeof fetch; #now: () => number; #pageOrigin: string;
   #handoff: Handoff | null = null; #token: string | null = null; #loopback: string | null = null;
+  #localLanguageSupport = false;
   #grant: ConnectionSummary | null = null; #epoch = 0; #readGeneration = 0;
   #lastCommand: Command | null = null; #receiptGeneration = 0;
   #requestInputs = new Map<string, string>();
@@ -66,6 +67,7 @@ export class PublicConnection {
   }) { this.#fetch = fetcher; this.#now = now; this.#pageOrigin = pageOrigin; this.acceptHandoff(handoff); }
   getSnapshot = () => this.#view;
   getLocalWorkbenchUrl = () => this.#grant && this.#grant.expiresAt > this.#now() && this.#view.phase === "connected" ? this.#loopback : null;
+  supportsLocalLanguage = () => this.getLocalWorkbenchUrl() !== null && this.#localLanguageSupport;
   subscribe = (listener: () => void) => { this.#listeners.add(listener); return () => { this.#listeners.delete(listener); }; };
   #set(update: Partial<ConnectionSnapshot>) {
     this.#view = Object.freeze({ ...this.#view, ...update });
@@ -74,6 +76,7 @@ export class PublicConnection {
   acceptHandoff(value: ConnectionHandoff) {
     if (value.kind === 'ready' && value.handoff.protocolVersion !== 2) value = { kind: 'invalid', reason: 'remote-incompatible' };
     ++this.#epoch; ++this.#readGeneration; this.#token = null; this.#grant = null; this.#loopback = null; this.#handoff = null;
+    this.#localLanguageSupport = false;
     // Abandon only the connection attempt. Accepted writes keep their own
     // busy boundary and must settle normally even after this handoff changes.
     this.#requestInputs.clear(); this.#artworkCommands.clear();
@@ -102,6 +105,7 @@ export class PublicConnection {
     this.#set({ phase: expired ? "expired" : incompatible ? "incompatible" : "unknown", connection: null, state: null, plan: null, error: kind });
   }
   async #post(loopback: string, action: string, body: object, token?: string) {
+    const epoch = this.#epoch;
     let response: Response;
     try {
       response = await this.#fetch(loopback + "/remote/v2/" + action, {
@@ -116,6 +120,11 @@ export class PublicConnection {
       const error = connectionRecord(connectionRecord(data).error);
       fail(typeof error.kind === "string" && /^[a-z-]{1,64}$/.test(error.kind) ? error.kind : "remote-state-unconfirmed");
     }
+    // Earlier installed workbenches reject all query strings. This display-only
+    // advertisement keeps their original links usable without changing v2 data
+    // or allowing a late handoff response to affect another connection.
+    if (action === 'redeem' && epoch === this.#epoch)
+      this.#localLanguageSupport = response.headers?.get('X-Unharness-UI-Languages') === 'ja,en';
     return data;
   }
   async connect() {

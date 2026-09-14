@@ -1,3 +1,4 @@
+import { text as t } from './locale.ts';
 import { useEffect, useRef, useState } from "react";
 import { ApiError } from "./api";
 import { comparisonContextKey } from "./useComparisonController";
@@ -20,7 +21,7 @@ export function useReplayController(shared: Shared) {
   useEffect(() => {
     ++preparationGeneration.current;
     setState(s => ({ ...s, review: null, handoff: null,
-      notice: s.review || s.handoff ? "装備の状態が変わりました。開始状態を確認し直してください。" : s.notice }));
+      notice: s.review || s.handoff ? t("装備の状態が変わりました。開始状態を確認し直してください。", "The loadout changed. Recheck the starting state.") : s.notice }));
   }, [preparationKey]);
   const externalSignature = useRef("");
   useEffect(() => {
@@ -29,7 +30,7 @@ export function useReplayController(shared: Shared) {
     const signature = JSON.stringify([comparisonContextKey(update.view), update.versions.replays, page.error?.kind]);
     if (signature === externalSignature.current) return;
     externalSignature.current = signature;
-    if (page.error) { setState(s => ({ ...s, backgroundError: "再実行の履歴を自動更新できません。履歴を読み直してください。" })); return; }
+    if (page.error) { setState(s => ({ ...s, backgroundError: t("再実行の履歴を自動更新できません。履歴を読み直してください。", "Replay history could not be refreshed automatically. Reload it.") })); return; }
     const data = page.data;
     setState(s => {
       const attempts = mergeHistoryRows(s.attempts, data.attempts, "attemptId");
@@ -41,7 +42,7 @@ export function useReplayController(shared: Shared) {
         review: data.activeAttemptId ? null : s.review,
         handoff: s.handoff && attempts.some(a => a.attemptId === s.handoff!.attemptId && !a.handoffAvailable) ? null : s.handoff,
         resultReview: resultChanged ? null : s.resultReview, backgroundError: "",
-        notice: resultChanged ? "この試行の保存状態が変わりました。履歴から保存済みの結果を確認してください。" : s.notice };
+        notice: resultChanged ? t("この試行の保存状態が変わりました。履歴から保存済みの結果を確認してください。", "This attempt's saved state changed. Review the saved result in history.") : s.notice };
     });
   }, [shared.externalUpdate]);
   async function execute<T>(op: string, input: object, options: { preparation?: boolean; current?: () => boolean; afterSaved?: boolean } = {}): Promise<T | null> {
@@ -52,16 +53,16 @@ export function useReplayController(shared: Shared) {
     if (!alive.current || comparisonContextKey(view.current) !== context || options.current && !options.current()) return null;
     if (response.status === "context-updated") return null;
     if (response.status === "failed") {
-      setState(s => ({ ...s, error: options.afterSaved ? "操作の完了は確認済みです。履歴だけを更新できませんでした。" : replayError(response.error),
+      setState(s => ({ ...s, error: options.afterSaved ? t("操作の完了は確認済みです。履歴だけを更新できませんでした。", "Completion was confirmed, but history could not be refreshed.") : replayError(response.error),
         notice: options.afterSaved ? s.notice : "", uncertain: isReplayMutation(op) && (!(response.error instanceof ApiError) || response.error.disposition === "uncertain") ? op : s.uncertain }));
       return null;
     }
     if (comparisonContextKey(response.state) !== context) return null;
     if (options.preparation && (replayPreparationKey(response.state) !== preparation || replayPreparationKey(view.current) !== preparation)) {
-      setState(s => ({ ...s, review: null, handoff: null, notice: "装備の状態が変わりました。再実行の内容を確認し直してください。" })); return null;
+      setState(s => ({ ...s, review: null, handoff: null, notice: t("装備の状態が変わりました。再実行の内容を確認し直してください。", "The loadout changed. Review the replay again.") })); return null;
     }
     if (!validReplayResponse(op, response.result, scope, input, view.current?.source?.registration.previousScopeIds)) {
-      setState(s => ({ ...s, error: "再実行の応答を確認できません。履歴を読み直してください。", notice: options.afterSaved ? s.notice : "",
+      setState(s => ({ ...s, error: t("再実行の応答を確認できません。履歴を読み直してください。", "The replay response is unconfirmed. Reload history."), notice: options.afterSaved ? s.notice : "",
         uncertain: isReplayMutation(op) ? op : s.uncertain })); return null;
     }
     return response.result;
@@ -77,32 +78,32 @@ export function useReplayController(shared: Shared) {
       resultReview: page.attempts.some(a => a.attemptId === s.resultReview?.attemptId && a.phase === "recorded") ? null : s.resultReview,
       handoff: page.attempts.some(a => a.attemptId === s.handoff?.attemptId && !a.handoffAvailable) ? null : s.handoff,
       uncertain: s.uncertain === "replay-favorite" ? s.uncertain : null,
-      notice: afterSaved ? s.notice : "再実行の保存状態を読みました。" }));
+      notice: afterSaved ? s.notice : t("再実行の保存状態を読みました。", "Loaded the saved replay state.") }));
   }
   async function review(startId: string) {
     const generation = ++preparationGeneration.current;
-    setState(s => ({ ...s, review: null, handoff: null, notice: "現在の装備で再実行できるか確認しています。" }));
+    setState(s => ({ ...s, review: null, handoff: null, notice: t("現在の装備で再実行できるか確認しています。", "Checking whether the current loadout can replay these conditions.") }));
     const value = await execute<ReplayReview>("review-replay", { startId }, { preparation: true, current: () => generation === preparationGeneration.current });
-    if (value) setState(s => ({ ...s, review: value, uncertain: null, notice: "準備内容を確認してください。タスクはまだ開始していません。" }));
+    if (value) setState(s => ({ ...s, review: value, uncertain: null, notice: t("準備内容を確認してください。タスクはまだ開始していません。", "Review the preparation. No task has started yet.") }));
   }
   async function prepare() {
     const r = latest.current.review; if (!r) return;
     const p = await execute<ReplayAttempt>("prepare-replay", { reviewId: r.reviewId }, { preparation: true });
     if (p) {
       setState(s => ({ ...s, review: null, attempt: p, handoff: null, activeAttemptId: ["prepared", "ready", "preparing"].includes(p.phase) ? p.attemptId : null,
-        attempts: [p, ...s.attempts.filter(a => a.attemptId !== p.attemptId)], resultReview: null, result: null, uncertain: null, notice: "作業場所の準備状態を保存しました。" }));
+        attempts: [p, ...s.attempts.filter(a => a.attemptId !== p.attemptId)], resultReview: null, result: null, uncertain: null, notice: t("作業場所の準備状態を保存しました。", "Saved the prepared work location.") }));
     }
   }
   async function handoff(open = false, copy = false) {
     const attempt = latest.current.attempt; if (!attempt) return;
-    setState(s => ({ ...s, notice: "ファイルと設定の開始状態を確認しています。" }));
+    setState(s => ({ ...s, notice: t("ファイルと設定の開始状態を確認しています。", "Checking starting files and settings.") }));
     const h = await execute<ReplayHandoff>(open ? "open-replay" : "handoff-replay", { attemptId: attempt.attemptId }, { preparation: true });
     if (!h) { if (alive.current) setState(s => ({ ...s, handoff: null })); return; }
     setState(s => ({ ...s, attempt: h, handoff: h, uncertain: null, notice: open
-      ? "作業場所をCodexに引き渡しました。新しいタスクに依頼文を貼り付けて実行してください。" : "開始状態を確認しました。新しいタスクで、この依頼を実行してください。" }));
+      ? t("作業場所をCodexに引き渡しました。新しいタスクに依頼文を貼り付けて実行してください。", "Handed the work location to Codex. Paste the request into a new task and send it.") : t("開始状態を確認しました。新しいタスクで、この依頼を実行してください。", "Starting state verified. Run this request in a new task.") }));
     if (copy) {
-      try { await navigator.clipboard.writeText(h.request); if (alive.current) setState(s => ({ ...s, notice: "再実行の依頼をコピーしました。" })); }
-      catch { if (alive.current) setState(s => ({ ...s, error: "コピーできませんでした。表示した依頼文を選択してコピーしてください。" })); }
+      try { await navigator.clipboard.writeText(h.request); if (alive.current) setState(s => ({ ...s, notice: t("再実行の依頼をコピーしました。", "Copied the replay request.") })); }
+      catch { if (alive.current) setState(s => ({ ...s, error: t("コピーできませんでした。表示した依頼文を選択してコピーしてください。", "Copy failed. Select and copy the displayed request.") })); }
     }
   }
   async function inspect(attemptId: string) {
@@ -116,17 +117,17 @@ export function useReplayController(shared: Shared) {
     if (result) {
       setState(s => ({ ...s, attempt: result, handoff: null, resultReview: null, uncertain: null,
         activeAttemptId: s.activeAttemptId === result.attemptId ? null : s.activeAttemptId,
-        notice: "試行を取り消しました。ファイルは保持しています。Codexの実行中タスクは停止していません。" }));
+        notice: t("試行を取り消しました。ファイルは保持しています。Codexの実行中タスクは停止していません。", "Attempt cancelled. Files are preserved. Running Codex tasks were not stopped.") }));
       await load(undefined, true);
     }
   }
-  function invalidateResult() { ++resultGeneration.current; setState(s => ({ ...s, resultReview: null, notice: "タスクが変わりました。記録を確認し直してください。" })); }
+  function invalidateResult() { ++resultGeneration.current; setState(s => ({ ...s, resultReview: null, notice: t("タスクが変わりました。記録を確認し直してください。", "The task changed. Recheck its record.") })); }
   async function observe(taskId: string) {
     const a = latest.current.attempt; if (!a) return;
     const generation = ++resultGeneration.current;
-    setState(s => ({ ...s, resultReview: null, result: null, notice: "タスクの記録と成果物を確認しています。" }));
+    setState(s => ({ ...s, resultReview: null, result: null, notice: t("タスクの記録と成果物を確認しています。", "Checking the task record and outputs.") }));
     const r = await execute<ReplayResultReview>("observe-replay", { attemptId: a.attemptId, taskId }, { current: () => generation === resultGeneration.current });
-    if (r && r.attemptId === a.attemptId && r.taskId === taskId) setState(s => ({ ...s, resultReview: r, uncertain: null, notice: "記録を取り込みました。保存前に結果を評価してください。" }));
+    if (r && r.attemptId === a.attemptId && r.taskId === taskId) setState(s => ({ ...s, resultReview: r, uncertain: null, notice: t("記録を取り込みました。保存前に結果を評価してください。", "Record imported. Assess the result before saving.") }));
   }
   async function save(assessment: ReplayAssessment) {
     const r = latest.current.resultReview ?? latest.current.result; if (!r) return;
@@ -136,15 +137,15 @@ export function useReplayController(shared: Shared) {
       setState(s => ({ ...s, lastSaved: saved, result: saved, resultReview: null, handoff: null, uncertain: null,
         attempt: s.attempt?.attemptId === saved.attemptId ? { ...s.attempt, phase: "recorded", resultId: saved.resultId, handoffAvailable: false } : s.attempt,
         activeAttemptId: s.activeAttemptId === saved.attemptId ? null : s.activeAttemptId,
-        notice: "再実行の結果を保存しました。" }));
+        notice: t("再実行の結果を保存しました。", "Saved the replay result.") }));
       await load(undefined, true);
     }
   }
   async function readResult(resultId: string) {
     const generation = ++resultGeneration.current;
-    setState(s => ({ ...s, resultReview: null, result: null, notice: "保存した結果を読み込んでいます。" }));
+    setState(s => ({ ...s, resultReview: null, result: null, notice: t("保存した結果を読み込んでいます。", "Loading the saved result.") }));
     const r = await execute<ReplayResult>("replay-result", { resultId }, { current: () => generation === resultGeneration.current });
-    if (r) setState(s => ({ ...s, result: r, notice: "保存した再実行の結果を開きました。" }));
+    if (r) setState(s => ({ ...s, result: r, notice: t("保存した再実行の結果を開きました。", "Opened the saved replay result.") }));
   }
   function select(resultId: string, checked: boolean) {
     setState(s => ({ ...s, comparison: null, selected: checked ? [...s.selected.filter(id => id !== resultId), resultId].slice(0, 3) : s.selected.filter(id => id !== resultId) }));
@@ -157,7 +158,7 @@ export function useReplayController(shared: Shared) {
   async function favorite() {
     const r = latest.current.result; if (!r) return;
     const saved = await execute<{ name: string }>("replay-favorite", { resultId: r.resultId });
-    if (saved) setState(s => ({ ...s, uncertain: null, notice: "試行時の設定をお気に入りに保存しました。「装備」で読み込めます。" }));
+    if (saved) setState(s => ({ ...s, uncertain: null, notice: t("試行時の設定をお気に入りに保存しました。「装備」で読み込めます。", "Saved the attempt's loadout as a favorite. Load it from Loadout.") }));
   }
   return { state, load, review, prepare, handoff, inspect, cancel, observe, invalidateResult, save, readResult, select, compare, favorite };
 }

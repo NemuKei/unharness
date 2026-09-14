@@ -10,6 +10,8 @@
 
 [0.0.9 Macプレビュー](https://github.com/NemuKei/unharness/releases/tag/v0.0.9)を公開しました。操作画面とチャットの入口を整理し、[0.0.9の配布確認](docs/evidence/2026-09-14-workbench-release.md)をまとめています。[導入・公開画面での操作・復旧の実機検証](docs/evidence/2026-09-13-mac-codex-completion.md)に、確認範囲と以前のAI操作・作品の検証をまとめています。
 
+現在のソースには、日英の[AIによる開始案内](docs/guided-product-entry.md)を組み込みました。Codexへの依頼文、合成データによる初回・更新デモ、実際の操作画面を日英で使えます。管理Skillは[読み取り専用の更新確認](docs/plugin-update.md)を行い、導入状況に応じて案内します。ソースの実装と、上記の公開済み配布物・サイトは別の状態です。
+
 [0.0.8の外観更新の検証](docs/evidence/2026-09-13-awakening-motion.md)には、以前の実機作画・公開画面での作品操作の確認を記録しています。
 
 Mac初回版はApple SiliconとCodex Desktopを対象に、保存したNormalを保ち、確認済みの自作・外部Skillを無効・手動・自動から選びます。公式プラグインは元の状態で保持します。確認したCodexでは[公式プラグインの個別OFFが反映されません](docs/evidence/2026-09-11-remote-plugin-control-limit.md)。以前の保存版と独立したオフライン復旧を維持し、Skill入力の対応と未確認の実行状態を分けて表示します。

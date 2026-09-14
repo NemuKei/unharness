@@ -1,3 +1,4 @@
+import { text as t } from './locale.ts';
 import {ENTITY_SHEETS} from '../../src/appearances/entity-profile.mjs';
 // Public wire validation, not the private API or an image decoder. Accepted
 // metadata is copied; images are separately checked by the existing renderer.
@@ -180,13 +181,13 @@ export function checkArtworkResult(receipt: PublicArtworkReceipt, operation: Art
 }
 
 export function artworkResultText(receipt: PublicArtworkReceipt | null): string {
-  if (!receipt || receipt.state==='unconfirmed') return '作品操作の結果は未確認です。同じ操作IDで確認してください。';
-  if (receipt.state==='running') return '作品を処理中です。完了はまだ確認できていません。';
-  if (receipt.state==='not-found') return '作品操作の記録が見つかりません。未実行とは断定せず、ローカルで確認してください。';
-  if (!receipt.result.ok) return '作品操作を完了できなかった記録があります。現在のコレクションと作品保存の復旧を確認してください。';
-  return ({ 'review-appearance-import':'画像レビューを作成した記録があります。作品の保存はまだです。',
-    'save-appearance-import':'作品を保存した記録があります。現在の選択とは別の記録です。',
-    'select-appearance':'作品を選択した記録があります。装備の設定は変更していません。',
-    'name-appearance':'作品名を保存した記録があります。装備の設定は変更していません。',
-    'recover-appearance':'作品保存の復旧を処理した記録があります。現在のコレクションを確認してください。' })[receipt.operation];
+  if (!receipt || receipt.state==='unconfirmed') return t("作品操作の結果は未確認です。同じ操作IDで確認してください。", "Artwork result unconfirmed. Check the same operation ID.");
+  if (receipt.state==='running') return t("作品を処理中です。完了はまだ確認できていません。", "Artwork is being processed. Completion is not yet confirmed.");
+  if (receipt.state==='not-found') return t("作品操作の記録が見つかりません。未実行とは断定せず、ローカルで確認してください。", "No artwork operation record was found. This does not prove nothing ran; check locally.");
+  if (!receipt.result.ok) return t("作品操作を完了できなかった記録があります。現在のコレクションと作品保存の復旧を確認してください。", "The artwork operation record reports a failure. Check the current collection and recovery.");
+  return ({ 'review-appearance-import':t("画像レビューを作成した記録があります。作品の保存はまだです。", "An image review was recorded. The artwork has not been saved yet."),
+    'save-appearance-import':t("作品を保存した記録があります。現在の選択とは別の記録です。", "Artwork was saved. This record is separate from the current selection."),
+    'select-appearance':t("作品を選択した記録があります。装備の設定は変更していません。", "Artwork was selected. Loadout settings stayed unchanged."),
+    'name-appearance':t("作品名を保存した記録があります。装備の設定は変更していません。", "An artwork name was saved. Loadout settings stayed unchanged."),
+    'recover-appearance':t("作品保存の復旧を処理した記録があります。現在のコレクションを確認してください。", "Artwork recovery was processed. Check the current collection.") })[receipt.operation];
 }

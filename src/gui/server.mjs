@@ -198,7 +198,10 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
       }
       const isApi = parsed.pathname.startsWith('/api/');
       if (!isApi) {
-        if (!['GET', 'HEAD'].includes(request.method) || parsed.search !== '') {
+        // Language is a display preference for the entry document only. Keep
+        // arbitrary asset queries and every API's existing rules unchanged.
+        const languageEntry = parsed.pathname === '/' && ['?lang=ja', '?lang=en'].includes(parsed.search);
+        if (!['GET', 'HEAD'].includes(request.method) || parsed.search !== '' && !languageEntry) {
           response.writeHead(404, headers('text/plain; charset=utf-8')); response.end('Not found\n'); return;
         }
         let pathname;

@@ -1,3 +1,4 @@
+import { text as t } from './locale.ts';
 import type { FixtureCase } from "./types";
 export type SourceMode = "normal" | "unseal" | "trueform";
 export const sourceModes: SourceMode[] = ["normal", "unseal", "trueform"];
@@ -7,20 +8,20 @@ export const modePresentation: Record<
 > = {
   normal: {
     title: "Normal",
-    label: "通常装備",
-    description: "保存した追加指示とSkillを使う。",
+    get label() { return t("通常装備", "Saved loadout"); },
+    get description() { return t("保存した追加指示とSkillを使う。", "Use saved instructions and Skills."); },
     scene: "baseline",
   },
   unseal: {
     title: "UNSEAL",
-    label: "限定解除",
-    description: "選んだ追加指示を最小ガイドへ。Skillは手動で呼び出す。",
+    get label() { return t("限定解除", "Limited release"); },
+    get description() { return t("選んだ追加指示を最小ガイドへ。Skillは手動で呼び出す。", "Use a minimal guide for selected instructions and invoke Skills manually."); },
     scene: "manual-only",
   },
   trueform: {
     title: "TRUEFORM",
-    label: "零式",
-    description: "選んだ追加指示とSkillを外す。",
+    get label() { return t("零式", "Zero"); },
+    get description() { return t("選んだ追加指示とSkillを外す。", "Remove selected optional instructions and Skills."); },
     scene: "fixed-only",
   },
 };
@@ -164,17 +165,17 @@ export function validTaskId(value: string) {
 
 export function taskObservationLabel(status: TaskObservationStatus) {
   return {
-    "matched-record": "選択範囲の記録が一致",
-    "not-matched-record": "記録が一致しません",
-    "unqualified-record": "この準備の確認に使えないタスク",
-    "unknown-record": "確認できません",
+    "matched-record": t("選択範囲の記録が一致", "Selected inputs match the record"),
+    "not-matched-record": t("記録が一致しません", "The record does not match"),
+    "unqualified-record": t("この準備の確認に使えないタスク", "Task does not qualify for this preparation"),
+    "unknown-record": t("確認できません", "Unconfirmed"),
   }[status];
 }
 
 export function taskObservationNotice(status: TaskObservationStatus) {
   const label = taskObservationLabel(status);
   return status === "matched-record"
-    ? `${label}。現在の準備に対応する記録です。`
+    ? t(`${label}。現在の準備に対応する記録です。`, `${label}. This record matches the current preparation.`)
     : label;
 }
 
@@ -185,19 +186,19 @@ type TaskObservationState = Pick<
 
 export function observationIssueText(issue: string | null) {
   if (issue === "source-preparation-required")
-    return "現在の登録に合うモードの準備が必要です。使うモードを選んでから、新しいタスクで確認してください。";
+    return t("現在の登録に合うモードの準備が必要です。使うモードを選んでから、新しいタスクで確認してください。", "Prepare a mode for the current registration, then check it in a new task.");
   if (
     issue === "preparation-boundary-unavailable" ||
     issue === "preparation-metadata-invalid"
   )
-    return "従来の保存状態には確認用の準備日時がありません。内容を確認して同じモードを準備し直してください。自動では変更しません。";
+    return t("従来の保存状態には確認用の準備日時がありません。内容を確認して同じモードを準備し直してください。自動では変更しません。", "This older saved state has no preparation time. Review and prepare the same mode again. Nothing changes automatically.");
   if (issue === "source-conflict")
-    return "ソースに独立した変更があるため、現在のタスク記録は表示できません。";
+    return t("ソースに独立した変更があるため、現在のタスク記録は表示できません。", "Independent source edits prevent displaying the current task record.");
   if (issue === "recovery-required")
-    return "変更が中断しているため、復旧後に新しいタスクで確認してください。";
+    return t("変更が中断しているため、復旧後に新しいタスクで確認してください。", "A change was interrupted. Recover it, then verify in a new task.");
   if (issue)
-    return `保存した確認記録を表示できません（${issue}）。新しいタスクで確認し直せます。`;
-  return "タスクの記録はまだ確認していません。";
+    return t(`保存した確認記録を表示できません（${issue}）。新しいタスクで確認し直せます。`, `Saved observation unavailable (${issue}). Check again in a new task.`);
+  return t("タスクの記録はまだ確認していません。", "Task records have not been checked yet.");
 }
 
 export function canObserveTask(state: (Pick<SourceState, "preparation"> & Partial<Pick<SourceState, "registration">>) | null) {
@@ -224,7 +225,7 @@ export function taskObservationResponseNotice(
   if (current) return taskObservationNotice(current.status);
   if (state?.observationIssue)
     return observationIssueText(state.observationIssue);
-  return "確認後に準備状態が変わりました。現在の準備について、別の新しいタスクを確認してください。";
+  return t("確認後に準備状態が変わりました。現在の準備について、別の新しいタスクを確認してください。", "Preparation changed after the check. Verify the current preparation in another new task.");
 }
 export type Guide = {
   id: string;

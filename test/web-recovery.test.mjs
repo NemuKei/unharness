@@ -86,3 +86,22 @@ test('independent edits and lost apply replies leave an explicit last-known stat
   assert.equal(applies, 1);
   assert.deepEqual(p.errors, []);
 });
+
+test('English offline recovery keeps the reviewed plan across a language change and restores exact Normal', browserCase, async t => {
+  const p = await setup(t), { page } = p;
+  await page.getByRole('button', { name: 'English', exact: true }).click();
+  await page.getByRole('button', { name: 'Review restoration', exact: true }).click();
+  await page.getByRole('button', { name: 'Restore Normal', exact: true }).waitFor();
+  await page.getByRole('button', { name: '日本語', exact: true }).click();
+  assert.equal(await page.getByRole('button', { name: 'Normalへ戻す', exact: true }).isEnabled(), true);
+  await page.getByRole('button', { name: 'English', exact: true }).click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await screenshot(page, 'guided-recovery-en-mobile');
+  await page.getByRole('button', { name: 'Restore Normal', exact: true }).click();
+  await page.getByRole('status').filter({ hasText: 'Restored the saved Normal files.' }).waitFor();
+  assert.deepEqual(await readSourceProfileFiles(p.context), p.originalFiles);
+  assert.equal((await userSourceState({ workspace: p.workspace })).preparedMode, 'normal');
+  assert.ok(p.urls.every(url => new URL(url).origin === p.server.url));
+  assert.deepEqual(p.errors, []);
+});

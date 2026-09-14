@@ -1,3 +1,4 @@
+import { text as t } from './locale.ts';
 import { useEffect, useReducer, useRef } from "react";
 import { mergeHistoryRows } from "./source-updates.ts";
 import type { SourceUpdate } from "./source-updates";
@@ -94,7 +95,7 @@ export const initialComparisonControllerState: ComparisonControllerState = {
   uncertainOperation: null,
   error: "",
   backgroundError: "",
-  notice: "通常利用の記録を選んで比較できます。",
+  get notice() { return t("通常利用の記録を選んで比較できます。", "Select ordinary-use records to compare."); },
   intentGeneration: 0,
 };
 
@@ -224,7 +225,7 @@ export function comparisonControllerReducer(
       comparison: null,
       output: null,
       error: "",
-      notice: "この保存版と同じ測定記録に、訂正版を追加します。",
+      notice: t("この保存版と同じ測定記録に、訂正版を追加します。", "Add a revision to the same measurement record as this saved version."),
     };
   if (action.type === "select-runs")
     return {
@@ -270,7 +271,7 @@ export function comparisonControllerReducer(
       output: null,
       uncertainOperation: null,
       error: "",
-      notice: "観測記録を確認しました。評価は後から付ける記録です。",
+      notice: t("観測記録を確認しました。評価は後から付ける記録です。", "Observation checked. Assessments are added retrospectively."),
     };
   if (action.type === "save-completed")
     return {
@@ -280,7 +281,7 @@ export function comparisonControllerReducer(
       lastSavedRun: action.run,
       uncertainOperation: null,
       error: "",
-      notice: "通常利用の記録を保存しました。",
+      notice: t("通常利用の記録を保存しました。", "Saved the ordinary-use record."),
     };
   if (action.type === "history-completed") {
     const runs = action.append
@@ -307,7 +308,7 @@ export function comparisonControllerReducer(
       comparison: action.comparison,
       output: null,
       error: "",
-      notice: "選んだ通常利用の記録を並べました。優劣は判定していません。",
+      notice: t("選んだ通常利用の記録を並べました。優劣は判定していません。", "Selected ordinary-use records are displayed together without ranking."),
     };
   if (action.type === "output-completed")
     return { ...state, output: action.output, error: "" };
@@ -316,7 +317,7 @@ export function comparisonControllerReducer(
     lastFavorite: action.favorite,
     uncertainOperation: null,
     error: "",
-    notice: `「${action.favorite.name}」を履歴の設定として保存しました。`,
+    notice: t(`「${action.favorite.name}」を履歴の設定として保存しました。`, `Saved “${action.favorite.name}” as the historical loadout.`),
   };
 }
 
@@ -349,7 +350,7 @@ export function useComparisonController(shared: SharedSourceController) {
     const signature = JSON.stringify([comparisonContextKey(update.view), update.versions.runs, page.error?.kind]);
     if (signature === externalSignature.current) return;
     externalSignature.current = signature;
-    if (page.error) dispatch({ type: "background-history-error", message: "通常利用の履歴を自動更新できません。履歴を読み直してください。" });
+    if (page.error) dispatch({ type: "background-history-error", message: t("通常利用の履歴を自動更新できません。履歴を読み直してください。", "Ordinary-use history could not be refreshed automatically. Reload it.") });
     else {
       const requestContext = comparisonContextFor(update.view);
       if (requestContext) dispatch({ type: "external-history", requestContext, view: update.view, page: page.data });
@@ -373,7 +374,7 @@ export function useComparisonController(shared: SharedSourceController) {
     }
     if (response.status === "failed") {
       const message = historyFollowup
-        ? "保存は確認済みです。履歴一覧だけを更新できませんでした。"
+        ? t("保存は確認済みです。履歴一覧だけを更新できませんでした。", "Saving was confirmed, but the history list could not be refreshed.")
         : comparisonErrorMessage(response.error);
       if (historyFollowup)
         dispatch({ type: "history-failed", message });

@@ -44,7 +44,9 @@ export async function pluginMain(argv, { stdin = process.stdin, stdout = process
       return 0;
     }
     if (options.command === 'mcp') return await (await import('../ai/server.mjs')).serveAiStdio({ binding, stdin, stdout, stderr });
-    stdout.write(JSON.stringify({ ...pluginInstallationStatus(binding, await binding.read()), ...(recovery ? { recovery } : {}) }) + '\n');
+    const { createVersionReporter } = await import('./product-version.mjs');
+    const versions = await (await createVersionReporter()).read();
+    stdout.write(JSON.stringify({ ...pluginInstallationStatus(binding, await binding.read()), versions, ...(recovery ? { recovery } : {}) }) + '\n');
     return 0;
   } catch (e) {
     const kind = ['plugin-binding-invalid', 'plugin-binding-changed', 'plugin-application-unsupported'].includes(e.kind) ? e.kind : 'plugin-unavailable';

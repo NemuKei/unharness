@@ -52,11 +52,14 @@ release task.
 
 ## Current limits
 
-The repository also contains a [guided-entry screen concept](guided-entry-preview.md)
-with Japanese/English navigation, GitHub links and first-time/update/returning
-sample flows. It is a separate local preview. Update discovery, installation and
-configuration changes are simulated; neither the public site nor the 0.0.9
-archive is replaced by that design work.
+The accepted [guided-entry concept](guided-entry-preview.md) now shares its draft
+handoff and sample experience with the [production implementation](guided-product-entry.md).
+The real workbench, installation and recovery journey support Japanese/English.
+The management MCP adds read-only update discovery and distinguishes running
+metadata from host selection and fresh-task loading. Its dated build/native and
+publication boundaries are recorded in [guided-product evidence](evidence/2026-09-14-guided-product.md).
+The published package/site rows above remain authoritative until replaced by
+verified publication evidence.
 
 - Individual remote-plugin OFF is unavailable on the qualified Codex 0.153.4 and is deferred by the maintainer. Unsupported forward OFF plans stop before source writes.
 - Prepared files, recorded selected inputs and unknown whole-plugin runtime remain distinct. No performance improvement is promised or inferred from a lighter configuration.

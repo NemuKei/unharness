@@ -8,7 +8,7 @@ Apple SiliconのMacで、展開した配布フォルダをCodexへ渡して導�
 
 この経路は[合意した導入計画](superpowers/plans/2026-09-09-mac-product-experience.md)のAIへの導入依頼に対応する。公開サイトには実在・取得可能な配布物が確認できた時点で導入ボタンと版を設定する。公開前のZIPへ架空の公開リンクを付けない。
 
-サイトの導入画面には、この依頼文のコピーと手動ダウンロードの導線がある。公開後の版を`web/src/site-config.ts`の`macCodexRelease`へ設定した場合だけ表示する。設定するのは版、ZIPのURLとSHA-256、配布内容の識別子、ソースとライセンスのURL。現在は公開した0.0.9を設定している。認証なしの実ダウンロードでZIP・照合ファイル・タグのソースを確認してから設定した。Intel Mac・Claude Code・Windowsを配布対象として案内しない。
+サイトの導入画面には、Codexの入力欄へ渡すリンク、依頼文のコピー、手動ダウンロードの導線がある。日英の表示は[開始案内](guided-product-entry.md)に従う。検証済みの公開版を`site/public/releases/macos-arm64.json`へ記録し、`web/src/site-config.ts`の`macCodexRelease`がそこから読み取る。設定するのは版、ZIPのURLとSHA-256、配布内容の識別子、ソースとライセンスのURL。現在は公開した0.0.9を設定している。認証なしの実ダウンロードでZIP・照合ファイル・タグのソースを確認してから設定した。Intel Mac・Claude Code・Windowsを配布対象として案内しない。
 
 ## 配布担当者が組み立てるもの
 

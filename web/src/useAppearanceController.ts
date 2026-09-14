@@ -1,3 +1,4 @@
+import { text as t } from './locale.ts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError } from './api';
 import { appearanceErrorMessage } from './appearances';
@@ -108,10 +109,10 @@ export function useAppearanceController(port: ArtworkPort, externalVersion = '')
           || command.expectedItemId && receipt.savedItemId !== command.expectedItemId)) throw new ApiError('invalid-response', undefined, 'uncertain');
         if (command.action === 'select-appearance' && receipt.selectedItemId !== command.input.itemId) throw new ApiError('invalid-response', undefined, 'uncertain');
         setState(old => ({ ...old, uncertain: false, lastReceipt: receipt, notice: command.action === 'save-appearance-import'
-          ? '作品をコレクションに保存しました。' : command.action === 'recover-appearance' ? '作品の保存を再開しました。'
-            : command.action === 'select-appearance' ? 'この作品を選びました。' : '作品の名前を保存しました。' }));
+          ? t("作品をコレクションに保存しました。", "Artwork saved to the collection.") : command.action === 'recover-appearance' ? t("作品の保存を再開しました。", "Resumed saving artwork.")
+            : command.action === 'select-appearance' ? t("この作品を選びました。", "Selected this artwork.") : t("作品の名前を保存しました。", "Saved the artwork name.") }));
         try { await readView(key); }
-        catch { if (applies()) setState(old => ({ ...old, confirmed: false, error: '保存は確認できました。外観の表示を読み直してください。' })); }
+        catch { if (applies()) setState(old => ({ ...old, confirmed: false, error: t("保存は確認できました。外観の表示を読み直してください。", "Saving was confirmed. Refresh the appearance display.") })); }
       }
       pending.current = null;
       return true;
@@ -190,7 +191,7 @@ export function useAppearanceController(port: ArtworkPort, externalVersion = '')
     if(!accepted || accepted.key!==key || !matchesArtworkUpload(accepted.review,upload)
       || layerManifestKey(accepted.review.manifest)!==expectedKey) {
       reviewedResult.current=null;
-      setState(old=>({...old,review:null,error:'用意された外観と読込結果が一致しませんでした。保存せずに停止しました。'}));return false;
+      setState(old=>({...old,review:null,error:t("用意された外観と読込結果が一致しませんでした。保存せずに停止しました。", "The bundled appearance did not match the loaded result. Stopped without saving.")}));return false;
     }
     return run('save-appearance-import',{reviewId:accepted.review.reviewId,expectedStateId:accepted.review.expectedStateId},true);
   }

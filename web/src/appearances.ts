@@ -1,3 +1,4 @@
+import { text as t } from './locale.ts';
 import artPack from '../assets/hangar-v4.json' with { type: 'json' };
 import { ApiError } from './api.ts';
 import { validLayerManifest } from './appearance-layers.ts';
@@ -128,30 +129,30 @@ export function validAppearanceReceipt(v: unknown, scopeId: string): v is Appear
   return object(v) && v.scopeId === scopeId && nullableHash(v.stateId) && nullableHash(v.selectedItemId)
     && nullableHash(v.pendingStateId) && nullableHash(v.evidenceStartId) && typeof v.recoveryRequired === 'boolean';
 }
-const paletteLabels: Record<string, string> = { ice: '蒼氷', dawn: '暁光', iris: '紫苑' };
-const detailLabels: Record<string, string> = { filament: '光糸', 'forked-light': '分岐光', 'facet-light': '結晶光' };
+const paletteLabels: Record<string, string> = { get ice() { return t("蒼氷", "Ice blue"); }, get dawn() { return t("暁光", "Dawn"); }, get iris() { return t("紫苑", "Violet"); } };
+const detailLabels: Record<string, string> = { get filament() { return t("光糸", "Light threads"); }, get 'forked-light'() { return t("分岐光", "Branching light"); }, get 'facet-light'() { return t("結晶光", "Crystal light"); } };
 export function appearanceName(item: AppearanceItem | AppearanceCollectionItem) {
   if (item.name) return item.name;
-  if (item.kind === 'layered') return 'オリジナル';
+  if (item.kind === 'layered') return t("オリジナル", "Original");
   const recipe = 'recipe' in item ? item.recipe : { palette: { id: item.paletteId }, details: item.details };
-  return `${paletteLabels[recipe.palette.id ?? ''] ?? 'ローカル'}・${detailLabels[recipe.details ?? ''] ?? '標準'}`;
+  return `${paletteLabels[recipe.palette.id ?? ''] ?? t('ローカル', 'Local')}・${detailLabels[recipe.details ?? ''] ?? t('標準', 'Standard')}`;
 }
 export function appearanceErrorMessage(error: unknown) {
   const kind = error instanceof ApiError ? error.kind : 'unavailable';
   const messages: Record<string, string> = {
-    'appearance-state-conflict': '外観の選択が更新されています。現在の内容を読み直してください。',
-    'appearance-ineligible': '現在の装備・条件では、オリジナル作成の条件を満たしていません。',
-    'appearance-choice-final': 'この比較での採用は確定済みです。コレクションから別の姿を選べます。',
-    'appearance-recovery-required': '作品の保存が中断しています。「作品の保存を復旧」で同じ内容を再開できます。',
-    'appearance-collection-full': '保存できる外観の上限に達しています。既存のコレクションは引き続き使えます。',
-    'appearance-record-invalid': '外観の保存データを確認できません。装備の操作・復旧は引き続き利用できます。',
-    'appearance-image-invalid': '画像を確認できません。正方形で最大2048 px、8 MiB以内の静止PNGを選んでください。',
-    'appearance-entity-poses-invalid': '姿勢を分けて確認できません。制作ガイドのコマ数と順序、同じ縮尺、透明な背景と各コマの余白をAIと確認してください。新しい作品は横4列・縦3段の12コマです。',
-    'appearance-import-invalid': '画像と部品の組み合わせを確認してください。',
-    'appearance-image-store-invalid': '保存した画像を確認できません。元の画像と保存データを確認してください。',
-    'appearance-authoring-invalid': '制作場所の状態を確認できません。独立した変更がないか確認してください。',
+    'appearance-state-conflict': t("外観の選択が更新されています。現在の内容を読み直してください。", "The appearance selection changed. Reload its current state."),
+    'appearance-ineligible': t("現在の装備・条件では、オリジナル作成の条件を満たしていません。", "The current loadout does not meet this legacy authoring condition."),
+    'appearance-choice-final': t("この比較での採用は確定済みです。コレクションから別の姿を選べます。", "Adoption for this comparison is already recorded. You can still choose another appearance from the collection."),
+    'appearance-recovery-required': t("作品の保存が中断しています。「作品の保存を復旧」で同じ内容を再開できます。", "Artwork saving was interrupted. Use Recover artwork saving to resume that operation."),
+    'appearance-collection-full': t("保存できる外観の上限に達しています。既存のコレクションは引き続き使えます。", "The artwork storage limit was reached. Existing collection items remain available."),
+    'appearance-record-invalid': t("外観の保存データを確認できません。装備の操作・復旧は引き続き利用できます。", "Saved artwork could not be verified. Loadout controls and recovery remain available."),
+    'appearance-image-invalid': t("画像を確認できません。正方形で最大2048 px、8 MiB以内の静止PNGを選んでください。", "The image could not be verified. Choose a square static PNG up to 2048 px and 8 MiB."),
+    'appearance-entity-poses-invalid': t("姿勢を分けて確認できません。制作ガイドのコマ数と順序、同じ縮尺、透明な背景と各コマの余白をAIと確認してください。新しい作品は横4列・縦3段の12コマです。", "The poses could not be verified. Review the authoring guide's frame count and order, common scale, transparency and margins with your AI. New artwork uses 12 frames in four columns and three rows."),
+    'appearance-import-invalid': t("画像と部品の組み合わせを確認してください。", "Check how each image maps to a part."),
+    'appearance-image-store-invalid': t("保存した画像を確認できません。元の画像と保存データを確認してください。", "Saved images could not be verified. Check the original images and saved data."),
+    'appearance-authoring-invalid': t("制作場所の状態を確認できません。独立した変更がないか確認してください。", "The authoring workspace could not be verified. Check for independent edits."),
   };
   return messages[kind] ?? (error instanceof ApiError && error.disposition === 'uncertain'
-    ? '作品の操作結果は未確認です。同じ操作IDで結果を確認してください。'
-    : '外観を確認できませんでした。読み直してください。装備の設定は変更していません。');
+    ? t("作品の操作結果は未確認です。同じ操作IDで結果を確認してください。", "The artwork operation is unconfirmed. Check its original operation ID.")
+    : t("外観を確認できませんでした。読み直してください。装備の設定は変更していません。", "Appearance could not be verified. Reload it; loadout settings have not changed."));
 }

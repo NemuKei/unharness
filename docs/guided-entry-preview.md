@@ -16,9 +16,11 @@ npm run preview:guided
 ~~~
 
 The preview binds to loopback. Its separate entry is prototype/index.html,
-with UI in web/src/prototype/. Build output is ignored under
-local-evidence/guided-preview-build/. Normal local and public production builds
-do not include this entry.
+with a wrapper in web/src/prototype/. Its sample state machine and copy are
+shared with the production demo in web/src/entry/. Build output is ignored under
+local-evidence/guided-preview-build/. Normal local and public builds do not
+include the standalone prototype entry. See the [production entry](guided-product-entry.md)
+for the real connection and installed startup behavior.
 
 ## Review the journey
 

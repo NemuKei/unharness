@@ -1,3 +1,4 @@
+import { text as t } from './locale.ts';
 export class ApiError extends Error {
   kind: string;
   checkpointId?: string;
@@ -113,20 +114,20 @@ export class Api {
 export function errorMessage(error: unknown) {
   const kind = error instanceof ApiError ? error.kind : "request-failed";
   if (error instanceof ApiError && error.disposition === "uncertain")
-    return "操作の結果は未確認です。「状態を再取得」で確認してください。自動再送は行いません。";
+    return t("操作の結果は未確認です。「状態を再取得」で確認してください。自動再送は行いません。", "The operation result is unconfirmed. Refresh state to check. No automatic retry is sent.");
   if (kind.includes("stale-plan"))
-    return "準備状態が変わったため、この変更計画は使えません。状態を再取得し、変更計画を確認してください。";
+    return t("準備状態が変わったため、この変更計画は使えません。状態を再取得し、変更計画を確認してください。", "Preparation changed, so this plan is no longer valid. Refresh state and review the plan.");
   if (kind.includes("stale-application"))
-    return "この適用記録と現在の準備状態が一致しません。条件を適用し直して、新しいタスクで確認してください。";
+    return t("この適用記録と現在の準備状態が一致しません。条件を適用し直して、新しいタスクで確認してください。", "This application record does not match the current preparation. Prepare the conditions again and verify in a new task.");
   if (kind.includes("session") || kind.includes("record"))
-    return "このタスクの記録を確認できません。UUIDと、新しく作成したローカルタスクであることを確認してください。";
+    return t("このタスクの記録を確認できません。UUIDと、新しく作成したローカルタスクであることを確認してください。", "Could not verify this task record. Check its UUID and that it is a newly created local task.");
   if (kind.includes("conflict") || kind.includes("source"))
-    return "検証環境の状態に競合があります。外部の変更を確認してください。復帰用の記録は下に表示します。";
+    return t("検証環境の状態に競合があります。外部の変更を確認してください。復帰用の記録は下に表示します。", "The verification environment has a conflict. Review external changes. Recovery records are shown below.");
   if (
     kind === "gui-request-forbidden" ||
     kind.includes("token") ||
     kind.includes("unauthorized")
   )
-    return "接続の有効期限が切れました。「状態を再取得」で再接続してください。";
-  return `操作を完了できませんでした（${kind}）。状態を再取得して確認してください。`;
+    return t("接続の有効期限が切れました。「状態を再取得」で再接続してください。", "The connection expired. Refresh state to reconnect.");
+  return t(`操作を完了できませんでした（${kind}）。状態を再取得して確認してください。`, `Operation failed (${kind}). Refresh state to check.`);
 }

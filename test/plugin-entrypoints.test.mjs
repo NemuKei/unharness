@@ -119,3 +119,24 @@ test('plugin MCP can start before configure, open before enrollment, and retain 
   assert.equal(invalid.error.kind, 'plugin-binding-invalid');
   assert.ok(!JSON.stringify(invalid).includes('DO-NOT-ECHO'));
 });
+
+
+test('native plugin exposes read-only update lookup and actual runtime version before configuration', async t => {
+  const p = await fixture(t), s = await client(t, p);
+  const tool = (await s.client.listTools()).tools.find(tool => tool.name === 'check_updates');
+  assert.ok(tool);
+  assert.equal(tool.annotations.readOnlyHint, true);
+  assert.equal(tool.annotations.openWorldHint, true);
+  assert.equal(tool.inputSchema.additionalProperties, false);
+  assert.equal((await s.raw('check_updates', { url: 'https://example.invalid/' })).error.kind, 'invalid-request');
+  const installation = await s.call('installation_status');
+  const pkg = JSON.parse(await readFile('package.json', 'utf8'));
+  assert.equal(installation.versions.running.version, pkg.version);
+  assert.equal(installation.versions.files.version, pkg.version);
+  assert.equal(installation.versions.sameRootComparison, 'match');
+  assert.equal(installation.versions.hostSelection, 'unknown');
+  assert.equal(s.client.getServerVersion().version, pkg.version);
+  const state = await s.call('status');
+  assert.deepEqual(state.installation.versions, installation.versions);
+  assert.equal(state.source, null);
+});

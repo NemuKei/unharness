@@ -44,7 +44,9 @@ export async function createRemoteHttp({ controller, enqueue, readJson, now }) {
         if (operation === 'artwork-image') {
           response.writeHead(200, { ...cors, 'Content-Type': 'image/png', 'Content-Length': result.bytes.length });
           response.end(result.bytes);
-        } else send(response, 200, result, cors);
+        } else send(response, 200, result, operation === 'redeem'
+          ? { ...cors, 'X-Unharness-UI-Languages': 'ja,en', 'Access-Control-Expose-Headers': 'X-Unharness-UI-Languages' }
+          : cors);
       } catch (error) { if (!response.destroyed) failure(response, error, cors); }
       finally { if (ownsUpload) uploading = false; }
     },

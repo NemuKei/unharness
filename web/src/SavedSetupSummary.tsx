@@ -1,3 +1,4 @@
+import { text as t } from './locale.ts';
 import type { SourceRow, RegisteredPlugin, PluginState } from './sources';
 
 type SkillState = { id: string; enabled: boolean; manualOnly: boolean };
@@ -34,52 +35,50 @@ export function readableSetup(data: SetupRead) {
 export function SavedSetupSummary({ data, sources, plugins = [] }: { data: SetupRead; sources: SourceRow[]; plugins?: RegisteredPlugin[] }) {
   const review = data.review!;
   const names = new Map([...sources, ...plugins].map(s => [s.id, s.label]));
-  const skillList = (ids: string[]) => <><p>{ids.length}件</p>{ids.length ? <ul>{ids.map(id => <li key={id}>{names.get(id) ?? '登録情報を再確認してください'}</li>)}</ul>
-    : <p className="muted">自動使用する対象はありません。</p>}</>;
-  return <section className="saved-setup-summary" aria-label="保存した2構成">
-    {review.schemaVersion === 1 ? <p>旧規則の保存版です。零式と限定解除の選択は独立しています。新しい継承規則への変更は、AIと両モードを確認して別の版として保存します。</p>
+  const skillList = (ids: string[]) => <><p>{ids.length}{t("件", " items")}</p>{ids.length ? <ul>{ids.map(id => <li key={id}>{names.get(id) ?? t("登録情報を再確認してください", "Recheck registration")}</li>)}</ul>
+    : <p className="muted">{t("自動使用する対象はありません。", "No automatically used sources.")}</p>}</>;
+  return <section className="saved-setup-summary" aria-label={t("保存した2構成", "Saved loadout pair")}>
+    {review.schemaVersion === 1 ? <p>{t("旧規則の保存版です。零式と限定解除の選択は独立しています。新しい継承規則への変更は、AIと両モードを確認して別の版として保存します。", "This version uses the older independent TRUEFORM and UNSEAL choices. Review both modes with AI and save a separate version to adopt the new inheritance rule.")}</p>
       : review.schemaVersion === 3 ? <>
         <div className="setup-inheritance-lists">
-          <div><h3>零式から引き継ぐプラグイン</h3><p>{review.inheritance!.inheritedPluginIds!.length}件</p>
+          <div><h3>{t("零式から引き継ぐプラグイン", "Plugins inherited from TRUEFORM")}</h3><p>{review.inheritance!.inheritedPluginIds!.length}{t("件", " items")}</p>
             <ul>{review.inheritance!.inheritedPluginIds!.map(id => <li key={id}>{names.get(id) ?? id}</li>)}</ul></div>
-          <div><h3>限定解除で追加するプラグイン</h3><p>{review.inheritance!.additionalPluginIds!.length}件</p>
+          <div><h3>{t("限定解除で追加するプラグイン", "Plugins added in UNSEAL")}</h3><p>{review.inheritance!.additionalPluginIds!.length}{t("件", " items")}</p>
             <ul>{review.inheritance!.additionalPluginIds!.map(id => <li key={id}>{names.get(id) ?? id}</li>)}</ul></div>
         </div>
         <dl className="setup-skill-counts">{(['trueform', 'unseal'] as const).map(mode => {
           const preset = review.presets[mode], states = preset.skillStates;
-          return <div key={mode}><dt>{mode === 'trueform' ? '零式' : '限定解除'}の保存内容</dt><dd>
-            追加指示：{preset.instructionStyle === 'none' ? 'なし' : '固定の最小ガイド'}<br />
-            通常Skill：無効 {states.filter(s => !s.enabled).length}件 / 手動 {states.filter(s => s.enabled && s.manualOnly).length}件 / 自動 {states.filter(s => s.enabled && !s.manualOnly).length}件
-            <details><summary>Skillごとの状態</summary><ul>{states.map(s => <li key={s.id}>{names.get(s.id) ?? s.id}：{!s.enabled ? '無効' : s.manualOnly ? '手動' : '自動'}</li>)}</ul></details>
-            <p>プラグイン：{preset.pluginStates!.length}件</p>
+          return <div key={mode}><dt>{mode === 'trueform' ? t("零式", "TRUEFORM") : t("限定解除", "UNSEAL")}{t("の保存内容", " saved settings")}</dt><dd>
+            {t("追加指示：", "Optional instructions: ")}{preset.instructionStyle === 'none' ? t("なし", "None") : t("固定の最小ガイド", "Fixed minimal guide")}<br />
+            {t("通常Skill：無効 ", "Ordinary Skills: disabled ")}{states.filter(s => !s.enabled).length}{t("件 / 手動 ", " / explicit ")}{states.filter(s => s.enabled && s.manualOnly).length}{t("件 / 自動 ", " / automatic ")}{states.filter(s => s.enabled && !s.manualOnly).length}{t("件", " items")}<details><summary>{t("Skillごとの状態", "Per-Skill states")}</summary><ul>{states.map(s => <li key={s.id}>{names.get(s.id) ?? s.id}：{!s.enabled ? t("無効", "Disabled") : s.manualOnly ? t("手動", "Explicit") : t("自動", "Automatic")}</li>)}</ul></details>
+            <p>{t("プラグイン：", "Plugins: ")}{preset.pluginStates!.length}{t("件", " items")}</p>
             <ul>{preset.pluginStates!.map(p => <li key={p.pluginId}>{names.get(p.pluginId) ?? p.pluginId}：{p.state === 'disabled'
-              ? '全体を無効' : p.enabled ? 'Normalを保持（有効）' : 'Normalを保持（無効）'}</li>)}</ul>
+              ? t("全体を無効", "Whole plugin disabled") : p.enabled ? t("Normalを保持（有効）", "Keep Normal (enabled)") : t("Normalを保持（無効）", "Keep Normal (disabled)")}</li>)}</ul>
           </dd></div>;
         })}</dl>
-        <p className="muted">限定解除は零式を引き継ぎ、選んだ通常Skillの使用範囲だけを広げます。プラグインは保存したNormalの状態まで戻せます。</p>
-        <p className="muted">ここでは保存内容を表示しています。現在の準備状態と新しいタスクでの読み込みは別に確認します。管理機能・メモリ・作業継続・権限・必須条件は共通で保持します。</p>
-        {data.inventoryError && <p role="status">現在の構成を再確認できません。保存内容を表示しています。</p>}
+        <p className="muted">{t("限定解除は零式を引き継ぎ、選んだ通常Skillの使用範囲だけを広げます。プラグインは保存したNormalの状態まで戻せます。", "UNSEAL inherits TRUEFORM and can expand selected ordinary Skills' usage. Plugins can return to their saved Normal state.")}</p>
+        <p className="muted">{t("ここでは保存内容を表示しています。現在の準備状態と新しいタスクでの読み込みは別に確認します。管理機能・メモリ・作業継続・権限・必須条件は共通で保持します。", "These are saved settings. Current preparation and fresh-task loading are checked separately. Management, memory, continuity, permissions and requirements stay in every mode.")}</p>
+        {data.inventoryError && <p role="status">{t("現在の構成を再確認できません。保存内容を表示しています。", "Current configuration is unconfirmed. Showing saved settings.")}</p>}
       </> : <>
         <div className="setup-inheritance-lists">
-          <div><h3>零式から引き継ぐもの</h3>{skillList(review.inheritance!.inheritedSkillIds!)}</div>
-          <div><h3>限定解除で追加するもの</h3>{skillList(review.inheritance!.additionalSkillIds!)}</div>
+          <div><h3>{t("零式から引き継ぐもの", "Inherited from TRUEFORM")}</h3>{skillList(review.inheritance!.inheritedSkillIds!)}</div>
+          <div><h3>{t("限定解除で追加するもの", "Added in UNSEAL")}</h3>{skillList(review.inheritance!.additionalSkillIds!)}</div>
         </div>
-        <p className="muted">限定解除は零式の全対象を引き継ぎます。変更するときはAIと両モードを確認し、新しい版として保存します。</p>
+        <p className="muted">{t("限定解除は零式の全対象を引き継ぎます。変更するときはAIと両モードを確認し、新しい版として保存します。", "UNSEAL inherits all TRUEFORM targets. Review both modes with AI and save a new version when making changes.")}</p>
         <dl className="setup-skill-counts">{(['trueform', 'unseal'] as const).map(mode => {
           const preset = review.presets[mode], states = preset.skillStates;
-          return <div key={mode}><dt>{mode === 'trueform' ? '零式' : '限定解除'}の保存内容</dt><dd>
-            追加指示：{preset.instructionStyle === 'none' ? 'なし' : '固定の最小ガイド'}<br />
-            自動 {states.filter(s => s.enabled && !s.manualOnly).length}件 / 明示呼び出し {states.filter(s => s.enabled && s.manualOnly).length}件 / 無効のまま {states.filter(s => !s.enabled).length}件
-          </dd></div>;
+          return <div key={mode}><dt>{mode === 'trueform' ? t("零式", "TRUEFORM") : t("限定解除", "UNSEAL")}{t("の保存内容", " saved settings")}</dt><dd>
+            {t("追加指示：", "Optional instructions: ")}{preset.instructionStyle === 'none' ? t("なし", "None") : t("固定の最小ガイド", "Fixed minimal guide")}<br />
+            {t("自動 ", "Automatic ")}{states.filter(s => s.enabled && !s.manualOnly).length}{t("件 / 明示呼び出し ", " / explicit use ")}{states.filter(s => s.enabled && s.manualOnly).length}{t("件 / 無効のまま ", " / kept disabled ")}{states.filter(s => !s.enabled).length}{t("件", " items")}</dd></div>;
         })}</dl>
-        <p className="muted">上の件数は保存時の任意Skillです。Unharnessの管理機能と接続、メモリ、作業継続、権限、必須条件は共通で保持します。</p>
-        <details className="setup-eligibility"><summary>現在の候補確認</summary>
+        <p className="muted">{t("上の件数は保存時の任意Skillです。Unharnessの管理機能と接続、メモリ、作業継続、権限、必須条件は共通で保持します。", "Counts refer to optional Skills when saved. Unharness management and connection, memory, continuity, permissions and requirements are always retained.")}</p>
+        <details className="setup-eligibility"><summary>{t("現在の候補確認", "Current candidate review")}</summary>
           {data.inventory ? <>
-            <p>登録範囲内のプラグイン {data.inventory.plugins.length}件 / 共通で保持する管理Skill {data.inventory.skills.filter(s => s.requiredControl).length}件</p>
+            <p>{t("登録範囲内のプラグイン ", "Plugins in the registered scope: ")}{data.inventory.plugins.length}{t("件 / 共通で保持する管理Skill ", " / retained management Skills: ")}{data.inventory.skills.filter(s => s.requiredControl).length}{t("件", " items")}</p>
             {data.inventory.plugins.length > 0 && <ul>{data.inventory.plugins.map(p => <li key={p.id}>{p.id}：{p.eligibility === 'official-confirmed'
-              ? '公式由来を確認済み。選択・制御の確認は別です。' : p.eligibility === 'not-official' ? '公式候補の対象外。零式には選べません。' : '公式由来は未確認。零式には選べません。'}</li>)}</ul>}
-          </> : <p role="status">現在の由来・制御情報を確認できませんでした。保存内容だけを表示しています。状態を確認し、現在の構成から相談してください。</p>}
-          <p className="muted">未登録・この版では対象外のSkillは、下の「未登録のSkillを確認する」で確認できます。</p>
+              ? t("公式由来を確認済み。選択・制御の確認は別です。", "Official provenance confirmed. Selection and control are checked separately.") : p.eligibility === 'not-official' ? t("公式候補の対象外。零式には選べません。", "Outside the official candidate set; cannot be selected for this TRUEFORM policy.") : t("公式由来は未確認。零式には選べません。", "Official provenance is unconfirmed; cannot be selected for this TRUEFORM policy.")}</li>)}</ul>}
+          </> : <p role="status">{t("現在の由来・制御情報を確認できませんでした。保存内容だけを表示しています。状態を確認し、現在の構成から相談してください。", "Current provenance and control information is unconfirmed. Showing saved settings only. Check the state and consult from the current configuration.")}</p>}
+          <p className="muted">{t("未登録・この版では対象外のSkillは、下の「未登録のSkillを確認する」で確認できます。", "Use Review unregistered Skills below to inspect unregistered or excluded Skills.")}</p>
         </details>
       </>}
   </section>;

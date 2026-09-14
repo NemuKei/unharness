@@ -227,3 +227,24 @@ for (const ok of [true, false]) test(`known terminal ${ok ? 'success' : 'failure
   assert.deepEqual(s.c.getSnapshot().lastOperation.receipt, completed);
   assert.equal(s.calls.filter(c => c.action === 'apply').length, 1);
 });
+
+test('local language support belongs only to the current validated connection', async t => {
+  const s = fixture(t), gate = s.deferred(), entered = s.deferred();
+  s.intercept(async (call, response) => {
+    if (call.action === 'redeem' && call.body.ticket === s.first.handoff.ticket) {
+      response.headers.set('X-Unharness-UI-Languages', 'ja,en');
+      entered.resolve(); await gate.promise;
+    }
+    return response;
+  });
+  const old = settle(s.c.connect()); await entered.promise;
+  s.c.disconnect(); s.c.acceptHandoff(s.handoff());
+  await s.c.connect();
+  assert.equal(s.c.supportsLocalLanguage(), false);
+  gate.resolve(); await old;
+  assert.equal(s.c.supportsLocalLanguage(), false, 'late advertisement cannot change the new older-server connection');
+  s.c.disconnect(); s.c.acceptHandoff(s.handoff());
+  s.intercept((call, response) => { if (call.action === 'redeem') response.headers.set('X-Unharness-UI-Languages', 'ja,en'); return response; });
+  await s.c.connect(); assert.equal(s.c.supportsLocalLanguage(), true);
+  s.c.disconnect(); assert.equal(s.c.supportsLocalLanguage(), false);
+});

@@ -1,3 +1,4 @@
+import { text as t } from './locale.ts';
 import { useEffect, useRef, useState } from "react";
 import { ApiError } from "./api";
 import { comparisonContextKey } from "./useComparisonController";
@@ -26,7 +27,7 @@ export function useStartingConditions(shared: SharedController) {
     const signature = JSON.stringify([keyRef.current, update.versions.starts, page.error?.kind]);
     if (signature === externalSignature.current) return;
     externalSignature.current = signature;
-    setState(s => page.error ? { ...s, backgroundError: "開始条件の履歴を自動更新できません。一覧を読み直してください。" }
+    setState(s => page.error ? { ...s, backgroundError: t("開始条件の履歴を自動更新できません。一覧を読み直してください。", "Starting-condition history could not be refreshed automatically. Reload the list.") }
       : { ...s, starts: mergeHistoryRows(s.starts, page.data.starts, "startId"), cursor: page.data.nextCursor, backgroundError: "" });
   }, [shared.externalUpdate]);
 
@@ -38,7 +39,7 @@ export function useStartingConditions(shared: SharedController) {
     if (keyRef.current !== key || !isCurrent() || response.status === "context-updated") return null;
     if (response.status === "failed") {
       setState(s => ({ ...s,
-        error: afterSaved ? "保存は確認済みです。開始条件の一覧だけを更新できませんでした。" : startingErrorMessage(response.error, operation),
+        error: afterSaved ? t("保存は確認済みです。開始条件の一覧だけを更新できませんでした。", "Saving was confirmed, but the starting-condition list could not be refreshed.") : startingErrorMessage(response.error, operation),
         notice: afterSaved ? s.notice : "",
         uncertain: isStartingMutation(operation) ? !(response.error instanceof ApiError) || response.error.disposition === "uncertain" : s.uncertain
       }));
@@ -47,7 +48,7 @@ export function useStartingConditions(shared: SharedController) {
     if (comparisonContextKey(response.state) !== key) return null;
     const result = response.result as { scopeId?: string; starts?: Array<{ scopeId: string }> };
     if (operation === "starts" ? !Array.isArray(result?.starts) || result.starts.some(s => s.scopeId !== scopeId) : result?.scopeId !== scopeId) {
-      setState(s => ({ ...s, error: afterSaved ? "保存は確認済みですが、一覧を確認できませんでした。" : "接続先に対応する開始条件を確認できませんでした。", notice: afterSaved ? s.notice : "", uncertain: isStartingMutation(operation) || s.uncertain }));
+      setState(s => ({ ...s, error: afterSaved ? t("保存は確認済みですが、一覧を確認できませんでした。", "Saving was confirmed, but the list could not be checked.") : t("接続先に対応する開始条件を確認できませんでした。", "Could not confirm starting conditions for this connection."), notice: afterSaved ? s.notice : "", uncertain: isStartingMutation(operation) || s.uncertain }));
       return null;
     }
     return response.result;
@@ -55,19 +56,19 @@ export function useStartingConditions(shared: SharedController) {
   function invalidateReview() {
     ++draftGeneration.current; reviewRef.current = null;
     const pending = pendingReviewGeneration.current !== null;
-    setState(s => ({ ...s, review: null, error: "", notice: s.review || pending ? "入力が変わったため、保存内容を確認し直してください。" : s.notice }));
+    setState(s => ({ ...s, review: null, error: "", notice: s.review || pending ? t("入力が変わったため、保存内容を確認し直してください。", "Input changed. Review what will be saved again.") : s.notice }));
   }
   async function review(declaration: StartingDeclaration, additionalPaths: string[]) {
     const generation = ++draftGeneration.current;
     pendingReviewGeneration.current = generation;
     reviewRef.current = null;
-    setState(s => ({ ...s, review: null, notice: "開始時のファイルを読み取り、内容を確認しています。", uncertain: false }));
+    setState(s => ({ ...s, review: null, notice: t("開始時のファイルを読み取り、内容を確認しています。", "Reading and checking the starting files."), uncertain: false }));
     let result: StartingReview | null;
     try { result = await execute<StartingReview>("review-start", { declaration, additionalPaths }, () => generation === draftGeneration.current); }
     finally { if (pendingReviewGeneration.current === generation) pendingReviewGeneration.current = null; }
     if (result) {
       reviewRef.current = result;
-      setState(s => ({ ...s, review: result, notice: "対象と条件を確認できました。内容を確認して保存してください。" }));
+      setState(s => ({ ...s, review: result, notice: t("対象と条件を確認できました。内容を確認して保存してください。", "Targets and conditions were checked. Review and save them.") }));
     }
   }
   async function load(after?: string, afterSaved = false) {
@@ -76,7 +77,7 @@ export function useStartingConditions(shared: SharedController) {
     setState(s => {
       const starts = after ? [...s.starts, ...page.starts.filter(p => !s.starts.some(old => old.startId === p.startId))] : page.starts;
       const confirmed = s.uncertain && s.review ? starts.find(p => p.reviewId === s.review!.reviewId) : undefined;
-      return { ...s, starts, cursor: page.nextCursor, ...(confirmed ? { lastSaved: confirmed, uncertain: false, notice: "保存履歴で開始条件の保存を確認しました。" } : {}) };
+      return { ...s, starts, cursor: page.nextCursor, ...(confirmed ? { lastSaved: confirmed, uncertain: false, notice: t("保存履歴で開始条件の保存を確認しました。", "Confirmed saved starting conditions in history.") } : {}) };
     });
   }
   async function save() {
@@ -85,7 +86,7 @@ export function useStartingConditions(shared: SharedController) {
     const saved = await execute<SavedStart>("save-start", { reviewId: current.reviewId });
     if (!saved) return;
     setState(s => ({ ...s, lastSaved: saved, starts: [saved, ...s.starts.filter(item => item.startId !== saved.startId)], uncertain: false,
-      notice: "開始条件を保存しました。タスクはまだ開始していません。" }));
+      notice: t("開始条件を保存しました。タスクはまだ開始していません。", "Saved starting conditions. No task has started yet.") }));
     await load(undefined, true);
   }
   async function read(startId: string) {

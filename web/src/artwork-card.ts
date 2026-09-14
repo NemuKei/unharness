@@ -1,3 +1,4 @@
+import { text as t } from './locale.ts';
 import parseTweet from 'twitter-text/dist/parseTweet.js';
 import { siteConfig } from './site-config.ts';
 
@@ -12,7 +13,7 @@ export function cardFields(input: unknown): CardFields {
   return { name: (value.name as string).trim(), author: (value.author as string).trim(), note: (value.note as string).trim() };
 }
 export function appearancePostText(name: string) {
-  return ['Unharnessで、自分のAIの姿を作りました。', name.trim() ? `作品：${name.trim()}` : '', '#Unharness'].filter(Boolean).join('\n');
+  return [t("Unharnessで、自分のAIの姿を作りました。", "I created my AI's appearance with Unharness."), name.trim() ? t(`作品：${name.trim()}`, `Artwork: ${name.trim()}`) : '', '#Unharness'].filter(Boolean).join('\n');
 }
 function publicUrl(url: string | null) {
   if (url === null) return null;
@@ -32,8 +33,8 @@ export function xIntent(text: string, repositoryUrl: string | null) {
   return intent.href;
 }
 export function cardAltText(fields: CardFields) {
-  return ['Unharnessの外観カード。Normal、限定解除、零式の3つの姿を左から順に並べた画像。',
-    fields.name ? `作品名：${fields.name}。` : '', fields.author ? `作者：${fields.author}。` : '', fields.note].filter(Boolean).join('');
+  return [t("Unharnessの外観カード。Normal、限定解除、零式の3つの姿を左から順に並べた画像。", "Unharness appearance card showing Normal, UNSEAL and TRUEFORM from left to right. "),
+    fields.name ? t(`作品名：${fields.name}。`, `Title: ${fields.name}. `) : '', fields.author ? t(`作者：${fields.author}。`, `Author: ${fields.author}. `) : '', fields.note].filter(Boolean).join('');
 }
 function lines(ctx: CanvasRenderingContext2D, text: string, width: number) {
   const result: string[] = []; let current = '';
@@ -64,11 +65,11 @@ export async function renderAppearanceCard(images: string[], selectedFields: Car
     ctx.fillStyle = '#bba572'; ctx.fillRect(40, 30, 48, 3);
     ctx.font = `600 18px ${font}`; ctx.fillStyle = '#a1b4be'; ctx.fillText('UNHARNESS / APPEARANCE', 104, 38);
     ctx.font = `600 28px ${font}`; ctx.fillStyle = '#edf1ec';
-    const titleLines = lines(ctx, fields.name || 'AIの姿を、自分らしく。', 1120);
+    const titleLines = lines(ctx, fields.name || t("AIの姿を、自分らしく。", "An AI appearance of your own."), 1120);
     if (titleLines.length > 2) throw Error('card-text-too-long');
     titleLines.forEach((line, index) => ctx.fillText(line, 40, 104 + index * 38));
     if (fields.author) { ctx.font = `18px ${font}`; ctx.fillStyle = '#b9c9cb'; ctx.fillText('Artwork by ' + fields.author, 40, 184, 1120); }
-    const captions = ['Normal', '限定解除 — UNSEAL', '零式 — TRUEFORM'];
+    const captions = ['Normal', t("限定解除 — UNSEAL", "UNSEAL"), t("零式 — TRUEFORM", "TRUEFORM")];
     bitmaps.forEach((bitmap, index) => {
       const x = 40 + index * 384;
       ctx.drawImage(bitmap, x, 214, 352, 352);

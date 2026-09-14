@@ -1,3 +1,5 @@
+import { useLocale, LanguageSwitch } from './LanguageSwitch';
+import { text as t } from './locale.ts';
 import { useEffect, useState } from "react";
 import { Api, errorMessage } from "./api";
 import { SourceWorkbench } from "./SourceWorkbench";
@@ -143,6 +145,7 @@ function FixtureApp() {
 }
 
 export function App() {
+  useLocale();
   const [kind, setKind] = useState<"fixture" | "user-sources" | "recovery" | null>(null);
   const [error, setError] = useState("");
   async function connect() {
@@ -157,5 +160,5 @@ export function App() {
   if (kind === "user-sources") return <SourceWorkbench />;
   if (kind === "recovery") return <RecoveryWorkbench />;
   if (kind === "fixture") return <FixtureApp />;
-  return <main className="app-shell"><section className="control-section"><h1>UNHARNESS</h1><p role="status">接続先を確認しています。</p>{error && <p role="alert">{error}</p>}<button className="secondary" onClick={() => void connect()}>再接続</button></section></main>;
+  return <main className="app-shell"><section className="control-section"><h1>UNHARNESS</h1><LanguageSwitch/><p role="status">{t('接続先を確認しています。', 'Checking the connection.')}</p>{error && <p role="alert">{error}</p>}<button className="secondary" onClick={() => void connect()}>{t('再接続', 'Reconnect')}</button></section></main>;
 }

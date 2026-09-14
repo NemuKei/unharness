@@ -1,3 +1,4 @@
+import { text as t } from './locale.ts';
 import { ApiError } from "./api.ts";
 import type { SourceMode, SourceVerification, PluginObservation, PluginCoverage } from "./sources";
 
@@ -191,19 +192,19 @@ export const defaultAssessment: RunAssessment = {
 };
 
 export const outcomeLabels: Record<RunOutcome, string> = {
-  accepted: "採用",
-  failed: "不採用",
-  abandoned: "中断",
-  unknown: "未判断",
+  get accepted() { return t("採用", "Accepted"); },
+  get failed() { return t("不採用", "Rejected"); },
+  get abandoned() { return t("中断", "Abandoned"); },
+  get unknown() { return t("未判断", "Undecided"); },
 };
 export const provenanceLabels: Record<AssessmentProvenance, string> = {
-  user: "ユーザーの評価",
-  agent: "AIの評価",
+  get user() { return t("ユーザーの評価", "User assessment"); },
+  get agent() { return t("AIの評価", "AI assessment"); },
 };
 export const requirementLabels: Record<RequirementResult, string> = {
-  pass: "満たした",
-  fail: "満たさない",
-  unknown: "不明",
+  get pass() { return t("満たした", "Met"); },
+  get fail() { return t("満たさない", "Not met"); },
+  get unknown() { return t("不明", "Unknown"); },
 };
 
 const comparisonMutations = new Set([
@@ -216,42 +217,38 @@ export function isComparisonMutation(action: string) {
 }
 
 export const aggregateReasonLabels: Record<string, string> = {
-  "different-source-scopes": "登録した指示・Skillの範囲が異なるため、まとめて効率を評価できません。",
-  "overlapping-task-records":
-    "同じタスクの版またはカットオフが重なっているため、独立した標本として合計しません。",
-  "usage-unavailable-or-partial":
-    "使用量が不明または一部だけの記録があるため、合計は不明です。",
-  "usage-total-overflow": "安全に合計できないため、合計は不明です。",
-  "no-accepted-runs":
-    "採用として数えられる記録がないため、採用1件あたりは不明です。",
-  "predeclared-comparable-evidence-required":
-    "事前に揃えた条件での比較ではないため、優劣や作成資格は判定しません。",
+  get "different-source-scopes"() { return t("登録した指示・Skillの範囲が異なるため、まとめて効率を評価できません。", "Registered instruction/Skill scopes differ, so efficiency cannot be aggregated."); },
+  get "overlapping-task-records"() { return t("同じタスクの版またはカットオフが重なっているため、独立した標本として合計しません。", "Versions or cutoffs overlap within the same task and cannot be counted as independent samples."); },
+  get "usage-unavailable-or-partial"() { return t("使用量が不明または一部だけの記録があるため、合計は不明です。", "Some usage is unknown or partial, so the total is unknown."); },
+  get "usage-total-overflow"() { return t("安全に合計できないため、合計は不明です。", "A reliable aggregate is unavailable, so the total is unknown."); },
+  get "no-accepted-runs"() { return t("採用として数えられる記録がないため、採用1件あたりは不明です。", "No records qualify as accepted, so per-acceptance usage is unknown."); },
+  get "predeclared-comparable-evidence-required"() { return t("事前に揃えた条件での比較ではないため、優劣や作成資格は判定しません。", "Conditions were not aligned beforehand; no ranking or artwork eligibility is assigned."); },
 };
 
 export function comparisonErrorMessage(error: unknown) {
   const kind = error instanceof ApiError ? error.kind : "request-failed";
   if (error instanceof ApiError && error.disposition === "uncertain")
-    return "操作結果を確認できません。自動では再送しません。履歴と状態を再取得して確認してください。";
+    return t("操作結果を確認できません。自動では再送しません。履歴と状態を再取得して確認してください。", "Operation result unconfirmed. No automatic retry is sent. Refresh history and state to check.");
   if (kind === "comparison-source-unavailable")
-    return "この記録には保存できる設定の一致証拠がありません。記録の評価はそのまま確認できます。";
+    return t("この記録には保存できる設定の一致証拠がありません。記録の評価はそのまま確認できます。", "This record lacks matching evidence for a saveable loadout. Its assessment remains available.");
   if (kind.includes("cutoff"))
-    return "選んだ完了位置をこのタスク記録で確認できません。表示されたターンから選び直してください。";
+    return t("選んだ完了位置をこのタスク記録で確認できません。表示されたターンから選び直してください。", "The selected completion point is unconfirmed in this record. Choose a displayed turn again.");
   if (kind.includes("task") || kind.includes("record"))
-    return "この記録を確認できません。タスクUUID、完了位置、保存済みの版を確認してください。";
+    return t("この記録を確認できません。タスクUUID、完了位置、保存済みの版を確認してください。", "This record could not be verified. Check the task UUID, completion point and saved version.");
   if (kind.includes("context") || kind.includes("scope"))
-    return "接続先が変わりました。現在の対象を確認してから、もう一度操作してください。";
-  return `比較記録の操作を完了できませんでした（${kind}）。`;
+    return t("接続先が変わりました。現在の対象を確認してから、もう一度操作してください。", "The connection changed. Review the current target before retrying.");
+  return t(`比較記録の操作を完了できませんでした（${kind}）。`, `Comparison operation failed (${kind}).`);
 }
 
 export function formatNumber(value: number | null) {
-  return value === null ? "不明" : new Intl.NumberFormat("ja-JP").format(value);
+  return value === null ? t("不明", "Unknown") : new Intl.NumberFormat(t("ja-JP", "en-US")).format(value);
 }
 
 export function formatDuration(value: number | null) {
-  if (value === null) return "不明";
+  if (value === null) return t("不明", "Unknown");
   return value < 1000
     ? `${value} ms`
-    : `${new Intl.NumberFormat("ja-JP", { maximumFractionDigits: 1 }).format(value / 1000)} 秒`;
+    : t(`${new Intl.NumberFormat(t("ja-JP", "en-US"), { maximumFractionDigits: 1 }).format(value / 1000)} 秒`, `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(value / 1000)} s`);
 }
 
 export function historicalMode(
@@ -280,9 +277,9 @@ export function reviewCutoffForTask(
 }
 
 const conditionLabels: Record<string, string> = {
-  model: "モデル",
-  reasoningEffort: "推論設定",
-  executionPolicy: "実行ポリシー",
+  get model() { return t("モデル", "Model"); },
+  get reasoningEffort() { return t("推論設定", "Reasoning setting"); },
+  get executionPolicy() { return t("実行ポリシー", "Execution policy"); },
 };
 
 export function conditionEvidence(
@@ -298,13 +295,13 @@ export function conditionEvidence(
   const list = (values: string[]) =>
     values.length
       ? values.map((value) => conditionLabels[value] ?? value).join("、")
-      : "なし";
+      : t("なし", "None");
   return {
-    initialModel: conditions.model ?? "不明",
-    initialReasoningEffort: conditions.reasoningEffort ?? "不明",
+    initialModel: conditions.model ?? t("不明", "Unknown"),
+    initialReasoningEffort: conditions.reasoningEffort ?? t("不明", "Unknown"),
     initialExecutionPolicy: conditions.executionPolicyDigest
-      ? "記録あり"
-      : "不明",
+      ? t("記録あり", "Recorded")
+      : t("不明", "Unknown"),
     changed: list(conditions.changes),
     unknown: list(conditions.unknown),
   };
@@ -315,5 +312,5 @@ export function runReferenceLabel(
   runs: Array<{ runId: string; title: string | null }>,
 ) {
   const run = runs.find((candidate) => candidate.runId === runId);
-  return `${run?.title ?? "名称なし"} ／ ${runId.slice(0, 12)}`;
+  return `${run?.title ?? t("名称なし", "Untitled")} ／ ${runId.slice(0, 12)}`;
 }

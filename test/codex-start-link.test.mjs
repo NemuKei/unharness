@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { codexDraftLink } from '../web/src/prototype/codex-start.ts';
+import { codexDraftLink } from '../web/src/entry/codex-start.ts';
 
 test('Codex handoff preserves multilingual prompts without turning their URLs into routing parameters', () => {
   for (const prompt of [

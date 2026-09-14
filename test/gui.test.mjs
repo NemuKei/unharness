@@ -558,3 +558,19 @@ test('resume startup retains store and scope recovery when fixture state is corr
   assert.equal(result.recovery.scopeId, demo.scopeId);
   assert.deepEqual(result.recovery.resumeArgv, buildResumeArgv(result.recovery));
 });
+
+test('only the local HTML entry accepts one supported display language and API authorization remains required', async t => {
+  const parent = await temporary(t), demo = await createDemoWorkspace({ parent });
+  const server = await startGuiServer({ ...demo, assetsDirectory: await assets(t, parent) });
+  t.after(() => server.close());
+  const original = await raw(server.url);
+  for (const path of ['/?lang=ja', '/?lang=en']) {
+    const result = await raw(server.url, { path });
+    assert.equal(result.status, 200);
+    assert.equal(result.text, original.text);
+  }
+  for (const path of ['/?lang=fr', '/?lang=en&lang=ja', '/?lang=en&token=unknown', '/?project=elsewhere', '/assets/app.js?lang=en'])
+    assert.equal((await raw(server.url, { path })).status, 404);
+  assert.equal((await raw(server.url, { path: '/?lang=en', method: 'POST' })).status, 404);
+  assert.equal((await raw(server.url, { path: '/api/state?lang=en' })).status, 403);
+});

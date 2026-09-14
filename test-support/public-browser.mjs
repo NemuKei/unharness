@@ -17,13 +17,18 @@ export async function publicBrowser(t, { clipboardFails = false, siteAssetsDirec
   const assetsDirectory = resolve('dist');
   let time = Date.now(), dropApply = false;
   const gui = await startGuiServer({ manageSources: p.context, assetsDirectory }, { remoteNow: () => time });
-  const { chromium } = await import(pathToFileURL(resolve(process.env.UNHARNESS_PLAYWRIGHT_MODULE)).href);
-  const browser = await chromium.launch({ headless: true, ...(process.env.UNHARNESS_BROWSER_EXECUTABLE ? { executablePath: process.env.UNHARNESS_BROWSER_EXECUTABLE } : {}) });
-  let browserContext;
+  let browser, browserContext;
+  // Register cleanup before importing or launching the browser. A missing
+  // executable must not leave the fixture server keeping the test alive.
   t.after(async () => {
     try { await browserContext?.unrouteAll({ behavior: 'wait' }); }
-    finally { await browser.close(); await gui.close(); for (const cleanup of cleanups) await cleanup(); }
+    finally {
+      try { await browser?.close(); }
+      finally { await gui.close(); for (const cleanup of cleanups) await cleanup(); }
+    }
   });
+  const { chromium } = await import(pathToFileURL(resolve(process.env.UNHARNESS_PLAYWRIGHT_MODULE)).href);
+  browser = await chromium.launch({ headless: true, ...(process.env.UNHARNESS_BROWSER_EXECUTABLE ? { executablePath: process.env.UNHARNESS_BROWSER_EXECUTABLE } : {}) });
   browserContext = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 1440, height: 1050 } });
   await browserContext.addInitScript(() => {
     const definitions = new Map();

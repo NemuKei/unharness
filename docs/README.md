@@ -27,6 +27,7 @@ The canonical contracts are split by responsibility:
 | Product behavior and acceptance | [Specification](spec.md) |
 | Ordinary Skill states, retained plugins and inheritance | [Current mode contract](spec-mode-inheritance.md) |
 | Source registration, writes and independent recovery | [User sources](spec-user-sources.md), [retained settings](spec-retained-settings.md) |
+| General startup, language and update discovery | [Guided entry](guided-product-entry.md), [plugin updates](plugin-update.md) |
 | Model-aware setup and version preservation | [Guided setup](spec-guided-setup.md) |
 | Public origin, pairing and local authority | [Domain entry](spec-domain-entry.md), [connection protocol](domain-connection.md) |
 | Artwork, motion and immutable asset versions | [Entity poses](spec-entity-poses.md), [appearance rules](personalization.md), [design](design.md) |

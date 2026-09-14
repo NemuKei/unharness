@@ -1,3 +1,4 @@
+import { text as t } from './locale.ts';
 import { useId, useState } from 'react';
 import type { useSourceController } from './useSourceController';
 import type { SourceMode } from './sources';
@@ -15,7 +16,7 @@ type Inventory = { inventoryId: string; skills: Array<{ id: string; normalState:
   plugins: Array<{ id: string; normalEnabled: boolean; eligibility: 'official-confirmed' | 'not-official' | 'unknown' }> };
 type Read = Omit<SetupRead, 'inventory'> & { proposal: Proposal; inventory: Inventory };
 type Reviewed = NonNullable<SetupRead['review']> & { reviewId: string; scopeId: string; sourceFilesChanged: 0 };
-const words = { disabled: '無効', manual: '手動', automatic: '自動' };
+const words = { get disabled() { return t("無効", "Disabled"); }, get manual() { return t("手動", "Explicit"); }, get automatic() { return t("自動", "Automatic"); } };
 const rank = (s: State) => ['disabled', 'manual', 'automatic'].indexOf(s);
 const hash = (v: unknown) => typeof v === 'string' && /^[a-f0-9]{64}$/.test(v);
 
@@ -29,9 +30,9 @@ export function SourceStateEditor({ controller: c, mode }: { controller: ReturnT
     const unknown = adopting && (!(e instanceof ApiError) || e.disposition === 'uncertain');
     setUncertain(unknown); setReview(null);
     setError(e instanceof ApiError && e.kind === 'setup-plugin-control-unavailable'
-      ? 'このCodexではプラグインの個別OFFを確認できません。保存内容を取得し直し、両モードでNormalを保つ案を確認してください。'
-      : unknown ? '保存結果は未確認です。「状態を再取得」で保存版を確認してください。'
-      : `設定を確認できませんでした（${e instanceof ApiError ? e.kind : 'invalid-response'}）。保存内容を取得し直してください。`);
+      ? t("このCodexではプラグインの個別OFFを確認できません。保存内容を取得し直し、両モードでNormalを保つ案を確認してください。", "Individual plugin OFF is unconfirmed in this Codex version. Reload the saved configuration and review keeping Normal in both modes.")
+      : unknown ? t("保存結果は未確認です。「状態を再取得」で保存版を確認してください。", "Saving is unconfirmed. Use Refresh state to inspect the saved version.")
+      : t(`設定を確認できませんでした（${e instanceof ApiError ? e.kind : 'invalid-response'}）。保存内容を取得し直してください。`, `Settings could not be verified (${e instanceof ApiError ? e.kind : 'invalid-response'}). Reload the saved contents.`));
   }
   async function load() {
     setLoaded(null); setDraft(null); setReview(null); setError(''); setUncertain(false);
@@ -78,15 +79,15 @@ export function SourceStateEditor({ controller: c, mode }: { controller: ReturnT
     if (!hash(response.result?.setupId)) return failed(Error(), true);
   }
   return <details className="source-state-editor">
-    <summary>対象を調整</summary>
-    <p className="muted">保存したモデル相談の基準を引き継ぎ、両モードへの変更を確認して保存します。保存後のモード準備は別操作です。</p>
-    <button type="button" className="secondary" disabled={blocked} onClick={() => void load()}>保存した対象を編集</button>
+    <summary>{t("対象を調整", "Adjust targets")}</summary>
+    <p className="muted">{t("保存したモデル相談の基準を引き継ぎ、両モードへの変更を確認して保存します。保存後のモード準備は別操作です。", "Keep the saved model-consultation basis while reviewing changes to both modes. Applying a saved mode is a separate operation.")}</p>
+    <button type="button" className="secondary" disabled={blocked} onClick={() => void load()}>{t("保存した対象を編集", "Edit saved targets")}</button>
     {error && <p role="alert">{error}</p>}
     {draft && loaded && <fieldset disabled={blocked || uncertain}>
-      <legend>{mode === 'trueform' ? '零式' : '限定解除'}で使う範囲</legend>
+      <legend>{mode === 'trueform' ? t("零式", "TRUEFORM") : t("限定解除", "UNSEAL")}{t("で使う範囲", " usage")}</legend>
       {loaded.inventory.skills.filter(s => !s.requiredControl).map(s => {
         const base = draft.trueform.skillStates.find(x => x.sourceId === s.id)?.state;
-        if (!base) return <p key={s.id} role="alert">保存状態を再確認してください。</p>;
+        if (!base) return <p key={s.id} role="alert">{t("保存状態を再確認してください。", "Check the saved state again.")}</p>;
         const current = mode === 'trueform' ? base : draft.unseal.skillElevations.find(x => x.sourceId === s.id)?.state ?? 'inherit';
         return <div className="state-source-row" key={s.id}>
           <label htmlFor={prefix + s.id}>{names.get(s.id) ?? s.id}</label>
@@ -98,14 +99,14 @@ export function SourceStateEditor({ controller: c, mode }: { controller: ReturnT
             } else p.unseal.skillElevations = [...p.unseal.skillElevations.filter(x => x.sourceId !== s.id),
               ...(value === 'inherit' ? [] : [{ sourceId: s.id, state: value as State }])];
           })}>
-            {mode === 'unseal' && <option value="inherit">零式を継承（{words[base]}）</option>}
+            {mode === 'unseal' && <option value="inherit">{t("零式を継承（", "Inherits TRUEFORM (")}{words[base]}）</option>}
             {(['disabled', 'manual', 'automatic'] as const).filter(state => mode === 'trueform' ? state !== 'automatic' : rank(state) > rank(base))
               .map(state => <option key={state} value={state} disabled={state !== s.normalState && !s.availableStates.includes(state)}>{words[state]}</option>)}
           </select>
-          {s.normalState === 'disabled' && <p className="muted">Normalでは無効。手動・自動への変更には有効化を含みます。</p>}
+          {s.normalState === 'disabled' && <p className="muted">{t("Normalでは無効。手動・自動への変更には有効化を含みます。", "Disabled in Normal. Choosing explicit or automatic use also enables it.")}</p>}
         </div>;
       })}
-      {loaded.inventory.plugins.length > 0 && <div className="state-plugins"><p>プラグインをNormalの状態で保つ</p>
+      {loaded.inventory.plugins.length > 0 && <div className="state-plugins"><p>{t("プラグインをNormalの状態で保つ", "Keep the plugin at its Normal state")}</p>
         {loaded.inventory.plugins.map(p => {
           const inherited = draft.trueform.retainedOfficialPluginIds.includes(p.id);
           const unavailable = loaded.pluginControls?.some(c => c.pluginId === p.id && !c.available) ?? false;
@@ -118,20 +119,20 @@ export function SourceStateEditor({ controller: c, mode }: { controller: ReturnT
                 if (e.target.checked) d.unseal.additionalPluginIds = d.unseal.additionalPluginIds.filter(id => id !== p.id);
               } else d.unseal.additionalPluginIds = e.target.checked ? [...d.unseal.additionalPluginIds, p.id] : d.unseal.additionalPluginIds.filter(id => id !== p.id);
             })} />
-            {names.get(p.id) ?? p.id}（Normalは{p.normalEnabled ? '有効' : '無効'}{unavailable ? '・個別OFF未対応のため保持' : mode === 'unseal' && inherited ? '・零式から継承' : ''}）
+            {names.get(p.id) ?? p.id}{t("（Normalは", " (Normal: ")}{p.normalEnabled ? t("有効", "Enabled") : t("無効", "Disabled")}{unavailable ? t("・個別OFF未対応のため保持", " · retained because individual OFF is unsupported") : mode === 'unseal' && inherited ? t("・零式から継承", " · inherited from TRUEFORM") : ''}）
           </label>;
         })}
-        <p className="muted">現行Codexで個別OFFが反映されない公式プラグインは、両モードでNormalを保持します。未対応のOFFが以前の保存内容にある場合、この確認では両モードの保持へ変更します。元から無効なら、保持しても無効のままです。</p>
+        <p className="muted">{t("現行Codexで個別OFFが反映されない公式プラグインは、両モードでNormalを保持します。未対応のOFFが以前の保存内容にある場合、この確認では両モードの保持へ変更します。元から無効なら、保持しても無効のままです。", "Official plugins whose individual OFF is unsupported keep Normal in both modes. This review replaces unsupported OFF choices in older settings with retention in both modes. A plugin disabled in Normal remains disabled.")}</p>
       </div>}
-      {mode === 'unseal' && <><label htmlFor={prefix + '-instructions'}>追加指示</label>
+      {mode === 'unseal' && <><label htmlFor={prefix + '-instructions'}>{t("追加指示", "Optional instructions")}</label>
         <select id={prefix + '-instructions'} value={draft.unseal.instructions} onChange={e => update(d => { d.unseal.instructions = e.target.value as 'minimal' | 'none'; })}>
-          <option value="none">なし</option><option value="minimal">固定の最小ガイド</option>
+          <option value="none">{t("なし", "None")}</option><option value="minimal">{t("固定の最小ガイド", "Fixed minimal guide")}</option>
         </select></>}
-      <button type="button" className="secondary" onClick={() => void preview()}>両モードの変更を確認</button>
+      <button type="button" className="secondary" onClick={() => void preview()}>{t("両モードの変更を確認", "Review changes to both modes")}</button>
     </fieldset>}
     {review && loaded && !blocked && <div className="enrollment-review">
       <SavedSetupSummary data={{ ...loaded, review }} sources={source!.registration.sources} plugins={source!.registration.plugins} />
-      <button type="button" className="primary" disabled={uncertain} onClick={() => void adopt()}>この2構成を保存</button>
+      <button type="button" className="primary" disabled={uncertain} onClick={() => void adopt()}>{t("この2構成を保存", "Save these two loadouts")}</button>
     </div>}
   </details>;
 }

@@ -204,3 +204,18 @@
   .original-example-controls { gap: 12px; }
   .original-example-picker { flex: 1; }
 }
+
+/* Shared production language controls keep navigation state mounted. */
+.public-shell > .topbar .header-right { flex-wrap:wrap; gap:18px; }
+.public-shell > .topbar .header-right > a { font-size:13px; color:inherit; }
+.codex-start-link { display:inline-flex; justify-content:center; align-items:center; gap:12px; text-decoration:none; }
+.codex-start-hint { max-width:48ch; font-size:12px; line-height:1.75; color:var(--muted, #a5b2b0); }
+.entry-choices { flex-wrap:wrap; }
+.entry-returning + .entry-returning { display:block; margin-top:8px; }
+@media (max-width:600px) {
+  .public-shell > .topbar { flex-wrap:wrap; gap:14px; }
+  .public-shell > .topbar .header-right { gap:12px; }
+  .public-release-label { display:none; }
+  .public-nav { flex-wrap:wrap; }
+  .entry-choices > * { width:100%; }
+}

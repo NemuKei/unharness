@@ -1,3 +1,4 @@
+import { text as t } from './locale.ts';
 import { useEffect, useRef, useState } from "react";
 import type { SourceView } from "./sources";
 import { PUBLIC_WEB_ORIGIN, connectionRecord, isConnectionId } from "./connection-contract";
@@ -58,7 +59,7 @@ export function LocalConnectionPanel({ view, enabled, request, onOpen }: {
         if (write?.input.pairingId === pairingId && ((write.action === "approve" && ["approved", "connected"].includes(details.status))
           || (["approve", "cancel"].includes(write.action) && ["expired", "unavailable"].includes(details.status)))) setPending(null);
       } catch {
-        if (!stopped && before === epoch.current && !locked.current) { setPairing(null); setError("接続状態を確認できません。接続用リンクと許可操作を停止しています。"); }
+        if (!stopped && before === epoch.current && !locked.current) { setPairing(null); setError(t("接続状態を確認できません。接続用リンクと許可操作を停止しています。", "Connection state is unconfirmed. Connection links and approval controls are paused.")); }
       } finally { polling = false; }
     }
     void poll();
@@ -83,57 +84,57 @@ export function LocalConnectionPanel({ view, enabled, request, onOpen }: {
       if (!alive.current || before !== epoch.current) return;
       setPairing(details); setNow(Date.now()); setPending(null);
     } catch {
-      if (alive.current && before === epoch.current) { setPairing(null); setError("操作の結果を確認できません。同じ操作IDで結果を確認できます。"); }
+      if (alive.current && before === epoch.current) { setPairing(null); setError(t("操作の結果を確認できません。同じ操作IDで結果を確認できます。", "The operation result is unconfirmed. Check it with the same operation ID.")); }
     } finally {
       if (alive.current && before === epoch.current) { locked.current = false; setBusy(false); }
     }
   }
   const expiresAt = pairing && (pairing.status === "connected" ? pairing.connection.expiresAt : "expiresAt" in pairing ? pairing.expiresAt : 0);
   const expired = pairing?.status === "expired" || !!expiresAt && expiresAt <= now;
-  const status = error ? "未確認" : expired ? "期限切れ" : pairing?.status === "connected" ? "接続中"
-    : pairing?.status === "approved" ? "許可済み・接続待ち" : pairing?.status === "awaiting-approval" ? "許可待ち"
-      : pairing?.status === "unavailable" ? "無効" : "未接続";
+  const status = error ? t("未確認", "Unknown") : expired ? t("期限切れ", "Expired") : pairing?.status === "connected" ? t("接続中", "Connected")
+    : pairing?.status === "approved" ? t("許可済み・接続待ち", "Approved; awaiting connection") : pairing?.status === "awaiting-approval" ? t("許可待ち", "Awaiting approval")
+      : pairing?.status === "unavailable" ? t("無効", "Inactive") : t("未接続", "Disconnected");
   const link = pairing && enabled && !error ? publicPairingUrl(pairing, location.origin, now) : null;
   async function copyLink() {
     if (!link) return;
-    try { await navigator.clipboard.writeText(link); setCopyNotice("コピーしました。有効期限内にCodex内ブラウザーで開いてください。"); }
-    catch { linkField.current?.focus(); linkField.current?.select(); setCopyNotice("コピーできませんでした。接続用リンクを選択してコピーしてください。"); }
+    try { await navigator.clipboard.writeText(link); setCopyNotice(t("コピーしました。有効期限内にCodex内ブラウザーで開いてください。", "Copied. Open it in the Codex in-app browser before it expires.")); }
+    catch { linkField.current?.focus(); linkField.current?.select(); setCopyNotice(t("コピーできませんでした。接続用リンクを選択してコピーしてください。", "Copy failed. Select the connection link and copy it manually.")); }
   }
-  return <section className="local-connection" aria-label="公開画面との接続">
-    <button className="secondary" aria-expanded={open} onClick={() => setOpen(!open)}>操作画面への接続を確認</button>
+  return <section className="local-connection" aria-label={t("公開画面との接続", "Public-page connection")}>
+    <button className="secondary" aria-expanded={open} onClick={() => setOpen(!open)}>{t("操作画面への接続を確認", "Review the workbench connection")}</button>
     {open && <div className="connection-review">
-      <div className="section-heading"><h2 ref={heading} tabIndex={-1}>このMacへの接続許可</h2><span role="status">{status}</span></div>
+      <div className="section-heading"><h2 ref={heading} tabIndex={-1}>{t("このMacへの接続許可", "Permission to connect to this Mac")}</h2><span role="status">{status}</span></div>
       <dl className="source-context">
-        <dt>接続を許可するサイト</dt><dd className="connection-origin">{PUBLIC_WEB_ORIGIN}</dd>
-        <dt>操作する対象</dt><dd>このMac・{view.metadata.applicationLabel} ／ 登録済みの追加設定 {view.source?.registration.sources.length ?? 0}件</dd>
-        <dt>選択中のプロジェクト</dt><dd>{view.metadata.context.project}</dd>
-        <dt>作品の保存範囲</dt><dd>この設定で保存した作品コレクション</dd>
-        <dt>許可する操作</dt><dd>準備状態の確認、モード変更の計画と実行、操作結果の確認。作品の画像・コレクションの読込、画像レビュー・保存・選択・名前変更・作品保存の復旧。</dd>
+        <dt>{t("接続を許可するサイト", "Approved site")}</dt><dd className="connection-origin">{PUBLIC_WEB_ORIGIN}</dd>
+        <dt>{t("操作する対象", "Target to operate")}</dt><dd>{t("このMac・", "This Mac · ")}{view.metadata.applicationLabel} {t(" ／ 登録済みの追加設定 ", " / Registered optional settings: ")}{view.source?.registration.sources.length ?? 0}{t("件", " items")}</dd>
+        <dt>{t("選択中のプロジェクト", "Selected project")}</dt><dd>{view.metadata.context.project}</dd>
+        <dt>{t("作品の保存範囲", "Artwork scope")}</dt><dd>{t("この設定で保存した作品コレクション", "Artwork collection saved for this setup")}</dd>
+        <dt>{t("許可する操作", "Allowed operations")}</dt><dd>{t("準備状態の確認、モード変更の計画と実行、操作結果の確認。作品の画像・コレクションの読込、画像レビュー・保存・選択・名前変更・作品保存の復旧。", "Read prepared state, plan and apply mode changes, and inspect operation results. Read artwork images and collections; review, save, select and rename artwork; and recover artwork saving.")}</dd>
       </dl>
-      <p className="boundary">接続は10分間有効です。許可後に開くリンクは一回限り・発行から2分以内です。許可だけではモードや作品は変わりません。設定の追加登録や制作場所の読取は許可しません。</p>
+      <p className="boundary">{t("接続は10分間有効です。許可後に開くリンクは一回限り・発行から2分以内です。許可だけではモードや作品は変わりません。設定の追加登録や制作場所の読取は許可しません。", "The connection lasts 10 minutes. The issued link can be used once, within 2 minutes. Approval alone does not change modes or artwork. It does not allow new source registration or reading authoring workspaces.")}</p>
       {error && <p role="alert">{error}</p>}
-      {!enabled && <p role="status">ローカルの状態を再取得し、登録対象を確認してください。</p>}
+      {!enabled && <p role="status">{t("ローカルの状態を再取得し、登録対象を確認してください。", "Refresh local state and review the registered targets.")}</p>}
       <div className="source-actions">
         {(!pairingId || expired || pairing?.status === "unavailable") && !pending && <button className="secondary" disabled={!enabled || busy}
-          onClick={() => void write("issue")}>接続許可を確認する</button>}
+          onClick={() => void write("issue")}>{t("接続許可を確認する", "Review connection approval")}</button>}
         {pairing?.status === "awaiting-approval" && !expired && <button className="primary" disabled={!enabled || busy || !!pending}
-          onClick={() => void write("approve")}>このサイトへの接続を許可</button>}
+          onClick={() => void write("approve")}>{t("このサイトへの接続を許可", "Allow this site to connect")}</button>}
         {pairingId && !expired && pairing?.status !== "unavailable" && <button className="secondary" disabled={busy || !!pending}
-          onClick={() => void write("cancel")}>{pairing?.status === "awaiting-approval" ? "許可しない" : "接続許可を取り消す"}</button>}
-        {pending && <button className="secondary" disabled={busy} onClick={() => void write(pending.action, pending)}>同じ操作の結果を確認</button>}
+          onClick={() => void write("cancel")}>{pairing?.status === "awaiting-approval" ? t("許可しない", "Decline") : t("接続許可を取り消す", "Revoke connection approval")}</button>}
+        {pending && <button className="secondary" disabled={busy} onClick={() => void write(pending.action, pending)}>{t("同じ操作の結果を確認", "Check this operation's result")}</button>}
       </div>
-      {busy && <p role="status">接続許可の記録を確認しています…</p>}
+      {busy && <p role="status">{t("接続許可の記録を確認しています…", "Checking the approval record…")}</p>}
       {link && <div className="connection-link">
-        <a className="primary" href={link} target="_blank" rel="noopener noreferrer">いつもの操作画面を開く</a>
-        <details><summary>Codex内ブラウザーへ接続用リンクを渡す</summary>
-          <p className="boundary">この一時リンクは接続先のAIにだけ渡してください。</p>
-          <label>接続用リンク<textarea aria-label="接続用リンク" ref={linkField} readOnly value={link} rows={3} /></label>
-          <button className="secondary" onClick={() => void copyLink()}>接続用リンクをコピー</button>
+        <a className="primary" href={link} target="_blank" rel="noopener noreferrer">{t("いつもの操作画面を開く", "Open your workbench")}</a>
+        <details><summary>{t("Codex内ブラウザーへ接続用リンクを渡す", "Pass the connection link to the Codex in-app browser")}</summary>
+          <p className="boundary">{t("この一時リンクは接続先のAIにだけ渡してください。", "Share this temporary link only with the AI you are connecting.")}</p>
+          <label>{t("接続用リンク", "Connection link")}<textarea aria-label={t("接続用リンク", "Connection link")} ref={linkField} readOnly value={link} rows={3} /></label>
+          <button className="secondary" onClick={() => void copyLink()}>{t("接続用リンクをコピー", "Copy connection link")}</button>
         </details>
       </div>}
       {copyNotice && link && <p role="status">{copyNotice}</p>}
-      {pairing?.status === "connected" && !expired && <p className="boundary">公開画面の接続を確認しました。期限：{new Date(pairing.connection.expiresAt).toLocaleTimeString("ja-JP")}</p>}
-      {expired && <p className="boundary">期限が切れました。接続する場合は新しい許可を確認してください。</p>}
+      {pairing?.status === "connected" && !expired && <p className="boundary">{t("公開画面の接続を確認しました。期限：", "Public-page connection confirmed. Expires: ")}{new Date(pairing.connection.expiresAt).toLocaleTimeString(t("ja-JP", "en-US"))}</p>}
+      {expired && <p className="boundary">{t("期限が切れました。接続する場合は新しい許可を確認してください。", "Expired. Review a new approval to connect again.")}</p>}
       <PublicOperationLookup request={request} />
     </div>}
   </section>;

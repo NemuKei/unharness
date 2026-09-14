@@ -1111,3 +1111,7 @@ summary {
   margin-top: 10px;
   overflow-wrap: anywhere;
 }
+
+.language-switch { display:flex; gap:2px; border:1px solid var(--line, #334441); border-radius:5px; padding:2px; }
+.language-switch button { padding:6px 9px; border:0; background:transparent; color:var(--muted, #a5b2b0); font-size:12px; cursor:pointer; }
+.language-switch button[aria-pressed=true] { color:var(--text, #ecf2ee); background:rgba(104,205,182,.13); }

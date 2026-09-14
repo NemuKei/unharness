@@ -1,3 +1,4 @@
+import { text as t } from './locale.ts';
 import { validAppearanceRecipe } from './appearances';
 import {ENTITY_SHEETS} from '../../src/appearances/entity-profile.mjs';
 import type { AppearanceRecipe } from './appearances';
@@ -88,8 +89,8 @@ export function projectArtworkReceipt(value: unknown): unknown {
 }
 export function artworkName(item: ArtworkItem | ArtworkRow) {
   if (item.name) return item.name;
-  if (item.kind === 'layered') return 'オリジナル';
+  if (item.kind === 'layered') return t('オリジナル', 'Original');
   const palette = 'recipe' in item ? item.recipe.palette.id : item.paletteId;
   const detail = 'recipe' in item ? item.recipe.details : item.details;
-  return `${({ ice: '蒼氷', dawn: '暁光', iris: '紫苑' } as Record<string, string>)[palette ?? ''] ?? '標準'}・${({ filament: '光糸', 'forked-light': '分岐光', 'facet-light': '結晶光' } as Record<string, string>)[detail ?? ''] ?? '外観'}`;
+  return `${({ ice: t('蒼氷', 'Ice'), dawn: t('暁光', 'Dawn'), iris: t('紫苑', 'Iris') } as Record<string, string>)[palette ?? ''] ?? t('標準', 'Default')}・${({ filament: t('光糸', 'Filament'), 'forked-light': t('分岐光', 'Forked light'), 'facet-light': t('結晶光', 'Facet light') } as Record<string, string>)[detail ?? ''] ?? t('外観', 'Appearance')}`;
 }

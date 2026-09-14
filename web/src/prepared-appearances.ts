@@ -1,3 +1,4 @@
+import { text as t } from './locale.ts';
 import amberUnfold8 from '../../assets/appearance-examples/amber-v2/entity-unfold-8.png';
 import amberUnfold7 from '../../assets/appearance-examples/amber-v2/entity-unfold-7.png';
 import amberUnfold6 from '../../assets/appearance-examples/amber-v2/entity-unfold-6.png';
@@ -61,4 +62,12 @@ export async function prepareAppearanceUpload(look:PreparedAppearance,expectedSt
   const base64=await readArtworkBase64(blob,signal);
   return {importId:crypto.randomUUID(),expectedStateId,manifest:{templateId:look.artwork.manifest.templateId,baseItemId:null,
     name:look.label,author:look.artwork.author,parts:[{partId:look.partId,fileId:look.partId}]},files:[{fileId:look.partId,base64}]};
+}
+
+// Localized display only; importing preserves each bundled artwork's original name.
+export function preparedAppearanceLabel(look: PreparedAppearance) {
+  return t(look.label, ({ default: 'Original', silver: 'Silver', amber: 'Amber' })[look.id]);
+}
+export function preparedAppearanceDescription(look: PreparedAppearance) {
+  return t(look.description, ({ default: 'A core of branching light', silver: 'Silver hair and cyan light', amber: 'Chestnut hair and amber light' })[look.id]);
 }

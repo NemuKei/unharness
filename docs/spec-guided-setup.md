@@ -10,6 +10,15 @@ the earlier target and v1/v2 observations below retain their historical scope.
 
 Direction refined by the maintainer on 2026-09-09. Initial setup is a conversation with the user's chosen AI that produces reviewed, saved UNSEAL and TRUEFORM configurations while retaining the user's existing configuration as Normal. It is not an automatic claim that an AI has found an optimal harness. The record/operation implementation and the [model-led saved-pair journey](evidence/2026-09-11-mac-codex-0.0.4.md) are qualified within their stated Mac scope; subsequent package updates do not retroactively change those model observations.
 
+## General entry before setup
+
+A general open request follows the [guided product entry](guided-product-entry.md)
+and [update procedure](plugin-update.md). Actual installation and connection state
+determine whether setup is needed. Missing tools alone never imply an absent
+installation. A routine update check does not block a concrete operation, an
+offline session or a user who has deferred the candidate. Normal and old versions
+are preserved; Skill-content review is optional and separate.
+
 ## Implemented record and operation boundary
 
 The Codex adapter now supports reviewed release presets in the local core. An immutable `setup-review` contains the original Normal ID, registered scope, source revision, confirmed roles, model/reference provenance and two frozen target snapshots. Adopting it adds a separate `release-setup` version to the source state. Adoption changes no source file, original Normal, current prepared snapshot or task-preparation boundary. Ordinary release-mode plans with no explicit source override use the adopted version. An explicit source selection retains the earlier diagnostic mode contract. GUI copy must distinguish those conditions.

@@ -1,3 +1,4 @@
+import { text as t } from './locale.ts';
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import type { LocalConnectionAction } from "./local-connection";
 import { Api, ApiError } from "./api";
@@ -109,7 +110,7 @@ export function useSourceController() {
       dispatch({ type: "clear-plans" });
       dispatch({
         type: "set-notice",
-        notice: "状態を再取得しました。実行中のタスクは未検証です。",
+        notice: t("状態を再取得しました。実行中のタスクは未検証です。", "State refreshed. The running task is unverified."),
       });
     } catch (e) {
       failed(e);
@@ -136,11 +137,11 @@ export function useSourceController() {
           || !canAcceptSourceUpdate(before, latest.current.view, generation, foregroundGeneration.current)) return;
         if (update.status === "context-changed") {
           contextBlocked.current = true;
-          setSyncError("接続先が変わりました。「状態を再取得」で対象を確認してください。");
+          setSyncError(t("接続先が変わりました。「状態を再取得」で対象を確認してください。", "The connection changed. Refresh the state to check the target."));
           return;
         }
         if (update.status === "changing") {
-          setSyncError("保存状態が変わっているため、読み直しています。");
+          setSyncError(t("保存状態が変わっているため、読み直しています。", "The saved state changed. Reading it again."));
           delay = 500;
           return;
         }
@@ -155,11 +156,11 @@ export function useSourceController() {
         previousUpdate.current = update;
         updateToken.current = update.retryRequired ? undefined : update.token;
         setExternalUpdate(update);
-        setSyncNotice(update.retryRequired ? "一部の履歴を更新できません。各欄で読み直せます。"
-          : previous && previous.token !== update.token ? "保存状態の更新を表示しました。" : "");
+        setSyncNotice(update.retryRequired ? t("一部の履歴を更新できません。各欄で読み直せます。", "Some history could not be refreshed. Reload it in each section.")
+          : previous && previous.token !== update.token ? t("保存状態の更新を表示しました。", "The updated saved state is displayed.") : "");
       } catch {
         if (!stopped && !lock.current && canAcceptSourceUpdate(before, latest.current.view, generation, foregroundGeneration.current))
-          setSyncError("自動更新を確認できません。「状態を再取得」でも確認できます。");
+          setSyncError(t("自動更新を確認できません。「状態を再取得」でも確認できます。", "Automatic refresh could not be confirmed. Use Refresh state to check."));
         delay = 5000;
       } finally { polling = false; schedule(delay); }
     }
@@ -195,7 +196,7 @@ export function useSourceController() {
         dispatch({
           type: "set-notice",
           notice:
-            "接続先が変わりました。表示を更新しました。対象を確認してから操作してください。",
+            t("接続先が変わりました。表示を更新しました。対象を確認してから操作してください。", "The connection changed and the display was refreshed. Check the target before operating."),
         });
         return;
       }
@@ -249,7 +250,7 @@ export function useSourceController() {
           dispatch({
             type: "set-error",
             error:
-              "復旧した制御ファイル以外に独立した変更または保持したディレクトリがあります。詳細と現在の競合を確認してください。",
+              t("復旧した制御ファイル以外に独立した変更または保持したディレクトリがあります。詳細と現在の競合を確認してください。", "Independent changes or preserved directories remain outside the recovered control files. Review the details and current conflicts."),
           });
         }
       }
@@ -259,7 +260,7 @@ export function useSourceController() {
         dispatch({
           type: "set-notice",
           notice:
-            "現在のCodex設定を新しいNormal版として記録しました。管理対象ファイルは変更していません。",
+            t("現在のCodex設定を新しいNormal版として記録しました。管理対象ファイルは変更していません。", "Recorded current Codex settings as a new Normal version. Managed files were not changed."),
         });
         try {
           const favoritesResponse = await sourceOperation<SourceFavoritePage>(
@@ -283,7 +284,7 @@ export function useSourceController() {
           dispatch({
             type: "set-error",
             error:
-              "現在の設定は記録済みです。お気に入り一覧だけを再取得できませんでした。状態を再取得して確認してください。",
+              t("現在の設定は記録済みです。お気に入り一覧だけを再取得できませんでした。状態を再取得して確認してください。", "Settings were recorded, but favorites could not be refreshed. Refresh the state to check."),
           });
         }
       } else if (action === "save") {
@@ -293,7 +294,7 @@ export function useSourceController() {
         >;
         dispatch({
           type: "set-notice",
-          notice: `「${saved.name}」（${modePresentation[saved.preparedMode].title}）をお気に入りに保存しました。`,
+          notice: t(`「${saved.name}」（${modePresentation[saved.preparedMode].title}）をお気に入りに保存しました。`, `Saved “${saved.name}” (${modePresentation[saved.preparedMode].title}) as a favorite.`),
         });
         dispatch({
           type: "favorite-saved",
@@ -320,21 +321,21 @@ export function useSourceController() {
         dispatch({
           type: "set-notice",
           notice:
-            "中断した設定の記録を取り消しました。管理対象ファイルは復元していません。現在の競合を確認してください。",
+            t("中断した設定の記録を取り消しました。管理対象ファイルは復元していません。現在の競合を確認してください。", "Cancelled the interrupted settings record. Managed files were not restored. Review current conflicts."),
         });
       } else
         dispatch({
           type: "set-notice",
           notice:
             action === "apply"
-              ? "選んだ設定を準備し、ファイルの一致を確認しました。新しいタスクで使用してください。"
+              ? t("選んだ設定を準備し、ファイルの一致を確認しました。新しいタスクで使用してください。", "Prepared the selected settings and verified matching files. Use them in a new task.")
               : action === "register"
-                ? "通常装備を保存しました。比較するモードを選べます。"
+                ? t("通常装備を保存しました。比較するモードを選べます。", "Normal was saved. You can choose a mode to compare.")
                 : action === "plan-retained"
-                  ? "変更内容を確認しました。まだ設定は記録していません。"
+                  ? t("変更内容を確認しました。まだ設定は記録していません。", "Changes reviewed. Settings have not been recorded yet.")
                   : action === "recover"
-                    ? "復旧結果と現在の状態を確認してください。"
-                    : "操作が完了しました。",
+                    ? t("復旧結果と現在の状態を確認してください。", "Review the recovery result and current state.")
+                    : t("操作が完了しました。", "Operation completed."),
         });
       if (action === "apply" || action === "recover") {
         setSelected(response.state.source?.preparedMode ?? "normal");
@@ -390,13 +391,13 @@ export function useSourceController() {
         || !sameSourceContext(view.metadata, response.state.metadata)
         || view.source?.registration.scopeId !== response.state.source?.registration.scopeId)) {
         contextBlocked.current = true;
-        setSyncError("接続先が変わりました。「状態を再取得」で対象を確認してください。");
+        setSyncError(t("接続先が変わりました。「状態を再取得」で対象を確認してください。", "The connection changed. Refresh the state to check the target."));
         return { status: "context-updated", state: response.state };
       }
       if (response.status === "context-updated") {
         accept(response.state);
         setSelected(response.state.source?.preparedMode ?? "normal");
-        dispatch({ type: "set-notice", notice: "接続先が変わりました。比較記録をクリアしたため、対象を確認してください。" });
+        dispatch({ type: "set-notice", notice: t("接続先が変わりました。比較記録をクリアしたため、対象を確認してください。", "The connection changed and displayed comparisons were cleared. Check the target.") });
         return response;
       }
       accept(response.state);
@@ -419,7 +420,7 @@ export function useSourceController() {
         || accepted.source?.registration.scopeId !== response.state.source?.registration.scopeId) {
         if (canAcceptSourceUpdate(accepted, latest.current.view, generation, foregroundGeneration.current)) {
           contextBlocked.current = true;
-          setSyncError('接続先が変わりました。「状態を再取得」で対象を確認してください。');
+          setSyncError(t("接続先が変わりました。「状態を再取得」で対象を確認してください。", "The connection changed. Refresh the state to check the target."));
         }
         return { status: 'context-updated', state: response.state };
       }

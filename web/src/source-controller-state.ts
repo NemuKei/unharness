@@ -1,3 +1,4 @@
+import { text as t } from './locale.ts';
 import { ApiError } from "./api.ts";
 import { mergeHistoryRows } from "./source-updates.ts";
 import type { SourceUpdate } from "./source-updates";
@@ -40,7 +41,7 @@ export const initialSourceControllerState: SourceControllerState = {
   favorites: [],
   cursor: null,
   error: "",
-  notice: "接続情報を確認しています。",
+  get notice() { return t("接続情報を確認しています。", "Checking the connection."); },
 };
 
 export type SourceControllerAction =
@@ -93,8 +94,8 @@ function failureFeedback(error: unknown) {
   const kind = error instanceof ApiError ? error.kind : "request-failed";
   const message =
     error instanceof ApiError && error.disposition === "uncertain"
-      ? "結果は未確認です。状態を再取得してください。自動再送は行いません。"
-      : `操作を完了できませんでした（${kind}）。外部の変更を確認し、状態を再取得してください。`;
+      ? t("結果は未確認です。状態を再取得してください。自動再送は行いません。", "The result is unconfirmed. Refresh the state; no automatic retry will be sent.")
+      : t(`操作を完了できませんでした（${kind}）。外部の変更を確認し、状態を再取得してください。`, `Operation failed (${kind}). Review external changes and refresh state.`);
   return { message };
 }
 
@@ -157,9 +158,9 @@ function acceptPlanResponse(
       : { retainedPlan: admitted ? (response.result as RetainedPlan) : null }),
     notice: admitted
       ? kind === "retained"
-        ? "変更内容を確認しました。まだ設定は記録していません。"
-        : "変更計画を確認しました。準備前に内容を確認してください。"
-      : "確認結果を現在の操作対象として受理できませんでした。表示を更新したため、もう一度確認してください。",
+        ? t("変更内容を確認しました。まだ設定は記録していません。", "Changes reviewed. Settings have not been recorded yet.")
+        : t("変更計画を確認しました。準備前に内容を確認してください。", "The change plan is ready. Review it before preparing the settings.")
+      : t("確認結果を現在の操作対象として受理できませんでした。表示を更新したため、もう一度確認してください。", "The reviewed result no longer matches the current target. The display was refreshed; review it again."),
   };
 }
 
@@ -186,7 +187,7 @@ export function sourceControllerReducer(
       return {
         ...accepted,
         notice:
-          "現在の設定は記録済みです。その後に接続先が変わりました。表示を更新したため、対象を確認してください。",
+          t("現在の設定は記録済みです。その後に接続先が変わりました。表示を更新したため、対象を確認してください。", "Current settings were recorded, then the connection changed. Review the refreshed target."),
       };
     return {
       ...accepted,

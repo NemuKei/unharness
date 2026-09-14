@@ -274,11 +274,16 @@ test('built replay resolves dropped prepare and save replies through explicit hi
 });
 test('built replay blocks a handoff after a second client changes modes, retaining Equipment and recovery', browserCase, async t => {
   await inReplayBrowser(t, async (s, page, panel) => {
+    // Exercise the server's stale-handoff check deliberately. Background
+    // polling can otherwise clear/disable the handoff before this click.
+    await page.evaluate(() => Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' }));
     const h = await readyReplay(s, panel);
+    const clipboardBefore = await page.evaluate(() => window.__replayClipboard);
     const plan = await service.planUserMode({ workspace: s.workspace, mode: 'unseal' });
     await service.applyUserPlan({ workspace: s.workspace, planId: plan.planId });
     await panel.getByRole('button', { name: '再実行の依頼をコピー', exact: true }).click();
     await panel.getByRole('alert').waitFor();
+    assert.equal(await page.evaluate(() => window.__replayClipboard), clipboardBefore);
     assert.equal(await panel.locator('.replay-handoff').count(), 0);
     assert.equal((await service.readUserReplay({ workspace: s.workspace, attemptId: h.attemptId })).conditionIssue, 'replay-preparation-stale');
     await page.getByRole('navigation', { name: 'ワークベンチ' }).getByRole('button', { name: 'モード', exact: true }).click();
