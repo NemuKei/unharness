@@ -8,7 +8,7 @@ The [Windows Codex handoff](handoff-windows-codex.md) now gives the native
 preflight, remaining Mac-only boundaries and staged implementation/acceptance
 plan. Preparing that handoff does not qualify or publish a Windows build.
 
-## Unreleased public-page refresh
+## Published public-page refresh
 
 The public-page and local UI/UX task results are integrated into the local
 development checkout. The public site leads to local opening guidance; ordinary
@@ -25,8 +25,12 @@ readable; changed source contents are still rechecked by the server before
 application. The legacy launcher command returns a verified local URL and sends
 only identity probes, without requesting pairing or approval.
 
-These are development changes. No site deployment, archive replacement,
-installed-plugin update or personal configuration application was performed.
+The public site was deployed from clean source `aedb7b9` on 2026-09-21. All 49
+served files matched the build, and live Japanese/English and narrow-screen
+checks passed. The current local development GUI was also rebuilt and reopened
+with its registered settings unchanged. See [publication evidence](evidence/2026-09-21-ui-publication.md).
+The maintainer selected this scope; the 0.0.10 archive and installed plugin were
+not updated, and no personal configuration was applied.
 
 ## Unreleased local UI/UX refresh
 
@@ -45,8 +49,9 @@ presentation accent. The update panel reports the displayed screen version,
 leaves installed/latest versions unconfirmed and copies a request for the
 existing AI update check. It adds no update HTTP route or external-proposal
 inbox. See the [approved phased plan](superpowers/plans/2026-09-21-ui-ux-update.md).
-This is a local development change only: installed packages, the public site,
-personal settings and support qualification are unchanged.
+The new local GUI is running from the development checkout. Installed packages,
+personal settings and support qualification are unchanged; the public-site
+publication has its separate evidence above.
 
 Final integration validation passed type/CSP checks, local and site builds,
 and the full Node suite: 1,418 tests, 1,330 passes, 88 skips and zero failures.
@@ -73,7 +78,7 @@ reduced motion and keyboard use. Manual in-app checks on an owned synthetic
 profile confirmed explicit application, persistent success feedback, narrow
 Settings and Back, with no console warnings/errors. Native screen readers and
 native 200% browser zoom remain untested. Packaging, installation and publication
-remain separate; the integrated changes are still uncommitted.
+remain separate; the integrated source is committed and pushed as `aedb7b9`.
 
 ## Unreleased custom UNSEAL guidance
 
@@ -186,10 +191,10 @@ The published snapshots below remain independent.
 | Surface | Verified revision | Evidence |
 | --- | --- | --- |
 | Published 0.0.10 package | 6ca76702fefc867a66416c8fa434256e99025d0c | [Archive and isolated native checks](evidence/2026-09-14-guided-product.md) |
-| Public bilingual site, guided demo and 0.0.10 catalog/download | 789ad538af4411f798366a0fa7abbabd26bb5c99 | [Publication checks](evidence/2026-09-14-guided-product.md#public-site) |
+| Public local-opening guide, demo and unchanged 0.0.10 catalog/download | aedb7b912504e4ecc82e83f77a1cfb9aa008b775 | [Publication checks](evidence/2026-09-21-ui-publication.md) |
 | Current repository | Re-read main/remote and local changes | Later documentation commits do not rebuild the archive or redeploy the site |
 
-The latest site deployment is a9d86b5f-c2c0-4f22-99fd-8a8c9fa02bc5 on the dedicated
+The latest site deployment is ffbef08b-ec65-4c24-9f10-08d5c5104cd8 on the dedicated
 `deltahelmlab-unharness` Pages project. All 49 served files matched its build.
 Release availability, published asset digests and the anonymous download were
 rechecked for 0.0.10. The installed personal profile was not updated by this
