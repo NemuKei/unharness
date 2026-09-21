@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { aiProfile } from '../test-support/ai-profile.mjs';
 import { startGuiServer } from '../src/gui/server.mjs';
+import packageInfo from '../package.json' with { type: 'json' };
 
 const browserCase = {
   timeout: 60000,
@@ -52,7 +53,7 @@ test('Modes keeps overview, preview, confirmation and saved versions close while
     await settings.getByRole('heading', { name, exact: true }).waitFor();
   }
   const updates = page.getByRole('region', { name: '更新情報', exact: true });
-  assert.match(await updates.innerText(), /表示中の画面版\s*0\.0\.10/);
+  assert.equal((await updates.innerText()).match(/表示中の画面版\s*([0-9.]+)/)?.[1], packageInfo.version);
   assert.match(await updates.innerText(), /導入版\s*未確認/);
   await updates.getByRole('button', { name: '更新をAIに確認', exact: true }).click();
   assert.match(await page.evaluate(() => window.__copiedRequest), /check_updates/);

@@ -1,6 +1,6 @@
 # Mac向けの導入案内と配布ラッパー
 
-Apple SiliconのMacで、展開した配布フォルダをCodexへ渡して導入を依頼する。利用者によるGit・npm・コマンドの手入力を前提にしない。現在の配布版は[0.0.10 Macプレビュー](https://github.com/NemuKei/unharness/releases/tag/v0.0.10)。公式ディレクトリからの直接導入は案内していない。
+Apple SiliconのMacで、展開した配布フォルダをCodexへ渡して導入を依頼する。利用者によるGit・npm・コマンドの手入力を前提にしない。このソースの配布対象は[0.0.11 Macプレビュー](https://github.com/NemuKei/unharness/releases/tag/v0.0.11)。公式ディレクトリからの直接導入は案内していない。
 
 ## 利用者の入口
 
