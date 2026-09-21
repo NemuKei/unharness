@@ -8,6 +8,20 @@ The [Windows Codex handoff](handoff-windows-codex.md) now gives the native
 preflight, remaining Mac-only boundaries and staged implementation/acceptance
 plan. Preparing that handoff does not qualify or publish a Windows build.
 
+## Published 0.0.11 Mac preview
+
+The [0.0.11 Mac preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.11)
+is published from clean source `caad44a`. It includes the local GUI and mode,
+settings, appearance and work-record improvements described below. The final ZIP,
+7,551 indexed files, native update/failure recovery/v3 rollback, explicit v4
+mode cycle and recovery after cache/data deletion passed. Anonymous download,
+checksum and tag were verified before updating the public catalog.
+See [the release evidence](evidence/2026-09-21-mac-0.0.11.md).
+
+The site catalog now offers 0.0.11; actual packaged MCP checks return `current`
+for 0.0.11 and `update-available` for 0.0.10. Personal plugin installation and
+fresh-task loading remain separate and were not changed by publication.
+
 ## Published public-page refresh
 
 The public-page and local UI/UX task results are integrated into the local
@@ -15,8 +29,8 @@ development checkout. The public site leads to local opening guidance; ordinary
 visits register no operating tools and offer no new public pairing. Earlier
 connection diagnostics and operation receipts remain in a separate legacy view.
 A temporary status failure can recover through its existing unexpired grant.
-The introduction and opening instructions still describe the distributed 0.0.10
-package, rather than claiming that the unreleased GUI is installed.
+The introduction and opening instructions now describe the distributed 0.0.11
+package. Local installation and fresh-task loading remain separate checks.
 
 Integration preserves the current runtime's retained-settings mode planning and
 the older server's conflict gate. A reused operation UUID cannot bind an old
@@ -32,7 +46,7 @@ with its registered settings unchanged. See [publication evidence](evidence/2026
 The maintainer selected this scope; the 0.0.10 archive and installed plugin were
 not updated, and no personal configuration was applied.
 
-## Unreleased local UI/UX refresh
+## UI/UX refresh included in 0.0.11
 
 The 2026-09-21 development work keeps the existing local-first workbench and
 its controllers while improving how users inspect, confirm and apply a saved
@@ -49,9 +63,9 @@ presentation accent. The update panel reports the displayed screen version,
 leaves installed/latest versions unconfirmed and copies a request for the
 existing AI update check. It adds no update HTTP route or external-proposal
 inbox. See the [approved phased plan](superpowers/plans/2026-09-21-ui-ux-update.md).
-The new local GUI is running from the development checkout. Installed packages,
-personal settings and support qualification are unchanged; the public-site
-publication has its separate evidence above.
+The current local GUI runs from the development checkout, and the same features
+are now in the 0.0.11 archive. The maintainer's installed plugin and personal
+settings are unchanged; package and website publication have separate evidence.
 
 Final integration validation passed type/CSP checks, local and site builds,
 and the full Node suite: 1,418 tests, 1,330 passes, 88 skips and zero failures.
@@ -80,7 +94,7 @@ Settings and Back, with no console warnings/errors. Native screen readers and
 native 200% browser zoom remain untested. Packaging, installation and publication
 remain separate; the integrated source is committed and pushed as `aedb7b9`.
 
-## Unreleased custom UNSEAL guidance
+## Custom UNSEAL guidance included in 0.0.11
 
 Setup v4 can freeze user-confirmed additional instructions for UNSEAL. TRUEFORM
 keeps no added instructions and Normal keeps its original saved contents.
@@ -95,7 +109,7 @@ failure after obsolete version assertions were corrected. Installation and
 personal adoption are still separate: this does not qualify the newer native
 Codex runtime or remove its saved dependency/version conflict.
 
-## Unreleased simple mode screen
+## Simple mode screen included in 0.0.11
 
 The 2026-09-20 follow-up simplifies the everyday screen to mode selection and
 saved instruction/Skill contents. Records, appearance, settings, favorites and
@@ -110,7 +124,7 @@ saved source state. Personal modes were not applied; the evidence records the
 separate configuration-digest boundary. The simplified development GUI is open; installation
 and publication remain separate.
 
-## Unreleased local entry and work records
+## Local entry and work records included in 0.0.11
 
 The development workbench is now the everyday operating surface. Public pages
 provide introduction, demos and install/update guidance; ordinary visitors do
@@ -133,7 +147,7 @@ workspace with configuration/source state unchanged. Installed plugin and
 published package/site remain unchanged. The [execution plan](superpowers/plans/2026-09-14-local-workbench-comparison-ux.md)
 is complete for this local development scope.
 
-## Unreleased mode-switch improvement
+## Mode-switch improvement included in 0.0.11
 
 The 2026-09-14 development change incorporates unrelated Codex settings into an
 ordinary mode plan. Users select and confirm a mode without a separate common
@@ -155,7 +169,7 @@ unchanged; 0.0.10 and earlier installed builds still use separate reconciliation
 
 ## Available now
 
-The [0.0.10 Mac preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.10)
+The [0.0.11 Mac preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.11)
 is published. The agreed initial product scope is Apple Silicon
 and Codex Desktop: save Normal, prepare the three supported modes, inspect fresh
 task evidence, compare recorded work, reuse favorites and recover independently.
@@ -181,7 +195,7 @@ approval remain explicit; conflicts offer an AI inspection prompt without
 enabling a source write. These UI and management-Skill changes first shipped in
 0.0.9. Version 0.0.10 adds the bilingual product journey, Codex draft handoff and
 read-only update discovery. The public site now serves that interface and the
-verified 0.0.10 download.
+verified 0.0.11 download with the updated local-opening guidance.
 Its isolated native installation,
 packaged MCP and archive checks are recorded in [the release evidence](evidence/2026-09-14-workbench-release.md).
 The published snapshots below remain independent.
@@ -190,14 +204,14 @@ The published snapshots below remain independent.
 
 | Surface | Verified revision | Evidence |
 | --- | --- | --- |
-| Published 0.0.10 package | 6ca76702fefc867a66416c8fa434256e99025d0c | [Archive and isolated native checks](evidence/2026-09-14-guided-product.md) |
-| Public local-opening guide, demo and unchanged 0.0.10 catalog/download | aedb7b912504e4ecc82e83f77a1cfb9aa008b775 | [Publication checks](evidence/2026-09-21-ui-publication.md) |
+| Published 0.0.11 package | caad44acaddfe58ba8e29e03e15d3a973a6092df | [Archive and isolated native checks](evidence/2026-09-21-mac-0.0.11.md) |
+| Public local-opening guide, demo and 0.0.11 catalog/download | cd7275398a36b56b99ee47bde724c1aee7ba2b3e | [Publication checks](evidence/2026-09-21-mac-0.0.11.md) |
 | Current repository | Re-read main/remote and local changes | Later documentation commits do not rebuild the archive or redeploy the site |
 
-The latest site deployment is ffbef08b-ec65-4c24-9f10-08d5c5104cd8 on the dedicated
+The latest site deployment is 591ce410-062e-4438-aed5-b5776824f651 on the dedicated
 `deltahelmlab-unharness` Pages project. All 49 served files matched its build.
 Release availability, published asset digests and the anonymous download were
-rechecked for 0.0.10. The installed personal profile was not updated by this
+rechecked for 0.0.11. The installed personal profile was not updated by this
 release task.
 
 ## Current limits

@@ -14,6 +14,8 @@ the Mac source-control scope below; it is not a new model-level mode trial.
 
 The [0.0.6 Mac qualification](evidence/2026-09-13-mac-codex-completion.md) covers Apple Silicon macOS 26.6.2, Codex Desktop 26.903.71938 and Codex 0.153.4. The archive, native installation, HTTPS-to-loopback GUI/WebMCP operations, exact Normal restoration and independent recovery are verified. The [0.0.4 native journey](evidence/2026-09-11-mac-codex-0.0.4.md) records the earlier first-install, fresh-model, setup, comparison and artwork checks on its stated desktop build.
 
+The [0.0.11 package qualification](evidence/2026-09-21-mac-0.0.11.md) adds native CLI 0.153.4 update, failed-source-replacement recovery, explicit v4 mode cycling and cache-independent recovery checks in isolated synthetic profiles. It does not add fresh Desktop model-loading or qualify a newer Codex runtime.
+
 The [remote-plugin control check](evidence/2026-09-11-remote-plugin-control-limit.md) found individual OFF unavailable on Codex 0.153.4. The maintainer accepted official plugins remaining at Normal for the initial Mac product. Confirmed optional instructions and ordinary Skill disabled/manual/automatic states are the switching scope. Unsupported forward OFF stops before writes, and current capability is shown separately from immutable old records.
 
 Recorded selected Skill inputs and unknown whole-plugin runtime are separate evidence. The current release does not establish full MCP/hook/app/scheduled-task runtime coverage or a performance improvement.

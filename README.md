@@ -12,7 +12,7 @@ Save your usual setup, then try your everyday work with selected instructions re
 
 [日本語](README.ja.md)
 
-The [0.0.11 Mac preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.11) brings the local workbench improvements into the package. Earlier native update and recovery qualification is recorded in the [0.0.10 distribution checks](docs/evidence/2026-09-14-guided-product.md). See the [installation, public operation and recovery checks](docs/evidence/2026-09-13-mac-codex-completion.md) for its verified scope and earlier model/artwork evidence.
+The [0.0.11 Mac preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.11) brings the local workbench improvements into the package. See the [0.0.11 distribution checks](docs/evidence/2026-09-21-mac-0.0.11.md). Earlier native update and recovery qualification is recorded in the [0.0.10 distribution checks](docs/evidence/2026-09-14-guided-product.md). See the [installation, public operation and recovery checks](docs/evidence/2026-09-13-mac-codex-completion.md) for its verified scope and earlier model/artwork evidence.
 
 Version 0.0.10 includes a bilingual [guided product entry](docs/guided-product-entry.md): open a Codex draft, explore synthetic setup/update examples, and use the real workbench in Japanese or English. The management Skill uses [read-only update discovery](docs/plugin-update.md) and guides from the actual installed state. The release and deployed site have independent verification records.
 
@@ -30,7 +30,7 @@ The legacy [restricted public connection bridge](docs/domain-connection.md) reta
 
 The Codex core now saves reviewed UNSEAL/TRUEFORM presets with model and official-reference provenance, separately from the original Normal. CLI, GUI operations and MCP use the same frozen versions; adoption does not change source files or the current task. The [setup contract](docs/spec-guided-setup.md) records the saved-version boundary and the scoped native evidence.
 
-The development v4 format can also save user-reviewed custom instructions for
+The v4 format can also save user-reviewed custom instructions for
 UNSEAL. TRUEFORM leaves that text out, and Normal restores its saved content.
 The local screen distinguishes custom text from the fixed minimal guide and
 opens the saved text on request. Saving and preparing remain separate; older
@@ -88,7 +88,7 @@ A [selected real-source Mac check](docs/evidence/2026-09-08-real-source-desktop-
 
 In 0.0.11, mode selection automatically reviews unrelated application-setting edits and keeps them when you confirm the mode. Display/common-setting changes need no separate Normal-version decision. Instruction/Skill changes and differences that cannot be proven safe still stop the operation. Selecting or refreshing changes no live settings. Earlier Normal, favorite and checkpoint versions remain immutable; recovery preserves current common settings. Released 0.0.10 and earlier workbenches retain the separate reconciliation step until updated. See the [workbench runbook](docs/user-source-gui.md) and [retained-settings contract](docs/spec-retained-settings.md); [earlier native checks](docs/evidence/2026-09-08-retained-settings-macos.md) cover the standalone reconciliation flow.
 
-In the development workbench, open **その他 → 記録・比較 → 仕事を記録する**, select a task by name, then save its outcome and an optional note. Collection ends at the latest completed turn; ongoing recording discussion is excluded. Open one saved record to reflect, or select two or three and choose **並べて見る**. Outcomes and notes come before measurements; unknown or partial values remain visible. UUIDs and detailed criteria stay in advanced controls. Answers are opened explicitly. See [the GUI guide](docs/user-source-gui.md) and [work-record contract](docs/spec-work-record-ux.md).
+In the 0.0.11 workbench, open **その他 → 記録・比較 → 仕事を記録する**, select a task by name, then save its outcome and an optional note. Collection ends at the latest completed turn; ongoing recording discussion is excluded. Open one saved record to reflect, or select two or three and choose **並べて見る**. Outcomes and notes come before measurements; unknown or partial values remain visible. UUIDs and detailed criteria stay in advanced controls. Answers are opened explicitly. See [the GUI guide](docs/user-source-gui.md) and [work-record contract](docs/spec-work-record-ux.md).
 
 For a controlled replay, open **同じお題で試す** before the work. The **save starting conditions** form can now freeze the exact request, declared criteria, stopping budget and original working-file bytes, including uncommitted and binary content. File changes invalidate an unsaved review; saved starts remain immutable. [Mac native/profile and browser evidence](docs/evidence/2026-09-08-starting-conditions-macos.md) covers capture, readback, interruption and scope changes. This [input-capture step](docs/spec-starting-conditions.md) starts no model task.
 

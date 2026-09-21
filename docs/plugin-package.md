@@ -2,6 +2,8 @@
 
 The Mac preview package combines the built local interface, deterministic core/MCP, management, setup and original-authoring Skills, locked production dependencies and an official Node runtime. It currently targets **macOS arm64**. Native update/removal/reinstall and [independent recovery](plugin-recovery.md) have scoped evidence. The [AI-guided installable wrapper](mac-installation.md) accompanies the [0.0.11 Mac preview](https://github.com/NemuKei/unharness/releases/tag/v0.0.11). Its [guided-entry and distribution evidence](evidence/2026-09-14-guided-product.md) records the earlier 0.0.10 package. The earlier [0.0.8 archive/native/artwork evidence](evidence/2026-09-13-awakening-motion.md) is separate from the [0.0.6 mode/recovery qualification](evidence/2026-09-13-mac-codex-completion.md) and earlier model-driven journey under the [plugin contract](spec-plugin-distribution.md).
 
+The [0.0.11 release evidence](evidence/2026-09-21-mac-0.0.11.md) records the current immutable archive, native update and independent recovery checks.
+
 ## Maintainer build
 
 Use Node.js 24+, the checkout's locked development dependencies and an existing canonical output parent outside the checkout. Download the exact [official Node.js archive](https://nodejs.org/dist/v24.20.0/node-v24.20.0-darwin-arm64.tar.gz) and compare it with the [official SHA256 list](https://nodejs.org/dist/v24.20.0/SHASUMS256.txt). Assembly also checks the pinned archive hash before extraction.
