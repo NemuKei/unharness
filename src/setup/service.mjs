@@ -10,6 +10,7 @@ import { assertControlChanges } from './control-sources.mjs';
 import { validatePresetProposal, compileReleasePreset } from './preset.mjs';
 import { setupScope, loadSetupReview, loadSetup, setupReviewSummary, assertReviewCurrent, adoptedState } from './records.mjs';
 import { captureInventoryForSetup } from './inventory-capture.mjs';
+import { isVersionedSetup, usesSourceStates } from './schema.mjs';
 
 const request = (args, fields) => exactKeys(args, ['workspace', ...fields], [], 'invalid-request');
 async function locked(workspace, action) {
@@ -43,7 +44,7 @@ export async function freezePresets(w, proposal, inventory) {
     assertControlChanges({ sources: w.reg.skills, plugins: w.reg.plugins, before: normal, after: result.after });
     assertPlanOwnershipChanges(normal, result.after);
     presets[mode] = { ...options[mode], guide: result.guide, skillStates: result.skillStates,
-      ...(proposal.schemaVersion === 3 ? { pluginStates: result.pluginStates } : {}),
+      ...(usesSourceStates(proposal.schemaVersion) ? { pluginStates: result.pluginStates } : {}),
       snapshotId: await saveSnapshot(w.workspace, w.reg, result.after, w.state.snapshotVersion ?? 1) };
   }
   return presets;
@@ -127,7 +128,7 @@ const result = (w, setupId, p, duplicate) => ({ setupId, reviewId: p.reviewId, n
 
 export async function readSetup(args) {
   exactKeys(args, ['workspace'], ['schemaVersion'], 'invalid-request');
-  if (args.schemaVersion !== undefined && ![2, 3].includes(args.schemaVersion)) fail('invalid-request');
+  if (args.schemaVersion !== undefined && !isVersionedSetup(args.schemaVersion)) fail('invalid-request');
   const w = await openWorkspace(args.workspace), saved = await loadSetup(w);
   let inventory = null, inventoryError = null;
   if (applicationFor(w.reg.context).supportsReleasePresets) {
@@ -162,6 +163,6 @@ export async function savedPresetForMode(w, mode) {
   const preset = p.presets[mode];
   const { after, adaptation } = await adaptRetainedSnapshot(w, { normalId: p.normalId, snapshotId: preset.snapshotId }, saved.setupId, 'setup');
   return { after, adaptation, guide: preset.guide, skillStates: preset.skillStates,
-    ...(p.schemaVersion === 3 ? { pluginStates: preset.pluginStates } : {}),
+    ...(usesSourceStates(p.schemaVersion) ? { pluginStates: preset.pluginStates } : {}),
     selectedIds: preset.selection, setupId: saved.setupId };
 }

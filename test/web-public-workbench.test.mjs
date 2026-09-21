@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
+import { readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { publicBrowser, publicBrowserCase } from '../test-support/public-browser.mjs';
 import { CONNECTION_TTL_MS } from '../src/gui/pairing.mjs';
 import { readSourceProfileFiles } from '../src/sources/owned-profile.mjs';
@@ -54,6 +56,64 @@ test('public GUI and page-tool calls share plans, state updates, Normal restorat
   assert.deepEqual(s.errors, []);
 });
 
+test('a transient status failure keeps diagnostics, tools and same-grant recovery without another redeem', publicBrowserCase, async t => {
+  const s = await publicBrowser(t), { page } = s; await connect(s);
+  const redeems = s.posts.filter(post => post.path.endsWith('/redeem')).length;
+  s.dropNextStatus();
+  await page.getByRole('button', { name: '状態を再取得', exact: true }).click();
+  await page.getByRole('heading', { name: '接続状態は未確認', exact: true }).waitFor();
+  assert.equal(await page.evaluate(() => window.__unharnessTestTools.size > 0), true);
+  assert.equal(await page.getByRole('button', { name: '状態を再取得', exact: true }).count(), 1);
+  await page.getByRole('button', { name: '状態を再取得', exact: true }).click();
+  await page.locator('.prepared-mode').filter({ hasText: /^Normal$/ }).waitFor();
+  assert.equal(s.posts.filter(post => post.path.endsWith('/redeem')).length, redeems);
+  assert.equal(s.posts.filter(post => post.path.endsWith('/plan') || post.path.endsWith('/apply')).length, 0);
+  assert.ok(s.errors.every(error => error.includes('net::ERR_FAILED')), JSON.stringify(s.errors));
+  await s.assertNoSecrets();
+});
+
+test('the browser retains shared edits while preventing old plan IDs and changed source contents from being applied', publicBrowserCase, async t => {
+  const s = await publicBrowser(t); await connect(s);
+  const oldId = randomUUID();
+  const old = await s.callPageTool('unharness_plan_mode', { mode: 'unseal', requestId: oldId });
+  assert.equal(old.result.result.ok, true);
+  const config = join(s.context.codexHome, 'config.toml');
+  const original = await readFile(config, 'utf8');
+  await writeFile(config, original.replace(/^model = .*$/m, 'model = "PRIVATE_SHARED_FIRST"'));
+  await s.callPageTool('unharness_status', {});
+  const count = action => s.posts.filter(post => post.path.endsWith('/' + action)).length;
+  const sentPlans = count('plan');
+  const reused = await s.callPageTool('unharness_plan_mode', { mode: 'unseal', requestId: oldId });
+  assert.equal(reused.error.kind, 'remote-operation-conflict');
+  assert.equal(count('plan'), sentPlans);
+  assert.deepEqual((await s.callPageTool('unharness_operation_status', { operationId: oldId })).result, old.result);
+  assert.equal((await s.callPageTool('unharness_apply_plan', { planRequestId: oldId, requestId: randomUUID() })).error.kind, 'remote-plan-unavailable');
+  assert.equal(count('apply'), 0);
+
+  // This real browser must receive the exposed retained-v1 capability before
+  // it can plan across a shared-settings mismatch. No fake capability is set.
+  const freshId = randomUUID();
+  const fresh = await s.callPageTool('unharness_plan_mode', { mode: 'unseal', requestId: freshId });
+  assert.equal(fresh.result.result.ok, true, JSON.stringify(fresh));
+  await writeFile(config, original.replace(/^model = .*$/m, 'model = "PRIVATE_SHARED_SECOND"'));
+  const changed = await readSourceProfileFiles(s.context);
+  await s.callPageTool('unharness_status', {});
+  const stale = await s.callPageTool('unharness_apply_plan', { planRequestId: freshId, requestId: randomUUID() });
+  assert.equal(stale.result.result.ok, false);
+  assert.equal(stale.result.result.error.kind, 'source-conflict');
+  assert.deepEqual(await readSourceProfileFiles(s.context), changed, 'conflict=true twice is not proof that source contents still match');
+
+  await s.callPageTool('unharness_status', {});
+  const latestId = randomUUID();
+  const latest = await s.callPageTool('unharness_plan_mode', { mode: 'unseal', requestId: latestId });
+  assert.equal(latest.result.result.ok, true, JSON.stringify(latest));
+  const applied = await s.callPageTool('unharness_apply_plan', { planRequestId: latestId, requestId: randomUUID() });
+  assert.equal(applied.result.result.ok, true);
+  assert.match(await readFile(config, 'utf8'), /PRIVATE_SHARED_SECOND/);
+  assert.equal(count('redeem'), 1);
+  await s.assertNoSecrets();
+});
+
 test('lost public responses preserve the original operation and expiry clears current-state claims', publicBrowserCase, async t => {
   const s = await publicBrowser(t), { page } = s; await connect(s);
   await page.getByRole('button', { name: /^UNSEAL/ }).click();
@@ -74,10 +134,18 @@ test('lost public responses preserve the original operation and expiry clears cu
   assert.equal(await page.getByLabel('操作ID', { exact: true }).inputValue(), operationId);
   assert.equal(s.posts.filter(r => r.path.endsWith('/apply')).length, 1);
   await s.screenshot('public-expired-result.png');
+  const redeems = s.posts.filter(r => r.path.endsWith('/redeem')).length;
+  await page.getByText('紹介・導入', { exact: true }).click();
+  await page.getByRole('button', { name: '開き方を見る', exact: true }).click();
+  await page.getByRole('heading', { name: '操作は、このMacの画面で。', exact: true }).waitFor();
+  await page.getByRole('button', { name: '以前の接続・操作結果を確認', exact: true }).click();
+  assert.equal(await page.getByLabel('操作ID', { exact: true }).inputValue(), operationId);
+  assert.equal(s.posts.filter(r => r.path.endsWith('/redeem')).length, redeems);
+  assert.equal(s.posts.filter(r => r.path.endsWith('/apply')).length, 1);
   await s.assertNoSecrets();
   await page.getByText('紹介・導入', { exact: true }).click();
   await page.getByRole('button', { name: 'デモ', exact: true }).click();
-  assert.equal((await s.callPageTool('unharness_plan_mode', { mode: 'normal', requestId: randomUUID() })).ok, false);
+  assert.equal(await page.evaluate(() => window.__unharnessTestTools.size), 0, 'leaving the legacy view unregisters operation tools');
   assert.equal((await userSourceState({ workspace: s.workspace })).preparedMode, 'unseal');
   assert.deepEqual(s.errors.filter(error => !error.includes('net::ERR_FAILED') && !error.includes('401')), []);
 });

@@ -11,18 +11,30 @@ type State = { review: ReplayReview | null; attempt: ReplayAttempt | null; hando
   attempts: ReplayAttempt[]; activeAttemptId: string | null; cursor: string | null;
   resultReview: ReplayResultReview | null; result: ReplayResult | null; lastSaved: ReplayResult | null;
   comparison: ReplayComparison | null; selected: string[]; error: string; backgroundError: string; notice: string; uncertain: string | null };
+const initialReplayState = (): State => ({ review: null, attempt: null, handoff: null, attempts: [], activeAttemptId: null, cursor: null,
+  resultReview: null, result: null, lastSaved: null, comparison: null, selected: [], error: "", backgroundError: "", notice: "", uncertain: null });
 export function useReplayController(shared: Shared) {
-  const [state, setState] = useState<State>({ review: null, attempt: null, handoff: null, attempts: [], activeAttemptId: null, cursor: null,
-    resultReview: null, result: null, lastSaved: null, comparison: null, selected: [], error: "", backgroundError: "", notice: "", uncertain: null });
+  const [state, setState] = useState<State>(initialReplayState);
   const latest = useRef(state), view = useRef(shared.view), alive = useRef(true), preparationGeneration = useRef(0), resultGeneration = useRef(0);
   latest.current = state; view.current = shared.view;
   const preparationKey = replayPreparationKey(shared.view);
+  const contextKey = comparisonContextKey(shared.view);
+  const previousKeys = useRef({ contextKey, preparationKey });
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   useEffect(() => {
-    ++preparationGeneration.current;
-    setState(s => ({ ...s, review: null, handoff: null,
-      notice: s.review || s.handoff ? t("装備の状態が変わりました。開始状態を確認し直してください。", "The loadout changed. Recheck the starting state.") : s.notice }));
-  }, [preparationKey]);
+    const previous = previousKeys.current;
+    previousKeys.current = { contextKey, preparationKey };
+    if (previous.contextKey !== contextKey) {
+      ++preparationGeneration.current; ++resultGeneration.current;
+      setState(initialReplayState());
+      return;
+    }
+    if (previous.preparationKey !== preparationKey) {
+      ++preparationGeneration.current;
+      setState(s => ({ ...s, review: null, handoff: null,
+        notice: s.review || s.handoff ? t("装備の状態が変わりました。開始状態を確認し直してください。", "The loadout changed. Recheck the starting state.") : s.notice }));
+    }
+  }, [contextKey, preparationKey]);
   const externalSignature = useRef("");
   useEffect(() => {
     const update = shared.externalUpdate, page = update?.history?.replays;

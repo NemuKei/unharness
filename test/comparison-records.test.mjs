@@ -39,6 +39,30 @@ async function recording(s, mutate = () => {}) {
   return { taskId, records, path };
 }
 const mac = { skip: process.platform !== 'darwin' };
+test('recent task review includes completed work but excludes a running recording turn', mac, async t => {
+  const s = await setup(t);
+  const { taskId } = await recording(s, records => {
+    const first = records.find(r => r.type === 'token_usage_record').payload;
+    for (const [turnId, complete, tokens] of [['second', true, 50], ['recording-request', false, 70]]) {
+      const timestamp = new Date(Date.now() + (turnId === 'second' ? 1000 : 2000)).toISOString();
+      const usage = { total_tokens: tokens, input_tokens: tokens - 10, cached_input_tokens: 0, cache_write_input_tokens: 0, output_tokens: 10, reasoning_output_tokens: 0 };
+      const totals = Object.fromEntries(Object.keys(usage).map(k => [k, first.usage[k] + usage[k] + (turnId === 'recording-request' ? ({ total_tokens: 50, input_tokens: 40, cached_input_tokens: 0, cache_write_input_tokens: 0, output_tokens: 10, reasoning_output_tokens: 0 })[k] : 0)]));
+      records.push({ type: 'event_msg', timestamp, payload: { type: 'task_started', turn_id: turnId } },
+        { type: 'turn_context', timestamp, payload: { cwd: s.context.project, turn_id: turnId, model: 'synthetic-model', effort: 'high' } },
+        { type: 'token_usage_record', timestamp, payload: { ...first, turn_id: turnId, root_turn_id: turnId, response_id: turnId, usage, turn_token_usage: usage, thread_token_usage: totals } });
+      if (complete) records.push({ type: 'event_msg', timestamp, payload: { type: 'task_complete', turn_id: turnId, duration_ms: 2000, last_agent_message: 'SECOND_COMPLETE_RESULT' } });
+    }
+  });
+  const review = await service.reviewUserRun({ workspace: s.workspace, taskId, latestCompleted: true });
+  assert.deepEqual(review.measurement.selectedTurnIds, ['first', 'second']);
+  assert.equal(review.measurement.usage.totals.totalTokens, 150);
+  assert.equal(review.measurement.throughTurnId, 'second');
+  assert.equal(review.measurement.availableTurns.at(-1).completed, false);
+  assert.equal((await service.reviewUserRun({ workspace: s.workspace, taskId })).measurement.throughTurnId, 'first');
+  await assert.rejects(service.reviewUserRun({ workspace: s.workspace, taskId, latestCompleted: true, throughTurnId: 'first' }), { kind: 'invalid-request' });
+  const unfinished = await recording(s, records => records.splice(records.findIndex(r => r.payload?.type === 'task_complete'), 1));
+  await assert.rejects(service.reviewUserRun({ workspace: s.workspace, taskId: unfinished.taskId, latestCompleted: true }), { kind: 'comparison-no-completed-turn' });
+});
 test('private run saves are stable and source state remains byte-identical; answer requires explicit output read', mac, async t => {
   const s = await setup(t), { workspace } = s;
   const w = await openWorkspace(workspace), beforeFiles = await captureRegistered(w.reg);

@@ -1,5 +1,10 @@
 import { text as t } from './locale.ts';
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { RecentTaskPicker } from './RecentTaskPicker';
+import type { RecentTask } from './RecentTaskPicker';
+import { AiRequestButton } from './AiRequestButton';
+import { bindChatScope } from './chat-requests';
+import './work-records.css';
 import { PluginObservationSummary } from './PluginObservationSummary';
 import artwork from "../assets/hangar-states-v1.png";
 import {
@@ -24,11 +29,13 @@ import type {
 } from "./comparisons";
 import { modePresentation, validTaskId } from "./sources";
 import type { SourceMode } from "./sources";
-import { useComparisonController } from "./useComparisonController";
+import { comparisonContextKey, useComparisonController } from "./useComparisonController";
 import type { useSourceController } from "./useSourceController";
 import { StartingConditions } from "./StartingConditions";
 import { ReplayWorkbench } from "./ReplayWorkbench";
 import { useReplayController } from "./useReplayController";
+import { OperationStatus } from './workbench/OperationStatus';
+import type { OperationKind } from './workbench/OperationStatus';
 
 type SourceController = ReturnType<typeof useSourceController>;
 
@@ -49,7 +56,7 @@ function associationLabel(review: RunReview) {
   const association = review.source.association;
   return association
     ? modePresentation[association.preparedMode].title
-    : t("関連する装備は不明", "Associated loadout unknown");
+    : t("モード未確認", "Mode unverified");
 }
 
 function SourcePortrait({ review }: { review: RunReview }) {
@@ -134,22 +141,24 @@ function AssessmentEditor({
   correction,
   disabled,
   onSave,
+  initialTitle,
 }: {
   review: RunReview;
   correction: SavedRun | null;
   disabled: boolean;
   onSave: (value: { title?: string; assessment: RunAssessment }) => void;
+  initialTitle?: string;
 }) {
   const [title, setTitle] = useState("");
   const [assessment, setAssessment] = useState<RunAssessment>(defaultAssessment);
   useEffect(() => {
-    setTitle(correction?.title ?? "");
+    setTitle(correction?.title ?? initialTitle ?? "");
     setAssessment(
       correction
         ? structuredClone(correction.assessment)
         : structuredClone(defaultAssessment),
     );
-  }, [correction?.runId, review.reviewId]);
+  }, [correction?.runId, review.reviewId, initialTitle]);
   const canSave =
     title.length <= 120 &&
     assessment.requirements.every((row) => row.label.trim()) &&
@@ -167,13 +176,14 @@ function AssessmentEditor({
           <p className="eyebrow">{t("評価を付ける", "Add an assessment")}</p>
           <h2 id="assessment-heading">{correction ? t("訂正版を保存", "Save a revision") : t("記録を保存", "Save record")}</h2>
         </div>
-        <span>{t("元の測定は変更しません", "Original measurements stay unchanged")}</span>
+        <span>{provenanceLabels[assessment.provenance]}</span>
       </div>
       <div className="comparison-form-grid">
-        <label>{t("任意のタイトル", "Optional title")}<input value={title} maxLength={120} onChange={(event) => setTitle(event.target.value)} /></label>
-        <label>{t("結果", "Result")}<select value={assessment.outcome} onChange={(event) => setAssessment((old) => ({ ...old, outcome: event.target.value as RunAssessment["outcome"] }))}>{Object.entries(outcomeLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
-        <label>{t("評価した人", "Assessed by")}<select value={assessment.provenance} onChange={(event) => setAssessment((old) => ({ ...old, provenance: event.target.value as RunAssessment["provenance"] }))}>{Object.entries(provenanceLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
+        <label>{t("仕事の名前", "Work title")}<input value={title} maxLength={120} onChange={(event) => setTitle(event.target.value)} /></label>
+        <label>{t("この結果は使えましたか？", "Was the result useful?")}<select value={assessment.outcome} onChange={(event) => setAssessment((old) => ({ ...old, outcome: event.target.value as RunAssessment["outcome"] }))}>{Object.entries(outcomeLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
       </div>
+      <details className="assessment-advanced"><summary>{t('詳しい評価を残す（任意）', 'Add detailed criteria (optional)')}</summary>
+      <label>{t("評価した人", "Assessed by")}<select value={assessment.provenance} onChange={(event) => setAssessment((old) => ({ ...old, provenance: event.target.value as RunAssessment["provenance"] }))}>{Object.entries(provenanceLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
       <div className="assessment-group">
         <div className="comparison-heading"><h3>{t("要件チェック", "Requirement checks")}</h3><button className="text-button" type="button" disabled={assessment.requirements.length >= 24} onClick={() => setAssessment((old) => ({ ...old, requirements: [...old.requirements, { id: `requirement-${crypto.randomUUID().slice(0, 8)}`, label: "", critical: false, result: "unknown" }] }))}>{t("要件を追加", "Add a requirement")}</button></div>
         {assessment.requirements.map((row, index) => (
@@ -199,15 +209,16 @@ function AssessmentEditor({
           </div>
         ))}
       </div>
-      <label className="comparison-note">{t("補足", "Notes")}<textarea maxLength={2000} value={assessment.note ?? ""} onChange={(event) => setAssessment((old) => ({ ...old, note: event.target.value }))} /></label>
-      <button className="primary comparison-primary" disabled={disabled || !canSave} onClick={() => onSave({ ...(title.trim() ? { title: title.trim() } : {}), assessment })}>{correction ? t("訂正版を保存", "Save a revision") : t("この評価で保存", "Save this assessment")}</button>
+      </details>
+      <label className="comparison-note">{t("手直しや使い心地のひとこと（任意）", "A note on edits or how it felt (optional)")}<textarea maxLength={2000} value={assessment.note ?? ""} onChange={(event) => setAssessment((old) => ({ ...old, note: event.target.value }))} /></label>
+      <button className="primary comparison-primary" disabled={disabled || !canSave} onClick={() => onSave({ ...(title.trim() ? { title: title.trim() } : {}), assessment })}>{correction ? t("訂正版を保存", "Save a revision") : t("この記録を保存", "Save this record")}</button>
       <p className="muted">{t("評価はユーザーまたはAIに帰属する後付けの記録です。自動採点や総合品質点ではありません。", "Assessments are retrospective records attributed to the user or AI, without automatic grading or an overall quality score.")}</p>
     </section>
   );
 }
 
-function ComparisonTable({ runs }: { runs: SavedRun[] }) {
-  const rows: Array<[string, (run: SavedRun) => string]> = [
+function ComparisonTable({ runs, detailed = false }: { runs: SavedRun[]; detailed?: boolean }) {
+  const rows: Array<[string, (run: SavedRun) => string]> = detailed ? [
     [t("結果", "Result"), (run) => outcomeLabels[run.assessment.outcome]],
     [t("算入された採用", "Counted acceptance"), (run) => run.acceptance.accepted ? t("はい", "Yes") : t("いいえ", "No")],
     [t("ルート応答トークン", "Root-response tokens"), (run) => `${formatNumber(run.measurement.usage.totals.totalTokens)}${run.measurement.usage.availability === "partial" ? t("（一部）", " (partial)") : ""}`],
@@ -227,11 +238,18 @@ function ComparisonTable({ runs }: { runs: SavedRun[] }) {
     [t("不明な条件", "Unknown conditions"), (run) => conditionEvidence(run.measurement.conditions).unknown],
     [t("評価者", "Assessor"), (run) => provenanceLabels[run.assessment.provenance]],
     [t("ソース範囲", "Source scope"), (run) => run.source.association ? t("最初のターンだけ", "First turn only") : t("関連不明", "Association unknown")],
+  ] : [
+    [t('結果', 'Result'), run => outcomeLabels[run.assessment.outcome] + (run.assessment.provenance === 'agent' ? t('（AIの評価）', ' (AI assessment)') : '')],
+    [t('手直し・使い心地', 'Edits and experience'), run => run.assessment.note || t('まだ未記録', 'Not recorded yet')],
+    [t('開始時のモード', 'Initial mode'), associationLabel],
+    [t('開始時のモデル', 'Initial model'), run => conditionEvidence(run.measurement.conditions).initialModel],
+    [t('記録された時間', 'Recorded time'), run => formatDuration(run.measurement.time.recordedTurnDurationMs)],
+    [t('記録された使用量', 'Recorded usage'), run => `${formatNumber(run.measurement.usage.totals.totalTokens)}${run.measurement.usage.totals.totalTokens === null ? '' : ' tokens'}${run.measurement.usage.availability === 'partial' ? t('（一部のみ）', ' (partial)') : ''}`],
   ];
   return (
-    <div className="comparison-table-scroll" tabIndex={0} aria-label={t("保存記録の比較表", "Saved-record comparison")}>
+    <div className={`comparison-table-scroll${detailed ? '' : ' work-comparison'}`} data-record-count={runs.length} tabIndex={0} aria-label={t("保存記録の比較表", "Saved-record comparison")}>
       <table className="comparison-table">
-        <thead><tr><th scope="col">{t("項目", "Metric")}</th>{runs.map((run) => <th scope="col" key={run.runId}><SourcePortrait review={run} /><strong>{run.title ?? t("名称なし", "Untitled")}</strong><span>{associationLabel(run)}</span></th>)}</tr></thead>
+        <thead><tr><th scope="col">{t("項目", "Metric")}</th>{runs.map((run) => <th scope="col" key={run.runId}>{detailed && <SourcePortrait review={run} />}<strong>{run.title ?? t("名称なし", "Untitled")}</strong><span>{capturedLabel(run.capturedAt)}</span></th>)}</tr></thead>
         <tbody>{rows.map(([label, value]) => <tr key={label}><th scope="row">{label}</th>{runs.map((run) => <td key={run.runId}>{value(run)}</td>)}</tr>)}</tbody>
       </table>
     </div>
@@ -254,95 +272,171 @@ function TokenBars({ runs }: { runs: SavedRun[] }) {
   );
 }
 
-export function ComparisonWorkbench({
-  sourceController,
-  taskHandoff,
-}: {
-  sourceController: SourceController;
-  taskHandoff?: Readonly<{ taskId: string }>;
+function WorkFacts({ review }: { review: RunReview }) {
+  const measurement = review.measurement;
+  return <div className="work-facts-block"><dl className="work-facts">
+    <div><dt>{t('開始時のモード', 'Initial mode')}</dt><dd>{associationLabel(review)}</dd></div>
+    <div><dt>{t('開始時のモデル', 'Initial model')}</dt><dd>{conditionEvidence(measurement.conditions).initialModel}</dd></div>
+    <div><dt>{t('記録された時間', 'Recorded time')}</dt><dd>{formatDuration(measurement.time.recordedTurnDurationMs)}</dd></div>
+    <div><dt>{t('記録された使用量', 'Recorded usage')}</dt><dd>{formatNumber(measurement.usage.totals.totalTokens)}{measurement.usage.totals.totalTokens !== null && ' tokens'}{measurement.usage.availability === 'partial' && t('（一部のみ）', ' (partial)')}</dd></div>
+  </dl><p className="muted">{t('使用量は記録された応答のみです。作業者の手間は、ひとことメモで残せます。', 'Usage covers recorded responses only. Use your note to describe your own effort.')}</p></div>;
+}
+
+function recordRequest() {
+  return t('この仕事をUnharnessに記録してください。statusで登録範囲を確認し、この記録依頼より前の完了済みの仕事をreview_runで確認してください。タスクの特定にはlist_recent_tasksを使えます。対象が曖昧なら仕事名だけ確認し、UUIDを私に探させないでください。記録のやり取り自体を元の仕事の時間や使用量に含めないでください。結果や使い心地で不足することだけを短く尋ね、記録された値と評価の出所を保ってsave_runで保存し、保存した仕事名を教えてください。モード変更や別モードへの再実行は行わないでください。', 'Record this work in Unharness. Check the registered scope with status and use review_run for completed work before this recording request. list_recent_tasks can identify the task; if ambiguous, ask for its name rather than its UUID. Exclude the recording conversation from the original work measurements. Ask only for missing outcome or experience notes, preserve recorded values and assessment attribution, save with save_run and confirm the saved work title. Do not change modes or replay the task. Please guide me in English.');
+}
+
+export function ComparisonWorkbench({ sourceController, taskHandoff }: {
+  sourceController: SourceController; taskHandoff?: Readonly<{ taskId: string }>;
 }) {
-  const comparison = useComparisonController(sourceController);
-  const replay = useReplayController(sourceController);
+  const comparison = useComparisonController(sourceController), replay = useReplayController(sourceController);
   const { state } = comparison;
-  const [taskId, setTaskId] = useState(taskHandoff?.taskId ?? "");
-  const [throughTurnId, setThroughTurnId] = useState("");
+  const [purpose, setPurpose] = useState<'records' | 'replay'>('records');
+  const [pendingOperation, setPendingOperation] = useState<OperationKind | null>(null);
+  const operationGeneration = useRef(0);
+  const localContextKey = comparisonContextKey(sourceController.view), previousLocalContext = useRef(localContextKey);
+  useEffect(() => {
+    if (previousLocalContext.current === localContextKey) return;
+    previousLocalContext.current = localContextKey;
+    ++operationGeneration.current; setPendingOperation(null);
+    setAdding(false); setChoosingTask(true); setOpenedRunId(null); setTaskId(''); setTaskTitle(''); setThroughTurnId(''); setFavoriteNames({});
+  }, [localContextKey]);
+  const [adding, setAdding] = useState(false), [choosingTask, setChoosingTask] = useState(true);
+  const [taskId, setTaskId] = useState(taskHandoff?.taskId ?? ''), [taskTitle, setTaskTitle] = useState('');
+  const [throughTurnId, setThroughTurnId] = useState('');
+  const [openedRunId, setOpenedRunId] = useState<string | null>(null);
   const [favoriteNames, setFavoriteNames] = useState<Record<string, string>>({});
-  useEffect(() => {
-    if (taskHandoff) {
-      const requestedTask = taskHandoff.taskId.toLowerCase();
-      if (
-        taskId.trim().toLowerCase() !== requestedTask ||
-        (state.review &&
-          state.review.measurement.taskId.toLowerCase() !== requestedTask)
-      ) {
-        comparison.clearReview();
-        setThroughTurnId("");
-      }
-      setTaskId(taskHandoff.taskId);
-    }
-    // Each handoff is an explicit action, including repeated UUIDs.
-  }, [taskHandoff]);
-  useEffect(() => {
-    setThroughTurnId(state.review?.measurement.throughTurnId ?? "");
-  }, [state.review?.reviewId]);
+  const results = useRef<HTMLElement>(null);
+  const library = useRef<HTMLElement>(null);
+  const openedRun = state.runs.find(run => run.runId === openedRunId) ?? null;
   const sourceReady = !!state.context && !!sourceController.view?.source;
-  return (
-    <div className="comparison-workbench">
-      <section className="comparison-hero">
-        <p className="eyebrow">{t("SAME HANGAR ／ 比較", "SAME HANGAR / COMPARISON")}</p>
-        <h1>{t("普段の記録と、保存した条件の再実行を見る。", "Review ordinary work and replays of saved conditions.")}</h1>
-        <p>{t("1〜3件の記録を並べます。保存した条件から順番に試すこともできます。性能の優劣と作成資格は自動判定しません。", "Compare 1–3 records or try saved conditions in sequence. No performance ranking or artwork eligibility is assigned automatically.")}</p>
-      </section>
-      {!sourceReady && <section className="comparison-panel"><h2>{t("通常装備の登録が必要です", "Normal registration required")}</h2><p className="muted">{t("「装備」タブで対象を登録すると、このローカル履歴を利用できます。", "Register targets in the Loadout tab to use this local history.")}</p></section>}
-      {sourceReady && <>
-        <StartingConditions sourceController={sourceController} onReplay={startId => { void replay.review(startId); document.getElementById("replay-workbench")?.scrollIntoView({ block: "start" }); }} />
-        <ReplayWorkbench controller={replay} shared={sourceController} />
-        <section className="comparison-panel" aria-labelledby="run-review-heading">
-          <div className="comparison-heading"><div><p className="eyebrow">{t("記録を読む", "Read records")}</p><h2 id="run-review-heading">{t("Codexタスクを確認", "Inspect a Codex task")}</h2></div><span>{t("タスクを開始・再開しません", "Does not start or resume a task")}</span></div>
-          <div className="review-form">
-            <label>{t("タスクUUID", "Task UUID")}<input autoComplete="off" spellCheck={false} disabled={sourceController.busy} value={taskId} aria-invalid={taskId.length > 0 && !validTaskId(taskId)} onChange={(event) => {
-              const next = event.target.value;
-              if (state.review && state.review.measurement.taskId.toLowerCase() !== next.trim().toLowerCase()) {
-                comparison.clearReview();
-                setThroughTurnId("");
-              }
-              setTaskId(next);
-            }} /></label>
-            {state.review && <label>{t("完了位置", "Completion point")}<select disabled={sourceController.busy} value={throughTurnId} onChange={(event) => setThroughTurnId(event.target.value)}>{state.review.measurement.availableTurns.map((turn) => <option key={turn.turnId} value={turn.turnId}>{turn.ordinal}{t("ターン目 · ", " turn · ")}{turn.completed ? t("完了", "Complete") : t("未完了", "Incomplete")}</option>)}</select></label>}
-            <button className="secondary" disabled={sourceController.busy || !validTaskId(taskId)} onClick={() => void comparison.reviewRun(taskId.trim(), reviewCutoffForTask(state.review, taskId, throughTurnId))}>{state.review ? t("選んだ完了位置まで再確認", "Recheck through selected completion") : t("最初のターンを確認", "Check the first turn")}</button>
-          </div>
-          <p className="muted">{t("初回は最初の記録ターンだけです。後の完了位置を選ぶと、それ以前のターンも同じタスクの支出として含みます。", "Initially checks only the first recorded turn. A later completion point includes preceding turns as usage of the same task.")}</p>
+  const recordedTaskIds = new Set(state.runs.map(run => run.measurement.taskId));
+  useEffect(() => {
+    if (!taskHandoff) return;
+    setPurpose('records'); setAdding(true); setChoosingTask(false); setOpenedRunId(null);
+    setTaskId(taskHandoff.taskId); setTaskTitle(''); setThroughTurnId('');
+    comparison.clearReview();
+    void perform('review', () => comparison.reviewRun(taskHandoff.taskId, undefined, true));
+  }, [taskHandoff]);
+  useEffect(() => { setThroughTurnId(state.review?.measurement.throughTurnId ?? ''); }, [state.review?.reviewId]);
+  useEffect(() => {
+    if ((openedRun || state.comparison) && results.current?.getClientRects().length)
+      results.current.scrollIntoView({ block: 'start' });
+  }, [openedRunId, state.comparison]);
+  function openRun(run: SavedRun) {
+    setPurpose('records'); setAdding(false); setOpenedRunId(run.runId);
+    comparison.selectRuns([]);
+  }
+  function chooseTask(task: RecentTask) {
+    const saved = state.runs.find(run => run.measurement.taskId === task.taskId);
+    if (saved) { openRun(saved); return; }
+    setTaskId(task.taskId); setTaskTitle(task.title ?? ''); setThroughTurnId('');
+    setChoosingTask(false); setOpenedRunId(null); comparison.clearReview();
+    void perform('review', () => comparison.reviewRun(task.taskId, undefined, true));
+  }
+  function addRecord() {
+    setPurpose('records'); setAdding(true); setChoosingTask(!state.review); setOpenedRunId(null);
+    comparison.selectRuns([]);
+  }
+  async function saveRecord(value: { title?: string; assessment: RunAssessment }) {
+    const saved = await perform('save', () => comparison.saveRun(value));
+    if (saved) {
+      comparison.clearReview(); comparison.selectRuns([]);
+      setAdding(false); setOpenedRunId(saved.runId);
+    }
+  }
+  async function perform<T>(kind: OperationKind, action: () => Promise<T>) {
+    const generation = ++operationGeneration.current;
+    setPendingOperation(kind);
+    try { return await action(); }
+    finally { if (operationGeneration.current === generation) setPendingOperation(null); }
+  }
+  function revise(run: SavedRun) {
+    setAdding(true); setChoosingTask(false); setOpenedRunId(null); setTaskTitle(run.title ?? '');
+    comparison.beginCorrection(run);
+  }
+  const recordActions = (run: SavedRun) => <details className="record-actions"><summary>{t('記録の詳細・訂正', 'Details and revisions')}</summary>
+    <div className="run-actions"><button className="text-button" disabled={sourceController.busy} onClick={() => revise(run)}>{t('評価を訂正', 'Revise assessment')}</button>
+      <button className="text-button" disabled={sourceController.busy} onClick={() => void perform('output', () => comparison.readOutput(run.runId))}>{t('回答を開く', 'Read the answer')}</button></div>
+    {run.source.association && <div className="record-favorite"><label>{t('お気に入りの名前（任意）', 'Favorite name (optional)')}<input maxLength={120} value={favoriteNames[run.runId] ?? ''} onChange={event => setFavoriteNames(old => ({ ...old, [run.runId]: event.target.value }))}/></label>
+      <button className="secondary" disabled={sourceController.busy} onClick={() => void perform('favorite', () => comparison.saveFavorite(run.runId, favoriteNames[run.runId]?.trim() || undefined))}>{t('この記録の装備を保存', 'Save this recorded loadout')}</button></div>}
+    {run.scopeId !== sourceController.view?.source?.registration.scopeId && <p className="muted">{t('登録した指示・Skillの範囲を変更する前の記録です。', 'This record predates the current registered instruction and Skill scope.')}</p>}
+    <ReviewSummary review={run}/>
+    <p>{provenanceLabels[run.assessment.provenance]}</p>
+    <ul>{run.assessment.requirements.map(item => <li key={item.id}>{item.label}：{requirementLabels[item.result]}{item.critical && t('（必須）', ' (required)')}</li>)}</ul>
+    {run.assessment.ratings.map(item => <p key={item.id}>{item.label} {item.score}/5（{item.lowAnchor}〜{item.highAnchor}）：{item.reason}</p>)}
+    {run.previousRunId && <p className="muted">{t('以前の評価を残した訂正版です。元の記録も一覧から開けます。', 'This is a revision. The previous assessment is retained in the list.')}</p>}
+  </details>;
+  return <div className="comparison-workbench work-records">
+    <header className="record-hero"><div><p className="eyebrow">{t('記録・比較', 'WORK RECORDS')}</p><h1>{t('仕事の記録', 'Your work')}</h1>
+      <p>{t('1件を振り返る。気になる2件を並べる。自分に合う装備を見つけましょう。', 'Reflect on one job or put two side by side. Find the loadout that suits your work.')}</p></div>
+      <button className="primary" disabled={!sourceReady || sourceController.busy} onClick={addRecord}>{t('仕事を記録する', 'Record work')}</button></header>
+    <nav className="record-purpose" aria-label={t('記録の使い方', 'Ways to review work')}>
+      <button type="button" aria-current={purpose === 'records' ? 'page' : undefined} onClick={() => setPurpose('records')}>{t('仕事を振り返る', 'Review work')}</button>
+      <button type="button" aria-current={purpose === 'replay' ? 'page' : undefined} onClick={() => setPurpose('replay')}>{t('同じお題で試す', 'Try the same task')}</button>
+    </nav>
+    <OperationStatus kind={pendingOperation}/>
+    {!sourceReady && <section className="comparison-panel">{!sourceController.confirmed || sourceController.view?.source
+      ? <p role="status">{t('このMacの記録を確認しています…', 'Checking the records on this Mac…')}</p>
+      : <><h2>{t('まず、いつもの装備を保存します', 'Save your usual loadout first')}</h2><p>{t('「設定」で対象を確認してNormalを保存すると、仕事の記録を残せます。', 'Review the targets and save Normal in Settings, then start recording work.')}</p></>}</section>}
+    {sourceReady && <>
+      <div hidden={purpose !== 'records'}>
+        <section className="comparison-panel record-add" hidden={!adding} aria-label={t('仕事を記録する', 'Record work')}>
+          <div className="comparison-heading"><h2>{t('どの仕事を記録しますか？', 'Which work would you like to record?')}</h2>
+            <button className="text-button" onClick={() => setAdding(false)}>{t('閉じる', 'Close')}</button></div>
+          <RecentTaskPicker controller={sourceController} visible={adding && choosingTask} recordedTaskIds={recordedTaskIds} onChoose={chooseTask}/>
+          {!choosingTask && <div className="chosen-task"><strong>{taskTitle || state.correctionRun?.title || t('選んだタスク', 'Selected task')}</strong>
+            <button className="text-button" disabled={sourceController.busy} onClick={() => { setChoosingTask(true); comparison.clearReview(); }}>{t('別のタスクを選ぶ', 'Choose another task')}</button></div>}
+          {!choosingTask && !state.review && sourceController.busy && <p role="status">{t('選んだ仕事の完了範囲を確認しています…', 'Reviewing the completed work…')}</p>}
+          {state.review && !choosingTask && <><WorkFacts review={state.review}/><AssessmentEditor review={state.review} correction={state.correctionRun} initialTitle={taskTitle} disabled={sourceController.busy || !!state.uncertainOperation} onSave={value => void saveRecord(value)}/>
+            <details className="record-measurement"><summary>{t('計測範囲と条件を確認', 'Check measurement scope and conditions')}</summary><ReviewSummary review={state.review}/></details></>}
+          <details className="manual-record"><summary>{t('別の方法で記録する', 'Other ways to record')}</summary>
+            <p>{t('仕事を終えたチャットで「この仕事を記録して」と頼むこともできます。', 'You can also ask “record this work” in the chat where you finished it.')}</p>
+            <AiRequestButton label={t('記録用の依頼文をコピー', 'Copy a recording request')} prompt={bindChatScope(recordRequest(), sourceController.view?.source?.registration.scopeId)}/>
+            <details><summary>{t('タスクIDを自分で指定する', 'Enter a task ID manually')}</summary>
+              <div className="review-form"><label>{t('タスクUUID', 'Task UUID')}<input autoComplete="off" spellCheck={false} disabled={sourceController.busy} value={taskId} aria-invalid={taskId.length > 0 && !validTaskId(taskId)} onChange={event => { comparison.clearReview(); setTaskId(event.target.value); setTaskTitle(''); setThroughTurnId(''); }}/></label>
+                <button className="secondary" disabled={sourceController.busy || !validTaskId(taskId)} onClick={() => { setChoosingTask(false); void perform('review', () => comparison.reviewRun(taskId.trim(), undefined, true)); }}>{t('完了した範囲を確認', 'Review completed work')}</button></div>
+            </details>
+            {state.review && <div className="review-form"><label>{t('記録する完了位置', 'Completion point to record')}<select disabled={sourceController.busy} value={throughTurnId} onChange={event => setThroughTurnId(event.target.value)}>{state.review.measurement.availableTurns.map(turn => <option key={turn.turnId} value={turn.turnId}>{turn.ordinal}{t('ターン目 · ', ' turn · ')}{turn.completed ? t('完了', 'Complete') : t('未完了', 'Incomplete')}</option>)}</select></label>
+              <button className="secondary" disabled={sourceController.busy} onClick={() => void perform('review', () => comparison.reviewRun(state.review!.measurement.taskId, reviewCutoffForTask(state.review, state.review!.measurement.taskId, throughTurnId)))}>{t('この範囲で読み直す', 'Review this range')}</button></div>}
+          </details>
         </section>
-        {state.review && <><ReviewSummary review={state.review} /><AssessmentEditor review={state.review} correction={state.correctionRun} disabled={sourceController.busy} onSave={(value) => void comparison.saveRun(value)} /></>}
-        <section className="comparison-panel" aria-labelledby="history-heading">
-          <div className="comparison-heading"><div><p className="eyebrow">{t("保存履歴", "Saved history")}</p><h2 id="history-heading">{t("比較する記録を選ぶ", "Choose records to compare")}</h2></div><span>{t("最大3件", "Up to 3")}</span></div>
-          <button className="secondary" disabled={sourceController.busy} onClick={() => void comparison.loadRuns()}>{t("履歴を読み込む", "Load history")}</button>
-          <ul className="run-history">
-            {state.runs.map((run) => {
-              const selected = state.selectedRunIds.includes(run.runId);
-              return <li key={run.runId}>
-                <label className="run-select"><input type="checkbox" checked={selected} disabled={sourceController.busy || (!selected && state.selectedRunIds.length >= 3)} onChange={(event) => comparison.selectRuns(event.target.checked ? [...state.selectedRunIds, run.runId] : state.selectedRunIds.filter((id) => id !== run.runId))} /><span><strong>{run.title ?? t("名称なし", "Untitled")}</strong><small>{capturedLabel(run.capturedAt)} ／ {associationLabel(run)} ／ {outcomeLabels[run.assessment.outcome]} ／ {formatNumber(run.measurement.usage.totals.totalTokens)} tokens{run.measurement.usage.availability === "partial" ? t("（一部）", " (partial)") : ""}</small></span></label>
-                <div className="run-actions"><button className="text-button" disabled={sourceController.busy} onClick={() => comparison.beginCorrection(run)}>{t("評価を訂正", "Revise assessment")}</button><button className="text-button" disabled={sourceController.busy} onClick={() => void comparison.readOutput(run.runId)}>{t("出力を明示して読む", "Read the output explicitly")}</button>{run.source.association && <><input disabled={sourceController.busy} aria-label={t(`${run.title ?? t("名称なし", "Untitled")}のお気に入り名`, `${run.title ?? t('名称なし', 'Untitled')} favorite name`)} placeholder={t("お気に入り名（任意）", "Favorite name (optional)")} maxLength={120} value={favoriteNames[run.runId] ?? ""} onChange={(event) => setFavoriteNames((old) => ({ ...old, [run.runId]: event.target.value }))} /><button className="text-button" disabled={sourceController.busy} onClick={() => void comparison.saveFavorite(run.runId, favoriteNames[run.runId]?.trim() || undefined)}>{t("この記録の設定を保存", "Save this record's loadout")}</button></>}</div>
-                {run.scopeId !== sourceController.view?.source?.registration.scopeId && <small className="muted">{t("Skillの登録範囲を追加する前の記録です。", "This record predates the expanded Skill scope.")}</small>}
-              </li>;
-            })}
-          </ul>
-          {state.cursor && <button className="text-button" disabled={sourceController.busy} onClick={() => void comparison.loadRuns(state.cursor!)}>{t("続きを表示", "Load more")}</button>}
-          {state.selectedRunIds.length > 0 && <button className="primary comparison-primary" disabled={sourceController.busy} onClick={() => void comparison.compareRuns()}>{t("選んだ", "Selected: ")}{state.selectedRunIds.length}{t("件を比較", " records to compare")}</button>}
+        <section ref={library} className="record-library" aria-label={t('保存した仕事', 'Saved work')}>
+          <div className="comparison-heading"><h2>{t('保存した仕事', 'Saved work')}</h2><button className="text-button" disabled={sourceController.busy} onClick={() => void perform('history', () => comparison.loadRuns())}>{t('更新', 'Refresh')}</button></div>
+          {!state.historyLoaded && !state.error && !state.backgroundError && <p role="status">{t('保存した仕事を確認しています…', 'Loading saved work…')}</p>}
+          {state.historyLoaded && !state.runs.length && <div className="record-empty"><h3>{t('まずは、1件の仕事から。', 'Start with one job.')}</h3><p>{t('「仕事を記録する」から最近のタスクを選び、使えたかどうかを残せます。比較相手は、あとから選べます。', 'Choose a recent task with Record work and note whether it was useful. You can choose a comparison later.')}</p></div>}
+          <ul className="record-list">{state.runs.map(run => {
+            const selected = state.selectedRunIds.includes(run.runId), title = run.title ?? t('名称なし', 'Untitled');
+            return <li key={run.runId}><div className="record-list-row"><input className="record-checkbox" type="checkbox" aria-label={t(`${title}を比較に追加`, `Compare ${title}`)} checked={selected} disabled={sourceController.busy || (!selected && state.selectedRunIds.length >= 3)} onChange={event => { setOpenedRunId(null); comparison.selectRuns(event.target.checked ? [...state.selectedRunIds, run.runId] : state.selectedRunIds.filter(id => id !== run.runId)); }}/>
+              <button className="record-open" onClick={() => openRun(run)}><strong>{title}</strong><span>{capturedLabel(run.capturedAt)} · {associationLabel(run)}</span><span className="record-outcome">{outcomeLabels[run.assessment.outcome]}{run.assessment.provenance === 'agent' && t('（AIの評価）', ' (AI assessment)')}{run.previousRunId && t(' · 訂正版', ' · Revised')}</span></button></div>
+              {run.assessment.note && <p className="record-excerpt">{run.assessment.note}</p>}</li>;
+          })}</ul>
+          {state.cursor && <button className="text-button" disabled={sourceController.busy} onClick={() => void comparison.loadRuns(state.cursor!)}>{t('ほかの記録も見る', 'Load more records')}</button>}
+          {!!state.runs.length && <div className="record-compare-bar"><p>{state.selectedRunIds.length < 2 ? t('2件選ぶと、並べて見られます。', 'Choose two records to see them side by side.') : t(`${state.selectedRunIds.length}件を選択中`, `${state.selectedRunIds.length} records selected`)}</p>
+            <button className="primary" disabled={sourceController.busy || state.selectedRunIds.length < 2} onClick={() => { setOpenedRunId(null); void perform('compare', () => comparison.compareRuns()); }}>{state.selectedRunIds.length >= 2 ? t(`${state.selectedRunIds.length}件を並べて見る`, `Compare ${state.selectedRunIds.length} records`) : t('並べて見る', 'Compare records')}</button></div>}
         </section>
-        {state.comparison && <section className="comparison-panel comparison-results" aria-labelledby="comparison-results-heading">
-          <div className="comparison-heading"><div><p className="eyebrow">{t("観測記録 ／ 中立", "OBSERVATIONS / NEUTRAL")}</p><h2 id="comparison-results-heading">{t("横並びの記録", "Side-by-side records")}</h2></div><span className="neutral-badge">{t("判定なし", "No ranking")}</span></div>
-          <dl className="aggregate-summary"><div><dt>{t("記録数", "Records")}</dt><dd>{state.comparison.aggregate.recordCount}</dd></div><div><dt>{t("別タスク数", "Distinct tasks")}</dt><dd>{state.comparison.aggregate.distinctTaskCount}</dd></div><div><dt>{t("算入された採用版", "Counted accepted versions")}</dt><dd>{state.comparison.aggregate.acceptedCount}</dd></div><div><dt>{t("合計トークン", "Total tokens")}</dt><dd>{formatNumber(state.comparison.aggregate.totalTokens)}</dd></div><div><dt>{t("採用版1件あたり", "Per accepted version")}</dt><dd>{formatNumber(state.comparison.aggregate.tokensPerAcceptedRun)}</dd></div></dl>
-          <ComparisonTable runs={state.comparison.runs} />
-          <TokenBars runs={state.comparison.runs} />
-          {[...state.comparison.aggregate.reasons, ...state.comparison.reasons].map((reason) => <p className="comparison-reason" key={reason}>{aggregateReasonLabels[reason] ?? reason}</p>)}
-          <details><summary>{t("条件・チェック・評価・メモ", "Conditions, checks, assessments and notes")}</summary>{state.comparison.runs.map((run) => { const conditions = conditionEvidence(run.measurement.conditions); return <article className="assessment-details" key={run.runId}><h3>{run.title ?? associationLabel(run)}</h3><p>{t("初期条件：モデル ", "Initial conditions: model ")}{conditions.initialModel} {t(" ／ 推論 ", " / Reasoning ")}{conditions.initialReasoningEffort} {t(" ／ 実行ポリシー ", " / Execution policy ")}{conditions.initialExecutionPolicy}</p><p>{t("途中で変化：", "Changed during work: ")}{conditions.changed} {t(" ／ 不明：", " / Unknown: ")}{conditions.unknown}</p><p>{provenanceLabels[run.assessment.provenance]} ／ {outcomeLabels[run.assessment.outcome]}</p><ul>{run.assessment.requirements.map((item) => <li key={item.id}>{item.label}：{requirementLabels[item.result]}{item.critical ? t("（必須）", " (required)") : ""}</li>)}</ul>{run.assessment.ratings.map((item) => <p key={item.id}><strong>{item.label} {item.score}/5</strong>（{item.lowAnchor}〜{item.highAnchor}）：{item.reason}</p>)}{run.assessment.note && <p className="muted">{t("メモ：", "Notes: ")}{run.assessment.note}</p>}</article>; })}</details>
+        {(openedRun || state.comparison) && <section ref={results} className="comparison-panel record-results" aria-label={t('記録を見る', 'Review records')}>
+          <div className="comparison-heading"><h2>{openedRun ? openedRun.title ?? t('この仕事の記録', 'Work record') : t('仕事を並べて振り返る', 'Review work side by side')}</h2>
+            <button className="text-button" onClick={() => { setOpenedRunId(null); comparison.selectRuns([]); library.current?.scrollIntoView({ block: 'start' }); }}>{t('一覧に戻る', 'Back to the list')}</button></div>
+          {openedRun ? <><p className="record-result-outcome">{outcomeLabels[openedRun.assessment.outcome]} <small>{provenanceLabels[openedRun.assessment.provenance]}</small></p><p className="record-note">{openedRun.assessment.note || t('手直しや使い心地のメモは、まだありません。', 'No note on edits or experience yet.')}</p><WorkFacts review={openedRun}/>{recordActions(openedRun)}</>
+            : state.comparison && <><p className="comparison-reference">{t('仕事や条件の違いを含む参考比較です。数値だけでモードの優劣は決められません。', 'A reference comparison across different work and conditions. Numbers alone do not rank modes.')}</p><ComparisonTable runs={state.comparison.runs}/>
+              <p className="muted">{t('使用量は記録された応答のみです。時間は、手直しの手間を表すものではありません。', 'Usage covers recorded responses only. Elapsed time does not measure your editing effort.')}</p>
+              <details className="record-measurement"><summary>{t('詳しい計測値と集計', 'Detailed measurements and aggregates')}</summary><ComparisonTable runs={state.comparison.runs} detailed/><TokenBars runs={state.comparison.runs}/>
+                <dl className="aggregate-summary"><div><dt>{t('記録数', 'Records')}</dt><dd>{state.comparison.aggregate.recordCount}</dd></div><div><dt>{t('合計トークン', 'Total tokens')}</dt><dd>{formatNumber(state.comparison.aggregate.totalTokens)}</dd></div><div><dt>{t('採用版1件あたり', 'Per accepted version')}</dt><dd>{formatNumber(state.comparison.aggregate.tokensPerAcceptedRun)}</dd></div></dl>
+                {[...state.comparison.aggregate.reasons, ...state.comparison.reasons].map(reason => <p key={reason}>{aggregateReasonLabels[reason] ?? reason}</p>)}</details>
+              {state.comparison.runs.map(run => <div className="compared-record-details" key={run.runId}><h3>{run.title ?? associationLabel(run)}</h3>{recordActions(run)}</div>)}</>}
         </section>}
-        {state.output && <section className="comparison-panel explicit-output" aria-labelledby="output-heading"><div className="comparison-heading"><div><h2 id="output-heading">{t("明示して開いた出力", "Explicitly opened output")}</h2><code>{runReferenceLabel(state.output.runId, state.runs)}</code></div><span>{t("プレーンテキスト", "Plain text")}</span></div>{state.output.available && state.output.text !== null ? <pre>{state.output.text}</pre> : <p>{t("出力は利用できません（", "Output unavailable (")}{state.output.reason ?? t("理由不明", "Reason unknown")}）。</p>}</section>}
+        {state.output && <section className="comparison-panel explicit-output" aria-labelledby="output-heading"><div className="comparison-heading"><h2 id="output-heading">{t('開いた回答', 'Opened answer')}</h2><code>{runReferenceLabel(state.output.runId, state.runs)}</code></div>{state.output.available && state.output.text !== null ? <pre>{state.output.text}</pre> : <p>{t('この回答は取得できません。', 'This answer is unavailable.')}</p>}</section>}
         {state.notice && <p className="comparison-notice" role="status" aria-live="polite">{state.notice}</p>}
         {state.backgroundError && <p className="comparison-error" role="alert">{state.backgroundError}</p>}
-        {state.error && <div className="comparison-error" role="alert">{state.error}{state.uncertainOperation && <p>{t("同じ保存操作を自動では繰り返しません。", "The same save operation is not retried automatically.")}</p>}</div>}
-      </>}
-    </div>
-  );
+        {state.error && <div className="comparison-error" role="alert">{state.error}{state.uncertainOperation && <p>{t('同じ保存操作を自動では繰り返しません。', 'The same save operation is not retried automatically.')}</p>}</div>}
+      </div>
+      <div hidden={purpose !== 'replay'} className="controlled-replay">
+        <h2>{t('同じお題で、別の装備を試す', 'Try another loadout on the same task')}</h2>
+        <p>{t('作業前に、お題・必要な結果・元のファイルを保存しておきます。普段の過去記録だけでは、同じ開始状態に戻せない場合があります。', 'Save the task, required outcome and original files before work begins. Ordinary past records may not let you recreate that starting state.')}</p>
+        <StartingConditions sourceController={sourceController} onReplay={startId => { void replay.review(startId); document.getElementById('replay-workbench')?.scrollIntoView({ block: 'start' }); }}/>
+        <ReplayWorkbench controller={replay} shared={sourceController}/>
+      </div>
+    </>}
+  </div>;
 }

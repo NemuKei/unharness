@@ -8,6 +8,7 @@ import { fail } from '../sources/errors.mjs';
 import { compileReleasePreset } from './preset.mjs';
 import { setupScope } from './records.mjs';
 import { captureInventoryForSetup } from './inventory-capture.mjs';
+import { usesSourceStates } from './schema.mjs';
 
 export async function assertFrozenPreset(w, review, mode) {
   if (!equal(await captureInventoryForSetup(w, review.schemaVersion, review.normalId), review.inventory)) fail('setup-record-invalid');
@@ -18,5 +19,5 @@ export async function assertFrozenPreset(w, review, mode) {
   const frozen = review.presets[mode];
   if (!equal(compiled.after, await loadSnapshot(w.workspace, w.reg, frozen.snapshotId))
     || !equal(compiled.guide, frozen.guide) || !equal(compiled.skillStates, frozen.skillStates)
-    || review.schemaVersion === 3 && !equal(compiled.pluginStates, frozen.pluginStates)) fail('setup-record-invalid');
+    || usesSourceStates(review.schemaVersion) && !equal(compiled.pluginStates, frozen.pluginStates)) fail('setup-record-invalid');
 }

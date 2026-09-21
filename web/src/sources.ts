@@ -15,13 +15,13 @@ export const modePresentation: Record<
   unseal: {
     title: "UNSEAL",
     get label() { return t("限定解除", "Limited release"); },
-    get description() { return t("選んだ追加指示を最小ガイドへ。Skillは手動で呼び出す。", "Use a minimal guide for selected instructions and invoke Skills manually."); },
+    get description() { return t("保存した限定解除の指示・Skill構成を使う。", "Use the saved UNSEAL instruction and Skill configuration."); },
     scene: "manual-only",
   },
   trueform: {
     title: "TRUEFORM",
     get label() { return t("零式", "Zero"); },
-    get description() { return t("選んだ追加指示とSkillを外す。", "Remove selected optional instructions and Skills."); },
+    get description() { return t("保存した零式の指示・Skill構成を使う。", "Use the saved TRUEFORM instruction and Skill configuration."); },
     scene: "fixed-only",
   },
 };
@@ -107,6 +107,7 @@ export type TaskObservation = {
     expected:
       | "saved-instructions"
       | "minimal-guide"
+      | "custom-guide"
       | "inert-instructions"
       | "automatic-catalog"
       | "manual-only"
@@ -144,11 +145,12 @@ export type SourceState = {
   };
   preparedMode: SourceMode;
   revision: number;
-  setup?: { setupId: string | null; preparedSetupId: string | null; schemaVersion?: 1 | 2 | 3 | null; setupRequired?: boolean };
+  setup?: { setupId: string | null; preparedSetupId: string | null; schemaVersion?: 1 | 2 | 3 | 4 | null; setupRequired?: boolean };
   preparation: { id: string; preparedAt: string } | null;
   observation: TaskObservation | null;
   observationIssue: string | null;
   conflict: null | { kind: string };
+  modePlanningAvailable?: boolean;
   recovery: {
     pending: boolean;
     lastCheckpointId: string | null;
@@ -231,7 +233,7 @@ export type Guide = {
   id: string;
   text: string;
   digest: string;
-  reviewedOn: string;
+  reviewedOn: string | null;
   references: string[];
 };
 export type SourceView = {
@@ -262,6 +264,7 @@ export type Discovery = {
   limitations: string[];
 };
 export type SourcePlan = {
+  retainedSettingsIncluded?: boolean;
   planId: string;
   scopeId: string;
   mode: SourceMode | "favorite" | "checkpoint";

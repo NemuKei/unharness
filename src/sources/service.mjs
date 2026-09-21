@@ -1,4 +1,5 @@
 import { currentObservation } from './observation-record.mjs';
+import { usesSourceStates } from '../setup/schema.mjs';
 import { join } from 'node:path';
 import { lstat } from 'node:fs/promises';
 import { listRecordPage } from '../core/local-store.mjs';
@@ -105,13 +106,19 @@ export const registerUserSources = wrap(
 export const userSourceState = wrap(async ({ workspace }) => {
   const w = await openWorkspace(workspace);
   let conflict = null;
+  let expected, modePlanningAvailable = false;
   try {
-    await assertCurrent(
-      w,
-      await loadSnapshot(workspace, w.reg, w.state.snapshotId)
-    );
+    expected = await loadSnapshot(workspace, w.reg, w.state.snapshotId);
+    await assertCurrent(w, expected);
+    modePlanningAvailable = true;
   } catch (e) {
     conflict = { kind: e.kind ?? 'source-conflict' };
+    if (expected && conflict.kind === 'source-conflict' && applicationFor(w.reg.context).id === 'codex') {
+      try {
+        const actual = await captureRegistered(w.reg), key = applicationFor(w.reg.context).retainedKey;
+        modePlanningAvailable = Object.keys(expected).every(k => k === key || equal(expected[k], actual[k]));
+      } catch { /* An unavailable source never authorizes a mode plan. */ }
+    }
   }
   const recoveryPending = await pending(workspace);
   const observed = await currentObservation(w, loadRecord, { conflict, pending: recoveryPending });
@@ -137,6 +144,9 @@ export const userSourceState = wrap(async ({ workspace }) => {
       setupRequired: w.manifestVersion >= 2 && !w.state.setupId },
     revision: w.state.revision,
     conflict,
+    // This permits a guarded plan, not an unchecked application. Native review
+    // still refuses selected-source edits and unprovable retained changes.
+    modePlanningAvailable: !recoveryPending && modePlanningAvailable,
     recovery: {
       pending: recoveryPending,
       lastCheckpointId: w.state.lastCheckpointId,
@@ -159,6 +169,7 @@ function planSummary(plan, planId) {
     guide: plan.guide,
     adaptation: plan.adaptation ?? null,
     setupId: plan.setupId ?? null,
+    ...(plan.retainedPlanId ? { retainedSettingsIncluded: true } : {}),
     retained,
     verification
   };
@@ -187,6 +198,7 @@ async function buildPlan(
   const afterId = await saveSnapshot(w.workspace, w.reg, after, w.state.snapshotVersion ?? 1);
   const plan = {
     role: 'plan',
+    ...(w.retainedPlanId ? { retainedPlanId: w.retainedPlanId } : {}),
     normalId: activeNormalId(w),
     snapshotVersion: w.state.snapshotVersion ?? 1,
     adaptation,
@@ -201,7 +213,7 @@ async function buildPlan(
     afterId,
     guide,
     skillStates,
-    ...(w.manifestVersion === 3 ? { pluginStates: pluginStates ?? [] } : {}),
+    ...(usesSourceStates(w.manifestVersion) ? { pluginStates: pluginStates ?? [] } : {}),
     changedFiles: Object.keys(before)
       .filter((k) => !equal(before[k], after[k]))
       .map((id) => ({
@@ -213,10 +225,12 @@ async function buildPlan(
 }
 export const planUserMode = wrap(async ({ workspace, mode, selectedIds }) => {
   if (!['normal', 'unseal', 'trueform'].includes(mode)) fail('invalid-request');
-  const w = await openWorkspace(workspace),
-    all = targets(w.reg);
+  let w = await openWorkspace(workspace);
+  const all = targets(w.reg);
   if (w.manifestVersion >= 2 && mode !== 'normal' && selectedIds !== undefined) fail('setup-proposal-invalid');
   if (w.manifestVersion >= 2 && mode !== 'normal' && !w.state.setupId) fail('setup-required');
+  const { workspaceForModePlanning } = await import('./retained-settings.mjs');
+  w = await workspaceForModePlanning(w);
   if (selectedIds === undefined && mode !== 'normal' && w.state.setupId) {
     const { savedPresetForMode } = await import('../setup/service.mjs');
     return buildPlan(w, { mode, ...await savedPresetForMode(w, mode) });
@@ -259,7 +273,7 @@ export const applyUserPlan = wrap(async ({ workspace, planId }) => {
     release = await acquire(w);
   try {
     // Re-read after acquiring: other completed callers may have advanced state.
-    const current = await openWorkspace(workspace);
+    let current = await openWorkspace(workspace);
     if (current.state.lastPlanId === planId && !(await pending(workspace))) {
       await assertCurrent(
         current,
@@ -276,6 +290,13 @@ export const applyUserPlan = wrap(async ({ workspace, planId }) => {
       };
     }
     const plan = await loadPlan(current, planId);
+    if (plan.retainedPlanId) {
+      if (await pending(workspace)) fail('recovery-required');
+      const { workspaceWithRetainedPlan } = await import('./retained-settings.mjs');
+      current = await workspaceWithRetainedPlan(current, plan.retainedPlanId);
+      if (plan.normalId !== activeNormalId(current) || plan.snapshotVersion !== 2)
+        fail('record-invalid');
+    }
     if (
       plan.revision !== current.state.revision ||
       plan.beforeId !== current.state.snapshotId
@@ -471,6 +492,7 @@ export const DIRECTORY_REBIND_OPERATIONS = Object.freeze({ 'review-rebind': revi
   'apply-rebind': applyUserDirectoryRebind });
 
 export const reviewUserRun = wrap(async args => (await import('../comparisons/service.mjs')).reviewUserRun(args));
+export const listRecentUserTasks = wrap(async args => (await import('../comparisons/service.mjs')).listRecentUserTasks(args));
 export const saveUserRun = wrap(async args => (await import('../comparisons/service.mjs')).saveUserRun(args));
 export const readUserRun = wrap(async args => (await import('../comparisons/service.mjs')).readUserRun(args));
 export const readUserRunOutput = wrap(async args => (await import('../comparisons/service.mjs')).readUserRunOutput(args));
@@ -499,7 +521,10 @@ export const saveUserReplayFavorite = wrap(async args => (await import('../exper
 export const readUserSetup = wrap(async args => (await import('../setup/service.mjs')).readSetup(args));
 export const reviewUserSetup = wrap(async args => (await import('../setup/service.mjs')).reviewSetup(args));
 export const applyUserSetup = wrap(async args => (await import('../setup/service.mjs')).applySetup(args));
-export const SETUP_OPERATIONS = Object.freeze({ setup: readUserSetup, 'review-setup': reviewUserSetup, 'apply-setup': applyUserSetup });
+export const readUserModeContents = wrap(async args => (await import('../setup/mode-contents.mjs')).readModeContents(args));
+export const readUserModeSource = wrap(async args => (await import('../setup/mode-contents.mjs')).readModeSource(args));
+export const SETUP_OPERATIONS = Object.freeze({ setup: readUserSetup, 'review-setup': reviewUserSetup, 'apply-setup': applyUserSetup,
+  'mode-contents': readUserModeContents, 'mode-source': readUserModeSource });
 
 export const inspectUserEnrollment = wrap(async args => (await import('../setup/enrollment.mjs')).inspectEnrollment(args));
 export const reviewUserEnrollmentCandidate = wrap(async args => (await import('../setup/enrollment.mjs')).reviewEnrollmentCandidate(args));

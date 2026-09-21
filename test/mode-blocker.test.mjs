@@ -21,3 +21,13 @@ test('required setup leaves Normal recovery available and unresolved operations 
   }
   assert.equal(modeBlocker({ ...ready, conflict: true, recoveryPending: true }, 'normal').kind, 'recovery');
 });
+
+test('a capable source can review a mode through a shared-file mismatch while recovery and uncertain results still stop it', () => {
+  const candidate = { ...ready, conflict: true, modePlanningAvailable: true };
+  for (const mode of ['normal', 'unseal', 'trueform']) {
+    assert.equal(modeBlocker(candidate, mode), null);
+    assert.equal(modeBlocker({ ...candidate, recoveryPending: true }, mode).kind, 'recovery');
+    assert.equal(modeBlocker({ ...candidate, operationUncertain: true }, mode).kind, 'operation');
+    assert.equal(modeBlocker({ ...candidate, modePlanningAvailable: false }, mode).kind, 'changes');
+  }
+});

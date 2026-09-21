@@ -15,10 +15,10 @@ export function WorkbenchNavigation({ page, select }: { page: WorkbenchPage; sel
   const more = useRef<HTMLDetailsElement>(null);
   const choose = (next: WorkbenchPage) => { select(next); if (more.current) more.current.open = false; };
   return <nav className="workbench-tabs workbench-navigation" aria-label={t("ワークベンチ", "Workbench")}>
-    {([['mode', t("モード", "Mode")], ['settings', t("設定", "Settings")], ['appearance', t("外観", "Appearance")]] as const).map(([key, label]) =>
-      <button key={key} type="button" aria-current={page === key ? 'page' : undefined} onClick={() => choose(key)}>{label}</button>)}
+    <button type="button" aria-current={page === 'mode' ? 'page' : undefined} onClick={() => choose('mode')}>{t("モード", "Mode")}</button>
     <details className="workbench-more" ref={more}><summary>{t("その他", "More")}</summary><div>
-      <button type="button" aria-current={page === 'history' ? 'page' : undefined} onClick={() => choose('history')}>{t("比較・記録", "Comparisons & records")}</button>
+      {([['history', t('記録・比較', 'Work records')], ['appearance', t("外観", "Appearance")], ['settings', t("設定", "Settings")]] as const).map(([key, label]) =>
+        <button key={key} type="button" aria-current={page === key ? 'page' : undefined} onClick={() => choose(key)}>{label}</button>)}
       <button type="button" aria-current={page === 'support' ? 'page' : undefined} onClick={() => choose('support')}>{t("接続・復旧", "Connection & recovery")}</button>
     </div></details>
   </nav>;

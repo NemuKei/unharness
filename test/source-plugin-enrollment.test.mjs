@@ -48,11 +48,13 @@ async function fixture(t, { selectors = [true], setup = false, legacyRevision } 
       const saved = await readSetup({ workspace: registered.workspace, schemaVersion: 2 });
       proposal = { ...proposal, schemaVersion: 2, inventoryId: saved.inventory.inventoryId,
         unseal: { instructions: 'minimal', additionalAutomaticSkillIds: [] }, trueform: { retainedOfficialPluginIds: [] } };
-    } else if (setup === 3) {
-      const saved = await readSetup({ workspace: registered.workspace, schemaVersion: 3 });
-      proposal = { ...proposal, schemaVersion: 3, inventoryId: saved.inventory.inventoryId,
+    } else if (setup === 3 || setup === 4) {
+      const saved = await readSetup({ workspace: registered.workspace, schemaVersion: setup });
+      proposal = { ...proposal, schemaVersion: setup, inventoryId: saved.inventory.inventoryId,
         trueform: { skillStates: w.reg.skills.map(s => ({ sourceId: s.id, state: 'manual' })), retainedOfficialPluginIds: [] },
-        unseal: { instructions: 'minimal', skillElevations: [], additionalPluginIds: [] } };
+        unseal: { instructions: setup === 4 ? 'custom' : 'minimal',
+          ...(setup === 4 ? { customInstructions: 'Synthetic custom guide\n' } : {}),
+          skillElevations: [], additionalPluginIds: [] } };
     }
     const p = await reviewSetup({ workspace: registered.workspace, proposal });
     await applySetup({ workspace: registered.workspace, reviewId: p.reviewId });
@@ -67,7 +69,7 @@ async function review(s, i = 0) {
   return enrollment.reviewPluginEnrollment({ workspace: s.workspace, discoveryId: inventory.discoveryId, additions: [request(s, i)] });
 }
 
-for (const setup of [false, true, 2, 3]) test('plugin-only enrollment preserves source bytes and Normal with previous setup ' + setup, async t => {
+for (const setup of [false, true, 2, 3, 4]) test('plugin-only enrollment preserves source bytes and Normal with previous setup ' + setup, async t => {
   assert.equal(typeof enrollment.inspectPluginEnrollment, 'function');
   const s = await fixture(t, { setup });
   const before = await openWorkspace(s.workspace), normal = await loadSnapshot(s.workspace, before.reg, activeNormalId(before));
@@ -89,11 +91,11 @@ for (const setup of [false, true, 2, 3]) test('plugin-only enrollment preserves 
   assert.equal(next.reg.plugins[0].normalSelector, true);
   assert.equal((await loadRecord(s.workspace, 'input', next.reg.plugins[0].dependencyId)).role, 'plugin-dependency');
   assert.equal(next.state.setupId, null);
-  assert.equal(next.state.setupSchemaVersion, 3);
+  assert.equal(next.state.setupSchemaVersion, setup === 4 ? 4 : 3);
   assert.equal(next.state.scopePreparationRequired, true);
   assert.equal(next.state.preparedMode, before.state.preparedMode);
   assert.equal(next.state.preparedSetupId, before.state.preparedSetupId);
-  assert.deepEqual(next.manifest, { schemaVersion: 3, rootScopeId: before.rootScopeId });
+  assert.deepEqual(next.manifest, { schemaVersion: setup === 4 ? 4 : 3, rootScopeId: before.rootScopeId });
   assert.deepEqual(await loadSnapshot(s.workspace, next.reg, activeNormalId(next)), normal);
   assert.deepEqual(await loadSnapshot(s.workspace, before.reg, activeNormalId(before)), normal);
   assert.deepEqual(await readSourceProfileFiles(s.context), bytes);

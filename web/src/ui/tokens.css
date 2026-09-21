@@ -1,0 +1,67 @@
+:root,
+:root[data-theme="dark"],
+:root[data-theme="system"][data-resolved-theme="dark"] {
+  color-scheme: dark;
+  --background: #070d11;
+  --foreground: #f3f2ec;
+  --surface: #10191e;
+  --surface-raised: #162229;
+  --border: #364046;
+  --muted-foreground: #a5b0b6;
+  --accent: #df4829;
+  --accent-foreground: #fff8f4;
+  --focus: #b8dbff;
+  --success: #78c9ad;
+  --warning: #e7a64b;
+  --destructive: #f06a52;
+  --shadow-color: rgb(0 0 0 / 0.38);
+  --chrome: #080f13;
+  --on-chrome: #f3f2ec;
+  --on-dark: #f3f2ec;
+  --on-dark-muted: #c5d0d4;
+  --selection-background: #a9321c;
+  --selection-foreground: #ffffff;
+
+  /* Compatibility aliases while the existing CSS moves to semantic names. */
+  --base: var(--background);
+  --text: var(--foreground);
+  --line: var(--border);
+  --muted: var(--muted-foreground);
+  --amber: var(--warning);
+  --red: var(--accent);
+  --ice: var(--focus);
+  --mint: var(--success);
+}
+
+:root[data-theme="light"],
+:root[data-theme="system"][data-resolved-theme="light"] {
+  color-scheme: light;
+  --background: #f7f8f7;
+  --foreground: #172027;
+  --surface: #ffffff;
+  --surface-raised: #eef2f2;
+  --border: #c7d0d3;
+  --muted-foreground: #53636b;
+  --accent: #b93620;
+  --accent-foreground: #ffffff;
+  --focus: #176f91;
+  --success: #176b53;
+  --warning: #8b5c12;
+  --destructive: #b72f1f;
+  --shadow-color: rgb(23 32 39 / 0.18);
+  --chrome: #080f13;
+  --on-chrome: #f3f2ec;
+  --on-dark: #f3f2ec;
+  --on-dark-muted: #c5d0d4;
+  --selection-background: #a9321c;
+  --selection-foreground: #ffffff;
+
+  --base: var(--background);
+  --text: var(--foreground);
+  --line: var(--border);
+  --muted: var(--muted-foreground);
+  --amber: var(--warning);
+  --red: var(--accent);
+  --ice: var(--focus);
+  --mint: var(--success);
+}

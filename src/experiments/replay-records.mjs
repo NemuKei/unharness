@@ -64,7 +64,9 @@ async function validateVariant(w, value, snapshot, project, baseManifestId) {
     if (!source || e.category !== source.category || expectedById.has(e.sourceId)) invalid();
     exactKeys(e, e.category === 'skill' ? ['sourceId', 'category', 'expected', 'name', 'path'] : ['sourceId', 'category', 'expected', 'text'], [], 'replay-record-invalid');
     if (e.category === 'skill' ? !['disabled', 'manual-only', 'automatic-catalog'].includes(e.expected) || e.path !== source.path || e.name !== source.identity.name
-      : !['saved-instructions', 'minimal-guide', 'inert-instructions'].includes(e.expected) || typeof e.text !== 'string' || Buffer.byteLength(e.text) > 128 * 1024) invalid();
+      : !['saved-instructions', 'minimal-guide', 'custom-guide', 'inert-instructions'].includes(e.expected) || typeof e.text !== 'string' || Buffer.byteLength(e.text) > 128 * 1024) invalid();
+    if (e.expected === 'custom-guide' && (w.manifestVersion < 4 || typeof snapshot.override?.text !== 'string'
+      || e.text !== snapshot.override.text.replaceAll('\r\n', '\n').trim())) invalid();
     expectedById.set(e.sourceId, e);
   }
   const repoSkills = w.reg.skills.filter(s => s.identity.scope === 'repo');

@@ -9,6 +9,7 @@ import { openWorkspace, scopeWorkspace, activeNormalId, loadNormal, loadSnapshot
 import { acquire, pending, assertCurrent, sourceTransactionHook } from './transaction.mjs';
 import { applicationFor } from '../apps/index.mjs';
 import { fail, verification } from './errors.mjs';
+import { usesSourceStates } from '../setup/schema.mjs';
 const modes = ['normal', 'unseal', 'trueform'];
 // The one registered file that mixes managed and retained settings. Everything
 // else must be byte-identical for an edit to qualify as retained-only.
@@ -20,7 +21,7 @@ const sameExceptRetained = (reg, left, right, kind = 'source-conflict') => {
 };
 async function compose(w, base, target, current, frozenRestore = false) {
   const key = retainedKey(w.reg);
-  if (frozenRestore && w.manifestVersion === 3 && applicationFor(w.reg.context).id === 'codex') {
+  if (frozenRestore && usesSourceStates(w.manifestVersion) && applicationFor(w.reg.context).id === 'codex') {
     const { mergeFrozenRetainedConfig } = await import('../codex/config-reconcile.mjs');
     return mergeFrozenRetainedConfig({ baseText: base[key]?.text ?? '', targetText: target[key]?.text ?? '',
       currentText: current[key]?.text ?? '', skillPaths: w.reg.skills.map(s => s.path), pluginIds: (w.reg.plugins ?? []).map(p => p.id) });
@@ -87,6 +88,46 @@ function assertPlanState(w, p) {
   if (p.revision !== w.state.revision || p.beforeId !== w.state.snapshotId ||
       p.previousNormalId !== activeNormalId(w) || p.preparedMode !== w.state.preparedMode)
     fail('stale-plan');
+}
+// A mode plan can include this frozen review without accepting it first. The
+// returned state exists only in memory until the ordinary guarded transaction
+// commits. Its checkpoint/recovery baseline keeps the user's actual shared
+// settings, even if that mode switch is interrupted.
+export async function workspaceWithRetainedPlan(w, planId) {
+  if (applicationFor(w.reg.context).id !== 'codex') fail('source-conflict');
+  const p = await loadRetainedPlan(w, planId);
+  assertPlanState(w, p);
+  // Content-addressed records are not authority to redefine selected sources.
+  // Recheck the native-reviewed frozen composition without invoking Codex at
+  // apply/recovery time, including the observed file's complete metadata.
+  const before = await loadSnapshot(w.workspace, w.reg, p.beforeId);
+  const actual = await loadSnapshot(w.workspace, w.reg, p.observedId, 2);
+  const normal = await loadNormal(w.workspace, w.reg, p.previousNormalId);
+  const nextNormal = await loadNormal(w.workspace, w.reg, p.normalId);
+  const { mergeFrozenRetainedConfig } = await import('../codex/config-reconcile.mjs');
+  try {
+    const merged = mergeFrozenRetainedConfig({
+      baseText: before.config?.text ?? '', targetText: normal.config?.text ?? '',
+      currentText: actual.config?.text ?? '', skillPaths: w.reg.skills.map(s => s.path),
+      pluginIds: (w.reg.plugins ?? []).map(p => p.id)
+    });
+    const expectedNormal = { ...normal, config: actual.config === null ? null : { ...actual.config, text: merged.text } };
+    if ((actual.config === null && merged.text !== '') || !equal(expectedNormal, nextNormal)) fail('record-invalid');
+  } catch { fail('record-invalid'); }
+  return { ...w, retainedPlanId: planId, state: {
+    ...w.state, snapshotVersion: 2, normalId: p.normalId, snapshotId: p.observedId,
+    lastRetainedPlanId: null, lastPlanId: null, lastObservationId: null
+  } };
+}
+export async function workspaceForModePlanning(w) {
+  if (await pending(w.workspace)) fail('recovery-required');
+  const expected = await loadSnapshot(w.workspace, w.reg, w.state.snapshotId);
+  try { await assertCurrent(w, expected); return w; }
+  catch (error) { if (error.kind !== 'source-conflict') throw error; }
+  if (applicationFor(w.reg.context).id !== 'codex') fail('source-conflict');
+  const reviewed = await planRetainedSettings({ workspace: w.workspace });
+  // A concurrent state change cannot silently retarget the caller's plan.
+  return workspaceWithRetainedPlan(w, reviewed.planId);
 }
 function acceptedState(before, p, planId, preparation) {
   return { ...before, snapshotVersion: 2, normalId: p.normalId,

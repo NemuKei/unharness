@@ -79,7 +79,7 @@ function sourceView(value: unknown, metadata: SourceMetadata): value is SourceVi
       && object(row.availability) && [row.availability.normal, row.availability.unseal, row.availability.trueform].every(v => typeof v === "boolean"))
     || !fieldsMatch(s.context, metadata.context)
     || !(s.setup === undefined || object(s.setup) && maybeHash(s.setup.setupId) && maybeHash(s.setup.preparedSetupId)
-      && (s.setup.schemaVersion === undefined || s.setup.schemaVersion === null || [1, 2, 3].includes(s.setup.schemaVersion as number)))
+      && (s.setup.schemaVersion === undefined || s.setup.schemaVersion === null || [1, 2, 3, 4].includes(s.setup.schemaVersion as number)))
     || !(s.conflict === null || object(s.conflict) && text(s.conflict.kind)) || !object(s.recovery)
     || typeof s.recovery.pending !== "boolean" || !maybeHash(s.recovery.lastCheckpointId) || !strings(s.recovery.argv)
     || !(s.preparation === null || object(s.preparation) && text(s.preparation.id) && time(s.preparation.preparedAt))

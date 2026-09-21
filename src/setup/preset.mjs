@@ -6,6 +6,8 @@ import { requiredControlSources, assertControlPreserved } from './control-source
 import { validateSetupInventory } from './inventory.mjs';
 import { resolveModeSkillSets } from './mode-inheritance.mjs';
 import { resolveSourceStatesV3 } from './source-state-v3.mjs';
+import { isSetupVersion, usesSourceStates } from './schema.mjs';
+import { validateCustomInstructions } from './custom-instructions.mjs';
 
 const kind = 'setup-proposal-invalid';
 const hash = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
@@ -27,7 +29,7 @@ export function validatePresetProposal(value, scope) {
     recordId('input', value);
     shape(value, ['schemaVersion', 'scopeId', 'normalId', 'basis', 'roles', 'unseal', 'trueform',
       ...(value.schemaVersion >= 2 ? ['inventoryId'] : [])]);
-    if (![1, 2, 3].includes(value.schemaVersion) || value.schemaVersion >= 2 && !hash(value.inventoryId)
+    if (!isSetupVersion(value.schemaVersion) || value.schemaVersion >= 2 && !hash(value.inventoryId)
       || !hash(value.scopeId) || value.scopeId !== scope.scopeId
       || !hash(value.normalId) || value.normalId !== scope.normalId) fail(kind);
     const basis = value.basis;
@@ -46,10 +48,12 @@ export function validatePresetProposal(value, scope) {
       if (!ids.includes(role.sourceId) || !['self', 'external', 'unknown'].includes(role.origin)) fail(kind);
       text(role.reason, 600, true);
     }
-    if (value.schemaVersion === 3) {
-      shape(value.unseal, ['instructions', 'skillElevations', 'additionalPluginIds']);
+    if (usesSourceStates(value.schemaVersion)) {
+      const custom = value.schemaVersion === 4 && value.unseal?.instructions === 'custom';
+      shape(value.unseal, ['instructions', 'skillElevations', 'additionalPluginIds', ...(custom ? ['customInstructions'] : [])]);
       shape(value.trueform, ['skillStates', 'retainedOfficialPluginIds']);
-      if (!['minimal', 'none'].includes(value.unseal.instructions) || !scope.instructions && value.unseal.instructions !== 'none') fail(kind);
+      if (!(custom || ['minimal', 'none'].includes(value.unseal.instructions)) || !scope.instructions && value.unseal.instructions !== 'none') fail(kind);
+      if (custom) validateCustomInstructions(value.unseal.customInstructions);
       for (const [list, allowed] of [[value.trueform.skillStates, ['disabled', 'manual']], [value.unseal.skillElevations, ['manual', 'automatic']]]) {
         if (!Array.isArray(list) || list.length > ids.length || new Set(list.map(s => s?.sourceId)).size !== list.length) fail(kind);
         for (const s of list) { shape(s, ['sourceId', 'state']); if (!ids.includes(s.sourceId) || !allowed.includes(s.state)) fail(kind); }
@@ -85,7 +89,7 @@ export function compileReleasePreset(value, mode, scope, inventory) {
   const proposal = validatePresetProposal(value, scope);
   if (!['unseal', 'trueform'].includes(mode)) fail(kind);
   if (proposal.roles.some(r => r.origin === 'unknown')) fail('setup-roles-unconfirmed');
-  if (proposal.schemaVersion === 3) return compileSourceStatePreset(proposal, mode, scope, inventory);
+  if (usesSourceStates(proposal.schemaVersion)) return compileSourceStatePreset(proposal, mode, scope, inventory);
   if (proposal.schemaVersion === 2) return compileInheritedPreset(proposal, mode, scope, inventory);
   const automatic = new Set(mode === 'unseal' ? proposal.unseal.automaticSkillIds : proposal.trueform.automaticExternalSkillIds);
   const manual = scope.skills.filter(s => !automatic.has(s.id));
@@ -107,9 +111,10 @@ function compileSourceStatePreset(proposal, mode, scope, inventory) {
     trueformSkillStates: proposal.trueform.skillStates, unsealSkillElevations: proposal.unseal.skillElevations,
     retainedOfficialPluginIds: proposal.trueform.retainedOfficialPluginIds, additionalPluginIds: proposal.unseal.additionalPluginIds });
   const instructionStyle = mode === 'unseal' ? proposal.unseal.instructions : 'none';
-  if (scope.instructions && !scope.instructions.availability[instructionStyle === 'minimal' ? 'unseal' : 'trueform'])
+  if (scope.instructions && !scope.instructions.availability[instructionStyle === 'none' ? 'trueform' : 'unseal'])
     fail('setup-manual-control-unavailable');
   return { instructionStyle, skillRelease: 'per-source-v3', sourceStates: inheritance[mode], inheritance,
+    ...(instructionStyle === 'custom' ? { customInstructions: proposal.unseal.customInstructions } : {}),
     selection: [...(scope.instructions ? [scope.instructions.id] : []), ...inheritance[mode].skills.map(s => s.sourceId)] };
 }
 

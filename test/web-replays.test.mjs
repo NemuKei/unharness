@@ -1,4 +1,4 @@
-import { openWorkbenchPage } from '../test-support/workbench-navigation.mjs';
+import { openWorkbenchPage, openReplayWorkbench } from '../test-support/workbench-navigation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -122,7 +122,7 @@ test('built Comparison prepares one replay, hands off its request, saves a quali
       Object.defineProperty(navigator, 'clipboard', { value: { writeText: async value => { window.__replayClipboard = value; } } }); });
     const page = await context.newPage(); page.setDefaultTimeout(6000);
     const errors = []; page.on('pageerror', e => errors.push(e.message));
-    await page.goto(s.url); await openWorkbenchPage(page, '比較・記録');
+    await page.goto(s.url); await openReplayWorkbench(page);
     await page.getByText('実行前に条件を保存', { exact: true }).click();
     await page.getByRole('button', { name: '保存した開始条件を読む', exact: true }).click();
     await page.getByRole('button', { name: '詳細を開く', exact: true }).click();
@@ -154,7 +154,7 @@ test('built Comparison prepares one replay, hands off its request, saves a quali
     await page.getByRole('button', { name: 'この試行の設定をお気に入りへ', exact: true }).click();
     await page.getByText('試行時の設定をお気に入りに保存しました。', { exact: false }).waitFor();
     assert.equal((await service.listUserFavorites({ workspace: s.workspace })).favorites.length, 1);
-    await page.reload(); await openWorkbenchPage(page, '比較・記録');
+    await page.reload(); await openReplayWorkbench(page);
     await page.getByRole('button', { name: '再実行の履歴を読む', exact: true }).click();
     await page.getByRole('button', { name: '再実行の結果を開く', exact: true }).click();
     await page.getByText('記録上の条件が一致', { exact: true }).waitFor();
@@ -181,7 +181,7 @@ async function inReplayBrowser(t, action) {
     const page = await context.newPage(); page.setDefaultTimeout(7000);
     const errors = []; page.on('pageerror', e => errors.push(e.message));
     await page.goto(s.url);
-    await openWorkbenchPage(page, '比較・記録');
+    await openReplayWorkbench(page);
     await page.getByText('実行前に条件を保存', { exact: true }).click();
     await page.getByRole('button', { name: '保存した開始条件を読む', exact: true }).click();
     await page.getByRole('button', { name: '詳細を開く', exact: true }).click();

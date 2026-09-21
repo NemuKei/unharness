@@ -5,6 +5,7 @@ import { applicationFor } from '../apps/index.mjs';
 import { fail } from '../sources/errors.mjs';
 import { requiredControlSources } from './control-sources.mjs';
 import { setupInventoryId } from './inventory.mjs';
+import { usesSourceStates } from './schema.mjs';
 
 export async function captureSetupInventory(w, normalId = activeNormalId(w)) {
   const app = applicationFor(w.reg.context);
@@ -38,7 +39,7 @@ export async function captureSetupInventory(w, normalId = activeNormalId(w)) {
 }
 
 export async function captureInventoryForSetup(w, schemaVersion, normalId = activeNormalId(w)) {
-  if (schemaVersion === 3) {
+  if (usesSourceStates(schemaVersion)) {
     const { captureSourceStateInventory } = await import('./inventory-v3-capture.mjs');
     return captureSourceStateInventory(w, normalId);
   }

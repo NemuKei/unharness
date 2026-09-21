@@ -10,7 +10,7 @@ import { createSourceController } from '../src/sources/session.mjs';
 import { createRemoteController } from '../src/gui/remote-controller.mjs';
 import { readSourceProfileFiles } from '../src/sources/owned-profile.mjs';
 
-test('MCP requests a local approval link without approval, ticket disclosure or duplicate issuance', async t => {
+test('the legacy public command returns the local workbench without issuing a new pairing', async t => {
   const cleanups = [], p = await aiProfile({ after: fn => cleanups.push(fn) }), assetsDirectory = join(p.parent, 'ui');
   t.after(async () => {
     await stopWorkbench({ workspace: p.workspace });
@@ -21,8 +21,9 @@ test('MCP requests a local approval link without approval, ticket disclosure or 
   const s = await fixtureAiClient(t, p.workspace), status = await s.call('status');
   const args = { connectionId: status.connectionId, requestId: randomUUID() };
   const first = await s.call('request_public_connection', args);
-  assert.equal(first.approved, false); assert.equal(first.ticket, undefined); assert.equal(first.token, undefined);
-  assert.equal(new URL(first.approvalUrl).origin, started.loopbackOrigin);
+  assert.equal(first.publicConnection, 'retired');
+  assert.equal(first.pairingId, undefined); assert.equal(first.ticket, undefined); assert.equal(first.token, undefined);
+  assert.equal(first.workbenchUrl, started.loopbackOrigin);
   assert.deepEqual(await s.call('request_public_connection', args), first);
   for (const field of ['webOrigin', 'workspace', 'approve']) {
     const response = await s.client.callTool({ name: 'request_public_connection', arguments: { ...args, [field]: 'injected' } });

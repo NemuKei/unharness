@@ -15,7 +15,7 @@ export const publicBrowserCase = { timeout: 60000, skip: !process.env.UNHARNESS_
 export async function publicBrowser(t, { clipboardFails = false, siteAssetsDirectory = resolve('site-dist') } = {}) {
   const cleanups = [], p = await aiProfile({ after: fn => cleanups.push(fn) });
   const assetsDirectory = resolve('dist');
-  let time = Date.now(), dropApply = false;
+  let time = Date.now(), dropApply = false, dropStatus = false;
   const gui = await startGuiServer({ manageSources: p.context, assetsDirectory }, { remoteNow: () => time });
   let browser, browserContext;
   // Register cleanup before importing or launching the browser. A missing
@@ -59,6 +59,7 @@ export async function publicBrowser(t, { clipboardFails = false, siteAssetsDirec
     if (r.method() === 'POST') posts.push({ path: new URL(r.url()).pathname, body: r.postDataJSON() });
     const response = await route.fetch();
     if (dropApply && r.url().endsWith('/apply')) { dropApply = false; await route.abort(); }
+    else if (dropStatus && r.url().endsWith('/status')) { dropStatus = false; await route.abort(); }
     else await route.fulfill({ response });
   });
   const page = await browserContext.newPage(); page.setDefaultTimeout(10000);
@@ -95,5 +96,5 @@ export async function publicBrowser(t, { clipboardFails = false, siteAssetsDirec
     assert.ok(!visible.includes(p.context.project)); assert.ok(!visible.includes('PRIVATE_TEST'));
   }
   return { ...p, gui, browser, browserContext, page, requests, posts, errors, httpErrors, approveLink, callPageTool, screenshot,
-    assertNoSecrets, advance: ms => { time += ms; }, dropNextApply: () => { dropApply = true; } };
+    assertNoSecrets, advance: ms => { time += ms; }, dropNextApply: () => { dropApply = true; }, dropNextStatus: () => { dropStatus = true; } };
 }

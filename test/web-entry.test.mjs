@@ -4,11 +4,13 @@ import { randomUUID } from 'node:crypto';
 import { publicBrowser, publicBrowserCase } from '../test-support/public-browser.mjs';
 import { PUBLIC_WEB_ORIGIN } from '../src/gui/remote-policy.mjs';
 import { readSourceProfileFiles } from '../src/sources/owned-profile.mjs';
+import { openWorkbenchPage } from '../test-support/workbench-navigation.mjs';
 
 test('public entry, synthetic demo and platform guidance do not connect or change real settings', publicBrowserCase, async t => {
   const s = await publicBrowser(t, { clipboardFails: true }), { page } = s;
   await page.goto(PUBLIC_WEB_ORIGIN);
   await page.getByRole('button', { name: '設定を変えずにデモを試す', exact: true }).waitFor();
+  await page.getByText('ローカル画面では「モード」「設定」「外観」を中心に使い、「比較・記録」「接続・復旧」はその他から開けます。公開サイトへの接続許可は不要です。', { exact: true }).waitFor();
   assert.match(await page.title(), /Unharness/); assert.equal(new URL(page.url()).origin, PUBLIC_WEB_ORIGIN);
   assert.equal(await page.locator('vite-error-overlay').count(), 0);
   await page.getByRole('button', { name: '「零式に切り替えて」', exact: true }).click();
@@ -45,7 +47,7 @@ test('public entry, synthetic demo and platform guidance do not connect or chang
   await page.getByRole('button', { name: '設定のデモ', exact: true }).click();
   for (const name of ['TRUEFORM', 'UNSEAL', 'Normal']) await page.getByRole('button', { name: new RegExp('^' + name) }).click();
   await page.getByText('このデモは架空のデータです。モードを選んでも、あなたのAI設定は変わりません。', { exact: true }).waitFor();
-  assert.equal((await s.callPageTool('unharness_plan_mode', { mode: 'unseal', requestId: randomUUID() })).ok, false);
+  assert.equal(await page.evaluate(() => window.__unharnessTestTools.size), 0, 'ordinary public visitors have no operating tools');
   assert.equal(s.posts.length, 0);
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
@@ -57,10 +59,17 @@ test('public entry, synthetic demo and platform guidance do not connect or chang
   await page.getByLabel('使うOS', { exact: true }).selectOption('mac');
   await page.getByLabel('使うAI', { exact: true }).selectOption('claude');
   await page.getByRole('heading', { name: 'この組み合わせは後続の対応です', exact: true }).waitFor();
-  await page.getByRole('button', { name: '接続して開く', exact: true }).click();
-  await page.getByRole('button', { name: '依頼文をコピー', exact: true }).click();
+  await page.setViewportSize({ width: 1440, height: 1050 });
+  await page.getByRole('button', { name: '開き方を見る', exact: true }).click();
+  await page.getByRole('heading', { name: '操作は、このMacの画面で。', exact: true }).waitFor();
+  assert.equal(await page.locator('.local-launch-entry .public-panel').evaluate(element => {
+    const box = element.getBoundingClientRect();
+    return Math.abs((box.left + box.right) / 2 - innerWidth / 2) < 2;
+  }), true, 'opening guidance is centered instead of leaving an empty workbench column');
+  await s.screenshot('public-opening-guidance.png');
+  await page.getByRole('button', { name: '開くための依頼文をコピー', exact: true }).click();
   await page.getByText('コピーできませんでした。依頼文を選択してコピーしてください。', { exact: true }).waitFor();
-  assert.equal(await page.getByLabel('AIへの依頼文', { exact: true }).evaluate(e => document.activeElement === e && e.selectionEnd - e.selectionStart === e.value.length), true);
+  assert.equal(await page.getByLabel('Unharnessを開く依頼', { exact: true }).evaluate(e => document.activeElement === e && e.selectionEnd - e.selectionStart === e.value.length), true);
   assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
   assert.equal(s.posts.length, 0); assert.deepEqual(s.errors, []); await s.assertNoSecrets();
 });
@@ -90,6 +99,25 @@ test('production entry hands off Japanese and English drafts and retains live co
   await s.assertNoSecrets();
 });
 
+test('incompatible and invalid legacy links retain diagnosis without tools, redeem or new pairing guidance', publicBrowserCase, async t => {
+  const s = await publicBrowser(t), { page } = s, approved = new URL(await s.approveLink());
+  const incompatible = new URL(approved); const incompatibleHash = new URLSearchParams(incompatible.hash.slice(1));
+  incompatibleHash.set('unharness', '999'); incompatible.hash = incompatibleHash.toString();
+  await page.goto(incompatible.href);
+  await page.getByRole('heading', { name: '更新が必要', exact: true }).waitFor();
+  await page.getByText('以前の公開接続とローカル版の方式が一致しません。新しい公開接続は作らず、ローカル画面で版と現在の状態を確認してください。', { exact: true }).waitFor();
+  assert.equal(new URL(page.url()).hash, ''); assert.equal(await page.evaluate(() => window.__unharnessTestTools.size), 0);
+  assert.equal(s.posts.filter(post => post.path.endsWith('/redeem')).length, 0);
+
+  await page.goto(incompatible.origin + '/#unharness=2&port=invalid&launch=invalid&ticket=invalid');
+  await page.getByRole('heading', { name: '接続状態は未確認', exact: true }).waitFor();
+  await page.getByText('このリンクの接続状態は確認できません。新しい公開接続は作らず、ローカル画面で確認してください。', { exact: true }).waitFor();
+  assert.equal(new URL(page.url()).hash, ''); assert.equal(await page.evaluate(() => window.__unharnessTestTools.size), 0);
+  assert.equal(await page.getByRole('button', { name: '状態を再取得', exact: true }).count(), 0);
+  assert.equal(s.posts.filter(post => post.path.endsWith('/redeem')).length, 0);
+  assert.deepEqual(s.errors, []); await s.assertNoSecrets();
+});
+
 test('language changes preserve the live connection, selected mode and reviewed plan without applying it', publicBrowserCase, async t => {
   const s = await publicBrowser(t), { page } = s;
   await page.goto(await s.approveLink());
@@ -108,11 +136,12 @@ test('language changes preserve the live connection, selected mode and reviewed 
   await page.getByRole('button', { name: 'English', exact: true }).click();
   const after = await s.callPageTool('unharness_status', {});
   assert.equal(after.connectionState, before.connectionState);
-  assert.deepEqual(after, planned);
-  await page.getByRole('button', { name: 'Appearance', exact: true }).click();
+  assert.equal(after.ok, planned.ok);
+  assert.equal(after.state?.preparedMode ?? 'normal', planned.state?.preparedMode ?? 'normal');
+  await openWorkbenchPage(page, 'Appearance');
   await page.getByRole('heading', { name: 'Appearance', exact: true }).waitFor();
   await page.getByText('Choose a bundled appearance', { exact: true }).waitFor();
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await openWorkbenchPage(page, 'Settings');
   await page.getByText('Review local loadouts and targets', { exact: true }).click();
   const local = page.getByRole('link', { name: 'Review settings on this Mac', exact: true });
   assert.equal(new URL(await local.getAttribute('href')).searchParams.get('lang'), 'en');
@@ -131,8 +160,10 @@ test('English local workbench preserves the selected mode, artwork brief and use
   page.on('request', r => { if (r.method() === 'POST' && new URL(r.url()).pathname.startsWith('/api/sources/')) localPosts.push(new URL(r.url()).pathname); });
   await page.goto(s.gui.url + '/?lang=en');
   await page.getByRole('button', { name: /UNSEAL/ }).click();
+  const reviewMode = page.getByRole('button', { name: 'Review changes', exact: true });
+  await reviewMode.and(page.locator(':enabled')).waitFor(); await reviewMode.click();
   await page.getByRole('button', { name: 'Apply these changes', exact: true }).and(page.locator(':enabled')).waitFor();
-  await page.getByRole('button', { name: 'Appearance', exact: true }).click();
+  await openWorkbenchPage(page, 'Appearance');
   await page.getByRole('button', { name: 'Create original artwork', exact: true }).click();
   const brief = '金色の竜 & my own artwork', draft = page.getByRole('textbox', { name: 'Your idea (optional)', exact: true });
   await draft.fill(brief);
@@ -143,13 +174,12 @@ test('English local workbench preserves the selected mode, artwork brief and use
   await page.getByRole('dialog').getByRole('button', { name: 'English', exact: true }).click();
   assert.equal(await draft.inputValue(), brief);
   await page.getByRole('button', { name: 'Close appearance', exact: true }).click();
-  await page.getByRole('button', { name: 'Mode', exact: true }).click();
+  await openWorkbenchPage(page, 'Mode');
   assert.equal(await page.getByRole('button', { name: /UNSEAL/ }).getAttribute('aria-pressed'), 'true');
   assert.equal(await page.getByRole('button', { name: 'Apply these changes', exact: true }).isEnabled(), true);
   await s.screenshot('guided-local-en-plan.png');
-  await page.getByText('More', { exact: true }).click();
-  await page.getByRole('button', { name: 'Comparisons & records', exact: true }).click();
-  await page.getByRole('heading', { name: 'Review ordinary work and replays of saved conditions.', exact: true }).waitFor();
+  await openWorkbenchPage(page, 'Work records');
+  await page.getByRole('heading', { name: 'Your work', exact: true }).waitFor();
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   await s.screenshot('guided-local-en-history-mobile.png');
@@ -169,7 +199,7 @@ test('an older connected workbench keeps its original local links when it does n
   await page.getByRole('button', { name: 'English', exact: true }).click();
   await page.getByRole('button', { name: 'Connect to this Mac', exact: true }).click();
   await page.locator('.prepared-mode').filter({ hasText: /^Normal$/ }).waitFor();
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await openWorkbenchPage(page, 'Settings');
   await page.getByText('Review local loadouts and targets', { exact: true }).click();
   const url = new URL(await page.getByRole('link', { name: 'Review settings on this Mac', exact: true }).getAttribute('href'));
   assert.equal(url.origin, s.gui.url);

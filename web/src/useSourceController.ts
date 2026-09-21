@@ -260,7 +260,7 @@ export function useSourceController() {
         dispatch({
           type: "set-notice",
           notice:
-            t("現在のCodex設定を新しいNormal版として記録しました。管理対象ファイルは変更していません。", "Recorded current Codex settings as a new Normal version. Managed files were not changed."),
+            t(`共通設定を取り込みました。準備済みのモードは${modePresentation[response.state.source!.preparedMode].title}のままです。`, `Shared settings were kept. The prepared mode stays ${modePresentation[response.state.source!.preparedMode].title}.`),
         });
         try {
           const favoritesResponse = await sourceOperation<SourceFavoritePage>(
@@ -328,7 +328,7 @@ export function useSourceController() {
           type: "set-notice",
           notice:
             action === "apply"
-              ? t("選んだ設定を準備し、ファイルの一致を確認しました。新しいタスクで使用してください。", "Prepared the selected settings and verified matching files. Use them in a new task.")
+              ? t(`${modePresentation[response.state.source!.preparedMode].title}を準備しました。新しいタスクで使えます。`, `${modePresentation[response.state.source!.preparedMode].title} is prepared for a fresh task.`)
               : action === "register"
                 ? t("通常装備を保存しました。比較するモードを選べます。", "Normal was saved. You can choose a mode to compare.")
                 : action === "plan-retained"
@@ -409,13 +409,14 @@ export function useSourceController() {
       setBusy(false);
     }
   }
-  async function readArtwork<T>(action: string, input: object): Promise<AuxiliarySourceOperationResult<T>> {
+  async function readOnlyAuxiliary<T>(action: string, input: object): Promise<AuxiliarySourceOperationResult<T>> {
     const accepted = latest.current.view, generation = foregroundGeneration.current;
     if (!accepted || contextBlocked.current) return { status: 'failed', error: new ApiError('gui-source-context-changed') };
     try {
-      // Read-only artwork cannot disable mode controls or accept a different
+      // Read-only saved contents and artwork cannot disable mode controls or accept a different
       // source context. The server still serializes its deterministic operation.
-      const response = await sourceOperation<T>(api, accepted.metadata, action, input);
+      const response = await sourceOperation<T>(api, accepted.metadata, action, input,
+        () => !lock.current && canAcceptSourceUpdate(accepted, latest.current.view, generation, foregroundGeneration.current));
       if (response.status === 'context-updated' || !sameSourceContext(accepted.metadata, response.state.metadata)
         || accepted.source?.registration.scopeId !== response.state.source?.registration.scopeId) {
         if (canAcceptSourceUpdate(accepted, latest.current.view, generation, foregroundGeneration.current)) {
@@ -448,14 +449,15 @@ export function useSourceController() {
     refresh,
     run,
     choose,
+    preview: (mode: SourceMode) => { setSelected(mode); dispatch({ type: "clear-plan" }); },
     loadFavorites,
     executeComparison,
     executeEnrollment: <T,>(reviewId: string, nextScopeId: string) =>
       executeComparison<T>('apply-enrollment', { reviewId }, false, { reviewId, nextScopeId }),
     executePluginEnrollment: <T,>(reviewId: string, nextScopeId: string) =>
       executeComparison<T>('apply-plugin-enrollment', { reviewId }, false, { reviewId, nextScopeId }),
-    executeAuxiliary: <T,>(action: string, input: object) => ['artwork', 'artwork-item', 'read-appearance-import'].includes(action)
-      ? readArtwork<T>(action, input) : executeComparison<T>(action, input, false),
+    executeAuxiliary: <T,>(action: string, input: object) => ['artwork', 'artwork-item', 'read-appearance-import', 'mode-contents', 'mode-source'].includes(action)
+      ? readOnlyAuxiliary<T>(action, input) : executeComparison<T>(action, input, false),
     artworkImage: (referenceId: string, asset: { assetId: string; bytes: number }, signal: AbortSignal) => {
       if (!view?.source || !confirmed) return Promise.reject(new ApiError('gui-source-context-changed'));
       const params = new URLSearchParams({ launchId: view.metadata.launchId, contextId: view.metadata.contextId, referenceId, assetId: asset.assetId });

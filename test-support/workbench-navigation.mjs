@@ -1,10 +1,16 @@
 export async function openWorkbenchPage(page, name) {
-  const nav = page.getByRole('navigation', { name: 'ワークベンチ', exact: true });
-  if (['比較・記録', '接続・復旧'].includes(name)) {
+  if (name === '比較・記録') name = '記録・比較';
+  const nav = page.getByRole('navigation', { name: /^(?:ワークベンチ|Workbench)$/ });
+  if (['接続・復旧', '記録・比較', '外観', '設定', 'Connection & recovery', 'Work records', 'Comparisons & records', 'Appearance', 'Settings'].includes(name)) {
     const more = nav.locator('details');
     if (await more.getAttribute('open') === null) await more.locator('summary').click();
   }
   await nav.getByRole('button', { name, exact: true }).click();
+}
+
+export async function openReplayWorkbench(page) {
+  await openWorkbenchPage(page, '記録・比較');
+  await page.getByRole('button', { name: '同じお題で試す', exact: true }).click();
 }
 
 export async function openSetupDetails(page) {

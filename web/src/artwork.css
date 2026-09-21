@@ -6,7 +6,7 @@
 .art-prepared { margin: 8px 0 18px; }
 .art-prepared-label { color: var(--muted); }
 .art-prepared-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.art-prepared-option { text-align: left; background: #101f29; color: var(--text); border: 1px solid #364b58; border-top: 2px solid #6e8a9a; padding: 12px; min-height: 74px; }
+.art-prepared-option { text-align: left; background: #101f29; color: var(--on-dark); border: 1px solid #364b58; border-top: 2px solid #6e8a9a; padding: 12px; min-height: 74px; }
 .art-prepared-option.silver { border-top-color: #7bf4ff; }
 .art-prepared-option.amber { border-top-color: #ffbf69; }
 .art-prepared-option strong, .art-prepared-option span { display: block; }
@@ -18,16 +18,16 @@
 .artwork-panel p { font-size: 12px; line-height: 1.8; }
 .art-notice { color: #a3cbb6; }
 .art-error { color: #f2bc92; overflow-wrap: anywhere; }
-.art-dialog { width: min(1060px, calc(100vw - 32px)); max-height: 90vh; padding: 0; border: 1px solid #40515c; color: var(--text); background: #0b161e; box-shadow: 0 24px 90px #000b; }
+.art-dialog { width: min(1060px, calc(100vw - 32px)); max-height: 90vh; padding: 0; border: 1px solid #40515c; color: var(--on-dark); background: #0b161e; box-shadow: 0 24px 90px #000b; }
 .art-dialog::backdrop { background: #02080dcc; }
 .art-dialog-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; border-bottom: 1px solid var(--line); padding: 18px 24px; }
 .art-dialog-header h2 { font-size: 22px; margin: 0; flex: 1 1 180px; }
-.art-dialog-header button { font-size: 12px; white-space: nowrap; padding: 9px 14px; }
+.art-dialog-header > button { font-size: 12px; white-space: nowrap; padding: 9px 14px; color: var(--on-dark); background: #15242d; border: 1px solid #40515c; }
 .art-dialog-body { padding: 8px 24px 28px; }
 .art-dialog-body p { font-size: 14px; line-height: 1.8; }
-.art-dialog-body .muted, .art-dialog-body small { color: var(--muted); font-size: 12px; }
-.art-dialog label { display: flex; flex-direction: column; gap: 9px; margin: 18px 0; font-size: 13px; color: #c5d0d4; }
-.art-dialog input, .art-dialog textarea, .art-dialog select { width: 100%; max-width: 100%; background: #071018; color: var(--text); border: 1px solid #40515c; border-radius: 2px; padding: 10px; font: inherit; }
+.art-dialog-body .muted, .art-dialog-body small { color: var(--on-dark-muted); font-size: 12px; }
+.art-dialog label { display: flex; flex-direction: column; gap: 9px; margin: 18px 0; font-size: 13px; color: var(--on-dark-muted); }
+.art-dialog input, .art-dialog textarea, .art-dialog select { width: 100%; max-width: 100%; background: #071018; color: var(--on-dark); border: 1px solid #40515c; border-radius: 2px; padding: 10px; font: inherit; }
 .art-dialog input[type=file] { padding: 8px; font-size: 12px; }
 .art-dialog input[type=file]::file-selector-button { background: #263b48; color: #e5eeef; border: 0; padding: 8px; margin-right: 8px; }
 .art-dialog .primary, .art-dialog .secondary { padding: 12px 18px; margin-top: 12px; font-size: 14px; min-height: 42px; }

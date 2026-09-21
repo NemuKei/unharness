@@ -1,0 +1,46 @@
+:root {
+  --motion-fast: 150ms;
+  --motion-standard: 200ms;
+  --motion-slow: 260ms;
+  --motion-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes ui-surface-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.workbench-pane:not([hidden]),
+.mode-contents,
+.proposal-review,
+.update-info-panel,
+.record-results,
+.explicit-output,
+.comparison-notice,
+.operation-status,
+.ui-notice {
+  animation: ui-surface-in var(--motion-standard) var(--motion-ease);
+}
+
+.workbench-navigation button,
+.workbench-more summary,
+.record-purpose button,
+details > summary {
+  transition: color var(--motion-fast) var(--motion-ease), background-color var(--motion-fast) var(--motion-ease), border-color var(--motion-fast) var(--motion-ease), opacity var(--motion-fast) var(--motion-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0.01ms;
+    --motion-standard: 0.01ms;
+    --motion-slow: 0.01ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

@@ -125,9 +125,9 @@ function assertMergedParts(configs, skillPaths, pluginIds) {
     || !isDeepStrictEqual(resultParts.selectedPlugins, targetParts.selectedPlugins)) throw failed();
 }
 
-// Only restoration from immutable snapshots uses this proof. Live retained
-// setting adoption still requires the native read below; this cannot authorize
-// a new runtime control or transform an unreviewed source.
+// Frozen restores and linked native-reviewed mode plans use this proof. New
+// retained-setting review still requires the native read below; this cannot
+// authorize a new runtime control or transform an unreviewed source.
 export function mergeFrozenRetainedConfig(args) {
   try {
     if (!object(args) || Object.keys(args).some(k => !['baseText', 'targetText', 'currentText', 'skillPaths', 'pluginIds'].includes(k))) throw failed();

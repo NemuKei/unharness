@@ -68,6 +68,7 @@ export type ComparisonControllerState = {
   review: RunReview | null;
   correctionRun: SavedRun | null;
   runs: SavedRun[];
+  historyLoaded: boolean;
   cursor: string | null;
   selectedRunIds: string[];
   comparison: RunComparison | null;
@@ -86,6 +87,7 @@ export const initialComparisonControllerState: ComparisonControllerState = {
   review: null,
   correctionRun: null,
   runs: [],
+  historyLoaded: false,
   cursor: null,
   selectedRunIds: [],
   comparison: null,
@@ -271,17 +273,18 @@ export function comparisonControllerReducer(
       output: null,
       uncertainOperation: null,
       error: "",
-      notice: t("観測記録を確認しました。評価は後から付ける記録です。", "Observation checked. Assessments are added retrospectively."),
+      notice: t("選んだ仕事の記録を確認しました。", "The selected work record is ready."),
     };
   if (action.type === "save-completed")
     return {
       ...state,
       correctionRun: null,
       runs: [action.run, ...state.runs.filter((run) => run.runId !== action.run.runId)],
+      historyLoaded: true,
       lastSavedRun: action.run,
       uncertainOperation: null,
       error: "",
-      notice: t("通常利用の記録を保存しました。", "Saved the ordinary-use record."),
+      notice: t("仕事の記録を保存しました。", "Saved the work record."),
     };
   if (action.type === "history-completed") {
     const runs = action.append
@@ -295,12 +298,13 @@ export function comparisonControllerReducer(
     return {
       ...state,
       runs,
+      historyLoaded: true,
       cursor: action.page.nextCursor,
       error: "",
     };
   }
   if (action.type === "external-history") return {
-    ...state, runs: mergeHistoryRows(state.runs, action.page.runs, "runId"), cursor: action.page.nextCursor, backgroundError: "",
+    ...state, historyLoaded: true, runs: mergeHistoryRows(state.runs, action.page.runs, "runId"), cursor: action.page.nextCursor, backgroundError: "",
   };
   if (action.type === "comparison-completed")
     return {
@@ -397,12 +401,12 @@ export function useComparisonController(shared: SharedSourceController) {
     return true;
   }
 
-  async function reviewRun(taskId: string, throughTurnId?: string) {
+  async function reviewRun(taskId: string, throughTurnId?: string, latestCompleted = false) {
     const generation = ++intentGeneration.current;
     dispatch({ type: "begin-review", intentGeneration: generation });
     await execute<RunReview>(
       "review-run",
-      { taskId, ...(throughTurnId ? { throughTurnId } : {}) },
+      { taskId, ...(throughTurnId ? { throughTurnId } : {}), ...(latestCompleted ? { latestCompleted: true } : {}) },
       (review, requestContext, view) =>
         dispatch({
           type: "review-completed",
@@ -436,13 +440,17 @@ export function useComparisonController(shared: SharedSourceController) {
     const current = stateRef.current;
     const request = buildSaveRunInput(current, input);
     if (!request) return;
+    let recorded: SavedRun | undefined;
     const saved = await execute<SavedRun>(
       "save-run",
       request,
-      (run, requestContext, view) =>
-        dispatch({ type: "save-completed", requestContext, view, run }),
+      (run, requestContext, view) => {
+        recorded = run;
+        dispatch({ type: "save-completed", requestContext, view, run });
+      },
     );
     if (saved) await loadRuns(undefined, true);
+    return recorded;
   }
 
   async function compareRuns() {

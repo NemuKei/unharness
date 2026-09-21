@@ -1,9 +1,10 @@
 import { text as t } from './locale.ts';
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { useSourceController } from "./useSourceController";
 import { useStartingConditions } from "./useStartingConditions";
 import type { StartingDeclaration, StartingFile, StartingSelection } from "./starting-conditions";
 import { formatNumber } from "./comparisons";
+import { comparisonContextKey } from './useComparisonController';
 
 type Draft = Omit<StartingDeclaration, "budget"> & { title: string; maxAttempts: string; maxTurns: string; maxTokens: string; additionalPaths: string };
 const freshDraft = (): Draft => ({ title: "", request: "", requirements: [{ id: "requirement-1", label: "", critical: true }], ratings: [], maxAttempts: "1", maxTurns: "1", maxTokens: "", additionalPaths: "" });
@@ -27,6 +28,8 @@ function FileReview({ files, selection }: { files: StartingFile[]; selection: St
 export function StartingConditions({ sourceController, onReplay }: { sourceController: ReturnType<typeof useSourceController>; onReplay?: (startId: string) => void }) {
   const [draft, setDraft] = useState(freshDraft);
   const starts = useStartingConditions(sourceController), { state } = starts;
+  const contextKey = comparisonContextKey(sourceController.view);
+  useEffect(() => { setDraft(freshDraft()); }, [contextKey]);
   const declaration = declarationFor(draft);
   const disabled = sourceController.busy || !sourceController.confirmed;
   function change(next: Partial<Draft>) { setDraft(old => ({ ...old, ...next })); starts.invalidateReview(); }

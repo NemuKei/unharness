@@ -21,6 +21,7 @@ import {
 } from './capture.mjs';
 import { fail } from './errors.mjs';
 import { validDirectoryIdentity } from '../platform/directory-identity.mjs';
+import { isVersionedSetup, usesSourceStates } from '../setup/schema.mjs';
 export const newPreparation = () => ({ id: randomBytes(16).toString('hex'), preparedAt: new Date().toISOString() });
 export const ownerPath = (home) => join(home, '.unharness-user-sources');
 export async function readJson(path) {
@@ -111,7 +112,7 @@ export function validateState(reg, state) {
   for (const key of ['setupId', 'preparedSetupId', 'scopeId', 'lastEnrollmentReviewId', 'lastRebindReviewId', 'lastPluginEnrollmentReviewId'])
     if (state[key] != null && (typeof state[key] !== 'string' || !/^[0-9a-f]{64}$/.test(state[key]))) fail('workspace-invalid');
   if (state.scopePreparationRequired !== undefined && typeof state.scopePreparationRequired !== 'boolean') fail('workspace-invalid');
-  if (state.setupSchemaVersion !== undefined && ![2, 3].includes(state.setupSchemaVersion)) fail('workspace-invalid');
+  if (state.setupSchemaVersion !== undefined && !isVersionedSetup(state.setupSchemaVersion)) fail('workspace-invalid');
   const paths = pathsFor(reg);
   if (
     new Set(state.ownedDirs.map((d) => d.path)).size !== state.ownedDirs.length
@@ -250,12 +251,12 @@ export async function openWorkspace(workspace) {
   const rootScopeId = workspaceManifestRoot(manifest);
   const manifestVersion = manifest.schemaVersion ?? 1;
   if ((state.setupSchemaVersion ?? 1) > manifestVersion) fail('workspace-invalid');
-  if (manifestVersion === 3 && state.setupSchemaVersion !== 3) {
+  if (usesSourceStates(manifestVersion) && state.setupSchemaVersion !== manifestVersion) {
     // The new writer fence is published before its state. Only the matching
     // durable record-only adoption may account for this intermediate pair.
     try {
       const j = await readJson(join(workspace, 'pending.json'));
-      if (!['unharness-user-source-setup-pending', 'unharness-user-source-plugin-enrollment-pending'].includes(j.kind) || j.schemaVersion !== 3
+      if (!['unharness-user-source-setup-pending', 'unharness-user-source-plugin-enrollment-pending'].includes(j.kind) || j.schemaVersion !== manifestVersion
         || j.scopeId !== (state.scopeId ?? rootScopeId) || !equal(j.beforeState, state)
         || !equal(j.afterManifest, manifest) || workspaceManifestRoot(j.beforeManifest) !== rootScopeId)
         fail('workspace-invalid');
@@ -280,7 +281,7 @@ export async function openWorkspace(workspace) {
 // it, even if they ignore fields added to mutable state. Immutable scopes,
 // snapshots and the original profile reservation keep their exact identities.
 export function workspaceManifestRoot(manifest) {
-  const versioned = [2, 3].includes(manifest?.schemaVersion);
+  const versioned = isVersionedSetup(manifest?.schemaVersion);
   const root = versioned ? manifest.rootScopeId : manifest?.scopeId;
   if (!manifest || !equal(Object.keys(manifest).sort(), versioned ? ['rootScopeId', 'schemaVersion'] : ['scopeId'])
     || typeof root !== 'string' || !/^[a-f0-9]{64}$/.test(root)) fail('workspace-invalid');

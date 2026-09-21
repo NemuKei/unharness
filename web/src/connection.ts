@@ -13,6 +13,7 @@ export type ConnectionHandoff = { kind: "none" } | { kind: "invalid"; reason: st
 export type ConnectionPhase = "disconnected" | "pairing" | "connected" | "expired" | "incompatible" | "unknown";
 export type PublicOperation = { requestId: string; operation: "plan" | "apply"; connectionId: string; receipt: PublicReceipt | null; error: string | null };
 type Command = { requestId: string; operation: "plan" | "apply"; subject: string; mode: SourceMode; revision: number; connectionId: string;
+  sourceConflict: boolean;
   confirmedReceipt?: Extract<PublicReceipt, { state: "completed" }> };
 type ArtworkCommand = { requestId: string; operation: ArtworkWrite; fingerprint: string; input: Record<string, unknown>;
   connectionId: string; confirmedReceipt?: Extract<PublicArtworkReceipt, { state: "completed" }>; rejected?: string };
@@ -54,6 +55,7 @@ export class PublicConnection {
   #fetch: typeof fetch; #now: () => number; #pageOrigin: string;
   #handoff: Handoff | null = null; #token: string | null = null; #loopback: string | null = null;
   #localLanguageSupport = false;
+  #retainedModePlanning = false;
   #grant: ConnectionSummary | null = null; #epoch = 0; #readGeneration = 0;
   #lastCommand: Command | null = null; #receiptGeneration = 0;
   #requestInputs = new Map<string, string>();
@@ -67,7 +69,10 @@ export class PublicConnection {
   }) { this.#fetch = fetcher; this.#now = now; this.#pageOrigin = pageOrigin; this.acceptHandoff(handoff); }
   getSnapshot = () => this.#view;
   getLocalWorkbenchUrl = () => this.#grant && this.#grant.expiresAt > this.#now() && this.#view.phase === "connected" ? this.#loopback : null;
+  canRefreshConnection = () => !!this.#grant && !!this.#token && !!this.#loopback
+    && this.#grant.expiresAt > this.#now() && (this.#view.phase === "connected" || this.#view.phase === "unknown");
   supportsLocalLanguage = () => this.getLocalWorkbenchUrl() !== null && this.#localLanguageSupport;
+  supportsRetainedModePlanning = () => this.getLocalWorkbenchUrl() !== null && this.#retainedModePlanning;
   subscribe = (listener: () => void) => { this.#listeners.add(listener); return () => { this.#listeners.delete(listener); }; };
   #set(update: Partial<ConnectionSnapshot>) {
     this.#view = Object.freeze({ ...this.#view, ...update });
@@ -77,6 +82,7 @@ export class PublicConnection {
     if (value.kind === 'ready' && value.handoff.protocolVersion !== 2) value = { kind: 'invalid', reason: 'remote-incompatible' };
     ++this.#epoch; ++this.#readGeneration; this.#token = null; this.#grant = null; this.#loopback = null; this.#handoff = null;
     this.#localLanguageSupport = false;
+    this.#retainedModePlanning = false;
     // Abandon only the connection attempt. Accepted writes keep their own
     // busy boundary and must settle normally even after this handoff changes.
     this.#requestInputs.clear(); this.#artworkCommands.clear();
@@ -123,8 +129,12 @@ export class PublicConnection {
     // Earlier installed workbenches reject all query strings. This display-only
     // advertisement keeps their original links usable without changing v2 data
     // or allowing a late handoff response to affect another connection.
-    if (action === 'redeem' && epoch === this.#epoch)
+    if (action === 'redeem' && epoch === this.#epoch) {
       this.#localLanguageSupport = response.headers?.get('X-Unharness-UI-Languages') === 'ja,en';
+      // A current runtime can prove/retain unrelated settings during a mode
+      // plan. Keep v2 JSON unchanged and older servers' conflict gate intact.
+      this.#retainedModePlanning = response.headers?.get('X-Unharness-Mode-Planning') === 'retained-v1';
+    }
     return data;
   }
   async connect() {
@@ -163,8 +173,11 @@ export class PublicConnection {
       if (before !== this.#epoch || read !== this.#readGeneration) return null;
       this.tick(); if (!this.#grant) return null;
       const prior = this.#view.plan;
+      const planConflictMatches = prior && this.#lastCommand?.requestId === prior.requestId
+        && this.#lastCommand.sourceConflict === state.conflict;
       this.#set({ phase: "connected", connection, state, error: null,
-        plan: prior?.result.data.revision === state.revision && !state.conflict && !state.recoveryPending ? prior : null });
+        plan: prior?.result.data.revision === state.revision && planConflictMatches
+          && (!state.conflict || this.#retainedModePlanning) && !state.recoveryPending ? prior : null });
       return state;
     } catch (error) { if (before === this.#epoch && read === this.#readGeneration) this.#failed(error); throw error; }
   }
@@ -189,17 +202,19 @@ export class PublicConnection {
       if (this.#view.lastOperation?.receipt?.state === "running") fail("remote-operation-in-progress");
       if (this.#view.lastOperation && this.#view.lastOperation.receipt?.state !== "completed") fail("remote-operation-unconfirmed");
       if (!current || this.#view.phase !== "connected") fail("remote-state-unconfirmed");
-      if (current.conflict || current.recoveryPending) fail(current.conflict ? "source-conflict" : "recovery-required");
+      if (current.recoveryPending) fail('recovery-required');
+      if (current.conflict && !this.#retainedModePlanning) fail('source-conflict');
       const id = requestId ?? crypto.randomUUID(); if (!isConnectionId(id)) fail("remote-invalid-request");
       const plan = this.#view.plan;
       if (operation === "plan" && !isPublicMode(subject)) fail("remote-invalid-request");
       if (operation === "apply" && (!plan || plan.requestId !== subject || plan.result.data.revision !== current.revision)) fail("remote-plan-unavailable");
       const body = operation === "plan" ? { requestId: id, mode: subject, expectedRevision: current.revision } : { requestId: id, planRequestId: subject };
       const command: Command = { requestId: id, operation, subject, mode: operation === "plan" ? subject as SourceMode : plan!.result.data.mode,
-        revision: current.revision, connectionId: grant.connectionId };
+        revision: current.revision, sourceConflict: current.conflict, connectionId: grant.connectionId };
       // Failure receipts have no mode/revision fields. Never reuse an issued
-      // UUID for different input and then mistake its old failure for this call.
-      const fingerprint = JSON.stringify([operation, subject, command.mode, command.revision, command.connectionId]);
+      // UUID for different input or source conditions and then relabel its
+      // historical receipt as a plan reviewed against the current files.
+      const fingerprint = JSON.stringify([operation, subject, command.mode, command.revision, command.connectionId, command.sourceConflict]);
       const priorInput = this.#requestInputs.get(id);
       if (priorInput !== undefined && priorInput !== fingerprint) fail("remote-operation-conflict");
       this.#requestInputs.set(id, fingerprint);
@@ -276,7 +291,8 @@ export class PublicConnection {
         const current = this.#view.state;
         this.#set({ lastOperation: { ...last, receipt, error: null },
           ...(command && receipt.state === "completed" && receipt.operation === "plan" && receipt.result.ok
-            && current?.revision === receipt.result.data.revision && !current.conflict && !current.recoveryPending
+            && current?.revision === receipt.result.data.revision && (!current.conflict || this.#retainedModePlanning) && !current.recoveryPending
+            && command.sourceConflict === current.conflict
             ? { plan: receipt as PublicPlanReceipt } : {}) });
       }
       return receipt;

@@ -45,13 +45,14 @@ export function PublicWorkbench({ client, view }: { client: PublicConnection; vi
   const [activeTab, setActiveTab] = useState<WorkbenchPage>('mode');
   const current = publicModes[selected], plan = view.plan, last = view.lastOperation;
   const localUrl = client.getLocalWorkbenchUrl(), localLanguage = client.supportsLocalLanguage();
+  const retainedModePlanning = client.supportsRetainedModePlanning();
   const artwork = usePublicAppearance(client, view), lastArtwork = view.lastArtworkOperation;
   const selectedArtwork = artwork.enabled && artwork.confirmed ? artwork.view?.selectedItem ?? null : null;
   const imageLoader = useCallback((asset: LayerAsset, signal: AbortSignal) => {
     if (!selectedArtwork) return Promise.reject(new Error('appearance-image-unavailable'));
     return artwork.image(selectedArtwork.id, asset, signal, artwork.key);
   }, [artwork.image, artwork.key, selectedArtwork?.id]);
-  const usable = view.phase === "connected" && !!view.state && !view.state.conflict && !view.state.recoveryPending && !view.busy
+  const usable = view.phase === "connected" && !!view.state && (!view.state.conflict || retainedModePlanning) && !view.state.recoveryPending && !view.busy
     && !view.artworkPending && (!last || last.receipt?.state === "completed");
   useEffect(() => { if (view.state) select(view.state.preparedMode); }, [view.state?.preparedMode, view.state?.revision]);
   useEffect(() => { if (plan) select(plan.result.data.mode); }, [plan?.requestId]);
@@ -88,6 +89,7 @@ export function PublicWorkbench({ client, view }: { client: PublicConnection; vi
     ? { kind: 'operation' as const, message: t("前の操作結果が未確認です。同じ操作の結果を確認してください。", "The previous operation is unconfirmed. Check that same operation's result.") }
     : modeBlocker({ busy: view.busy, connected: view.phase === 'connected', confirmed: !!view.state,
     registered: !!view.state, conflict: !!view.state?.conflict, recoveryPending: !!view.state?.recoveryPending,
+    modePlanningAvailable: retainedModePlanning,
     setupRequired: !!view.state?.setupRequired, operationUncertain: uncertainOperation }, selected);
   const unresolvedId = view.artworkPending ? lastArtwork?.requestId : last?.requestId;
   const displayedScope = view.state?.scopeId ?? view.connection?.target.scopeId;
@@ -105,7 +107,7 @@ export function PublicWorkbench({ client, view }: { client: PublicConnection; vi
     {hasWorkspace && <WorkbenchNavigation page={activeTab} select={setActiveTab}/>}
     <section className="public-connection-bar"><ConnectionStatus view={view}/>
       {view.connection && <span className="muted">{t("期限 ", "Expires ")} {new Date(view.connection.expiresAt).toLocaleTimeString(getLocale() === "ja" ? "ja-JP" : "en-US")}</span>}
-      {(view.phase === "connected" || view.phase === "unknown") && <button className="text-button" disabled={view.busy} onClick={() => void run(() => client.refresh())}>{t("状態を再取得", "Refresh state")}</button>}
+      {(view.phase === "connected" || client.canRefreshConnection()) && <button className="text-button" disabled={view.busy} onClick={() => void run(() => client.refresh())}>{t("状態を再取得", "Refresh state")}</button>}
     </section>
     {notice && <p className="public-notice" role="alert">{notice}</p>}
     {view.phase === "pairing" && <section className="public-panel pairing-start"><p className="eyebrow">{t("ローカルの許可画面から接続", "CONNECT FROM LOCAL APPROVAL")}</p><h1>{t("このMacに接続する。", "Connect to this Mac.")}</h1>
@@ -114,10 +116,10 @@ export function PublicWorkbench({ client, view }: { client: PublicConnection; vi
       <p className="boundary">{t("接続だけでは、モードや設定は変わりません。", "Connecting alone does not change modes or settings.")}</p>
     </section>}
     {(["disconnected", "expired", "incompatible"].includes(view.phase) || view.phase === "unknown" && !view.state) && <section className="public-panel connection-help">
-      <h1>{view.phase === "disconnected" ? t("手元のAI設定へ、接続する。", "Connect to your local AI settings.") : connectionLabel(view)}</h1>
-      {view.phase === "incompatible" ? <p>{t("公開画面とローカル版の接続方式が一致しません。ローカル版を確認し、対応する版へ更新してから接続してください。", "The public and local connection protocols do not match. Check the local version and update to a compatible release before connecting.")}</p>
-        : view.phase === "expired" ? <p>{t("短期接続の期限が切れたか、一時リンクを利用できません。新しい接続許可をローカルで確認してください。", "This connection expired or its temporary link is unavailable. Review a new connection approval locally.")}</p>
-          : view.phase === "unknown" ? <p>{t("現在の接続状態を確認できません。期限やブラウザーの接続許可を確認してください。前の操作の成否は下の記録で確認します。", "Connection status is unknown. Check expiry and browser permissions. Use the records below to inspect the previous operation.")}</p> : null}
+      <h1>{view.phase === "disconnected" ? t("以前の公開接続は終了しています。", "The earlier public connection has ended.") : connectionLabel(view)}</h1>
+      {view.phase === "incompatible" ? <p>{t("以前の公開接続とローカル版の方式が一致しません。新しい公開接続は作らず、ローカル画面で版と現在の状態を確認してください。", "The earlier public connection is incompatible with the local version. Do not create a new public connection; check the version and current state in the local workbench.")}</p>
+        : view.phase === "expired" ? <p>{t("以前の短期接続は期限切れです。新しい公開接続は作らず、元の操作IDと現在の状態をローカルで確認してください。", "The earlier short-lived connection expired. Do not create a new public connection; check the original operation ID and current state locally.")}</p>
+          : view.phase === "unknown" ? <p>{client.canRefreshConnection() ? t("一時的に状態を確認できません。同じ接続で状態を再取得できます。新しい接続や書き込みは開始しません。", "State is temporarily unavailable. You can refresh it through the same connection; no new connection or write is started.") : t("このリンクの接続状態は確認できません。新しい公開接続は作らず、ローカル画面で確認してください。", "This link cannot establish a known connection state. Do not create a new public connection; continue in the local workbench.")}</p> : null}
       <ConnectionInstructions/>
     </section>}
     {hasWorkspace && <>
@@ -127,10 +129,10 @@ export function PublicWorkbench({ client, view }: { client: PublicConnection; vi
           {activeTab === 'mode' && <Hangar condition={current.scene} effects={effects} artwork={selectedArtwork} imageLoader={imageLoader} locale={getLocale()}/>}
           <p className="scene-caption">{t("選択したモードの姿です。確定するまで設定は変わりません。", "Preview of the selected mode. Settings stay unchanged until you apply it.")}</p>
         </section>
-        <aside className="preparation-panel"><section className="mode-current"><p className="eyebrow">{t("このMacの設定", "SETTINGS ON THIS MAC")}</p><h2>{t("現在の準備", "Currently prepared")}</h2>
+        <aside className="preparation-panel"><section className="mode-current"><p className="eyebrow">{t("このMacの設定", "SETTINGS ON THIS MAC")}</p><h2>{view.state?.conflict ? t("最後に準備したモード", "Last prepared mode") : t("現在の準備", "Currently prepared")}</h2>
           <p className="prepared-mode">{view.state ? publicModes[view.state.preparedMode].title : t("未確認", "Unknown")}</p>
           {view.state?.modeChangeRequired && <p className="muted">{t("登録が更新されています。構成を確認してから準備してください。", "Registration changed. Review the loadout before preparing it.")}</p>}
-          {(view.state?.conflict || view.state?.recoveryPending) && <p className="muted">{t("前回確認した構成です。現在の状態を確認してください。", "This is the last confirmed loadout. Check the current state.")}</p>}
+          {((view.state?.conflict && !retainedModePlanning) || view.state?.recoveryPending) && <p className="muted">{t("前回確認した構成です。現在の状態を確認してください。", "This is the last confirmed loadout. Check the current state.")}</p>}
         </section>
           <InstructionScopeNote compact/>
           <PublicModeChoices mode={selected} choose={select}/>
@@ -138,7 +140,9 @@ export function PublicWorkbench({ client, view }: { client: PublicConnection; vi
             review={() => void run(() => client.plan(selected))} confirm={() => { if (usable && plan) void run(() => client.apply(plan.requestId)); }} resolve={resolveBlocker}
             statusMessage={activeTab === 'mode' && last ? view.busy && !last.receipt ? t("操作結果を待っています…", "Waiting for the operation result…") : resultText(last.receipt) : undefined}>
             {plan?.result.data.mode === selected && <div className="public-plan" aria-label={t("確認する変更計画", "Change plan to review")}>
-              <p>{t(`変更するファイル：${plan.result.data.changedFileCount}件`, `Files to change: ${plan.result.data.changedFileCount}`)}</p><p className="muted">{t("登録・保存したこのモードの構成を使います。対象の追加は行いません。", "Uses this registered, saved loadout. No new sources are added.")}</p>
+              <p>{t("保存したこのモードの構成を使います。", "Uses your saved loadout for this mode.")}</p>
+              <p className="muted">{t("モード以外の設定は、そのまま引き継ぎます。", "Settings outside the mode stay as they are.")}</p>
+              <details><summary>{t("変更する項目を確認", "Review changed items")}</summary><p>{t(`変更するファイル：${plan.result.data.changedFileCount}件`, `Files to change: ${plan.result.data.changedFileCount}`)}</p></details>
             </div>}
           </ModeActions>
           {!blocker && <details className="chat-mode-entry"><summary>{t("チャットでこのモードを頼む", "Ask for this mode in chat")}</summary><AiRequestButton label={t("切替の依頼文をコピー", "Copy mode request")} prompt={bindChatScope(modeChatRequest(selected), displayedScope)}/></details>}

@@ -33,6 +33,10 @@ async function fixture(t) {
   const errors = [], posts = [];
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+  page.on('response', async response => { if (response.status() >= 400) {
+    let detail = ''; try { detail = (await response.text()).slice(0, 240); } catch {}
+    errors.push(`HTTP ${response.status()} ${new URL(response.url()).pathname} ${detail}`.trim());
+  } });
   page.on('request', r => { if (r.method() === 'POST') posts.push({ path: new URL(r.url()).pathname, body: r.postDataJSON() }); });
   await page.goto(gui.url);
   await openSetupDetails(page);
@@ -85,9 +89,9 @@ test('built v2 GUI separates saved inheritance, role-only registration, setup ap
   await openWorkbenchPage(page, 'モード');
   await page.getByText(/先に「設定をAIと見直す」で両モード/).waitFor();
   await openWorkbenchPage(page, 'モード');
-  assert.equal(await page.getByRole('button', { name: /TRUEFORM/ }).isDisabled(), true);
+  assert.equal(await page.getByRole('button', { name: /TRUEFORM/ }).isEnabled(), true);
   await openWorkbenchPage(page, 'モード');
-  assert.equal(await page.getByRole('button', { name: /UNSEAL/ }).isDisabled(), true);
+  assert.equal(await page.getByRole('button', { name: /UNSEAL/ }).isEnabled(), true);
   await openWorkbenchPage(page, 'モード');
   assert.equal(await page.getByRole('button', { name: /^Normal/ }).isEnabled(), true);
   assert.equal(await page.getByText('対象を調整', { exact: true }).count(), 0);
@@ -111,6 +115,7 @@ test('built v2 GUI separates saved inheritance, role-only registration, setup ap
   assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
   await openWorkbenchPage(page, 'モード');
   await page.getByRole('button', { name: /TRUEFORM/ }).click();
+  await page.getByRole('button', { name: '変更内容を確認', exact: true }).click();
   const apply = page.getByRole('button', { name: 'この内容で確定する', exact: true });
   await apply.and(page.locator(':enabled')).waitFor(); await apply.click();
   await page.locator('.control-column .selected-name').filter({ hasText: 'TRUEFORM' }).waitFor();
@@ -118,7 +123,7 @@ test('built v2 GUI separates saved inheritance, role-only registration, setup ap
   await page.getByText(/現在の準備にもこの保存版/).waitFor();
   assert.equal((await openWorkspace(s.workspace)).state.preparedSetupId, saved.setupId);
   assert.match(await readFile(join(s.newSkill.path, '..', 'agents/openai.yaml'), 'utf8'), /allow_implicit_invocation: false/);
-  await openWorkbenchPage(page, '比較・記録');
+  await openWorkbenchPage(page, 'モード');
   await page.getByRole('button', { name: '保存版を表示', exact: true }).click();
   await page.getByRole('button', { name: /登録前のNormal.*追加したSkill 1件/ }).click();
   await apply.and(page.locator(':enabled')).waitFor(); await apply.click();

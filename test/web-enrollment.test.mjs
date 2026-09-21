@@ -81,12 +81,13 @@ test('built GUI reviews source roles, enrolls without file writes, then prepares
   assert.deepEqual(await readFile(s.newSkill.path), s.newSkill.bytes);
   await openWorkbenchPage(page, 'モード');
   await page.getByRole('button', { name: /TRUEFORM/ }).click();
+  await page.getByRole('button', { name: '変更内容を確認', exact: true }).click();
   await page.getByRole('button', { name: 'この内容で確定する', exact: true }).and(page.locator(':enabled')).waitFor();
   await page.getByRole('button', { name: 'この内容で確定する', exact: true }).click();
   await page.locator('.control-column .selected-name').filter({ hasText: 'TRUEFORM' }).waitFor();
   assert.match(await readFile(join(s.newSkill.path, '..', 'agents', 'openai.yaml'), 'utf8'), /allow_implicit_invocation: false/);
   assert.equal(await page.getByText(/登録が更新されました/).count(), 0);
-  await openWorkbenchPage(page, '比較・記録');
+  await openWorkbenchPage(page, 'モード');
   await page.getByRole('button', { name: '保存版を表示', exact: true }).click();
   await page.getByRole('button', { name: /追加前のNormal.*追加したSkill 1件を含む/ }).click();
   await page.getByText('追加後のSkillを含めて準備', { exact: true }).waitFor();
@@ -151,7 +152,7 @@ test('a directory-only rebind keeps the source count and never tells the user th
   const prompt = await page.getByLabel('設定相談の依頼文', { exact: true }).inputValue();
   assert.doesNotMatch(prompt, /追加登録後/);
   assert.match(prompt, /以前の選択を置き換えない/);
-  await openWorkbenchPage(page, '比較・記録');
+  await openWorkbenchPage(page, 'モード');
   await page.getByRole('button', { name: /再確認前のNormal/ }).click();
   await page.getByText('再確認した場所へ保存内容を準備', { exact: true }).waitFor();
   await page.getByRole('button', { name: 'この内容で確定する', exact: true }).click();

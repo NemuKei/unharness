@@ -10,6 +10,7 @@ import { publicModes, demoSources } from './public-modes';
 import { ChatEntries } from './ChatEntries';
 import { codexDraftLink, startupRequest } from './codex-start';
 import { getLocale, text as t } from '../locale.ts';
+import { localOpenRequest } from './LocalLaunch';
 
 export { publicModes } from './public-modes';
 export function PublicModeChoices({ mode, choose }: { mode: SourceMode; choose: (mode: SourceMode) => void }) {
@@ -24,7 +25,7 @@ export function CodexStartLink({ release = siteConfig.macCodexRelease }: { relea
     {t('CodexでUnharnessを始める', 'Start Unharness in Codex')} <span aria-hidden="true">↗</span>
   </a>;
 }
-export function PublicEntry({ choose }: { choose: (page: "demo" | "install" | "connect") => void }) {
+export function PublicEntry({ choose }: { choose: (page: "demo" | "install" | "open") => void }) {
   return <main id="main" className="public-entry">
     <section className="entry-intro"><p className="eyebrow">{t('まずは、Apple Silicon MacのCodex Desktopから。', 'YOUR AI. YOUR LOADOUT.')}</p>
       <h1>{t('モデルは変わった。', 'New model.')}<br/><span>{t('装備は、そのまま？', 'Same old harness?')}</span></h1>
@@ -36,7 +37,7 @@ export function PublicEntry({ choose }: { choose: (page: "demo" | "install" | "c
       </nav>
       <p className="codex-start-hint">{t('Codexの入力欄に依頼文を渡します。内容を確認して送信すると、AIが導入状況から案内します。', 'Opens a draft in Codex. Review and send it, then let your AI guide you from your current setup.')}</p>
       <button className="entry-returning" onClick={() => choose('install')}>{t('開かない場合・導入方法を見る', 'Copy the request or read the installation guide')}</button>
-      <button className="entry-returning" onClick={() => choose('connect')}>{t("導入済みの方：接続して開く ", "Already installed? Connect to your Mac ")} <span aria-hidden="true">↗</span></button>
+      <button className="entry-returning" onClick={() => choose('open')}>{t("導入済みの方：開き方を見る ", "Already installed? See how to open it ")} <span aria-hidden="true">↗</span></button>
       <p className="entry-boundary">{t('無料・アカウント不要。設定と作品は手元のPCに。', 'Free & open source. Settings and artwork stay on your computer.')}<br/>{t('切り替えた構成は、新しいタスクで使います。', 'Use a prepared loadout in a fresh task.')}</p>
     </section>
     <section className="entry-art" aria-label={t('標準外観のプレビュー', 'Original appearance preview')}><Hangar condition="baseline" effects={false} locale={getLocale()}/><p className="scene-caption">{t('いつもの装備を残して、次の構成を試そう。', 'Keep your everyday setup. Try your next loadout.')}</p></section>
@@ -45,7 +46,7 @@ export function PublicEntry({ choose }: { choose: (page: "demo" | "install" | "c
     <section className="entry-availability" aria-labelledby="entry-availability-title">
       <p className="eyebrow">{t('自分のAIで、はじめる。', 'START WITH YOUR OWN AI')}</p><h2 id="entry-availability-title">{t('Mac版Codexから。次はWindowsへ。', 'Mac Codex first. Windows next.')}</h2>
       <PlatformRoadmap/>
-      <p>{t('初回はCodexに導入を頼み、いつもの構成を保存します。公開画面への接続は、自分のMacで許可して使います。', 'Ask Codex to help you install it and save your usual setup. Approve the public-page connection on your Mac.')}</p>
+      <p>{t('初回はCodexに導入を頼み、いつもの構成を保存します。日常の操作は、Codexから開くローカル画面で完結します。', 'Ask Codex to help you install it and save your usual setup. Everyday operations stay in the local workbench opened from Codex.')}</p>
       <button className="secondary" onClick={() => choose('install')}>{t('Codexへの導入方法を見る', 'Read the installation guide')}</button>
       <SourceScope/>
     </section>
@@ -120,9 +121,9 @@ export function PublicInstall({ release = siteConfig.macCodexRelease }: { releas
   </main>;
 }
 export function ConnectionInstructions() {
-  return <div className="connection-instructions"><h2>{t('導入済みなら、ローカルから許可する。', 'Already installed? Approve the connection locally.')}</h2>
-    <ol><li>{t('Codexに依頼して、Unharnessのローカル画面を開きます。', 'Ask Codex to open the local Unharness workbench.')}</li><li>{t('接続先のサイト・対象・許可する操作を確認します。', 'Review the site, target and allowed operations.')}</li><li>{t('許可後の一時リンクで、この画面を開きます。', 'Use the temporary link issued after your approval.')}</li></ol>
-    <CopyRequest text={t('アンハーネスのローカル画面を開いて、公開画面への接続許可を確認したいです。Unharnessのstatusで接続先を確認し、open_workbench、request_public_connectionの順でローカルの許可画面を開いてください。まだ許可やモード変更は行わないでください。', 'Open the local Unharness workbench so I can review permission to connect the public page. Check the target with status, then use open_workbench and request_public_connection to open the local approval screen. Do not approve the connection or change modes yet. Please guide me in English.')} />
+  return <div className="connection-instructions"><h2>{t('今後は、ローカル画面で確認する。', 'Continue in the local workbench.')}</h2>
+    <p>{t('新しい公開接続は作らず、Codexから開くローカル画面で現在の状態と復旧を確認します。以前の操作IDがある場合は、そのIDの結果を確認します。', 'Do not create a new public connection. Open the local workbench from Codex to review current state and recovery. If an earlier operation ID exists, check that original result.')}</p>
+    <CopyRequest text={localOpenRequest()} label={t('Unharnessを開く依頼', 'Request to open Unharness')} button={t('開くための依頼文をコピー', 'Copy the opening request')}/>
   </div>;
 }
 

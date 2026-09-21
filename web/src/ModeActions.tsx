@@ -2,14 +2,14 @@ import { text as t } from './locale.ts';
 import type { ReactNode } from 'react';
 import type { ModeBlocker } from './mode-blocker';
 
-export function ModeActions({ title, blocker, planReady, review, confirm, resolve, statusMessage, children }: {
+export function ModeActions({ title, blocker, planReady, review, confirm, resolve, statusMessage, children, compact = false }: {
   title: string; blocker: ModeBlocker | null; planReady: boolean; review: () => void; confirm: () => void;
-  resolve?: ReactNode; statusMessage?: string; children?: ReactNode;
+  resolve?: ReactNode; statusMessage?: string; children?: ReactNode; compact?: boolean;
 }) {
   return <section className="mode-action" aria-label={t("モード切替", "Change mode")}>
     <h2>{t(title + 'を次のタスク用に準備', 'Prepare ' + title + ' for a fresh task')}</h2>
     {blocker ? <div className="mode-blocker"><p role="status">{blocker.message}</p>{resolve}</div>
-      : planReady ? children : <p className="muted">{t("保存した構成の変更内容を確認してから、確定します。", "Review the saved configuration changes before applying them.")}</p>}
+      : planReady ? compact ? <details><summary>{t('変更内容の詳細', 'Change details')}</summary>{children}</details> : children : !compact && <p className="muted">{t("保存した構成の変更内容を確認してから、確定します。", "Review the saved configuration changes before applying them.")}</p>}
     <div className="mode-action-buttons">
       {(!planReady || blocker) && <button type="button" className="secondary" disabled={!!blocker} onClick={review}>{t("変更内容を確認", "Review changes")}</button>}
       <button type="button" className="primary" disabled={!!blocker || !planReady} onClick={confirm}>{t("この内容で確定する", "Apply these changes")}</button>

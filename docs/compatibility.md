@@ -18,6 +18,8 @@ The [remote-plugin control check](evidence/2026-09-11-remote-plugin-control-limi
 
 Recorded selected Skill inputs and unknown whole-plugin runtime are separate evidence. The current release does not establish full MCP/hook/app/scheduled-task runtime coverage or a performance improvement.
 
+The development task picker has separate [metadata-only verification on Codex 0.155.0-alpha.9.2](evidence/2026-09-20-local-work-record-ux.md). It does not extend the source-write, measurement-format or desktop-loaded mode qualification above.
+
 ## Target matrix
 
 | OS | Application | Delivery phase | Current evidence |

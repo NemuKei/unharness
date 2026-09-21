@@ -47,6 +47,12 @@ test('built v3 GUI reviews both states before saving, then prepares separately a
   const load=editor.getByRole('button',{name:'保存した対象を編集',exact:true});await load.focus();await page.keyboard.press('Enter');
   await editor.getByLabel('example',{exact:true}).selectOption('disabled');
   await editor.getByRole('button',{name:'両モードの変更を確認',exact:true}).click();
+  const proposalReview=editor.getByRole('region',{name:'変更内容を確認',exact:true});
+  await proposalReview.getByRole('heading',{name:'保存済み',exact:true}).waitFor();
+  await proposalReview.getByRole('heading',{name:'提案',exact:true}).waitFor();
+  const columns=proposalReview.locator('.proposal-review-grid > section');
+  assert.match(await columns.nth(0).innerText(),/通常Skill：無効 0件 \/ 手動 1件 \/ 自動 0件/);
+  assert.match(await columns.nth(1).innerText(),/通常Skill：無効 1件 \/ 手動 0件 \/ 自動 0件/);
   await editor.getByRole('button',{name:'この2構成を保存',exact:true}).waitFor();
   assert.match(await editor.innerText(),/通常Skill：無効 1件 \/ 手動 0件 \/ 自動 0件/);
   assert.deepEqual(await readFile(s.configPath),files);
@@ -62,11 +68,12 @@ test('built v3 GUI reviews both states before saving, then prepares separately a
   assert.deepEqual(await readFile(s.configPath),files);
   await openWorkbenchPage(page, 'モード');
   await page.getByRole('button',{name:/TRUEFORM/}).click();
+  await page.getByRole('button',{name:'変更内容を確認',exact:true}).click();
   const apply=page.getByRole('button',{name:'この内容で確定する',exact:true});await apply.and(page.locator(':enabled')).waitFor();await apply.click();
   await page.locator('.control-column .selected-name').filter({hasText:'TRUEFORM'}).waitFor();
   assert.match(await readFile(s.configPath,'utf8'),/enabled = false/);
   await openWorkbenchPage(page, 'モード');
-  await page.getByRole('button',{name:/通常装備/}).click();await apply.and(page.locator(':enabled')).waitFor();await apply.click();
+  await page.getByRole('button',{name:/通常装備/}).click();await page.getByRole('button',{name:'変更内容を確認',exact:true}).click();await apply.and(page.locator(':enabled')).waitFor();await apply.click();
   await page.locator('.control-column .selected-name').filter({hasText:'Normal'}).waitFor();
   assert.equal(await readFile(s.configPath,'utf8'),s.originalConfig);
   assert.deepEqual(s.errors,[]);
@@ -91,7 +98,9 @@ test('built plugin registration confirms optional role, freezes impact and accep
   await page.getByText('この登録の2構成は確認・保存待ちです。以前の保存版はそのまま残っています。',{exact:true}).waitFor();
   const after=await openWorkspace(s.workspace);assert.notEqual(after.scopeId,before.scopeId);assert.equal(after.state.setupId,null);
   await openWorkbenchPage(page, 'モード');
-  assert.deepEqual(await readFile(s.configPath),files);assert.equal(await page.getByRole('button',{name:/TRUEFORM/}).isDisabled(),true);
+  assert.deepEqual(await readFile(s.configPath),files);assert.equal(await page.getByRole('button',{name:/TRUEFORM/}).isDisabled(),false);
+  await page.getByRole('button',{name:/TRUEFORM/}).click();
+  assert.equal(await page.getByRole('button',{name:'この内容で確定する',exact:true}).isDisabled(),true);
   assert.equal(s.posts.filter(p=>p.path==='/api/sources/apply-plugin-enrollment').length,1);assert.deepEqual(s.errors,[]);
 });
 test('the built editor retains unsupported official plugins while editing ordinary Skill states',browserCase,async t=>{

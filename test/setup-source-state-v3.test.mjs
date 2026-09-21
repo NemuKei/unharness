@@ -46,6 +46,31 @@ async function prepare(s, mode) {
   await sources.applyUserPlan({ workspace: s.workspace, planId: p.planId }); return p;
 }
 
+test('v3 saved modes absorb only common settings on confirmation without rewriting the saved preset', mac, async t => {
+  const s = await fixture(t); await adopt(s); await prepare(s, 'trueform');
+  const config = join(s.context.codexHome, 'config.toml');
+  for (const [index, mode] of ['normal', 'unseal', 'trueform'].entries()) {
+    const w = await openWorkspace(s.workspace);
+    const retainedModel = `PRIVATE_SHARED_${index}`;
+    await writeFile(config, (await readFile(config, 'utf8')).replace(/^model = .*$/m, `model = "${retainedModel}"`));
+    const actual = await readSourceProfileFiles(s.context);
+    const p = await sources.planUserMode({ workspace: s.workspace, mode });
+    assert.equal(p.retainedSettingsIncluded, true);
+    assert.deepEqual((await openWorkspace(s.workspace)).state, w.state);
+    assert.deepEqual(await readSourceProfileFiles(s.context), actual);
+    const applied = await sources.applyUserPlan({ workspace: s.workspace, planId: p.planId });
+    assert.equal(applied.preparedMode, mode);
+    assert.equal(applied.revision, w.state.revision + 1);
+    const after = await openWorkspace(s.workspace);
+    assert.equal(after.manifestVersion, 3);
+    assert.equal(after.state.setupId, w.state.setupId);
+    assert.equal(after.state.setupSchemaVersion, 3);
+    assert.equal(after.state.snapshotVersion, 2);
+    assert.match(await readFile(config, 'utf8'), new RegExp(retainedModel));
+    assert.equal((await sources.userSourceState({ workspace: s.workspace })).conflict, null);
+  }
+});
+
 test('v3 ordinary enrollment keeps the contract and requires explicit states for the new Skill', mac, async t => {
   const s = await fixture(t); await adopt(s); await prepare(s, 'trueform');
   const n = await addSetupSkill(s), discovery = await inspectEnrollment({ workspace: s.workspace });

@@ -5,9 +5,10 @@ import { loadRecord, loadScopeLineage, scopeWorkspace, activeNormalId, loadSnaps
 import { equal } from '../sources/platform.mjs';
 import { fail } from '../sources/errors.mjs';
 import { hash, loadSetup, loadSetupReview } from './records.mjs';
+import { isSetupVersion } from './schema.mjs';
 
 export function validateAdditions(value, schemaVersion = 1) {
-  if (![1, 2, 3].includes(schemaVersion)) fail('enrollment-proposal-invalid');
+  if (!isSetupVersion(schemaVersion)) fail('enrollment-proposal-invalid');
   if (!Array.isArray(value) || !value.length || value.length > 32 || new Set(value.map(v => v?.sourceId)).size !== value.length) fail('enrollment-proposal-invalid');
   for (const a of value) {
     exactKeys(a, ['sourceId', 'origin', 'reason', ...(schemaVersion === 1 ? ['unseal', 'trueform'] : [])], [], 'enrollment-proposal-invalid');
@@ -41,7 +42,7 @@ export async function loadEnrollmentReview(w, reviewId) {
     const p = await loadRecord(w.workspace, 'input', reviewId);
     exactKeys(p, ['kind', 'role', 'schemaVersion', 'scopeId', 'revision', 'normalId', 'beforeId', 'previousSetupId',
       'discoveryId', 'additions', 'nextScopeId', 'nextNormalId', 'nextSnapshotId', 'setupReviewId', 'setupId'], [], 'enrollment-record-invalid');
-    if (p.role !== 'enrollment-review' || ![1, 2, 3].includes(p.schemaVersion) || !Number.isSafeInteger(p.revision) || p.revision < 0 ||
+    if (p.role !== 'enrollment-review' || !isSetupVersion(p.schemaVersion) || !Number.isSafeInteger(p.revision) || p.revision < 0 ||
         ['scopeId', 'normalId', 'beforeId', 'previousSetupId', 'discoveryId', 'nextScopeId', 'nextNormalId', 'nextSnapshotId'].some(k => !hash(p[k])) ||
         ['setupReviewId', 'setupId'].some(k => p.schemaVersion >= 2 ? p[k] !== null : !hash(p[k]))) fail('enrollment-record-invalid');
     validateAdditions(p.additions, p.schemaVersion);

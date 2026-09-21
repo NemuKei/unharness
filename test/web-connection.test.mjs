@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { aiProfile } from '../test-support/ai-profile.mjs';
 import { startGuiServer } from '../src/gui/server.mjs';
@@ -75,6 +75,67 @@ test('the public client connects only on request and prepares all three modes th
   assert.ok(!publicView.includes(s.ticket.ticket)); assert.ok(!publicView.includes(s.context.project));
   for (const call of s.calls.filter(value => value.options.headers.Authorization))
     assert.ok(!publicView.includes(call.options.headers.Authorization.slice(7)));
+});
+
+test('a capable public connection includes shared edits in a mode plan and retains one result after a lost apply response', async t => {
+  const s = await setup(t), c = s.client;
+  await c.connect();
+  await c.apply((await c.plan('trueform')).requestId);
+  const config = join(s.context.codexHome, 'config.toml');
+  await writeFile(config, (await readFile(config, 'utf8')).replace(/^model = .*$/m, 'model = "PRIVATE_SHARED_EDIT"'));
+  const actual = await readSourceProfileFiles(s.context);
+  await c.refresh();
+  assert.equal(c.getSnapshot().state.conflict, true, 'a mismatched saved snapshot is still reported truthfully');
+  const p = await c.plan('unseal');
+  assert.equal(p.result.ok, true);
+  assert.deepEqual(await readSourceProfileFiles(s.context), actual, 'planning is read-only for live files');
+  await c.refresh();
+  assert.equal(c.getSnapshot().plan.requestId, p.requestId);
+  const requestId = randomUUID();
+  s.intercept((url, options, response) => { if (url.endsWith('/apply')) throw Error('Synthetic lost response'); return response; });
+  await assert.rejects(c.apply(p.requestId, requestId));
+  s.intercept(null); await c.refresh();
+  assert.equal(c.getSnapshot().state.preparedMode, 'unseal');
+  assert.equal(c.getSnapshot().state.conflict, false);
+  assert.match(await readFile(config, 'utf8'), /PRIVATE_SHARED_EDIT/);
+  await assert.rejects(c.plan('normal'), { kind: 'remote-operation-unconfirmed' });
+  assert.equal((await c.operationStatus(requestId)).result.ok, true);
+  assert.equal(s.calls.filter(call => call.url.endsWith('/apply') && JSON.parse(call.options.body).requestId === requestId).length, 1);
+  assert.ok(!JSON.stringify(c.getSnapshot()).includes('PRIVATE_SHARED_EDIT'));
+});
+
+test('an older public server without the capability keeps the existing conflict gate', async t => {
+  const s = await setup(t), c = s.client;
+  s.intercept(async (url, options, response) => {
+    if (!url.endsWith('/redeem')) return response;
+    const headers = new Headers(response.headers); headers.delete('X-Unharness-Mode-Planning');
+    return new Response(await response.text(), { status: response.status, headers });
+  });
+  await c.connect();
+  const config = join(s.context.codexHome, 'config.toml');
+  await writeFile(config, (await readFile(config, 'utf8')).replace(/^model = .*$/m, 'model = "PRIVATE_SHARED_EDIT"'));
+  await c.refresh();
+  await assert.rejects(c.plan('unseal'), { kind: 'source-conflict' });
+  assert.equal(s.calls.filter(call => call.url.endsWith('/plan')).length, 0);
+});
+
+test('a new mismatch invalidates the previous ordinary public plan and allows a fresh combined review', async t => {
+  const s = await setup(t), c = s.client; await c.connect();
+  const old = await c.plan('unseal');
+  const config = join(s.context.codexHome, 'config.toml');
+  await writeFile(config, (await readFile(config, 'utf8')).replace(/^model = .*$/m, 'model = "PRIVATE_LATER_SHARED_EDIT"'));
+  await c.refresh();
+  assert.equal(c.getSnapshot().plan, null, 'the old plan must not hide the Review changes action');
+  await assert.rejects(c.apply(old.requestId), { kind: 'remote-plan-unavailable' });
+  const sentPlans = s.calls.filter(call => call.url.endsWith('/plan')).length;
+  await assert.rejects(c.plan('unseal', old.requestId), { kind: 'remote-operation-conflict' });
+  assert.equal(s.calls.filter(call => call.url.endsWith('/plan')).length, sentPlans, 'a reused ID cannot rebind an old plan to the changed source condition');
+  assert.deepEqual(await c.operationStatus(old.requestId), old, 'the historical receipt remains readable');
+  assert.equal(c.getSnapshot().plan, null, 'receipt lookup must not resurrect the invalidated plan');
+  const fresh = await c.plan('unseal');
+  assert.notEqual(fresh.requestId, old.requestId);
+  assert.equal((await c.apply(fresh.requestId)).result.ok, true);
+  assert.match(await readFile(config, 'utf8'), /PRIVATE_LATER_SHARED_EDIT/);
 });
 
 test('lost apply responses keep one operation ID and later status failure cannot erase a saved result', async t => {

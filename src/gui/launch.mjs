@@ -7,11 +7,10 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { isDeepStrictEqual } from 'node:util';
 import { canonical } from '../sources/platform.mjs';
 import { acquire } from '../sources/transaction.mjs';
-import { openWorkspace } from '../sources/records.mjs';
 import { LAUNCH_PROTOCOL, launchFail, launchDirectory, readLaunchReceipt, publishLaunchReceipt, processPresent } from './launch-records.mjs';
-import { nonce, probeLaunch, signature, matchesSignature, launchRequest } from './launch-protocol.mjs';
+import { nonce, probeLaunch, signature, launchRequest } from './launch-protocol.mjs';
 import { resolveWorkbenchTarget } from './launch-target.mjs';
-import { isUuid, PUBLIC_WEB_ORIGIN, REMOTE_PROTOCOL_VERSION, REMOTE_OPERATIONS } from './remote-policy.mjs';
+import { isUuid } from './remote-policy.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const worker = fileURLToPath(new URL('./launch-worker.mjs', import.meta.url));
@@ -64,19 +63,8 @@ export async function requestPublicConnection(input, { requestId }) {
   return withLock(w, async () => {
     const receipt = await readLaunchReceipt(w);
     if (!await probeLaunch(receipt)) launchFail('gui-launch-unconfirmed');
-    const value = { launchId: receipt.launchId, nonce: nonce(), requestId };
-    let response;
-    try { response = await launchRequest(receipt.loopbackOrigin, '/_unharness/pair', { ...value, signature: signature(receipt.key, 'pair', value) }); }
-    catch { launchFail('gui-launch-unconfirmed'); }
-    const p = response?.pairing, selected = await openWorkspace(w.workspace);
-    if (!p || !matchesSignature(receipt.key, 'pair-result', { ...value, pairing: p }, response.signature)
-      || p.launchId !== receipt.launchId || !isUuid(p.pairingId) || p.webOrigin !== PUBLIC_WEB_ORIGIN
-      || p.protocolVersion !== REMOTE_PROTOCOL_VERSION || p.approved !== false || !Number.isSafeInteger(p.expiresAt)
-      || p.target?.scopeId !== selected.scopeId || selected.rootScopeId !== w.rootScopeId
-      || p.target?.application !== w.application || JSON.stringify(p.operations) !== JSON.stringify(REMOTE_OPERATIONS)) launchFail('gui-launch-unconfirmed');
-    return { kind: 'unharness-public-connection', protocolVersion: p.protocolVersion, launchId: p.launchId,
-      pairingId: p.pairingId, webOrigin: p.webOrigin, expiresAt: p.expiresAt, approved: false,
-      target: p.target, operations: p.operations, approvalUrl: receipt.loopbackOrigin + '/#pairing=' + p.pairingId };
+    return { kind: 'unharness-local-entry', launchId: receipt.launchId,
+      publicConnection: 'retired', workbenchUrl: receipt.loopbackOrigin };
   });
 }
 export async function stopWorkbench(input) {

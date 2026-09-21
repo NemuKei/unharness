@@ -7,9 +7,9 @@ import { PromptCopy } from './SetupHandoff';
 
 type Candidate = SourceRow & { eligible: boolean; enabled: boolean; reason: string | null };
 type Inventory = { scopeId: string; discoveryId: string; registeredCount: number; limit: number;
-  enrollmentSchemaVersion: 1 | 2 | 3; setupRequired: boolean; candidates: Candidate[]; unavailableSources: Array<{ id: string; reason: string }> };
+  enrollmentSchemaVersion: 1 | 2 | 3 | 4; setupRequired: boolean; candidates: Candidate[]; unavailableSources: Array<{ id: string; reason: string }> };
 type Addition = { sourceId: string; origin: 'self' | 'external'; reason: string; unseal?: 'automatic' | 'manual'; trueform?: 'automatic' | 'manual' };
-type Review = { reviewId: string; schemaVersion: 1 | 2 | 3; scopeId: string; nextScopeId: string; sourceFilesChanged: 0; modeChangeRequired: true;
+type Review = { reviewId: string; schemaVersion: 1 | 2 | 3 | 4; scopeId: string; nextScopeId: string; sourceFilesChanged: 0; modeChangeRequired: true;
   setupId: string | null; setupRequired: boolean;
   additions: Array<Addition & { label: string; enabled: boolean }> };
 const hash = (x: unknown): x is string => typeof x === 'string' && /^[a-f0-9]{64}$/.test(x);
@@ -46,7 +46,7 @@ export function EnrollmentPanel({ controller: c }: { controller: ReturnType<type
     const i = response.result;
     if (i?.scopeId !== source?.registration.scopeId || !hash(i.discoveryId) || !Array.isArray(i.candidates)
       || !Number.isSafeInteger(i.registeredCount) || i.limit !== 32 || typeof i.setupRequired !== 'boolean'
-      || ![1, 2, 3].includes(i.enrollmentSchemaVersion)
+      || ![1, 2, 3, 4].includes(i.enrollmentSchemaVersion)
       || !i.candidates.every(s => /^skill-[a-f0-9]{64}$/.test(s.id) && typeof s.label === 'string'
         && typeof s.eligible === 'boolean' && typeof s.enabled === 'boolean')) return failed(new Error('invalid-response'));
     setInventory(i); setSourceId(''); setOrigin(''); setReason('');
@@ -133,7 +133,7 @@ export function EnrollmentPanel({ controller: c }: { controller: ReturnType<type
     {review && !blocked && <div className="enrollment-review" aria-label={t("Skillの追加登録内容", "Skill registration details")}>
       <h3>{review.additions[0].label}{t("を追加", " will be added")}</h3>
       <p>{t("由来：", "Origin: ")}{review.additions[0].origin === 'self' ? t("自分で作った", "Authored by me") : t("外部から追加した", "Added from an external source")}</p>
-      <ul><li>{t("Normal：現在の状態を保存", "Normal: save the current state")}</li>{review.schemaVersion >= 2 ? <li>{review.schemaVersion === 3 ? t("両モードでの使用", "Use in both modes") : t("両モードの自動使用", "Automatic use in both modes")}{t("：登録後にまとめて確認", ": review together after registration")}</li>
+      <ul><li>{t("Normal：現在の状態を保存", "Normal: save the current state")}</li>{review.schemaVersion >= 2 ? <li>{review.schemaVersion >= 3 ? t("両モードでの使用", "Use in both modes") : t("両モードの自動使用", "Automatic use in both modes")}{t("：登録後にまとめて確認", ": review together after registration")}</li>
         : <><li>{t("限定解除：", "UNSEAL: ")}{invocation(review.additions[0].enabled, review.additions[0].unseal)}</li>
           <li>{t("零式：", "TRUEFORM: ")}{invocation(review.additions[0].enabled, review.additions[0].trueform)}</li></>}</ul>
       <p>{t("従来のNormalの内容と履歴を残し、追加分を含む新しい版を保存します。この登録では設定ファイルを変更しません。", "Keep earlier Normal and history, and save a new version including the additions. Registration does not change configuration files.")}</p>

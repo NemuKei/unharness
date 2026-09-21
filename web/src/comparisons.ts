@@ -192,10 +192,10 @@ export const defaultAssessment: RunAssessment = {
 };
 
 export const outcomeLabels: Record<RunOutcome, string> = {
-  get accepted() { return t("採用", "Accepted"); },
-  get failed() { return t("不採用", "Rejected"); },
-  get abandoned() { return t("中断", "Abandoned"); },
-  get unknown() { return t("未判断", "Undecided"); },
+  get accepted() { return t("使えた", "Useful"); },
+  get failed() { return t("使えなかった", "Not useful"); },
+  get abandoned() { return t("途中でやめた", "Stopped early"); },
+  get unknown() { return t("まだ未記録", "Not recorded yet"); },
 };
 export const provenanceLabels: Record<AssessmentProvenance, string> = {
   get user() { return t("ユーザーの評価", "User assessment"); },
@@ -222,11 +222,13 @@ export const aggregateReasonLabels: Record<string, string> = {
   get "usage-unavailable-or-partial"() { return t("使用量が不明または一部だけの記録があるため、合計は不明です。", "Some usage is unknown or partial, so the total is unknown."); },
   get "usage-total-overflow"() { return t("安全に合計できないため、合計は不明です。", "A reliable aggregate is unavailable, so the total is unknown."); },
   get "no-accepted-runs"() { return t("採用として数えられる記録がないため、採用1件あたりは不明です。", "No records qualify as accepted, so per-acceptance usage is unknown."); },
-  get "predeclared-comparable-evidence-required"() { return t("事前に揃えた条件での比較ではないため、優劣や作成資格は判定しません。", "Conditions were not aligned beforehand; no ranking or artwork eligibility is assigned."); },
+  get "predeclared-comparable-evidence-required"() { return t("仕事や条件の違いを含む参考比較です。数値だけでモードの優劣は決められません。", "This is a reference comparison across work and conditions. Numbers alone do not rank modes."); },
 };
 
 export function comparisonErrorMessage(error: unknown) {
   const kind = error instanceof ApiError ? error.kind : "request-failed";
+  if (kind === 'comparison-no-completed-turn')
+    return t('このタスクの完了済みの範囲を確認できませんでした。仕事が終わってから読み直すか、別のタスクを選んでください。', 'Completed work could not be verified for this task. Refresh after it finishes or choose another task.');
   if (error instanceof ApiError && error.disposition === "uncertain")
     return t("操作結果を確認できません。自動では再送しません。履歴と状態を再取得して確認してください。", "Operation result unconfirmed. No automatic retry is sent. Refresh history and state to check.");
   if (kind === "comparison-source-unavailable")

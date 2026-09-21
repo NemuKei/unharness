@@ -15,9 +15,11 @@ import { SetupHandoff, FreshTaskHandoff } from "./SetupHandoff";
 import { releaseModeDescription } from "./setup";
 import { EnrollmentPanel } from "./EnrollmentPanel";
 import { PluginEnrollmentPanel } from './PluginEnrollmentPanel';
+import { ModeContents } from './ModeContents';
 import { SourceStateEditor } from './SourceStateEditor';
 import { PluginObservationSummary } from './PluginObservationSummary';
-import { LocalConnectionPanel } from "./LocalConnectionPanel";
+import { PublicOperationLookup } from './PublicOperationLookup';
+import { pairingFromHash } from './local-connection';
 import { useLocalAppearance } from './useLocalAppearance';
 import { AppearancePanel } from './AppearancePanel';
 import type { ArtworkImageLoader } from './artwork';
@@ -46,6 +48,12 @@ import type {
   TaskObservation,
 } from "./sources";
 import "./sources.css";
+import { ThemeSwitch } from './ui/ThemeSwitch';
+import { StatusOverview } from './workbench/StatusOverview';
+import { ModeCard } from './workbench/ModeCard';
+import { appearanceThemeFor } from './ui/appearance-tokens';
+import { UpdateInfoPanel } from './workbench/UpdateInfoPanel';
+import { savedModeIsPrepared } from './workbench/mode-preparation';
 
 function displayPreference() {
   try {
@@ -57,21 +65,33 @@ function displayPreference() {
 export function SourceWorkbench() {
   const c = useSourceController();
   const art = useLocalAppearance(c), artwork = art.view?.selectedItem ?? null;
+  const appearanceTheme = useMemo(() => appearanceThemeFor(artwork), [artwork]);
   const imageLoader = useMemo<ArtworkImageLoader | undefined>(() => artwork?.kind === 'layered'
     ? (asset, signal) => art.image(artwork.id, asset, signal, art.key) : undefined, [art.key, artwork?.id, art.image]);
   const [effects, setEffects] = useState(displayPreference);
-  const [activeTab, setActiveTab] = useState<WorkbenchPage>(() => workbenchPageFromHash(location.hash) ?? 'mode');
-  const initialContext = useRef<{ id: string; registered: boolean } | null>(null);
-  const showConnection = useCallback(() => setActiveTab('support'), []);
+  const [earlierPublicLink] = useState(() => pairingFromHash(location.hash) !== null);
   useEffect(() => {
-    const changed = (event: HashChangeEvent) => { const page = workbenchPageFromHash(new URL(event.newURL).hash); if (page) setActiveTab(page); };
+    if (earlierPublicLink) history.replaceState(history.state, '', location.pathname + location.search);
+  }, []);
+  const [activeTab, setActiveTab] = useState<WorkbenchPage>(() => workbenchPageFromHash(location.hash) ?? 'mode');
+  const selectPage = useCallback((page: WorkbenchPage, replace = false) => {
+    const hash = '#' + new URLSearchParams({ view: page }).toString();
+    if (location.hash !== hash) history[replace ? 'replaceState' : 'pushState'](history.state, '', location.pathname + location.search + hash);
+    setActiveTab(page);
+  }, []);
+  const initialContext = useRef<{ id: string; registered: boolean } | null>(null);
+  useEffect(() => {
+    const changed = () => { const page = workbenchPageFromHash(location.hash); if (page) setActiveTab(page); else if (!location.hash) setActiveTab('mode'); };
     window.addEventListener('hashchange', changed);
-    return () => window.removeEventListener('hashchange', changed);
+    window.addEventListener('popstate', changed);
+    return () => { window.removeEventListener('hashchange', changed); window.removeEventListener('popstate', changed); };
   }, []);
   const [comparisonTask, setComparisonTask] = useState<{
     taskId: string;
     contextKey: string;
   } | null>(null);
+  const [legacySelections, setLegacySelections] = useState<Partial<Record<SourceMode, string[]>>>({});
+  useEffect(() => { setLegacySelections({}); }, [c.selectionKey, c.view?.metadata.contextId]);
   const source = c.view?.source;
   const presentation = { ...modePresentation[c.selected], description:
     releaseModeDescription(c.selected, c.plan ? c.plan.setupId : source?.setup?.setupId,
@@ -83,30 +103,35 @@ export function SourceWorkbench() {
     !source.conflict &&
     !source.recovery.pending &&
     !c.busy;
+  const modeUsable = !!source && c.confirmed && !c.busy && !source.recovery.pending
+    && (!source.conflict || source.modePlanningAvailable === true);
+  const canApplyMode = modeUsable && (!source?.conflict || c.plan?.retainedSettingsIncluded === true);
   useEffect(() => {
     if (!c.view || !c.confirmed) return;
     const id = c.view.metadata.contextId, registered = !!c.view.source;
-    if (!registered) setActiveTab('settings');
-    else if (initialContext.current && !initialContext.current.registered) setActiveTab('mode');
+    if (!registered) selectPage('settings', true);
+    else if (initialContext.current && !initialContext.current.registered) selectPage('mode', true);
     initialContext.current = { id, registered };
   }, [c.view?.metadata.contextId, !!source, c.confirmed]);
   const blocker = modeBlocker({ busy: c.busy, connected: true, confirmed: c.confirmed,
     registered: !!source, conflict: !!source?.conflict, recoveryPending: !!source?.recovery.pending,
+    modePlanningAvailable: source?.modePlanningAvailable,
     setupRequired: !!source?.setup?.setupRequired }, c.selected);
   const modeNotice = ['状態を再取得しました。実行中のタスクは未検証です。', '接続情報を確認しています。', 'State refreshed. The running task is unverified.', 'Checking the connection.'].includes(c.notice) ? undefined : c.notice;
+  const preparationState = !c.confirmed || c.busy ? 'checking' : savedModeIsPrepared(source, c.confirmed, source?.preparedMode ?? 'normal') ? 'ready' : 'attention';
   const resolveBlocker = blocker && blocker.kind !== 'busy' ? <>
     {blocker.kind === 'refresh' ? <button className="secondary" onClick={() => void c.refresh()}>{t("もう一度状態を確認", "Read the state again")}</button>
       : blocker.kind === 'initial' || blocker.kind === 'settings'
-        ? <button className="secondary" onClick={() => setActiveTab('settings')}>{blocker.kind === 'initial' ? t("初期設定へ", "Open initial setup") : t("設定を見直す", "Review settings")}</button>
-        : <button className="secondary" onClick={() => setActiveTab('support')}>{blocker.kind === 'recovery' ? t("このMacで復旧する", "Recover on this Mac") : t("このMacで差分を確認する", "Review local differences")}</button>}
+        ? <button className="secondary" onClick={() => selectPage('settings')}>{blocker.kind === 'initial' ? t("初期設定へ", "Open initial setup") : t("設定を見直す", "Review settings")}</button>
+        : <button className="secondary" onClick={() => selectPage('support')}>{blocker.kind === 'recovery' ? t("このMacで復旧する", "Recover on this Mac") : t("このMacで差分を確認する", "Review local differences")}</button>}
     {['changes', 'recovery', 'refresh', 'operation'].includes(blocker.kind) && <AiRequestButton label={t("状態の確認をAIに頼む", "Ask AI to check the state")} prompt={bindChatScope(stateCheckPrompt(), source?.registration.scopeId)} recipient={c.view?.metadata.application === 'claude' ? 'Claude Code' : 'Codex'}/>}
   </> : null;
-  return <div className="app-shell source-workbench">
+  return <div className="app-shell source-workbench" data-appearance={appearanceTheme}>
       <header className="topbar">
         <a className="wordmark" href="#main">
           UNHARNESS<span>{t("装備を見直す。", "Find your fit.")}</span>
         </a>
-        <div className="header-right"><LanguageSwitch/>
+        <div className="header-right"><LanguageSwitch/><ThemeSwitch/>
           <span className="scope-label">
             {source ? t("登録した追加設定", "Registered optional settings") : t("追加設定の確認", "Review optional settings")}
           </span>
@@ -128,46 +153,47 @@ export function SourceWorkbench() {
           </label>
         </div>
       </header>
-    <WorkbenchNavigation page={activeTab} select={setActiveTab}/>
-    <div className="workbench-place"><p>{t("このMacの画面です。対象確認・接続許可・復旧をここで行い、オフラインでも操作できます。", "This is your local Mac workbench. Review targets, approve connections and recover here, including offline.")}</p>
+    <WorkbenchNavigation page={activeTab} select={selectPage}/>
+    <div className="workbench-place"><p>{t("このMacの設定と記録を操作しています。オフラインでも使えます。", "Manage the settings and records on this Mac, including offline.")}</p>
       <button className="text-button" disabled={c.busy} onClick={() => void c.refresh()}>{t("状態を再取得", "Refresh state")}</button></div>
+    {earlierPublicLink && <p className="public-operation-notice">{t('公開画面への接続は不要になりました。このMacの画面で、そのまま使えます。', 'Public-page pairing is no longer needed. Continue in this local workbench.')}</p>}
     {c.syncNotice && c.syncIssue && <p className="source-sync-notice muted" role="status">{c.syncNotice}</p>}
     <main id="main">
       <div hidden={activeTab !== 'mode'}>
-        <div className="hangar-layout">
-          <section className="visual-column" aria-label={t("選択したモード", "Selected mode")}>
-            <div className="scene-heading"><p className="eyebrow">{t("モード ／ 選択プレビュー", "MODE / PREVIEW")}</p>
-              <h1>{presentation.title}</h1><p className="scene-subtitle">{presentation.label}</p></div>
+        <StatusOverview application={c.view?.metadata.applicationLabel ?? t('このMac', 'This Mac')}
+          prepared={source ? preparationState === 'ready' ? modePresentation[source.preparedMode].title : t(`最後に確認：${modePresentation[source.preparedMode].title}`, `Last confirmed: ${modePresentation[source.preparedMode].title}`) : t('未登録', 'Not registered')}
+          state={preparationState}
+          next={blocker ? t('変更前に確認が必要です。保存内容はそのまま閲覧できます。', 'Review is required before changes. Saved contents remain available to inspect.') : t('表示するモードを選び、保存内容を確認できます。選ぶだけでは設定を変えません。', 'Choose a mode to inspect its saved contents. Selection alone does not change settings.')}/>
+        <div className="simple-mode-layout">
+          <section className="mode-appearance-preview" aria-label={t("選択したモードの姿", "Selected mode appearance")}>
             {activeTab === 'mode' && <Hangar condition={presentation.scene} effects={effects} artwork={artwork} imageLoader={imageLoader} locale={getLocale()}/>}
             <p className="scene-caption">{t("選択したモードの姿です。確定するまで設定は変わりません。", "Preview of the selected mode. Settings stay unchanged until you apply it.")}</p>
           </section>
           <aside className="control-column" aria-label={t("設定と保存", "Settings and saved versions")}>
-            <section className="mode-current control-section"><div className="section-heading"><h2>{t("現在の準備", "Currently prepared")}</h2></div>
+            <section className="mode-current control-section"><div className="section-heading"><h2>{source?.conflict && source.modePlanningAvailable ? t("最後に準備したモード", "Last prepared mode") : t("現在の準備", "Currently prepared")}</h2></div>
               <p className="selected-name">{source ? modePresentation[source.preparedMode].title : c.confirmed ? t("通常装備はまだ保存されていません", "Normal has not been saved yet") : t("確認中", "Checking")}</p>
-              {source && (!c.confirmed || source.conflict || source.recovery.pending) && <p className="muted">{t("前回確認した構成です。現在の状態を確認してください。", "This is the last confirmed loadout. Check the current state.")}</p>}
+              {source && (!c.confirmed || (source.conflict && !source.modePlanningAvailable) || source.recovery.pending) && <p className="muted">{t("前回確認した構成です。現在の状態を確認してください。", "This is the last confirmed loadout. Check the current state.")}</p>}
               {source?.registration.modeChangeRequired && <p className="scope-enrollment-notice" role="status">{t("登録が更新されました。次のタスク用の設定を、まだ準備していません。", "Registration changed. Settings for the next task have not been prepared yet. ")}{source.setup?.setupRequired ? t("先に「設定をAIと見直す」で両モードの構成を確認・保存してください。Normalと過去の保存版には戻せます。", "Use Review settings with AI to review and save both modes first. Normal and earlier saved versions remain available.") : t("使うモードを選び、変更内容を確認してください。", "Select a mode and review its changes.")}</p>}
             </section>
-            <InstructionScopeNote application={c.view?.metadata.application} compact/>
-            <ModeChoices key={c.selectionKey + ':' + (source?.registration.normalId ?? 'setup') + ':' + (source?.setup?.setupId ?? 'legacy')} controller={c} usable={usable}/>
-            <ModeActions title={presentation.title} blocker={blocker} planReady={!!c.plan && c.plan.preparedMode === c.selected}
-              review={() => c.choose(c.selected)} confirm={() => { if (usable && c.plan) void c.run('apply', { planId: c.plan.planId }); }} resolve={resolveBlocker} statusMessage={activeTab === 'mode' ? modeNotice : undefined}>
+
+            <ModeChoices key={c.selectionKey + ':' + (source?.registration.normalId ?? 'setup') + ':' + (source?.setup?.setupId ?? 'legacy')} controller={c} selections={legacySelections} setSelections={setLegacySelections}/>
+            <ModeActions compact={!c.plan || sourceModes.includes(c.plan.mode as SourceMode)} title={presentation.title} blocker={blocker} planReady={!!c.plan && c.plan.preparedMode === c.selected}
+              review={() => c.choose(c.selected, !source?.setup?.setupId && !source?.setup?.setupRequired ? legacySelections[c.selected] : undefined)} confirm={() => { if (canApplyMode && c.plan) void c.run('apply', { planId: c.plan.planId }); }} resolve={resolveBlocker} statusMessage={activeTab === 'mode' ? modeNotice : undefined}>
                   {c.plan && source ? (
                     <>
                       <p className="mode-plan-description">{presentation.description}</p>
-                      {c.plan.adaptation && (
+                      {c.plan.adaptation && !c.plan.retainedSettingsIncluded && (
                         <RestoreAdaptationNotice
                           adaptation={c.plan.adaptation}
                         />
                       )}
-                      {!c.plan.changedFiles.length && (
-                        <p className="muted">
-                          {t("ファイル内容の変更はありません。", "No file-content changes.")}</p>
-                      )}
                       <p className="muted">
-                        {t("変更するファイル ", "Files to change: ")}{c.plan.changedFiles.length}{" "}
-                        {t("件。未選択の設定は通常装備の内容を維持します。", ". Unselected settings keep their Normal values.")}</p>
+                        {t("モード以外の設定は、そのまま引き継ぎます。", "Settings outside the mode stay as they are.")}</p>
                       <details>
                         <summary>{t("変更する項目を確認", "Review changed items")}</summary>
+                        <p>{c.plan.changedFiles.length
+                          ? t(`変更するファイル：${c.plan.changedFiles.length}件`, `Files to change: ${c.plan.changedFiles.length}`)
+                          : t("ファイル内容の変更はありません。", "No file-content changes.")}</p>
                         <ul className="source-changes">{c.plan.changedFiles.map(file => <li key={file.id}>{file.label}</li>)}</ul>
                         <code>{c.plan.planId}</code>
                         {c.plan.skillStates.map((row) => (
@@ -197,39 +223,57 @@ export function SourceWorkbench() {
                       {t("モードまたは保存版を選び、変更計画を確認してください。", "Select a mode or saved version and review the change plan.")}</p>
                   )}
             </ModeActions>
+            {source && (!c.plan || sourceModes.includes(c.plan.mode as SourceMode)) && <ModeContents key={c.view?.metadata.contextId} controller={c} visible={activeTab === 'mode'}/>}
+            <section className="mode-saved-configurations" aria-label={t('保存した構成', 'Saved configurations')}>
+              <div className="section-heading"><h2>{t('保存した構成', 'Saved configurations')}</h2><span>{t('お気に入りと過去の版', 'Favorites and earlier versions')}</span></div>
+              <p className="muted">{t('保存した時点の内容です。現在の同名モードと異なる旧版も、確認してから復帰します。', 'These keep the content saved at that time. Earlier versions may differ from the current mode with the same name and are reviewed before restoration.')}</p>
+              {source && <Save controller={c} usable={usable && !source.registration.modeChangeRequired}/>}
+              <button className="secondary" disabled={!source || c.busy} onClick={() => c.loadFavorites()}>{t('保存版を表示', 'Show saved versions')}</button>
+              <ul className="source-favorites">{c.favorites.map(f => <li key={f.favoriteId}><button className="secondary" disabled={!usable} onClick={() => void c.run<SourcePlan>('favorite', { favoriteId: f.favoriteId }, c.setPlan)}>{f.name} · {modePresentation[f.preparedMode].title}
+                {f.addedPluginIds?.length ? t(` · 追加したプラグイン ${f.addedPluginIds.length}件はNormal`, ` · ${f.addedPluginIds.length} added plugins use Normal`) : ''}
+                {f.addedSourceIds?.length ? t(` · 追加したSkill ${f.addedSourceIds.length}件を含む`, ` · Includes ${f.addedSourceIds.length} added Skills`) : source && f.normalId !== source.registration.activeNormalId ? t(' · 現在の共通設定を維持', ' · Current retained settings preserved') : ''}</button></li>)}</ul>
+              {c.cursor && <button className="text-button" disabled={c.busy} onClick={() => c.loadFavorites(c.cursor!)}>{t('続きを表示', 'Show more')}</button>}
+              <button className="text-button" onClick={() => selectPage('support')}>{t('復旧と変更前の記録を開く', 'Open recovery and pre-change records')}</button>
+            </section>
             {!blocker && <details className="chat-mode-entry"><summary>{t("チャットでこのモードを頼む", "Ask for this mode in chat")}</summary><AiRequestButton label={t("切替の依頼文をコピー", "Copy mode request")} prompt={bindChatScope(modeChatRequest(c.selected), source?.registration.scopeId)}/></details>}
             {c.view && source && <FreshTaskHandoff view={c.view} disabled={!usable || !!source.registration.modeChangeRequired}/>}
-            <button className="text-button" onClick={() => setActiveTab('settings')}>{t("各モードの指示・Skillを見直す", "Review each mode's instructions and Skills")}</button>
+            <button className="text-button" onClick={() => selectPage('settings')}>{t("各モードの指示・Skillを見直す", "Review each mode's instructions and Skills")}</button>
           </aside>
         </div>
       </div>
       <section className="workbench-pane" hidden={activeTab !== 'settings'} aria-label={t("設定の見直し", "Review settings")}>
-        {c.view ? <SetupHandoff key={c.view.metadata.contextId + ':' + (source?.setup?.setupId ?? 'initial')}
-          view={c.view} confirmed={c.confirmed} busy={c.busy} execute={c.executeAuxiliary}/>
-          : <p>{t("状態を確認しています。", "Checking the state.")}</p>}
-        {!source ? <details className="settings-manual"><summary>{t("このMacで対象を確認・登録する", "Review and register targets on this Mac")}</summary><Setup key={c.selectionKey} controller={c}/></details>
-          : <details className="settings-manual"><summary>{t("このMacで構成と対象を確認・編集する", "Review and edit local loadouts and targets")}</summary>
-            <div className="saved-mode-settings">{source.setup?.schemaVersion === 3 && source.setup.setupId && (['unseal', 'trueform'] as const).map(mode =>
-              <div data-mode={mode} key={mode}><SourceStateEditor key={c.view!.metadata.contextId + ':' + source.revision + ':' + mode} controller={c} mode={mode}/></div>)}</div>
-            <EnrollmentPanel key={c.view?.metadata.contextId + ':' + source.revision} controller={c}/>
-            <PluginEnrollmentPanel key={c.view?.metadata.contextId + ':plugins:' + source.revision} controller={c}/>
-          </details>}
+        <div className="settings-flow" role="region" aria-label={t('設定の流れ', 'Settings flow')}>
+          <section className="settings-stage"><h2>{t('1. 保存内容を見る', '1. Review saved contents')}</h2><p>{t('日常の確認はモード画面で行います。見るだけでは変更しません。', 'Use Modes for everyday inspection. Viewing alone does not change settings.')}</p><button className="secondary" onClick={() => selectPage('mode')}>{t('モードと保存内容を見る', 'View modes and saved contents')}</button></section>
+          <section className="settings-stage"><h2>{t('2. AIと相談する', '2. Consult with AI')}</h2>
+            {c.view ? <SetupHandoff key={c.view.metadata.contextId + ':' + (source?.setup?.setupId ?? 'initial')}
+              view={c.view} confirmed={c.confirmed} busy={c.busy} execute={c.executeAuxiliary}/>
+              : <p>{t("状態を確認しています。", "Checking the state.")}</p>}
+          </section>
+          <section className="settings-stage"><h2>{t('3. このMacで詳細を確認', '3. Review details on this Mac')}</h2>
+            {!source ? <details className="settings-manual"><summary>{t("このMacで対象を確認・登録する", "Review and register targets on this Mac")}</summary><Setup key={c.selectionKey} controller={c}/></details>
+              : <details className="settings-manual"><summary>{t("このMacで構成と対象を確認・編集する", "Review and edit local loadouts and targets")}</summary>
+                <div className="saved-mode-settings">{source.setup && [3, 4].includes(source.setup.schemaVersion ?? 0) && source.setup.setupId && (['unseal', 'trueform'] as const).map(mode =>
+                  <div data-mode={mode} key={mode}><SourceStateEditor key={c.view!.metadata.contextId + ':' + source.revision + ':' + mode} controller={c} mode={mode}/></div>)}</div>
+                <EnrollmentPanel key={c.view?.metadata.contextId + ':' + source.revision} controller={c}/>
+                <PluginEnrollmentPanel key={c.view?.metadata.contextId + ':plugins:' + source.revision} controller={c}/>
+              </details>}
+          </section>
+        </div>
+        <UpdateInfoPanel/>
         <InstructionScopeNote application={c.view?.metadata.application}/>
       </section>
       <section className="workbench-pane appearance-workbench" hidden={activeTab !== 'appearance'} aria-label={t("外観の変更", "Change appearance")}>
         <h1>{t("外観", "Appearance")}</h1><p>{t("好きな姿で使えます。指示・Skillの構成や性能の評価は変わりません。", "Choose any look. Instructions, Skills and performance assessments stay unchanged.")}</p>
         <div className="appearance-workbench-layout">{activeTab === 'appearance' && <Hangar condition={presentation.scene} effects={effects} artwork={artwork} imageLoader={imageLoader} locale={getLocale()}/>}
-          {source ? <AppearancePanel controller={art}/> : <div><p>{t("外観の保存には、対象の確認とNormalの保存が必要です。", "Review the targets and save Normal before saving artwork.")}</p><button className="secondary" onClick={() => setActiveTab('settings')}>{t("初期設定へ", "Open initial setup")}</button></div>}</div>
+          {source ? <AppearancePanel controller={art}/> : <div><p>{t("外観の保存には、対象の確認とNormalの保存が必要です。", "Review the targets and save Normal before saving artwork.")}</p><button className="secondary" onClick={() => selectPage('settings')}>{t("初期設定へ", "Open initial setup")}</button></div>}</div>
       </section>
       <section hidden={activeTab !== 'history'} className="workbench-pane" aria-label={t("比較と記録", "Comparisons and records")}>
-        <ComparisonWorkbench key={comparisonKey} sourceController={c} taskHandoff={comparisonTask?.contextKey === comparisonKey ? comparisonTask : undefined}/>
-        {source && <Save controller={c} usable={usable && !source.registration.modeChangeRequired}/>}
+        <ComparisonWorkbench sourceController={c} taskHandoff={comparisonTask?.contextKey === comparisonKey ? comparisonTask : undefined}/>
       </section>
       <section hidden={activeTab !== 'support'} className="workbench-pane" aria-label={t("このMacの接続と復旧", "Connection and recovery on this Mac")}>
         <h1>{t("接続・復旧", "Connection & recovery")}</h1>
-        <p>{t("接続許可や手元のファイルの確認を行います。完了したら「モード」に戻って操作できます。", "Review connection permissions and local files. Return to Mode when finished.")}</p>
-        {c.view?.source && <LocalConnectionPanel key={c.view.metadata.launchId + ':' + c.view.metadata.contextId + ':' + c.view.source.registration.scopeId}
-          view={c.view} enabled={c.confirmed && !c.busy} request={c.requestConnection} onOpen={showConnection}/>}
+        <p>{t("手元の設定や復旧の案内を確認します。完了したら「モード」に戻って使えます。", "Review local settings and recovery guidance. Return to Mode when finished.")}</p>
+        {c.view?.source && <PublicOperationLookup key={c.view.metadata.launchId + ':' + c.view.metadata.contextId} request={c.requestConnection}/>}
         <div className="support-state">
             <section className="control-section">
               <div className="section-heading">
@@ -300,7 +344,7 @@ export function SourceWorkbench() {
                   usable={usable}
                   onCompareTask={(taskId) => {
                     setComparisonTask({ taskId, contextKey: comparisonKey });
-                    setActiveTab("history");
+                    selectPage("history");
                   }}
                 />
               )}
@@ -318,54 +362,8 @@ export function SourceWorkbench() {
           ))}
         </details>
       </section>
-      <div hidden={activeTab !== 'history' && activeTab !== 'support'} className="workbench-pane workbench-records">
+      <div hidden={activeTab !== 'support'} className="workbench-pane workbench-records">
         <div className="records-grid">
-          <section className="control-section">
-            <div className="section-heading">
-              <h2>{t("お気に入り", "Favorites")}</h2>
-              <span>{t("内容を保存した版", "Versioned configurations")}</span>
-            </div>
-            <p className="muted">{t("保存した時点の構成へ戻せます。旧規則の保存版も、現在の零式の選択で置き換えません。", "Return to a configuration as it was saved. Older versions are not rewritten to match current TRUEFORM choices.")}</p>
-            <button
-              className="secondary"
-              disabled={!source || c.busy}
-              onClick={() => c.loadFavorites()}
-            >
-              {t("保存版を表示", "Show saved version")}</button>
-            <ul className="source-favorites">
-              {c.favorites.map((f) => (
-                <li key={f.favoriteId}>
-                  <button
-                    className="secondary"
-                    disabled={!usable}
-                    onClick={() => {
-                      setActiveTab('mode');
-                      void c.run<SourcePlan>(
-                        "favorite",
-                        { favoriteId: f.favoriteId },
-                        c.setPlan,
-                      );
-                    }}
-                  >
-                    {f.name} · {modePresentation[f.preparedMode].title}
-                    {f.addedPluginIds?.length ? t(` · 追加したプラグイン ${f.addedPluginIds.length}件はNormal`, ` · ${f.addedPluginIds.length} added plugins use Normal`) : ''}
-                    {f.addedSourceIds?.length ? t(` · 追加したSkill ${f.addedSourceIds.length}件を含む`, ` · Includes ${f.addedSourceIds.length} added Skills`) : source &&
-                    f.normalId !== source.registration.activeNormalId
-                      ? t(" · 現在の共通設定を維持", " · Current retained settings preserved")
-                      : ""}
-                  </button>
-                </li>
-              ))}
-            </ul>
-            {c.cursor && (
-              <button
-                className="text-button"
-                disabled={c.busy}
-                onClick={() => c.loadFavorites(c.cursor!)}
-              >
-                {t("続きを表示", "Show more")}</button>
-            )}
-          </section>
           <section className="control-section" aria-label={t("復帰", "Restore")}>
             <div className="section-heading">
               <h2>{t("元に戻す", "Restore")}</h2>
@@ -378,7 +376,7 @@ export function SourceWorkbench() {
                 className="secondary"
                 disabled={!source?.recovery.lastCheckpointId || c.busy}
                 onClick={() => {
-                  setActiveTab('mode');
+                  selectPage('mode');
                   void c.run<SourcePlan>(
                     "checkpoint",
                     { checkpointId: source!.recovery.lastCheckpointId },
@@ -417,7 +415,7 @@ export function SourceWorkbench() {
           </section>
         </div>
       </div>
-      {activeTab !== 'mode' && <div className="status-strip"><div role="status" aria-live="polite">{c.notice}</div></div>}
+      {activeTab !== 'mode' && modeNotice && <div className="status-strip"><div role="status" aria-live="polite">{modeNotice}</div></div>}
       {c.error && <div className="global-error" role="alert">{c.error}</div>}
       <footer><span>UNHARNESS</span><span className="muted">{t("画面でも、チャットでも。同じ設定を使えます。", "The screen and chat use the same saved settings.")}</span></footer>
     </main>
@@ -429,6 +427,7 @@ type Controller = ReturnType<typeof useSourceController>;
 const expectedLabels: Record<TaskObservation["sources"][number]["expected"], string> = {
   get "saved-instructions"() { return t("保存した指示", "Saved instructions"); },
   get "minimal-guide"() { return t("最小ガイド", "Minimal guide"); },
+  get "custom-guide"() { return t("保存した追加指示", "Saved custom instructions"); },
   get "inert-instructions"() { return t("無効化した指示", "Instructions disabled"); },
   get "automatic-catalog"() { return t("自動選択の一覧に表示", "Shown in automatic selection"); },
   get "manual-only"() { return t("手動のみ", "Explicit use only"); },
@@ -545,7 +544,7 @@ function TaskObservationSection({
               className="text-button"
               onClick={() => onCompareTask(observation.taskId)}
             >
-              {t("このUUIDを比較で使う", "Use this UUID for comparison")}</button>
+              {t("この仕事を記録する", "Record this work")}</button>
           </div>
         )}
       </details>
@@ -778,35 +777,27 @@ function Setup({ controller: c }: { controller: Controller }) {
 }
 function ModeChoices({
   controller: c,
-  usable,
+  selections,
+  setSelections,
 }: {
   controller: Controller;
-  usable: boolean;
+  selections: Partial<Record<SourceMode, string[]>>;
+  setSelections: (value: Partial<Record<SourceMode, string[]>>) => void;
 }) {
   const rows = c.view?.source?.registration.sources ?? [];
-  const [custom, setCustom] = useState<Partial<Record<SourceMode, string[]>>>(
-    {},
-  );
   return (
     <div
       className="mode-selector source-mode-selector"
       aria-label={t("モードを選択", "Choose a mode")}
     >
-      {sourceModes.map((mode) => (
+      {sourceModes.map((mode) => {
+        const presentation = modePresentation[mode];
+        return (
         <div className="source-mode" key={mode}>
-          <button
-            aria-pressed={c.selected === mode}
-            disabled={!usable || (mode !== "normal" && c.view?.source?.setup?.setupRequired)}
-            onClick={() => c.choose(mode, custom[mode])}
-          >
-            <span className="mode-icon" aria-hidden="true">
-              {mode === "normal" ? "▣" : mode === "unseal" ? "◇" : "✧"}
-            </span>
-            <span>
-              <strong>{modePresentation[mode].title}</strong>
-              <small>{modePresentation[mode].label}</small>
-            </span>
-          </button>
+          <ModeCard title={presentation.title} label={presentation.label} description={presentation.description}
+            selected={c.selected === mode} prepared={savedModeIsPrepared(c.view?.source, c.confirmed, mode)}
+            disabled={!c.view?.source || c.busy}
+            onSelect={() => c.preview(mode)}/>
           {mode !== "normal" && c.view?.source && !c.view.source.setup?.setupId && !c.view.source.setup?.setupRequired && (
             <details>
               <summary>{t("対象を調整", "Adjust targets")}</summary>
@@ -818,7 +809,7 @@ function ModeChoices({
                     <input
                       type="checkbox"
                       checked={(
-                        custom[mode] ??
+                        selections[mode] ??
                         rows
                           .filter((r) => r.availability[mode])
                           .map((r) => r.id)
@@ -826,12 +817,12 @@ function ModeChoices({
                       disabled={c.busy}
                       onChange={(e) => {
                         const old =
-                          custom[mode] ??
+                          selections[mode] ??
                           rows
                             .filter((r) => r.availability[mode])
                             .map((r) => r.id);
-                        setCustom({
-                          ...custom,
+                        setSelections({
+                          ...selections,
                           [mode]: e.target.checked
                             ? [...old, row.id]
                             : old.filter((id) => id !== row.id),
@@ -868,7 +859,7 @@ function ModeChoices({
             </details>
           )}
         </div>
-      ))}
+      )})}
     </div>
   );
 }

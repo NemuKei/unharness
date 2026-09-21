@@ -23,10 +23,19 @@ After building on macOS, optional browser regressions check repeated task-UUID h
 ```sh
 UNHARNESS_PLAYWRIGHT_MODULE="/absolute/path/to/playwright/index.mjs" \
 UNHARNESS_BROWSER_EXECUTABLE="/absolute/path/to/browser-executable" \
-node --test test/web-comparisons.test.mjs test/web-starting-conditions.test.mjs
+node --test --test-concurrency=2 test/web-comparisons.test.mjs test/web-starting-conditions.test.mjs
 ```
 
 The executable override is optional when Playwright already has a browser installed. Without the module path, this browser case is explicitly skipped while the HTTP/controller tests still run. It uses a temporary synthetic source profile and local GUI server.
+
+Keep browser regression batches at at most two test files in parallel. Each file
+starts its own browser, and artwork checks also decode and compose real images.
+Launching the whole browser suite at the default CPU-based concurrency can make
+successful image operations exceed the tests' 10–12 second waits. Keep the
+existing operation deadlines and assertions; bound the test workload instead.
+The delayed-response, duplicate-request and context-replacement checks still
+exercise their intended races within each test. Run the ordinary `npm test`
+suite separately so it does not compete with the browser batch.
 
 ## Work that is useful now
 

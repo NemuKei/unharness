@@ -2,16 +2,17 @@ import { text as t } from './locale.ts';
 import { useId, useState } from 'react';
 import type { useSourceController } from './useSourceController';
 import type { SourceMode } from './sources';
-import { SavedSetupSummary, readableSetup } from './SavedSetupSummary';
+import { readableSetup } from './SavedSetupSummary';
 import type { SetupRead } from './SavedSetupSummary';
 import { ApiError } from './api';
+import { ProposalReview } from './workbench/ProposalReview';
 
 type State = 'disabled' | 'manual' | 'automatic';
 type Selection = { sourceId: string; state: State };
-type Proposal = { schemaVersion: 3; scopeId: string; normalId: string; inventoryId: string;
+type Proposal = { schemaVersion: 3 | 4; scopeId: string; normalId: string; inventoryId: string;
   basis: Record<string, unknown>; roles: Array<{ sourceId: string; origin: string; reason: string }>;
   trueform: { skillStates: Selection[]; retainedOfficialPluginIds: string[] };
-  unseal: { instructions: 'minimal' | 'none'; skillElevations: Selection[]; additionalPluginIds: string[] } };
+  unseal: { instructions: 'minimal' | 'none' | 'custom'; customInstructions?: string; skillElevations: Selection[]; additionalPluginIds: string[] } };
 type Inventory = { inventoryId: string; skills: Array<{ id: string; normalState: State; availableStates: State[]; requiredControl: boolean }>;
   plugins: Array<{ id: string; normalEnabled: boolean; eligibility: 'official-confirmed' | 'not-official' | 'unknown' }> };
 type Read = Omit<SetupRead, 'inventory'> & { proposal: Proposal; inventory: Inventory };
@@ -36,11 +37,14 @@ export function SourceStateEditor({ controller: c, mode }: { controller: ReturnT
   }
   async function load() {
     setLoaded(null); setDraft(null); setReview(null); setError(''); setUncertain(false);
-    const response = await c.executeAuxiliary<Read>('setup', { schemaVersion: 3 });
+    const response = await c.executeAuxiliary<Read>('setup', { schemaVersion: 4 });
     if (response.status === 'context-updated') return;
     if (response.status === 'failed') return failed(response.error);
     const r = response.result;
-    if (!readableSetup(r) || r.review?.schemaVersion !== 3 || r.proposal?.schemaVersion !== 3 || !r.inventory
+    if (!readableSetup(r) || !r.review || ![3, 4].includes(r.review.schemaVersion)
+      || r.proposal?.schemaVersion !== r.review.schemaVersion || !r.inventory
+      || r.proposal.unseal.instructions === 'custom' && (r.proposal.schemaVersion !== 4
+        || r.proposal.unseal.customInstructions !== r.review.presets.unseal.customInstructions)
       || r.scopeId !== source?.registration.scopeId || r.setupId !== source.setup?.setupId
       || r.normalId !== source.registration.activeNormalId || !hash(r.inventory.inventoryId)
       || !Array.isArray(r.proposal.trueform?.skillStates) || !Array.isArray(r.proposal.unseal?.skillElevations)
@@ -67,7 +71,7 @@ export function SourceStateEditor({ controller: c, mode }: { controller: ReturnT
     if (response.status === 'context-updated') return;
     if (response.status === 'failed') return failed(response.error);
     const r = response.result;
-    if (!hash(r?.reviewId) || r.scopeId !== source?.registration.scopeId || r.schemaVersion !== 3 || r.sourceFilesChanged !== 0
+    if (!hash(r?.reviewId) || r.scopeId !== source?.registration.scopeId || r.schemaVersion !== draft.schemaVersion || r.sourceFilesChanged !== 0
       || !readableSetup({ ...loaded, review: r })) return failed(Error());
     setReview(r);
   }
@@ -125,13 +129,21 @@ export function SourceStateEditor({ controller: c, mode }: { controller: ReturnT
         <p className="muted">{t("現行Codexで個別OFFが反映されない公式プラグインは、両モードでNormalを保持します。未対応のOFFが以前の保存内容にある場合、この確認では両モードの保持へ変更します。元から無効なら、保持しても無効のままです。", "Official plugins whose individual OFF is unsupported keep Normal in both modes. This review replaces unsupported OFF choices in older settings with retention in both modes. A plugin disabled in Normal remains disabled.")}</p>
       </div>}
       {mode === 'unseal' && <><label htmlFor={prefix + '-instructions'}>{t("追加指示", "Optional instructions")}</label>
-        <select id={prefix + '-instructions'} value={draft.unseal.instructions} onChange={e => update(d => { d.unseal.instructions = e.target.value as 'minimal' | 'none'; })}>
+        <select id={prefix + '-instructions'} value={draft.unseal.instructions} onChange={e => update(d => {
+          const instructions = e.target.value as 'minimal' | 'none' | 'custom';
+          const { customInstructions, ...preserved } = d.unseal;
+          d.unseal = { ...preserved, instructions, ...(instructions === 'custom'
+            ? { customInstructions: loaded.proposal.unseal.customInstructions! } : {}) };
+        })}>
           <option value="none">{t("なし", "None")}</option><option value="minimal">{t("固定の最小ガイド", "Fixed minimal guide")}</option>
-        </select></>}
+          {loaded.proposal.unseal.instructions === 'custom' && <option value="custom">{t("保存した追加指示", "Saved custom instructions")}</option>}
+        </select>
+        {draft.unseal.instructions === 'custom' && <p className="muted">{t("相談で保存した本文を引き継ぎます。本文の変更はAIと相談してください。", "Keep the text saved through consultation. Consult AI to change the text.")}</p>}
+      </>}
       <button type="button" className="secondary" onClick={() => void preview()}>{t("両モードの変更を確認", "Review changes to both modes")}</button>
     </fieldset>}
     {review && loaded && !blocked && <div className="enrollment-review">
-      <SavedSetupSummary data={{ ...loaded, review }} sources={source!.registration.sources} plugins={source!.registration.plugins} />
+      <ProposalReview base={loaded} proposed={review} sources={source!.registration.sources} plugins={source!.registration.plugins}/>
       <button type="button" className="primary" disabled={uncertain} onClick={() => void adopt()}>{t("この2構成を保存", "Save these two loadouts")}</button>
     </div>}
   </details>;

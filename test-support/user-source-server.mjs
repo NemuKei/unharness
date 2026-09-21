@@ -35,13 +35,23 @@ for await (const line of createInterface({ input: process.stdin })) {
   const msg = JSON.parse(line);
   if (msg.method === 'initialized') continue;
   let result;
-  if (msg.method === 'initialize')
+  if (msg.method === 'initialize') {
     result = { codexHome: home, userAgent: 'Codex/0.153.4 synthetic' };
+    if (msg.params.clientInfo.name === 'unharness_recent_tasks') {
+      try { Object.assign(result, JSON.parse(await readFile(join(home, 'recent-tasks-fixture.json'), 'utf8')).initialization); } catch {}
+    }
+  }
   else if (msg.method === 'config/read')
     result = {
       config,
       layers: [{ name: { type: 'user', file }, config, version }]
     };
+  else if (msg.method === 'thread/list') {
+    let fixture = { response: { data: [], nextCursor: null } };
+    try { fixture = JSON.parse(await readFile(join(home, 'recent-tasks-fixture.json'), 'utf8')); } catch {}
+    await writeFile(join(home, 'recent-tasks-request.json'), JSON.stringify(msg.params));
+    result = fixture.response;
+  }
   else if (msg.method === 'skills/list') {
     const skills = [];
     let names = [];

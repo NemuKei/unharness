@@ -100,6 +100,20 @@ test('leaving a redeem with no replacement stays disconnected after its response
   assert.equal(s.c.getSnapshot().connection, null); assert.equal(s.c.getLocalWorkbenchUrl(), null);
 });
 
+test('a transient status failure keeps only its existing grant refreshable', async t => {
+  const s = fixture(t); await s.c.connect();
+  assert.equal(s.c.canRefreshConnection(), true);
+  s.intercept((call, response) => { if (call.action === 'status') throw Error('temporary status failure'); return response; });
+  await assert.rejects(s.c.refresh(), { kind: 'remote-connection-lost' });
+  assert.equal(s.c.getSnapshot().phase, 'unknown'); assert.equal(s.c.canRefreshConnection(), true);
+  const redeems = s.calls.filter(call => call.action === 'redeem').length;
+  s.intercept(null); await s.c.refresh();
+  assert.equal(s.c.getSnapshot().phase, 'connected'); assert.equal(s.c.canRefreshConnection(), true);
+  assert.equal(s.calls.filter(call => call.action === 'redeem').length, redeems);
+  assert.equal(s.calls.filter(call => call.action === 'plan' || call.action === 'apply').length, 0);
+  s.c.disconnect(); assert.equal(s.c.canRefreshConnection(), false);
+});
+
 test('replacing a handoff never unlocks, aborts or resends an accepted apply', async t => {
   const s = fixture(t); await s.c.connect(); const plan = await s.c.plan('unseal');
   const gate = s.deferred(), entered = s.deferred(); let signal;
@@ -228,11 +242,12 @@ for (const ok of [true, false]) test(`known terminal ${ok ? 'success' : 'failure
   assert.equal(s.calls.filter(c => c.action === 'apply').length, 1);
 });
 
-test('local language support belongs only to the current validated connection', async t => {
+test('local language and retained mode support belong only to the current validated connection', async t => {
   const s = fixture(t), gate = s.deferred(), entered = s.deferred();
   s.intercept(async (call, response) => {
     if (call.action === 'redeem' && call.body.ticket === s.first.handoff.ticket) {
       response.headers.set('X-Unharness-UI-Languages', 'ja,en');
+      response.headers.set('X-Unharness-Mode-Planning', 'retained-v1');
       entered.resolve(); await gate.promise;
     }
     return response;
@@ -241,10 +256,17 @@ test('local language support belongs only to the current validated connection', 
   s.c.disconnect(); s.c.acceptHandoff(s.handoff());
   await s.c.connect();
   assert.equal(s.c.supportsLocalLanguage(), false);
+  assert.equal(s.c.supportsRetainedModePlanning(), false);
   gate.resolve(); await old;
   assert.equal(s.c.supportsLocalLanguage(), false, 'late advertisement cannot change the new older-server connection');
+  assert.equal(s.c.supportsRetainedModePlanning(), false, 'late capability cannot relax another connection');
   s.c.disconnect(); s.c.acceptHandoff(s.handoff());
-  s.intercept((call, response) => { if (call.action === 'redeem') response.headers.set('X-Unharness-UI-Languages', 'ja,en'); return response; });
+  s.intercept((call, response) => { if (call.action === 'redeem') {
+    response.headers.set('X-Unharness-UI-Languages', 'ja,en');
+    response.headers.set('X-Unharness-Mode-Planning', 'retained-v1');
+  } return response; });
   await s.c.connect(); assert.equal(s.c.supportsLocalLanguage(), true);
+  assert.equal(s.c.supportsRetainedModePlanning(), true);
   s.c.disconnect(); assert.equal(s.c.supportsLocalLanguage(), false);
+  assert.equal(s.c.supportsRetainedModePlanning(), false);
 });

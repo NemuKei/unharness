@@ -8,6 +8,7 @@ import { equal } from '../sources/platform.mjs';
 import { fail } from '../sources/errors.mjs';
 import { loadSetup } from './records.mjs';
 import { validateRegisteredPlugins } from '../codex/plugin-dependency.mjs';
+import { usesSourceStates } from './schema.mjs';
 
 const hash = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
 const invalid = () => fail('plugin-enrollment-record-invalid');
@@ -36,11 +37,12 @@ export async function validatePluginEnrollmentReview(workspace, parent, scopeId,
   try {
     exactKeys(p, ['kind', 'role', 'schemaVersion', 'rootScopeId', 'scopeId', 'beforeState', 'beforeManifest',
       'discoveryId', 'normalId', 'nextNormalId', 'nextSnapshotId', 'additions', 'plugins'], [], 'plugin-enrollment-record-invalid');
-    if (p.kind !== 'unharness-user-source' || p.role !== 'plugin-enrollment-review' || p.schemaVersion !== 3
+    if (p.kind !== 'unharness-user-source' || p.role !== 'plugin-enrollment-review' || !usesSourceStates(p.schemaVersion)
       || p.scopeId !== scopeId || ['rootScopeId', 'scopeId', 'discoveryId', 'normalId', 'nextNormalId', 'nextSnapshotId'].some(k => !hash(p[k]))
       || workspaceManifestRoot(p.beforeManifest) !== p.rootScopeId
       || (p.beforeState.scopeId ?? p.rootScopeId) !== scopeId
       || (p.beforeState.setupSchemaVersion ?? 1) > (p.beforeManifest.schemaVersion ?? 1)
+      || (p.beforeManifest.schemaVersion ?? 1) > p.schemaVersion
       || (parent.context.application && parent.context.application !== 'codex') || parent.version !== '0.153.4'
       || p.normalId !== activeNormalId({ state: p.beforeState, reg: parent })) invalid();
     validatePluginAdditions(p.additions);
@@ -83,10 +85,10 @@ export async function loadPluginEnrollmentReview(w, reviewId) {
   } catch { invalid(); }
 }
 
-export const pluginEnrollmentManifest = p => ({ schemaVersion: 3, rootScopeId: p.rootScopeId });
+export const pluginEnrollmentManifest = p => ({ schemaVersion: p.schemaVersion, rootScopeId: p.rootScopeId });
 export function pluginEnrollmentState(before, p, preparation) {
   return { ...before, scopeId: p.nextScopeId, normalId: p.nextNormalId, snapshotVersion: 2,
-    snapshotId: p.nextSnapshotId, setupId: null, setupSchemaVersion: 3, revision: before.revision + 1,
+    snapshotId: p.nextSnapshotId, setupId: null, setupSchemaVersion: p.schemaVersion, revision: before.revision + 1,
     lastPluginEnrollmentReviewId: p.reviewId, lastEnrollmentReviewId: null, scopePreparationRequired: true,
     lastPlanId: null, lastRetainedPlanId: null, lastObservationId: null, preparation };
 }
@@ -102,7 +104,7 @@ export async function validatePluginEnrollmentStates(w, p, j) {
   await validateStateSnapshots(w.workspace, p.before.reg, j.beforeState);
   await validateStateSnapshots(w.workspace, p.next.reg, j.afterState);
 }
-export const pluginEnrollmentSummary = p => ({ reviewId: p.reviewId, schemaVersion: 3, scopeId: p.scopeId,
+export const pluginEnrollmentSummary = p => ({ reviewId: p.reviewId, schemaVersion: p.schemaVersion, scopeId: p.scopeId,
   nextScopeId: p.nextScopeId, normalId: p.normalId, nextNormalId: p.nextNormalId, revision: p.beforeState.revision,
   previousSetupId: p.beforeState.setupId ?? null, setupId: null, setupRequired: true,
   additions: p.additions.map((a, i) => ({ ...a, label: p.plugins[i].label, enabled: p.plugins[i].normalEnabled,

@@ -21,6 +21,8 @@ An exact repeated configuration is idempotent. A different existing binding, uns
 
 `installation_status` reports `configuration: required` with the native data directory until local configuration exists. `status` returns a connection UUID, null workspace and null source in that state. All source/launch operations refuse to act until configured. No MCP tool takes the home, project, executable or registration-role arguments.
 
+Daily operation follows [local entry](spec-local-entry.md); no new public pairing is required. Historical public-operation lookup remains available.
+
 Once configured, `open_workbench` opens the bundled [local screen](local-workbench.md), including before source registration. The local screen handles reviewed discovery and initial Normal saving. Until then, registered operations return `plugin-registration-required`. Calling `status` after registration accepts its source context; it also remains necessary after additive enrollment. Prepared settings and dated task-loading evidence keep their existing separate meanings.
 
 The connection's authoritative context and first observed registration root are immutable records in `<selected Codex home>/.unharness-workbench`. Directory identities and source-root identity are rechecked on each operation. The native data directory contains only a private `unharness/connection.json` pointer. The host-owned parent need not be private, but must be canonical, owned and non-writable by other users; Unharness creates only its private child. Existing parent permissions are preserved.

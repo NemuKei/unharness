@@ -1,7 +1,7 @@
 import * as service from './service.mjs';
 import { parseStrictJson } from '../core/strict-json.mjs';
 export const SOURCES_USAGE =
-  '  node bin/unharness.mjs sources <discover|locate|register|status|plan|plan-retained|accept-retained|apply|save|list|favorite|checkpoint|recover|observe|review|review-discovered|review-run|save-run|runs|run|run-output|compare-runs|run-favorite|review-start|save-start|start|starts|review-replay|prepare-replay|handoff-replay|open-replay|replay|replays|cancel-replay|observe-replay|save-replay-result|replay-result|compare-replays|replay-favorite> --json <object>\n';
+  '  node bin/unharness.mjs sources <discover|locate|register|status|plan|plan-retained|accept-retained|apply|save|list|favorite|checkpoint|recover|observe|review|review-discovered|recent-tasks|review-run|save-run|runs|run|run-output|compare-runs|run-favorite|review-start|save-start|start|starts|review-replay|prepare-replay|handoff-replay|open-replay|replay|replays|cancel-replay|observe-replay|save-replay-result|replay-result|compare-replays|replay-favorite> --json <object>\n';
 const replayOperations = {
   'review-replay': service.reviewUserReplay,
   'prepare-replay': service.prepareUserReplay,
@@ -23,6 +23,7 @@ const startingOperations = {
   starts: service.listUserStarts
 };
 const comparisonOperations = {
+  'recent-tasks': service.listRecentUserTasks,
   'review-run': service.reviewUserRun,
   'save-run': service.saveUserRun,
   runs: service.listUserRuns,

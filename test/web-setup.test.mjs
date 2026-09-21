@@ -109,8 +109,10 @@ test('MCP-adopted presets refresh the open GUI and TRUEFORM prepares manual invo
   assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
   await openWorkbenchPage(page, 'モード');
   await page.getByRole('button', { name: /TRUEFORM/ }).click();
+  await page.getByRole('button', { name: '変更内容を確認', exact: true }).click();
   const apply = page.getByRole('button', { name: 'この内容で確定する', exact: true });
   await apply.and(page.locator(':enabled')).waitFor();
+  await page.getByText('変更内容の詳細', { exact: true }).click();
   await page.getByText('選んだ追加指示を外す。自作Skillは明示的に呼び出す。', { exact: true }).waitFor();
   const request = s.posts.findLast(r => r.path.endsWith('/plan')).body;
   assert.equal(request.selectedIds, undefined);

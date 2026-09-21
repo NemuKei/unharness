@@ -88,7 +88,7 @@ export async function reviewPluginEnrollment(args) {
     await freshCatalog(w.reg);
     await dependencies(w, [...(w.reg.plugins ?? []), ...plugins]);
     if ((await discoverPluginCandidates(w.reg.context)).discoveryId !== d.discoveryId) fail('stale-discovery');
-    const payload = { role: 'plugin-enrollment-review', schemaVersion: 3, rootScopeId: w.rootScopeId,
+    const payload = { role: 'plugin-enrollment-review', schemaVersion: Math.max(3, w.manifestVersion), rootScopeId: w.rootScopeId,
       scopeId: w.scopeId, beforeState: w.state, beforeManifest: w.manifest, discoveryId: d.discoveryId,
       normalId: activeNormalId(w), nextNormalId, nextSnapshotId, additions, plugins };
     const reviewId = await record(w.workspace, 'input', payload);
@@ -111,7 +111,7 @@ export async function adoptPluginEnrollment(args) {
     await idle(w);
     await fresh(w, p);
     const afterState = pluginEnrollmentState(w.state, p, newPreparation()), afterManifest = pluginEnrollmentManifest(p);
-    const journal = { kind: 'unharness-user-source-plugin-enrollment-pending', schemaVersion: 3,
+    const journal = { kind: 'unharness-user-source-plugin-enrollment-pending', schemaVersion: p.schemaVersion,
       scopeId: w.scopeId, reviewId: p.reviewId, beforeState: w.state, afterState, beforeManifest: w.manifest, afterManifest };
     const path = join(w.workspace, 'pending.json');
     await writeJson(path, journal, true);

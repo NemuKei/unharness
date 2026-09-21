@@ -82,11 +82,11 @@ function projectCodexObservation(p, observationId, w) {
       new Set(p.sources.map(s => s?.sourceId)).size !== ids.size) reject();
   const sources = p.sources.map(s => {
     if (!object(s) || !ids.has(s.sourceId) || ids.get(s.sourceId) !== s.category ||
-      !['saved-instructions', 'minimal-guide', 'inert-instructions', 'automatic-catalog', 'manual-only', 'disabled', 'unknown'].includes(s.expected) ||
+      !['saved-instructions', 'minimal-guide', 'custom-guide', 'inert-instructions', 'automatic-catalog', 'manual-only', 'disabled', 'unknown'].includes(s.expected) ||
       !['matching-prefix', 'different-prefix', 'present', 'absent', 'unknown'].includes(s.recorded) ||
       !['matched', 'not-matched', 'unknown'].includes(s.status)) reject();
     const instruction = s.category === 'instructions';
-    if (!(instruction ? ['saved-instructions', 'minimal-guide', 'inert-instructions', 'unknown'] : ['automatic-catalog', 'manual-only', 'disabled', 'unknown']).includes(s.expected) ||
+    if (!(instruction ? ['saved-instructions', 'minimal-guide', 'custom-guide', 'inert-instructions', 'unknown'] : ['automatic-catalog', 'manual-only', 'disabled', 'unknown']).includes(s.expected) ||
       !(instruction ? ['matching-prefix', 'different-prefix', 'unknown'] : ['present', 'absent', 'unknown']).includes(s.recorded)) reject();
     const expectedStatus = s.expected === 'unknown' ||
       s.recorded === 'unknown' ? 'unknown'

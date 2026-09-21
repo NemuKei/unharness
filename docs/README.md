@@ -15,6 +15,7 @@ to resume its unfinished work.
 | Save Normal, prepare modes, use favorites and compare work | [User-source workbench](user-source-gui.md), [AI commands](ai-commands.md) |
 | Recover without the site or AI | [Independent plugin recovery](plugin-recovery.md) |
 | Create, import and reuse an appearance | [Appearance rules](personalization.md), [layer import](layered-appearances.md), [twelve-frame guide contract](spec-entity-poses.md) |
+| Open the everyday workbench or record a job | [Local entry](spec-local-entry.md), [work-record UX](spec-work-record-ux.md), [GUI guide](user-source-gui.md) |
 | Interpret a comparison or prepare a sharing card | [Comparison metrics](comparison-metrics.md), [cards](build-cards.md) |
 
 ## Changing the product
@@ -28,7 +29,7 @@ The canonical contracts are split by responsibility:
 | Ordinary Skill states, retained plugins and inheritance | [Current mode contract](spec-mode-inheritance.md) |
 | Source registration, writes and independent recovery | [User sources](spec-user-sources.md), [retained settings](spec-retained-settings.md) |
 | General startup, language and update discovery | [Guided entry](guided-product-entry.md), [plugin updates](plugin-update.md) |
-| Model-aware setup and version preservation | [Guided setup](spec-guided-setup.md) |
+| Model-aware setup and version preservation | [Guided setup](spec-guided-setup.md), [custom UNSEAL guidance](spec-custom-guidance.md) |
 | Public origin, pairing and local authority | [Domain entry](spec-domain-entry.md), [connection protocol](domain-connection.md) |
 | Artwork, motion and immutable asset versions | [Entity poses](spec-entity-poses.md), [appearance rules](personalization.md), [design](design.md) |
 | Module ownership and dependencies | [Architecture](architecture.md) |

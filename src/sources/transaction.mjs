@@ -170,6 +170,9 @@ export async function loadPlan(w, id) {
   if ((p.snapshotVersion !== undefined && ![1, 2].includes(p.snapshotVersion)) ||
       (w.state.snapshotVersion === 2 && (p.snapshotVersion !== 2 || !p.normalId))) fail('record-invalid');
   if (p.setupId != null && (typeof p.setupId !== 'string' || !/^[0-9a-f]{64}$/.test(p.setupId))) fail('record-invalid');
+  if (p.retainedPlanId !== undefined && (typeof p.retainedPlanId !== 'string'
+    || !/^[0-9a-f]{64}$/.test(p.retainedPlanId) || p.snapshotVersion !== 2
+    || !['normal', 'unseal', 'trueform'].includes(p.mode))) fail('record-invalid');
   await loadNormal(w.workspace, w.reg, p.normalId ?? w.reg.normalId);
   await loadSnapshot(w.workspace, w.reg, p.beforeId, p.snapshotVersion ?? 1);
   await loadSnapshot(w.workspace, w.reg, p.afterId, p.snapshotVersion ?? 1);

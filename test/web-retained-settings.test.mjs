@@ -109,6 +109,25 @@ function retainedPlan(view, overrides = {}) {
   };
 }
 
+test('only a matching combined mode plan can be applied while a shared-file mismatch remains', async () => {
+  const { sourceControllerReducer } = await import('../web/src/source-controller-state.ts');
+  const view = controllerView({ conflict: { kind: 'source-conflict' } });
+  view.source.modePlanningAvailable = true;
+  const plan = sourcePlan(view, { retainedSettingsIncluded: true });
+  const accept = (state, result) => sourceControllerReducer(controllerState(state), {
+    type: 'plan-response', response: { status: 'completed', state: structuredClone(state), result }
+  });
+  assert.deepEqual(accept(view, plan).plan, plan);
+  assert.equal(accept(view, sourcePlan(view)).plan, null, 'ordinary stale plans are not admitted');
+  assert.equal(accept(view, { ...plan, revision: plan.revision - 1 }).plan, null);
+  assert.equal(accept(view, { ...plan, mode: 'favorite' }).plan, null);
+  for (const changed of [
+    { ...view.source, modePlanningAvailable: false },
+    { ...view.source, conflict: { kind: 'source-redirection' } },
+    { ...view.source, recovery: { ...view.source.recovery, pending: true } }
+  ]) assert.equal(accept({ ...view, source: changed }, plan).plan, null);
+});
+
 test("retained review renders private-record-only disclosure and explicit acceptance", async (t) => {
   const vite = await createServer({
     appType: "custom",
@@ -142,7 +161,8 @@ test("retained review renders private-record-only disclosure and explicit accept
       onAccept() {},
     }),
   );
-  assert.ok(rendered.includes("現在の設定を引き継ぐ"));
+  assert.ok(rendered.includes("共通設定だけを取り込む"));
+  assert.ok(rendered.includes("準備済みのモードはUNSEALのまま"));
   assert.ok(rendered.includes("管理対象ファイルは変更しません"));
   assert.ok(rendered.includes("選択した指示・Skillは登録済みの内容を維持"));
   assert.ok(rendered.includes("古い保存版はそのまま残ります"));

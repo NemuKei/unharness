@@ -2,7 +2,7 @@
   margin-top: 12px;
 }
 .local-connection { padding: 0 36px 12px; }
-.connection-review { max-width: 860px; padding: 20px; margin-top: 14px; border: 1px solid var(--line); background: #0d171e; }
+.connection-review { max-width: 860px; padding: 20px; margin-top: 14px; border: 1px solid var(--line); background: var(--surface); }
 .connection-review h2 { font-size: 19px; margin: 0; }
 .connection-review h2:focus { outline: none; }
 .connection-review .source-context { margin-top: 18px; font-size: 13px; }
@@ -11,7 +11,7 @@
 .connection-link > a { display: inline-flex; align-items: center; text-decoration: none; }
 .connection-review label { display: block; font-size: 13px; }
 .connection-review textarea, .connection-review input { display: block; width: 100%; margin-top: 7px; padding: 10px;
-  border: 1px solid var(--line); background: #080f13; color: inherit; font: 12px/1.6 ui-monospace, monospace; }
+  border: 1px solid var(--line); background: var(--surface-raised); color: inherit; font: 12px/1.6 ui-monospace, monospace; }
 .connection-review textarea { resize: vertical; overflow-wrap: anywhere; }
 .public-operation-lookup { border-top: 1px solid var(--line); padding-top: 12px; }
 @media (max-width: 600px) {
@@ -33,7 +33,7 @@
   font:
     12px/1.7 ui-monospace,
     monospace;
-  background: #080f13;
+  background: var(--surface-raised);
   padding: 12px;
 }
 .source-workbench code,
@@ -111,7 +111,7 @@
   width: 100%;
   padding: 8px;
   border: 1px solid var(--line);
-  background: #080f13;
+  background: var(--surface-raised);
   color: inherit;
 }
 .source-review {
@@ -124,7 +124,7 @@
   margin-top: 14px;
   padding: 12px;
   border: 1px solid var(--line);
-  background: rgba(8, 15, 19, 0.72);
+  background: var(--surface-raised);
 }
 .retained-review h3,
 .restore-adaptation p {
@@ -143,7 +143,7 @@
   gap: 3px;
   padding: 10px 12px;
   border: 1px solid var(--line);
-  background: rgba(8, 15, 19, 0.72);
+  background: var(--surface-raised);
 }
 .task-observation-result strong {
   color: var(--amber);
@@ -173,7 +173,7 @@
   gap: 4px;
   padding: 10px 38px 0;
   border-bottom: 1px solid var(--line);
-  background: #080f13;
+  background: var(--chrome);
 }
 .workbench-tabs button {
   min-width: 112px;
@@ -186,14 +186,12 @@
 }
 .workbench-tabs button[aria-current="page"] {
   border-bottom-color: var(--red);
-  color: white;
+  color: var(--on-chrome);
 }
 .comparison-workbench {
   min-width: 0;
   padding: clamp(18px, 4vw, 44px);
-  background:
-    linear-gradient(135deg, rgba(19, 31, 37, 0.92), rgba(5, 10, 13, 0.96)),
-    repeating-linear-gradient(90deg, transparent 0 79px, #ffffff05 80px);
+  background: var(--background);
 }
 .comparison-hero {
   max-width: 920px;
@@ -214,7 +212,7 @@
   min-width: 0;
   margin-bottom: 18px;
   border: 1px solid var(--line);
-  background: rgba(8, 15, 19, 0.86);
+  background: var(--surface);
   padding: clamp(17px, 3vw, 28px);
 }
 .comparison-heading {
@@ -237,7 +235,7 @@
 .neutral-badge {
   border: 1px solid #6d7b83;
   padding: 3px 8px;
-  color: #ced7dc !important;
+  color: var(--foreground) !important;
 }
 .review-form,
 .comparison-form-grid {
@@ -260,8 +258,8 @@
   border: 1px solid var(--line);
   border-radius: 2px;
   padding: 9px 10px;
-  background: #071014;
-  color: #f3f2ec;
+  background: var(--surface-raised);
+  color: var(--foreground);
 }
 .comparison-workbench textarea {
   min-height: 82px;
@@ -323,7 +321,7 @@
   margin-top: 16px;
   border-left: 2px solid var(--amber);
   padding-left: 12px;
-  color: #c9d1d5;
+  color: var(--foreground);
   font-size: 13px;
 }
 .assessment-group {
@@ -497,11 +495,11 @@
   padding: 12px 16px;
   margin-bottom: 18px;
   border: 1px solid var(--line);
-  background: #10191e;
+  background: var(--surface);
 }
 .comparison-error {
-  border-color: #9f4937;
-  color: #ffd0c5;
+  border-color: var(--destructive);
+  color: var(--destructive);
 }
 .starting-conditions > summary { font-size: 18px; font-weight: 600; cursor: pointer; }
 .starting-form { display: grid; gap: 18px; margin-top: 20px; }
@@ -664,4 +662,5 @@
 .setup-skill-counts > div { margin-block: .8rem; }
 .setup-skill-counts dt { font-weight: 600; }
 .setup-skill-counts dd { margin: .3rem 0 0; font-size: .85rem; }
+.setup-custom-instructions { max-width: 100%; max-height: 16rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
 @media (max-width: 600px) { .setup-inheritance-lists { grid-template-columns: minmax(0, 1fr); } }

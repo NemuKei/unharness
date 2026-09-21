@@ -10,12 +10,13 @@
 import { createHash } from 'node:crypto';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { recordedDesktopOrigin } from '../codex/desktop-origin.mjs';
-import { canPlanOwnership, canonical, captureFile, parentBinding } from '../sources/platform.mjs';
+import { canPlanOwnership, canonical, captureFile, equal, parentBinding } from '../sources/platform.mjs';
 import { samePath } from '../sources/paths.mjs';
 import { hash } from '../sources/hash.mjs';
 import { conditionId } from '../sources/observation-record.mjs';
 import { parseSkillCatalog, selectedSkillIntent } from '../codex/skill-listing.mjs';
 import { fail, verification } from '../sources/errors.mjs';
+import { usesSourceStates } from '../setup/schema.mjs';
 
 export { parseSkillCatalog, selectedSkillIntent };
 
@@ -33,10 +34,37 @@ function globalPaths(home) {
   };
 }
 
+async function preparedCustomText(w) {
+  if (!w.state?.preparedSetupId || !usesSourceStates(w.manifestVersion)) return null;
+  try {
+    const { loadRecord, loadSnapshot, scopeWorkspace } = await import('../sources/records.mjs');
+    const { loadSetup } = await import('../setup/records.mjs');
+    const { getCustomGuide } = await import('../setup/custom-instructions.mjs');
+    const saved = await loadRecord(w.workspace, 'application', w.state.preparedSetupId);
+    // An old favorite can retain a custom pair from an earlier registered scope.
+    const historical = scopeWorkspace(w, saved.scopeId);
+    const setup = await loadSetup(historical, w.state.preparedSetupId);
+    if (setup.review.schemaVersion !== 4) return null;
+    const preset = setup.review.presets.unseal;
+    if (preset.instructionStyle !== 'custom') return null;
+    const { text, ...identity } = getCustomGuide(preset.customInstructions);
+    const snapshot = await loadSnapshot(w.workspace, historical.reg, preset.snapshotId);
+    if (snapshot.override?.text !== text || !equal(preset.guide, identity)) return null;
+    return text;
+  } catch {
+    // Missing or inconsistent frozen provenance cannot establish custom intent.
+    return null;
+  }
+}
+
 export const application = {
   id: 'codex',
   label: 'Codex',
   home: (context) => context.codexHome,
+  async listRecentTasks(context, taskCursor) {
+    const { listRecentCodexTasks } = await import('../codex/recent-tasks.mjs');
+    return listRecentCodexTasks(context, taskCursor);
+  },
 
   // Persisted Codex contexts keep their original three fields with no
   // application marker, so old registrations open without any migration.
@@ -319,6 +347,12 @@ export const application = {
   },
 
   supportsReleasePresets: true,
+  async describeSavedMode(input) {
+    return (await import('../codex/mode-contents.mjs')).describeCodexMode(input);
+  },
+  async savedModeSource(input) {
+    return (await import('../codex/mode-contents.mjs')).codexModeSource(input);
+  },
   async currentPluginControls(reg) {
     const { inspectPluginControl } = await import('../codex/plugin-inventory.mjs');
     const controls = [];
@@ -360,16 +394,19 @@ export const application = {
     const skillStates = [];
     if (mode === 'normal') return { after, guide, skillStates };
     const instructionStyle = releasePreset?.instructionStyle ?? (mode === 'unseal' ? 'minimal' : 'none');
+    if (instructionStyle === 'custom' && mode !== 'unseal') fail('setup-proposal-invalid');
     const manualOnly = releasePreset?.skillRelease === 'manual-only' || mode === 'unseal';
     if (reg.instructions && selection.includes(reg.instructions.id)) {
       const { getMinimalGuide } = await import('../sources/guide.mjs');
-      const fixed = getMinimalGuide();
+      const { getCustomGuide } = await import('../setup/custom-instructions.mjs');
+      const selectedGuide = instructionStyle === 'custom' ? getCustomGuide(releasePreset.customInstructions)
+        : instructionStyle === 'minimal' ? getMinimalGuide() : null;
       after.override = await targetFile(
         'override',
-        instructionStyle === 'minimal' ? fixed.text : '<!-- -->\n'
+        selectedGuide?.text ?? '<!-- -->\n'
       );
-      if (instructionStyle === 'minimal') {
-        const { text, ...identity } = fixed;
+      if (selectedGuide) {
+        const { text, ...identity } = selectedGuide;
         guide = identity;
       }
     }
@@ -425,6 +462,7 @@ export const application = {
     const result = [];
     if (w.reg.instructions) {
       const text = normalize(effective(files));
+      const custom = await preparedCustomText(w);
       const expected =
         text === normalize(effective(normal))
           ? 'saved-instructions'
@@ -432,7 +470,9 @@ export const application = {
             ? 'minimal-guide'
             : text === '<!-- -->'
               ? 'inert-instructions'
-              : 'unknown';
+              : custom !== null && files.override?.text === custom
+                ? 'custom-guide'
+                : 'unknown';
       result.push({
         sourceId: w.reg.instructions.id,
         category: 'instructions',
@@ -477,7 +517,7 @@ export const application = {
           normalFlags[index],
           preparedFlags[index],
           s.enabled,
-          { allowEnable: w.manifestVersion === 3 }
+          { allowEnable: usesSourceStates(w.manifestVersion) }
         );
       let expected = enabled === false ? 'disabled' : 'unknown';
       if (enabled === true && files[s.id + ':format'] === null) {

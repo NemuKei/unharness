@@ -2,10 +2,10 @@ import { text as t } from './locale.ts';
 import type { SourceRow, RegisteredPlugin, PluginState } from './sources';
 
 type SkillState = { id: string; enabled: boolean; manualOnly: boolean };
-type Preset = { instructionStyle: 'minimal' | 'none'; skillStates: SkillState[]; pluginStates?: PluginState[] };
+type Preset = { instructionStyle: 'minimal' | 'none' | 'custom'; customInstructions?: string; skillStates: SkillState[]; pluginStates?: PluginState[] };
 export type SetupRead = {
   scopeId: string; normalId: string; setupId: string | null;
-  review: null | { schemaVersion: 1 | 2 | 3; presets: Record<'unseal' | 'trueform', Preset>;
+  review: null | { schemaVersion: 1 | 2 | 3 | 4; presets: Record<'unseal' | 'trueform', Preset>;
     inheritance?: { inheritedSkillIds?: string[]; additionalSkillIds?: string[]; inheritedPluginIds?: string[]; additionalPluginIds?: string[];
       skillElevations?: Array<{ sourceId: string; state: 'manual' | 'automatic' }> } };
   inventory: null | { skills: Array<{ requiredControl: boolean }>;
@@ -15,15 +15,20 @@ export type SetupRead = {
 };
 
 export function readableSetup(data: SetupRead) {
-  if (!data?.review || ![1, 2, 3].includes(data.review.schemaVersion)) return false;
+  if (!data?.review || ![1, 2, 3, 4].includes(data.review.schemaVersion)) return false;
   if (data.review.schemaVersion === 1) return true;
   const lists = data.review.inheritance;
-  const v3 = data.review.schemaVersion === 3;
+  const v3 = data.review.schemaVersion >= 3;
   return !!lists && (v3 ? [lists.inheritedPluginIds, lists.additionalPluginIds] : [lists.inheritedSkillIds, lists.additionalSkillIds])
     .every(ids => Array.isArray(ids) && ids.every(id => typeof id === 'string'))
     && ['unseal', 'trueform'].every(mode => {
       const preset = data.review!.presets?.[mode as 'unseal' | 'trueform'];
-      return preset && ['minimal', 'none'].includes(preset.instructionStyle) && Array.isArray(preset.skillStates)
+      const custom = preset?.instructionStyle === 'custom';
+      const validInstructions = custom
+        ? data.review!.schemaVersion === 4 && mode === 'unseal' && typeof preset.customInstructions === 'string'
+          && !!preset.customInstructions.trim() && new TextEncoder().encode(preset.customInstructions).length <= 8192
+        : preset && ['minimal', 'none'].includes(preset.instructionStyle) && preset.customInstructions === undefined;
+      return preset && validInstructions && Array.isArray(preset.skillStates)
         && preset.skillStates.every(s => s && typeof s.id === 'string' && typeof s.enabled === 'boolean' && typeof s.manualOnly === 'boolean')
         && (!v3 || Array.isArray(preset.pluginStates) && preset.pluginStates.every(p => p && typeof p.pluginId === 'string'
           && ['normal', 'disabled'].includes(p.state) && typeof p.enabled === 'boolean'));
@@ -39,7 +44,7 @@ export function SavedSetupSummary({ data, sources, plugins = [] }: { data: Setup
     : <p className="muted">{t("自動使用する対象はありません。", "No automatically used sources.")}</p>}</>;
   return <section className="saved-setup-summary" aria-label={t("保存した2構成", "Saved loadout pair")}>
     {review.schemaVersion === 1 ? <p>{t("旧規則の保存版です。零式と限定解除の選択は独立しています。新しい継承規則への変更は、AIと両モードを確認して別の版として保存します。", "This version uses the older independent TRUEFORM and UNSEAL choices. Review both modes with AI and save a separate version to adopt the new inheritance rule.")}</p>
-      : review.schemaVersion === 3 ? <>
+      : review.schemaVersion >= 3 ? <>
         <div className="setup-inheritance-lists">
           <div><h3>{t("零式から引き継ぐプラグイン", "Plugins inherited from TRUEFORM")}</h3><p>{review.inheritance!.inheritedPluginIds!.length}{t("件", " items")}</p>
             <ul>{review.inheritance!.inheritedPluginIds!.map(id => <li key={id}>{names.get(id) ?? id}</li>)}</ul></div>
@@ -49,7 +54,8 @@ export function SavedSetupSummary({ data, sources, plugins = [] }: { data: Setup
         <dl className="setup-skill-counts">{(['trueform', 'unseal'] as const).map(mode => {
           const preset = review.presets[mode], states = preset.skillStates;
           return <div key={mode}><dt>{mode === 'trueform' ? t("零式", "TRUEFORM") : t("限定解除", "UNSEAL")}{t("の保存内容", " saved settings")}</dt><dd>
-            {t("追加指示：", "Optional instructions: ")}{preset.instructionStyle === 'none' ? t("なし", "None") : t("固定の最小ガイド", "Fixed minimal guide")}<br />
+            {t("追加指示：", "Optional instructions: ")}{preset.instructionStyle === 'none' ? t("なし", "None") : preset.instructionStyle === 'custom' ? t("保存した追加指示", "Saved custom instructions") : t("固定の最小ガイド", "Fixed minimal guide")}<br />
+            {preset.instructionStyle === 'custom' && <details><summary>{t("追加指示の本文を確認", "Review custom instruction text")}</summary><pre className="setup-custom-instructions">{preset.customInstructions}</pre></details>}
             {t("通常Skill：無効 ", "Ordinary Skills: disabled ")}{states.filter(s => !s.enabled).length}{t("件 / 手動 ", " / explicit ")}{states.filter(s => s.enabled && s.manualOnly).length}{t("件 / 自動 ", " / automatic ")}{states.filter(s => s.enabled && !s.manualOnly).length}{t("件", " items")}<details><summary>{t("Skillごとの状態", "Per-Skill states")}</summary><ul>{states.map(s => <li key={s.id}>{names.get(s.id) ?? s.id}：{!s.enabled ? t("無効", "Disabled") : s.manualOnly ? t("手動", "Explicit") : t("自動", "Automatic")}</li>)}</ul></details>
             <p>{t("プラグイン：", "Plugins: ")}{preset.pluginStates!.length}{t("件", " items")}</p>
             <ul>{preset.pluginStates!.map(p => <li key={p.pluginId}>{names.get(p.pluginId) ?? p.pluginId}：{p.state === 'disabled'

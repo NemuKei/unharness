@@ -115,7 +115,12 @@ function planApplies(
     plan.revision !== source.revision
   )
     return false;
-  if (kind === "source") return source.conflict === null;
+  if (kind === "source") {
+    const modePlan = plan as SourcePlan;
+    return source.conflict === null || (source.modePlanningAvailable === true
+      && source.conflict?.kind === 'source-conflict' && modePlan.retainedSettingsIncluded === true
+      && ['normal', 'unseal', 'trueform'].includes(modePlan.mode));
+  }
   const retained = plan as RetainedPlan;
   return (
     source.conflict?.kind === "source-conflict" &&
@@ -159,7 +164,7 @@ function acceptPlanResponse(
     notice: admitted
       ? kind === "retained"
         ? t("変更内容を確認しました。まだ設定は記録していません。", "Changes reviewed. Settings have not been recorded yet.")
-        : t("変更計画を確認しました。準備前に内容を確認してください。", "The change plan is ready. Review it before preparing the settings.")
+        : t("この内容でよければ確定してください。", "Confirm when you are ready to use this loadout.")
       : t("確認結果を現在の操作対象として受理できませんでした。表示を更新したため、もう一度確認してください。", "The reviewed result no longer matches the current target. The display was refreshed; review it again."),
   };
 }

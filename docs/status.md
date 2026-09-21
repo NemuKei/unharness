@@ -1,12 +1,152 @@
 # Project status
 
-As of 2026-09-14. Read [the documentation guide](README.md) for the canonical
+As of 2026-09-21. Read [the documentation guide](README.md) for the canonical
 contracts and [the continuity brief](handoff.md) when starting another task.
 The next platform priority is Windows Codex, followed by Claude Code. Read the
 current user request and live state before starting platform implementation.
 The [Windows Codex handoff](handoff-windows-codex.md) now gives the native
 preflight, remaining Mac-only boundaries and staged implementation/acceptance
 plan. Preparing that handoff does not qualify or publish a Windows build.
+
+## Unreleased public-page refresh
+
+The public-page and local UI/UX task results are integrated into the local
+development checkout. The public site leads to local opening guidance; ordinary
+visits register no operating tools and offer no new public pairing. Earlier
+connection diagnostics and operation receipts remain in a separate legacy view.
+A temporary status failure can recover through its existing unexpired grant.
+The introduction and opening instructions still describe the distributed 0.0.10
+package, rather than claiming that the unreleased GUI is installed.
+
+Integration preserves the current runtime's retained-settings mode planning and
+the older server's conflict gate. A reused operation UUID cannot bind an old
+plan to a changed source-conflict condition. Its historical receipt stays
+readable; changed source contents are still rechecked by the server before
+application. The legacy launcher command returns a verified local URL and sends
+only identity probes, without requesting pairing or approval.
+
+These are development changes. No site deployment, archive replacement,
+installed-plugin update or personal configuration application was performed.
+
+## Unreleased local UI/UX refresh
+
+The 2026-09-21 development work keeps the existing local-first workbench and
+its controllers while improving how users inspect, confirm and apply a saved
+loadout. Modes now begins with a compact next-task summary, keeps the artwork
+above the three configuration modes, places confirmation before long saved
+contents, and keeps saved configurations and recovery nearby. Settings is
+staged as inspection, AI consultation and local details. Work records retain
+their separate ordinary-record and controlled-replay purposes.
+
+The shared UI uses owned React/CSS primitives, semantic light/dark tokens and
+short reduced-motion-aware transitions; it does not install Tailwind, Radix,
+Motion or a new router/store. Prepared appearance identity changes only the
+presentation accent. The update panel reports the displayed screen version,
+leaves installed/latest versions unconfirmed and copies a request for the
+existing AI update check. It adds no update HTTP route or external-proposal
+inbox. See the [approved phased plan](superpowers/plans/2026-09-21-ui-ux-update.md).
+This is a local development change only: installed packages, the public site,
+personal settings and support qualification are unchanged.
+
+Final integration validation passed type/CSP checks, local and site builds,
+and the full Node suite: 1,418 tests, 1,330 passes, 88 skips and zero failures.
+The obsolete launcher pairing assertion now tests the accepted local-entry
+contract and observes identity probes without pairing/approval requests.
+
+Built Chrome checks separately passed 87 expanded regressions with test-file
+concurrency limited to two. After the final operation-ID fix, all four public
+workbench cases passed, including real browser consumption of the retained-mode
+capability and server rejection of a second source edit; the final-build public
+artwork and lifecycle groups also passed 5/5 and 3/3. These public tests use a
+synthetic HTTPS origin with routed transport, not live public TLS or native
+local-network permission qualification. Pro's integration finding was reproduced
+before the fix; its follow-up found no additional concrete P1/P2 in that change.
+
+Unbounded browser batches exceeded image waits under load. Diagnostic runs
+observed the same pending operations finish without another user action; the
+bounded batch retains the original deadlines, assertions and intentional race
+tests. This is a test-workload result, not a product performance repair. See
+[the browser test procedure](../CONTRIBUTING.md#presentation-dependencies).
+Coverage includes mode review/apply/Normal return, context replacement,
+comparison/replay, appearances, Japanese/English, 390/536/1440 widths, light/dark,
+reduced motion and keyboard use. Manual in-app checks on an owned synthetic
+profile confirmed explicit application, persistent success feedback, narrow
+Settings and Back, with no console warnings/errors. Native screen readers and
+native 200% browser zoom remain untested. Packaging, installation and publication
+remain separate; the integrated changes are still uncommitted.
+
+## Unreleased custom UNSEAL guidance
+
+Setup v4 can freeze user-confirmed additional instructions for UNSEAL. TRUEFORM
+keeps no added instructions and Normal keeps its original saved contents.
+Saving the pair and preparing a mode remain separate. The UI reads the saved
+body as text, and old favorites, offline recovery and ordinary Skill inheritance
+remain available. See [the contract](spec-custom-guidance.md) and
+[verification](evidence/2026-09-20-custom-guidance.md).
+
+The affected suite passed 177 checks; type/CSP/build and the built GUI journey
+passed. The earlier full suite has one independently reproduced baseline pairing
+failure after obsolete version assertions were corrected. Installation and
+personal adoption are still separate: this does not qualify the newer native
+Codex runtime or remove its saved dependency/version conflict.
+
+## Unreleased simple mode screen
+
+The 2026-09-20 follow-up simplifies the everyday screen to mode selection and
+saved instruction/Skill contents. Records, appearance, settings, favorites and
+recovery remain under More. A saved-mode selection previews only; change review
+and application remain explicit. Text opens from the selected saved snapshot,
+including through independent live edits. Normal and historical v1/v2/v3 modes
+are not reinterpreted. Read-only CLI/HTTP/MCP operations share the Codex adapter;
+no new Claude or native source-write qualification is claimed.
+[Verification](evidence/2026-09-20-simple-mode-contents.md) records the scoped
+automated checks, built-browser read/switch/recovery journey and preserved
+saved source state. Personal modes were not applied; the evidence records the
+separate configuration-digest boundary. The simplified development GUI is open; installation
+and publication remain separate.
+
+## Unreleased local entry and work records
+
+The development workbench is now the everyday operating surface. Public pages
+provide introduction, demos and install/update guidance; ordinary visitors do
+not enter a public operating session. Earlier public receipts and bounded
+compatibility remain available. See [local entry](spec-local-entry.md).
+
+**記録・比較** now starts with named work records: select a recent task, save a
+short outcome/note, open one record, or compare two or three. UUIDs and detailed
+criteria are secondary, and controlled replay has its own entrance. Completed
+work is frozen before assessment discussion; unknown/partial evidence remains
+visible. See [work-record UX](spec-work-record-ux.md).
+
+[September 20 verification](evidence/2026-09-20-local-work-record-ux.md) records
+150 passing affected tests (31 optional browser skips), 26 passing MCP/legacy
+checks, final type/CSP/local/site builds and manual built-browser journeys at
+normal and 390px widths. Recent-task metadata was separately inspected on exact
+Codex 0.155.0-alpha.9.2; this adds no source-write or desktop-mode qualification
+for that version. The current development GUI was opened on the existing saved
+workspace with configuration/source state unchanged. Installed plugin and
+published package/site remain unchanged. The [execution plan](superpowers/plans/2026-09-14-local-workbench-comparison-ux.md)
+is complete for this local development scope.
+
+## Unreleased mode-switch improvement
+
+The 2026-09-14 development change incorporates unrelated Codex settings into an
+ordinary mode plan. Users select and confirm a mode without a separate common
+settings/Normal-version decision. Selection and refresh leave active state and
+files unchanged; confirmation freezes and preserves current shared settings in
+the existing guarded transaction. Instruction/Skill changes and unprovable
+differences still stop the operation. Earlier Normal/favorite versions and
+offline recovery remain available.
+
+Validation: 259 affected Node checks passed, with one non-macOS guard case
+skipped on macOS. Type/CSP checks, local/site builds, and the built in-app GUI
+passed: shared edit → select UNSEAL → confirm → common setting preserved;
+independent instruction edit → mode controls blocked with a review path.
+The normal side-pane and 390px layout showed no overflow or console errors.
+These checks used synthetic profiles/native transports, not personal-source
+writes or fresh desktop-model qualification. The [implementation plan](superpowers/plans/2026-09-14-retained-mode-switch.md)
+records the scope. Installation, archive publication and public deployment are
+unchanged; 0.0.10 and earlier installed builds still use separate reconciliation.
 
 ## Available now
 

@@ -41,7 +41,7 @@ export function startingErrorMessage(error: unknown, operation: string) {
     "starting-project-root-required": t("Gitプロジェクトのルートフォルダを対象にしてください。入れ子のリポジトリはそのまま保存できません。", "Select the Git project root. Nested repositories cannot be saved as-is."),
     "starting-project-contains-store": t("Unharnessの保存先を含むフォルダは対象にできません。作業プロジェクトを選んでください。", "The target cannot contain Unharness storage. Select your work project."),
     "starting-inventory-unavailable": t("作業ファイルの一覧を取得できませんでした。Gitと作業フォルダの状態を確認してください。", "Could not list project files. Check Git and the project folder."),
-    "starting-record-invalid": t("保存した開始条件の整合性を確認できません。設定の復帰は「装備」タブで利用できます。", "Could not verify saved starting conditions. Restore settings from the Loadout tab."),
+    "starting-record-invalid": t("保存した開始条件の整合性を確認できません。設定の復帰は「モード」画面で利用できます。", "Could not verify saved starting conditions. Restore settings from the Mode page."),
     "starting-declaration-invalid": t("依頼文、必須の結果、評価の基準、試行上限を確認してください。", "Check the request, required outcome, criteria and attempt limit."),
     "gui-request-too-large": t("入力が保存できるサイズを超えています。追加ファイルの指定や入力内容を見直してください。", "Input exceeds the storage limit. Review the extra file paths and entered content."),
   };

@@ -69,6 +69,15 @@ test('lost public artwork save is confirmed by its same ID and remains historica
   await s.page.getByRole('heading',{name:'接続期限切れ',exact:true}).waitFor();
   assert.equal(await s.page.getByLabel('作品の操作ID',{exact:true}).inputValue(),id);
   await s.page.getByText('作品を保存した記録があります。現在の選択とは別の記録です。',{exact:true}).waitFor();
+  const redeems=s.posts.filter(post=>post.path.endsWith('/redeem')).length;
+  await s.page.getByText('紹介・導入',{exact:true}).click();
+  await s.page.getByRole('button',{name:'デモ',exact:true}).click();
+  await s.page.getByRole('button',{name:'開き方を見る',exact:true}).click();
+  await s.page.getByRole('heading',{name:'操作は、このMacの画面で。',exact:true}).waitFor();
+  await s.page.getByRole('button',{name:'以前の接続・操作結果を確認',exact:true}).click();
+  await s.page.getByRole('heading',{name:'以前の公開接続は終了しています。',exact:true}).waitFor();
+  assert.equal(await s.page.getByLabel('作品の操作ID',{exact:true}).inputValue(),id);
+  assert.equal(s.posts.filter(post=>post.path.endsWith('/redeem')).length,redeems);
   assert.equal((await readUserArtwork({workspace:s.workspace})).itemCount,2);assert.equal(sends,1);await s.assertNoSecrets();
 });
 

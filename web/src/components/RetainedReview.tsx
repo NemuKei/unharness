@@ -1,5 +1,6 @@
 import { text as t } from '../locale.ts';
 import type { RetainedPlan, SourcePlanAdaptation } from "../sources";
+import { modePresentation } from '../sources';
 
 export function RetainedReview({
   plan,
@@ -11,10 +12,11 @@ export function RetainedReview({
   onAccept: () => void;
 }) {
   return (
-    <section className="retained-review" aria-label={t("現在の設定の変更確認", "Review current settings changes")}>
-      <h3>{t("現在の設定の変更", "Current settings changes")}</h3>
+    <section className="retained-review" aria-label={t("共通設定の変更確認", "Review shared settings changes")}>
+      <h3>{t("共通設定だけを更新", "Update shared settings only")}</h3>
       <p>
-        {t("現在のCodex設定を新しいNormal版として記録します。管理対象ファイルは変更しません。", "Record current Codex settings as a new Normal version. Managed files are unchanged.")}</p>
+        {t(`準備済みのモードは${modePresentation[plan.preparedMode].title}のままです。`, `The prepared mode stays ${modePresentation[plan.preparedMode].title}.`)}</p>
+      <p>{t("モード以外の設定だけが変わったことを確認しました。現在の内容を記録し、どのモードでも引き継ぎます。管理対象ファイルは変更しません。", "Only settings outside the mode have changed. Record their current values to keep them across all modes. Managed files are unchanged.")}</p>
       <ul className="source-changes">
         {plan.changedCategories.map((category) => (
           <li key={category}>{category}</li>
@@ -23,7 +25,7 @@ export function RetainedReview({
       <p className="muted">
         {t("選択した指示・Skillは登録済みの内容を維持し、古い保存版はそのまま残ります。", "Selected instructions and Skills retain their registered contents. Earlier saved versions remain.")}</p>
       <button className="primary" disabled={disabled} onClick={onAccept}>
-        {t("現在の設定を引き継ぐ", "Retain current settings")}</button>
+        {t("共通設定だけを取り込む", "Keep shared settings")}</button>
     </section>
   );
 }

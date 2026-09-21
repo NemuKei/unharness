@@ -44,7 +44,7 @@ for (const protocols of [undefined, ['2025-11-25']]) test(`official stdio client
   assert.equal(s.client.getNegotiatedProtocolVersion(), protocols?.[0] ?? '2026-07-28');
   const tools = (await s.client.listTools()).tools;
   const names = tools.map(tool => tool.name);
-  for (const name of ['status', 'operation_status', 'plan_mode', 'apply_plan', 'save_favorite', 'recover', 'observe_task', 'compare_runs', 'review_start', 'handoff_replay', 'save_replay_favorite'])
+  for (const name of ['status', 'operation_status', 'plan_mode', 'apply_plan', 'save_favorite', 'recover', 'observe_task', 'list_recent_tasks', 'compare_runs', 'review_start', 'handoff_replay', 'save_replay_favorite'])
     assert.ok(names.includes(name), name);
   assert.ok(!names.some(name => /register|source_body/.test(name) || /discover/.test(name) && name !== 'discover_appearance'));
   for (const tool of tools) {
@@ -53,6 +53,14 @@ for (const protocols of [undefined, ['2025-11-25']]) test(`official stdio client
     assert.equal(tool.annotations.openWorldHint, tool.name === 'review_plugin_enrollment', tool.name);
   }
   assert.equal(tools.find(t => t.name === 'status').annotations.readOnlyHint, true);
+  assert.equal(tools.find(t => t.name === 'list_recent_tasks').annotations.readOnlyHint, true);
+  assert.equal(tools.find(t => t.name === 'read_mode_contents').annotations.readOnlyHint, true);
+  assert.equal(tools.find(t => t.name === 'read_mode_source').annotations.readOnlyHint, true);
+  const contents = (await s.call('read_mode_contents')).structuredContent;
+  assert.equal(contents.ok, true);
+  assert.equal(contents.result.modes.normal.available, true);
+  assert.equal(contents.result.modes.trueform.available, false);
+  assert.ok(!JSON.stringify(contents).includes('PRIVATE_TEST'));
   assert.equal(tools.find(t => t.name === 'plan_mode').annotations.readOnlyHint, false);
   assert.equal(s.status.source.preparedMode, 'normal');
   assert.equal(s.status.source.verification.runtimeStateVerified, false);
@@ -76,10 +84,17 @@ async function syntheticRecording(p, { project = p.context.project, request = ' 
 test('MCP ordinary observations, attributed assessments, explicit output and historical favorites share private records', async t => {
   const p = await aiProfile(t, { skills: false }), s = await connect(t, p);
   const taskId = await syntheticRecording(p, { answer: 'PRIVATE SAVED ANSWER' });
+  await writeFile(join(p.context.codexHome, 'recent-tasks-fixture.json'), JSON.stringify({ response: {
+    data: [{ id: taskId, name: 'Named work', cwd: p.context.project, source: 'vscode', parentThreadId: null,
+      ephemeral: false, turns: [], createdAt: 1789000000, updatedAt: 1789000100, preview: 'PRIVATE SAVED ANSWER' }], nextCursor: null
+  } }));
+  const tasks = (await s.call('list_recent_tasks')).structuredContent;
+  assert.equal(tasks.ok, true);
+  assert.deepEqual(tasks.result.tasks, [{ taskId, title: 'Named work', createdAt: 1789000000, updatedAt: 1789000100 }]);
   const observation = (await s.mutate('observe_task', { taskId })).structuredContent;
   assert.equal(observation.ok, true, JSON.stringify(observation));
   assert.equal(observation.result.status, 'matched-record');
-  const review = (await s.mutate('review_run', { taskId })).structuredContent;
+  const review = (await s.mutate('review_run', { taskId, latestCompleted: true })).structuredContent;
   assert.equal(review.ok, true, JSON.stringify(review));
   const assessment = { outcome: 'accepted', provenance: 'agent', requirements: [{ id: 'complete', label: 'Complete the request', critical: true, result: 'pass' }], ratings: [] };
   const saved = (await s.mutate('save_run', { reviewId: review.result.reviewId, assessment })).structuredContent;

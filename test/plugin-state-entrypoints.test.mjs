@@ -44,7 +44,8 @@ test('strict schemas reject injected plugin paths, capabilities and unsupported 
     assert.equal(review.schema.safeParse({...args,additions:[{...args.additions[0],...extra}]}).success,false);
   const read=AI_TOOLS.find(t=>t.definition.name==='read_setup');
   assert.equal(read.schema.safeParse({schemaVersion:3}).success,true);
-  assert.equal(read.schema.safeParse({schemaVersion:4}).success,false);
+  assert.equal(read.schema.safeParse({schemaVersion:4}).success,true);
+  assert.equal(read.schema.safeParse({schemaVersion:5}).success,false);
   assert.equal(read.schema.safeParse({schemaVersion:3,workspace:'/other'}).success,false);
 });
 test('CLI and loopback HTTP expose plugin reviews without admitting caller-selected contexts',mac,async t=>{
@@ -68,5 +69,6 @@ test('CLI and loopback HTTP expose plugin reviews without admitting caller-selec
   assert.equal((await post('plugin-enrollment-inventory',body)).status,200);
   assert.equal((await post('plugin-enrollment-inventory',{...body,requestId:randomUUID(),context:s.context})).status,400);
   assert.equal((await post('setup',{...body,requestId:randomUUID(),schemaVersion:3})).status,200);
-  assert.equal((await post('setup',{...body,requestId:randomUUID(),schemaVersion:4})).status,400);
+  assert.equal((await post('setup',{...body,requestId:randomUUID(),schemaVersion:4})).status,200);
+  assert.equal((await post('setup',{...body,requestId:randomUUID(),schemaVersion:5})).status,400);
 });

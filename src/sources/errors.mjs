@@ -1,4 +1,6 @@
 export const USER_SOURCE_ERROR_KINDS = Object.freeze([
+  'comparison-tasks-unavailable',
+  'comparison-no-completed-turn',
   'directory-rebind-confirmation-required',
   'directory-rebind-unavailable',
   'directory-rebind-record-invalid',

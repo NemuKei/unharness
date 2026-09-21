@@ -1,0 +1,33 @@
+.ui-button {
+  min-height: 44px;
+  border: 1px solid var(--border);
+  padding: 10px 16px;
+  transition: background-color var(--motion-fast) var(--motion-ease), border-color var(--motion-fast) var(--motion-ease), color var(--motion-fast) var(--motion-ease), transform var(--motion-fast) var(--motion-ease);
+}
+.ui-button.primary { color: var(--accent-foreground); background: var(--accent); border-color: var(--accent); }
+.ui-button.secondary { color: var(--foreground); background: var(--surface); }
+.ui-button.quiet { color: var(--muted-foreground); background: transparent; border-color: transparent; }
+.ui-button:not(:disabled):active { transform: translateY(1px); }
+.ui-tab-list { display: flex; align-items: stretch; gap: 8px; }
+.ui-tooltip { position: relative; display: inline-flex; }
+.ui-tooltip [role="tooltip"] { position: absolute; left: 50%; bottom: calc(100% + 8px); width: max-content; max-width: 240px; padding: 7px 9px; color: var(--foreground); background: var(--surface-raised); border: 1px solid var(--border); opacity: 0; pointer-events: none; transform: translate(-50%, 3px); transition: opacity var(--motion-fast) var(--motion-ease), transform var(--motion-fast) var(--motion-ease); }
+.ui-tooltip:hover [role="tooltip"], .ui-tooltip:focus-within [role="tooltip"] { opacity: 1; transform: translate(-50%, 0); }
+.ui-notice { padding: 12px 14px; border-left: 3px solid var(--border); background: var(--surface); color: var(--foreground); }
+.ui-notice.success { border-left-color: var(--success); }
+.ui-notice.warning { border-left-color: var(--warning); }
+.ui-notice.error { border-left-color: var(--destructive); }
+.ui-empty { padding: 22px; border: 1px dashed var(--border); color: var(--muted-foreground); }
+.ui-empty strong { display: block; color: var(--foreground); }
+.ui-loading { color: var(--muted-foreground); }
+.theme-switch { display: inline-flex; border: 1px solid var(--border); border-radius: 4px; padding: 2px; background: var(--surface); }
+.theme-switch button { min-height: 32px; padding: 4px 8px; border: 0; background: transparent; color: var(--muted-foreground); font-size: 11px; }
+.theme-switch button[aria-pressed="true"] { color: var(--selection-foreground); background: var(--selection-background); }
+
+dialog.ui-dialog[open] { animation: ui-dialog-in var(--motion-standard) var(--motion-ease); }
+dialog.ui-dialog::backdrop { background: rgb(0 0 0 / .65); animation: ui-fade-in var(--motion-standard) var(--motion-ease); }
+@keyframes ui-dialog-in { from { opacity: 0; transform: translateY(8px) scale(.99); } }
+@keyframes ui-fade-in { from { opacity: 0; } }
+
+@media (max-width: 700px) {
+  .theme-switch button { padding-inline: 7px; }
+}

@@ -2,6 +2,7 @@ import { getLocale, text as t } from './locale.ts';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CopyRequest } from './entry/CopyRequest';
 import { LanguageSwitch } from './LanguageSwitch';
+import { NativeDialog } from './ui/Dialog';
 import { artworkName } from './artwork';
 import type { ArtworkItem, ArtworkReview, ArtworkUpload, ArtworkImageLoader } from './artwork';
 import { stockLayerManifest } from './appearance-layers';
@@ -168,13 +169,8 @@ function Collection({ controller: c, close }: { controller: AppearanceController
   </div>;
 }
 export function AppearancePanel({ controller: c }: { controller: AppearanceController }) {
-  const [panel, setPanel] = useState<'create' | 'import' | 'collection' | 'card' | null>(null), dialog = useRef<HTMLDialogElement>(null);
+  const [panel, setPanel] = useState<'create' | 'import' | 'collection' | 'card' | null>(null);
   useEffect(() => { setPanel(null); }, [c.key]);
-  useEffect(() => {
-    const element = dialog.current; if (!element) return;
-    if (panel && !element.open) element.showModal();
-    else if (!panel && element.open) element.close();
-  }, [panel]);
   const close = () => setPanel(null);
   const unavailable = !c.enabled || !c.confirmed || c.mutating || c.uncertain || c.view?.recoveryRequired;
   return <section className="artwork-panel" aria-label={t("見た目とコレクション", "Appearance and collection")}><div className="artwork-panel-heading"><span>{t("見た目", "Appearance")}</span>
@@ -191,13 +187,13 @@ export function AppearancePanel({ controller: c }: { controller: AppearanceContr
     {c.uncertain && <button className="secondary" disabled={c.busy} onClick={() => void c.retry()}>{t("同じ作品操作の結果を確認", "Check the same artwork operation")}</button>}
     {c.error && <button className="secondary" disabled={c.busy} onClick={() => void c.load()}>{t("外観を読み直す", "Reload appearance")}</button>}
     {c.operationId && c.uncertain && <details><summary>{t("作品操作のID", "Artwork operation ID")}</summary><code>{c.operationId}</code></details>}
-    <dialog className="art-dialog" ref={dialog} onCancel={close} onClose={close} aria-labelledby="art-dialog-title">
+    <NativeDialog className="art-dialog ui-dialog" open={panel !== null} onOpenChange={open => { if (!open) close(); }} aria-labelledby="art-dialog-title">
       <header className="art-dialog-header"><h2 id="art-dialog-title">{panel === 'create' ? t("オリジナルイメージを作成", "Create original artwork") : panel === 'import' ? t("作品を読み込む", "Import artwork") : panel === 'card' ? t("画像カード", "Image card") : t("コレクション", "Collection")}</h2>
         <LanguageSwitch/><button onClick={close} aria-label={t("外観の画面を閉じる", "Close appearance")}>{t("閉じる", "Close")}</button></header>
       <div className="art-dialog-body">{panel === 'create' ? <CreationPrompt current={c.view?.selectedItem ?? null}/>
         : panel === 'import' ? <ImportArtwork controller={c} close={close}/>
           : panel === 'collection' ? <Collection controller={c} close={close}/>
             : panel === 'card' ? <Suspense fallback={<p>{t("カード画面を開いています…", "Opening the card editor…")}</p>}><ArtworkCard controller={c}/></Suspense> : null}</div>
-    </dialog>
+    </NativeDialog>
   </section>;
 }

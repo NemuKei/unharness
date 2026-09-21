@@ -7,6 +7,7 @@ import { applicationFor } from '../apps/index.mjs';
 import { equal } from '../sources/platform.mjs';
 import { validatePresetProposal, compileReleasePreset } from './preset.mjs';
 import { validateSetupInventory } from './inventory.mjs';
+import { isSetupVersion, usesSourceStates, setupInventoryVersion } from './schema.mjs';
 
 export const hash = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
 const shape = (v, keys) => exactKeys(v, keys, [], 'setup-record-invalid');
@@ -19,7 +20,7 @@ export async function loadSetupReview(w, reviewId) {
     const p = await loadRecord(w.workspace, 'input', reviewId);
     shape(p, ['kind', 'role', 'schemaVersion', 'scopeId', 'normalId', 'revision', 'beforeId', 'previousSetupId', 'proposal', 'presets',
       ...(p.schemaVersion >= 2 ? ['inventory'] : [])]);
-    if (p.role !== 'setup-review' || ![1, 2, 3].includes(p.schemaVersion) || p.scopeId !== w.scopeId || !hash(p.normalId)
+    if (p.role !== 'setup-review' || !isSetupVersion(p.schemaVersion) || p.scopeId !== w.scopeId || !hash(p.normalId)
       || !hash(p.beforeId) || !(p.previousSetupId === null || hash(p.previousSetupId))
       || !Number.isSafeInteger(p.revision) || p.revision < 0) fail('setup-record-invalid');
     validatePresetProposal(p.proposal, setupScope(w, p.normalId));
@@ -30,17 +31,17 @@ export async function loadSetupReview(w, reviewId) {
     shape(p.presets, ['unseal', 'trueform']);
     if (p.schemaVersion >= 2) {
       validateSetupInventory(p.inventory, setupScope(w, p.normalId));
-      if (p.inventory.schemaVersion !== p.schemaVersion - 1) fail('setup-record-invalid');
+      if (p.inventory.schemaVersion !== setupInventoryVersion(p.schemaVersion)) fail('setup-record-invalid');
       for (const mode of ['unseal', 'trueform']) {
         const preset = p.presets[mode], options = compileReleasePreset(p.proposal, mode, setupScope(w, p.normalId), p.inventory);
-        shape(preset, [...Object.keys(options), 'snapshotId', 'guide', 'skillStates', ...(p.schemaVersion === 3 ? ['pluginStates'] : [])]);
+        shape(preset, [...Object.keys(options), 'snapshotId', 'guide', 'skillStates', ...(usesSourceStates(p.schemaVersion) ? ['pluginStates'] : [])]);
         if (!hash(preset.snapshotId) || Object.entries(options).some(([key, value]) => !equal(value, preset[key]))) fail('setup-record-invalid');
-        const states = p.schemaVersion === 3 ? options.sourceStates.skills.map(s => ({ id: s.sourceId,
+        const states = usesSourceStates(p.schemaVersion) ? options.sourceStates.skills.map(s => ({ id: s.sourceId,
           enabled: s.state !== 'disabled', manualOnly: s.state === 'manual' }))
           : p.inventory.skills.filter(s => !s.requiredControl).map(s => ({ id: s.id, enabled: s.enabled,
             manualOnly: s.enabled && !options.automaticSkillIds.includes(s.id) }));
         if (!equal(states, preset.skillStates)) fail('setup-record-invalid');
-        if (p.schemaVersion === 3 && !equal(preset.pluginStates, options.sourceStates.plugins)) fail('setup-record-invalid');
+        if (usesSourceStates(p.schemaVersion) && !equal(preset.pluginStates, options.sourceStates.plugins)) fail('setup-record-invalid');
         await loadSnapshot(w.workspace, w.reg, preset.snapshotId);
       }
       return { ...p, reviewId };
@@ -71,7 +72,7 @@ export async function loadSetup(w, setupId = w.state.setupId) {
   try {
     const p = await loadRecord(w.workspace, 'application', setupId);
     shape(p, ['kind', 'role', 'schemaVersion', 'scopeId', 'reviewId']);
-    if (p.role !== 'release-setup' || ![1, 2, 3].includes(p.schemaVersion) || p.scopeId !== w.scopeId || !hash(p.reviewId))
+    if (p.role !== 'release-setup' || !isSetupVersion(p.schemaVersion) || p.scopeId !== w.scopeId || !hash(p.reviewId))
       fail('setup-record-invalid');
     const review = await loadSetupReview(w, p.reviewId);
     if (review.schemaVersion !== p.schemaVersion) fail('setup-record-invalid');
@@ -87,8 +88,9 @@ export const setupReviewSummary = review => ({ reviewId: review.reviewId, scopeI
   basis: review.proposal.basis, roles: review.proposal.roles,
   presets: Object.fromEntries(Object.entries(review.presets).map(([mode, preset]) => [mode, {
     instructionStyle: preset.instructionStyle, skillRelease: preset.skillRelease,
+    ...(preset.instructionStyle === 'custom' ? { customInstructions: preset.customInstructions } : {}),
     ...(review.schemaVersion === 2 ? { automaticSkillIds: preset.automaticSkillIds } : {}),
-    ...(review.schemaVersion === 3 ? { sourceStates: preset.sourceStates, pluginStates: preset.pluginStates } : {}),
+    ...(usesSourceStates(review.schemaVersion) ? { sourceStates: preset.sourceStates, pluginStates: preset.pluginStates } : {}),
     selectedIds: preset.selection, skillStates: preset.skillStates, guide: preset.guide,
   }])), sourceFilesChanged: 0, modeChangeRequired: true });
 

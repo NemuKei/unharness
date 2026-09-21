@@ -8,11 +8,12 @@ import { readJson, writeJson, unlink, validateStateSnapshots, workspaceManifestR
 import { equal } from '../sources/platform.mjs';
 import { fail, verification } from '../sources/errors.mjs';
 import { loadSetup, assertReviewCurrent, adoptedState } from './records.mjs';
+import { isVersionedSetup } from './schema.mjs';
 
 export async function recoverInheritedSetup(w, j) {
   try {
     exactKeys(j, ['kind', 'schemaVersion', 'scopeId', 'setupId', 'beforeState', 'afterState', 'beforeManifest', 'afterManifest'], [], 'journal-invalid');
-    if (j.kind !== 'unharness-user-source-setup-pending' || ![2, 3].includes(j.schemaVersion) || j.scopeId !== w.scopeId
+    if (j.kind !== 'unharness-user-source-setup-pending' || !isVersionedSetup(j.schemaVersion) || j.scopeId !== w.scopeId
       || workspaceManifestRoot(j.beforeManifest) !== w.rootScopeId
       || !equal(j.afterManifest, { schemaVersion: j.schemaVersion, rootScopeId: w.rootScopeId })
       || (j.beforeState.setupSchemaVersion ?? 1) > (j.beforeManifest.schemaVersion ?? 1)

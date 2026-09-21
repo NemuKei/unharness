@@ -11,10 +11,11 @@ import {readSourceProfileFiles} from '../src/sources/owned-profile.mjs';
 test('prepared appearances save through review and reuse their immutable versions after reload',artworkBrowserCase,async t=>{
   const s=await artworkBrowser(t),{page}=s;await page.goto(s.gui.url); await openWorkbenchPage(page, '外観');
   const group=page.getByRole('group',{name:'用意された外観',exact:true});
-  for(const label of ['白銀','琥珀','デフォルト']) {
+  for(const [label,theme] of [['白銀','silver'],['琥珀','amber'],['デフォルト','default']]) {
     await group.getByRole('button',{name:new RegExp('^'+label)}).click();
     await page.locator('.artwork-panel-heading strong').filter({hasText:label}).waitFor();
     await page.waitForFunction(()=>document.querySelector('.pixi-host')?.dataset.appearance==='layered');
+    assert.equal(await page.locator('.source-workbench').getAttribute('data-appearance'),theme);
   }
   const before=await readUserAppearance({workspace:s.workspace}),count=before.state.items.length;
   await page.reload(); await openWorkbenchPage(page, '外観');

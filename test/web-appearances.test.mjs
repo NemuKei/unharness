@@ -14,9 +14,13 @@ import { entityAssetIds } from '../src/appearances/entity-profile.mjs';
 
 test('creation stays available without comparison and copying a brief does not send it or change settings', artworkBrowserCase, async t => {
   const s = await artworkBrowser(t, { clipboardFails: true }), { page } = s;
-  await page.goto(s.gui.url); await openWorkbenchPage(page, '外観');
-  await page.getByRole('button', { name: 'オリジナルイメージを作成', exact: true }).click();
+  await page.goto(s.gui.url);
+  await page.getByRole('group', { name: '表示テーマ', exact: true }).getByRole('button', { name: '明色', exact: true }).click();
+  await openWorkbenchPage(page, '外観');
+  const opener = page.getByRole('button', { name: 'オリジナルイメージを作成', exact: true });
+  await opener.click();
   const dialog = page.getByRole('dialog');
+  assert.notEqual(await dialog.getByRole('button', { name: '外観の画面を閉じる', exact: true }).evaluate(element => getComputedStyle(element).backgroundColor), 'rgb(255, 255, 255)');
   await dialog.getByLabel('作りたいイメージ（任意）', { exact: true }).fill('金色の小さな機械竜');
   await dialog.getByRole('button', { name: '依頼文をコピー', exact: true }).click();
   await dialog.getByText('コピーできませんでした。依頼文を選択してコピーしてください。', { exact: true }).waitFor();
@@ -26,6 +30,7 @@ test('creation stays available without comparison and copying a brief does not s
   await s.screenshot('creation-mobile.png');
   await page.keyboard.press('Escape');
   assert.equal(await page.getByRole('dialog').count(), 0);
+  assert.equal(await opener.evaluate(element => document.activeElement === element), true);
   assert.equal((await readUserAppearance({ workspace: s.workspace })).state, null);
   assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
   assert.equal(s.posts.filter(row => /\/(apply|plan|register|save-appearance-import)$/.test(row.path)).length, 0);

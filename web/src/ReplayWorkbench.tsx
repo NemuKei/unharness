@@ -62,7 +62,7 @@ export function ReplayWorkbench({ controller: c, shared }: { controller: ReturnT
   const disabled = shared.busy || !shared.confirmed;
   return <section id="replay-workbench" className="comparison-panel replay-workbench" aria-labelledby="replay-heading" tabIndex={-1}>
     <div className="comparison-heading"><div><p className="eyebrow">{t("保存した条件から", "FROM SAVED CONDITIONS")}</p><h2 id="replay-heading">{t("順番に再実行する", "Replay in sequence")}</h2></div><button className="text-button" disabled={disabled} onClick={() => void c.load()}>{t("再実行の履歴を読む", "Load replay history")}</button></div>
-    <p className="muted">{t("開始条件の詳細から「この条件で再実行」を選びます。装備の変更は「装備」タブで適用してから進めてください。", "Choose Replay these conditions from starting-condition details. Apply loadout changes in the Loadout tab first.")}</p>
+    <p className="muted">{t("開始条件の詳細から「この条件で再実行」を選びます。装備の変更は「モード」画面で適用してから進めてください。", "Choose Replay these conditions from starting-condition details. Apply loadout changes in the Mode page first.")}</p>
     {state.review && <article className="replay-review"><h3>{t("再実行の準備内容", "Replay preparation")}</h3><p>{modePresentation[state.review.preparedMode].title} ／ {state.review.fileCount}{t("ファイル · ", " files · ")}{bytes(state.review.totalBytes)}</p>
       <p>{t("各モード ", "Each mode: ")}{state.review.budget.maxAttempts}{t("回まで、1試行 ", " attempts maximum, ")}{state.review.budget.maxTurnsPerAttempt}{t("ターンまで。トークン上限：", " turns per attempt. Token limit: ")}{state.review.budget.maxRecordedTokens === null ? t("指定なし", "None") : formatNumber(state.review.budget.maxRecordedTokens)}</p>
       <p className="muted">{t("元の作業内容から新しい場所を作ります。前の試行の成果物は引き継ぎません。", "Create a new location from the original work. Previous attempt outputs are not carried over.")}</p>

@@ -53,7 +53,9 @@ export function registerConnectionTools(modelContext: PageModelContext | undefin
         const before = client.getSnapshot();
         if (before.phase !== "connected" && before.phase !== "unknown") return { ok: true, connectionState: before.phase, state: null };
         const state = await client.refresh();
-        return { ok: true, connectionState: client.getSnapshot().phase, state };
+        const after = client.getSnapshot();
+        return { ok: true, connectionState: after.phase,
+          state: state ?? (after.phase === "connected" ? after.state : null) };
       }),
     tool("unharness_plan_mode", "Review a change to a saved Normal, UNSEAL or TRUEFORM in the locally approved scope. Requires a current status and a new lowercase request UUID. Creates a durable plan, not a configuration change. After a lost response, inspect the same request ID.",
       { mode: { type: "string", enum: ["normal", "unseal", "trueform"] }, requestId: uuid }, false,

@@ -13,13 +13,23 @@ type State = {
   starts: SavedStart[]; cursor: string | null; detail: StartingDetail | null;
   error: string; backgroundError: string; notice: string; uncertain: boolean;
 };
+const initialStartingState = (): State => ({ review: null, lastSaved: null, starts: [], cursor: null, detail: null,
+  error: "", backgroundError: "", notice: "", uncertain: false });
 export function useStartingConditions(shared: SharedController) {
-  const [state, setState] = useState<State>({ review: null, lastSaved: null, starts: [], cursor: null, detail: null, error: "", backgroundError: "", notice: "", uncertain: false });
+  const [state, setState] = useState<State>(initialStartingState);
   const draftGeneration = useRef(0), detailGeneration = useRef(0);
   const pendingReviewGeneration = useRef<number | null>(null);
   const reviewRef = useRef(state.review), keyRef = useRef("");
+  const contextKey = comparisonContextKey(shared.view), previousContextKey = useRef(contextKey);
   reviewRef.current = state.review;
-  keyRef.current = comparisonContextKey(shared.view);
+  keyRef.current = contextKey;
+  useEffect(() => {
+    if (previousContextKey.current === contextKey) return;
+    previousContextKey.current = contextKey;
+    ++draftGeneration.current; ++detailGeneration.current;
+    pendingReviewGeneration.current = null; reviewRef.current = null;
+    setState(initialStartingState());
+  }, [contextKey]);
   const externalSignature = useRef("");
   useEffect(() => {
     const update = shared.externalUpdate, page = update?.history?.starts;

@@ -1,5 +1,11 @@
 # AI-guided initial setup
 
+The development v4 extension supports exact user-reviewed custom instructions in
+UNSEAL while preserving v3 ordinary Skill inheritance. TRUEFORM still emits no
+optional instructions. Saving remains record-only; preparation and recovery use
+the same guarded operations. See [custom guidance](spec-custom-guidance.md).
+This extension does not change the dated native qualification below.
+
 **Current Mac scope (2026-09-11 onward):** v3 uses confirmed ordinary Skill
 disabled/manual/automatic states and retains official plugins at Normal.
 Individual remote-plugin OFF is deferred. The qualified path is recorded in

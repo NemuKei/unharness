@@ -669,6 +669,68 @@ test("comparison chart starts at zero and unknown associations stay unknown", as
 });
 
 // Run after npm run build, using an explicitly selected Playwright installation.
+test('built work records select a recent task, save a short assessment, reopen one record and compare two', {
+  timeout: 60000,
+  skip: process.platform !== 'darwin' || !process.env.UNHARNESS_PLAYWRIGHT_MODULE,
+}, async t => {
+  const { chromium } = await import(pathToFileURL(resolve(process.env.UNHARNESS_PLAYWRIGHT_MODULE)).href);
+  const s = await setupHttp(t, resolve('dist')), taskId = await writeRecording(s);
+  await writeFile(join(s.profile.context.codexHome, 'recent-tasks-fixture.json'), JSON.stringify({ response: {
+    data: [{ id: taskId, name: 'Browser work to save', cwd: s.profile.context.project,
+      createdAt: 1789000000, updatedAt: 1789000100, source: 'vscode', parentThreadId: null,
+      ephemeral: false, turns: [], preview: 'PRIVATE ignored preview', path: '/PRIVATE/path' }], nextCursor: null
+  } }));
+  const browser = await chromium.launch({ headless: true, ...(process.env.UNHARNESS_BROWSER_EXECUTABLE ? { executablePath: process.env.UNHARNESS_BROWSER_EXECUTABLE } : {}) });
+  t.after(() => browser.close());
+  const page = await browser.newPage({ reducedMotion: 'reduce', viewport: { width: 1280, height: 900 } }), posts = [], errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  page.on('request', request => { if (request.method() === 'POST') posts.push({ path: new URL(request.url()).pathname, body: request.postDataJSON() }); });
+  await page.goto(s.url); await openWorkbenchPage(page, '記録・比較');
+  await page.getByRole('button', { name: '仕事を記録する', exact: true }).click();
+  await page.getByRole('button', { name: /^Browser work to save/ }).waitFor();
+  assert.equal(posts.filter(p => p.path.endsWith('/review-run')).length, 0, 'listing names does not inspect task contents');
+  assert.equal(await page.getByRole('textbox', { name: 'タスクUUID', exact: true }).count(), 0);
+  await page.getByRole('button', { name: /^Browser work to save/ }).click();
+  await page.getByRole('combobox', { name: 'この結果は使えましたか？', exact: true }).selectOption('accepted');
+  await page.getByRole('textbox', { name: '手直しや使い心地のひとこと（任意）', exact: true }).fill('Usable after a small edit.');
+  assert.equal(posts.find(p => p.path.endsWith('/review-run')).body.latestCompleted, true);
+  await page.getByRole('button', { name: 'この記録を保存', exact: true }).click();
+  const detail = page.getByRole('region', { name: '記録を見る', exact: true });
+  await detail.getByRole('heading', { name: 'Browser work to save', exact: true }).waitFor();
+  await detail.getByText('Usable after a small edit.', { exact: true }).waitFor();
+  assert.equal(posts.filter(p => p.path.endsWith('/run-output')).length, 0);
+  await page.getByRole('button', { name: '仕事を記録する', exact: true }).click();
+  await page.getByRole('heading', { name: '最近のタスクから選ぶ', exact: true }).waitFor();
+  assert.equal(await page.getByRole('region', { name: '記録を保存', exact: true }).count(), 0,
+    'recording again starts with task selection rather than reopening the just-saved assessment');
+  await page.reload(); await openWorkbenchPage(page, '記録・比較');
+  await page.getByRole('button', { name: /^Browser work to save/ }).click();
+  await detail.getByRole('heading', { name: 'Browser work to save', exact: true }).waitFor();
+  await detail.getByRole('button', { name: '一覧に戻る', exact: true }).click();
+  const otherTaskId = await writeRecording(s), review = await service.reviewUserRun({ workspace: s.registered.workspace, taskId: otherTaskId });
+  await service.saveUserRun({ workspace: s.registered.workspace, reviewId: review.reviewId, title: 'Another recorded job', assessment });
+  await page.getByRole('button', { name: '更新', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'Browser work to saveを比較に追加', exact: true }).check();
+  await page.getByRole('checkbox', { name: 'Another recorded jobを比較に追加', exact: true }).check();
+  const entered = Promise.withResolvers(), release = Promise.withResolvers();
+  t.after(() => release.resolve());
+  await page.route('**/api/sources/compare-runs', async route => {
+    const response = await route.fetch(); entered.resolve(); await release.promise; await route.fulfill({ response });
+  });
+  await page.getByRole('button', { name: '2件を並べて見る', exact: true }).click();
+  await entered.promise;
+  await page.getByRole('status').getByText('選んだ記録を並べています…', { exact: true }).waitFor();
+  release.resolve();
+  await page.getByRole('heading', { name: '仕事を並べて振り返る', exact: true }).waitFor();
+  const visibleTable = page.locator('.work-comparison');
+  await visibleTable.getByText('Usable after a small edit.', { exact: true }).waitFor();
+  assert.equal(await visibleTable.getByText('算入された採用', { exact: true }).count(), 0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+  assert.equal(posts.filter(p => /\/(apply|prepare-replay|handoff-replay)$/.test(p.path)).length, 0);
+  assert.deepEqual(errors, []);
+});
+
 test("built comparison workbench accepts repeated observation handoffs", {
   skip: process.platform !== "darwin"
     ? "This check uses the Mac owned-source fixture"
@@ -693,12 +755,14 @@ test("built comparison workbench accepts repeated observation handoffs", {
     await page.locator(".task-observation summary").click();
     await page.locator("#source-task-id").fill(taskId);
     await page.getByRole("button", { name: "このタスクの記録を確認", exact: true }).click();
-    const handoff = () => page.getByRole("button", { name: "このUUIDを比較で使う", exact: true }).click();
+    const handoff = () => page.getByRole("button", { name: "この仕事を記録する", exact: true }).click();
     const waitForTask = () => page.waitForFunction(expected =>
       document.querySelector(".comparison-workbench .review-form input")?.value === expected,
     taskId, { timeout: 5000 });
     await handoff();
     await waitForTask();
+    await page.locator('.manual-record > summary').click();
+    await page.getByText('タスクIDを自分で指定する', { exact: true }).click();
     const input = page.locator(".comparison-workbench").getByLabel("タスクUUID", { exact: true });
     await input.fill(randomUUID());
     await openWorkbenchPage(page, "接続・復旧");

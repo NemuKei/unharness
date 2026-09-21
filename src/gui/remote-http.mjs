@@ -45,7 +45,9 @@ export async function createRemoteHttp({ controller, enqueue, readJson, now }) {
           response.writeHead(200, { ...cors, 'Content-Type': 'image/png', 'Content-Length': result.bytes.length });
           response.end(result.bytes);
         } else send(response, 200, result, operation === 'redeem'
-          ? { ...cors, 'X-Unharness-UI-Languages': 'ja,en', 'Access-Control-Expose-Headers': 'X-Unharness-UI-Languages' }
+          ? { ...cors, 'X-Unharness-UI-Languages': 'ja,en',
+            ...(result.target.application === 'codex' ? { 'X-Unharness-Mode-Planning': 'retained-v1' } : {}),
+            'Access-Control-Expose-Headers': 'X-Unharness-UI-Languages, X-Unharness-Mode-Planning' }
           : cors);
       } catch (error) { if (!response.destroyed) failure(response, error, cors); }
       finally { if (ownsUpload) uploading = false; }

@@ -99,6 +99,7 @@ export async function sourceOperation<T>(
   accepted: SourceMetadata,
   action: string,
   input: object,
+  stillCurrent: () => boolean = () => true,
 ): Promise<
   | { status: "context-updated"; state: SourceView }
   | { status: "completed"; result: T; state: SourceView }
@@ -112,6 +113,7 @@ export async function sourceOperation<T>(
     validateSourceMetadata(state.metadata);
     return { status: "context-updated", state };
   }
+  if (!stillCurrent()) throw new ApiError('request-superseded');
   // No reconnect or retry after POST. Retain the exact plan in the calling view
   // if transport fails; a later explicit refresh determines readback state.
   const response = await api.post<{ result: T; state: SourceView }>(

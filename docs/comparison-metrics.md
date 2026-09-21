@@ -1,5 +1,7 @@
 # Numerical comparison and quality
 
+The 2026-09-14 [work-record UX](spec-work-record-ux.md) presents named jobs first, lets one record be useful, and separates ordinary reflection from controlled replay. Recent task discovery reads scoped native metadata only; explicit task selection collects the completed work. The detailed evidence and aggregation rules below remain unchanged.
+
 The maintainer requested numerical comparison of token efficiency and output quality alongside personal judgment. The ordinary-use slice now projects bounded Codex 0.153.4 desktop records, stores private immutable reviews and attributed retrospective assessments, and displays one to three saved records. The read-only inventory probe remains separate and does not collect these totals or grade outputs.
 
 ## The useful question

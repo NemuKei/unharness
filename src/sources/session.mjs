@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { lstat } from "node:fs/promises";
 import * as service from "./service.mjs";
 import { getMinimalGuide } from "./guide.mjs";
+import { isVersionedSetup } from "../setup/schema.mjs";
 
 const HASH = /^[a-f0-9]{64}$/;
 const fail = (kind) => {
@@ -27,6 +28,8 @@ const fields = {
   "plan-retained": [[], []],
   "accept-retained": [["planId"], []],
   setup: [[], ["schemaVersion"]],
+  "mode-contents": [[], []],
+  "mode-source": [["mode", "snapshotId", "sourceId"], []],
   "review-setup": [["proposal"], []],
   "apply-setup": [["reviewId"], []],
   "enrollment-inventory": [[], []],
@@ -43,7 +46,8 @@ const fields = {
   checkpoint: [["checkpointId"], []],
   recover: [[], []],
   observe: [["taskId"], []],
-  "review-run": [["taskId"], ["throughTurnId"]],
+  "review-run": [["taskId"], ["throughTurnId", "latestCompleted"]],
+  "recent-tasks": [[], ["taskCursor"]],
   "save-run": [["reviewId", "assessment"], ["title", "previousRunId"]],
   runs: [[], ["after"]],
   run: [["runId"], []],
@@ -105,6 +109,7 @@ export function sourceRequestShape(body, action) {
   for (const key of [
     "discoveryId",
     "planId",
+    "snapshotId",
     "favoriteId",
     "checkpointId",
     "after",
@@ -132,7 +137,11 @@ export function sourceRequestShape(body, action) {
     fail("gui-invalid-request");
   if (Object.hasOwn(input, "sourceId") && !sourceId(input.sourceId))
     fail("gui-invalid-request");
-  if (Object.hasOwn(input, "schemaVersion") && ![2, 3].includes(input.schemaVersion)) fail("gui-invalid-request");
+  if (Object.hasOwn(input, "schemaVersion") && !isVersionedSetup(input.schemaVersion)) fail("gui-invalid-request");
+  if (Object.hasOwn(input, 'taskCursor') && (typeof input.taskCursor !== 'string' || !input.taskCursor.length
+    || input.taskCursor.length > 512 || /[\u0000-\u001f\u007f]/.test(input.taskCursor))) fail('gui-invalid-request');
+  if (Object.hasOwn(input, 'latestCompleted') && (typeof input.latestCompleted !== 'boolean'
+    || (input.latestCompleted && Object.hasOwn(input, 'throughTurnId')))) fail('gui-invalid-request');
   if (
     Object.hasOwn(input, "throughTurnId") &&
     (typeof input.throughTurnId !== "string" ||
@@ -340,6 +349,8 @@ export async function createSourceController(input, { workspace: selectedWorkspa
         return service.observeUserTask({ workspace, taskId: input.taskId });
       if (action === "review-run")
         return service.reviewUserRun({ workspace, ...input });
+      if (action === 'recent-tasks')
+        return service.listRecentUserTasks({ workspace, ...input });
       if (action === "save-run")
         return service.saveUserRun({ workspace, ...input });
       if (action === "runs")

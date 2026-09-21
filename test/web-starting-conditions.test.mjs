@@ -1,4 +1,4 @@
-import { openWorkbenchPage } from '../test-support/workbench-navigation.mjs';
+import { openWorkbenchPage, openReplayWorkbench } from '../test-support/workbench-navigation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -110,7 +110,7 @@ test('built workbench freezes pre-use inputs and invalidates a reviewed draft wh
   const page = await context.newPage(); page.setDefaultTimeout(6000);
   const pageErrors = []; page.on('pageerror', error => pageErrors.push(error.message));
   await page.goto(s.url);
-  await openWorkbenchPage(page, '比較・記録');
+  await openReplayWorkbench(page);
   const panel = page.locator('.starting-conditions');
   await panel.locator(':scope > summary').click();
   await panel.getByLabel('条件の名前（任意）', { exact: true }).fill('Browser starter');
@@ -145,7 +145,7 @@ async function inBrowser(t, action) {
     await context.addInitScript(() => localStorage.setItem('unharness.effects.v1', 'off'));
     const page = await context.newPage(); page.setDefaultTimeout(7000);
     await page.goto(s.url);
-    await openWorkbenchPage(page, '比較・記録');
+    await openReplayWorkbench(page);
     const panel = page.locator('.starting-conditions');
     await panel.locator(':scope > summary').click();
     await action(s, page, panel, context);

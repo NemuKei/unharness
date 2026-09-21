@@ -6,7 +6,7 @@ import { ApiError } from './api';
 
 type Candidate = { id: string; label: string; enabled: boolean; available: boolean; reason: string | null };
 type Inventory = { scopeId: string; discoveryId: string; registeredCount: number; limit: number; candidates: Candidate[]; enrollmentSchemaVersion: 3 };
-type Review = { reviewId: string; scopeId: string; nextScopeId: string; schemaVersion: 3; sourceFilesChanged: 0; modeChangeRequired: true;
+type Review = { reviewId: string; scopeId: string; nextScopeId: string; schemaVersion: 3 | 4; sourceFilesChanged: 0; modeChangeRequired: true;
   setupRequired: true; additions: Array<{ pluginId: string; origin: 'self' | 'external'; optional: true; label: string; enabled: boolean; features: PluginFeatures }> };
 const hash = (v: unknown) => typeof v === 'string' && /^[a-f0-9]{64}$/.test(v);
 const pluginId = (v: unknown) => typeof v === 'string' && /^[A-Za-z0-9][A-Za-z0-9._~-]{0,127}@[A-Za-z0-9][A-Za-z0-9._~-]{0,127}$/.test(v);
@@ -51,7 +51,7 @@ export function PluginEnrollmentPanel({ controller: c }: { controller: ReturnTyp
     if (response.status === 'context-updated') return;
     if (response.status === 'failed') return failed(response.error);
     const r = response.result, p = r?.additions?.[0];
-    if (!hash(r?.reviewId) || !hash(r.nextScopeId) || r.scopeId !== inventory.scopeId || r.schemaVersion !== 3
+    if (!hash(r?.reviewId) || !hash(r.nextScopeId) || r.scopeId !== inventory.scopeId || ![3, 4].includes(r.schemaVersion)
       || r.sourceFilesChanged !== 0 || r.modeChangeRequired !== true || r.setupRequired !== true || r.additions.length !== 1
       || p.pluginId !== selected || p.origin !== origin || p.optional !== true || p.enabled !== candidate.enabled || !validFeatures(p.features)) return failed(Error());
     setReview(r);

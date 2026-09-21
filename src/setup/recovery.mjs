@@ -7,9 +7,10 @@ import { readJson, writeJson, unlink, validateStateSnapshots } from '../sources/
 import { equal } from '../sources/platform.mjs';
 import { fail, verification } from '../sources/errors.mjs';
 import { loadSetup, assertReviewCurrent, adoptedState } from './records.mjs';
+import { isVersionedSetup } from './schema.mjs';
 
 export async function recoverSetup(w, j) {
-  if ([2, 3].includes(j.schemaVersion)) {
+  if (isVersionedSetup(j.schemaVersion)) {
     const { recoverInheritedSetup } = await import('./inheritance-recovery.mjs');
     return recoverInheritedSetup(w, j);
   }

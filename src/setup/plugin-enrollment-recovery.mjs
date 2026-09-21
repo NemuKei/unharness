@@ -7,11 +7,12 @@ import { readJson, writeJson, unlink } from '../sources/records.mjs';
 import { equal } from '../sources/platform.mjs';
 import { fail, verification } from '../sources/errors.mjs';
 import { loadPluginEnrollmentReview, validatePluginEnrollmentStates } from './plugin-enrollment-records.mjs';
+import { usesSourceStates } from './schema.mjs';
 
 export async function recoverPluginEnrollment(w, j) {
   try {
     exactKeys(j, ['kind', 'schemaVersion', 'scopeId', 'reviewId', 'beforeState', 'afterState', 'beforeManifest', 'afterManifest'], [], 'journal-invalid');
-    if (j.kind !== 'unharness-user-source-plugin-enrollment-pending' || j.schemaVersion !== 3) fail('journal-invalid');
+    if (j.kind !== 'unharness-user-source-plugin-enrollment-pending' || !usesSourceStates(j.schemaVersion)) fail('journal-invalid');
     const p = await loadPluginEnrollmentReview(w, j.reviewId);
     await validatePluginEnrollmentStates(w, p, j);
   } catch { fail('journal-invalid'); }

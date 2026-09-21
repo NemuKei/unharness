@@ -1,6 +1,7 @@
 import { platform, release as kernelRelease, arch } from 'node:os';
 import { isDeepStrictEqual } from 'node:util';
 import { openWorkspace, record, loadSnapshot } from '../sources/records.mjs';
+import { captureRegistered } from '../sources/capture.mjs';
 import { acquire, assertCurrent, pending, sourceTransactionHook } from '../sources/transaction.mjs';
 import { projectRegisteredTaskObservation } from '../sources/observation.mjs';
 import { preparationMetadata, projectObservation, validUuid } from '../sources/observation-record.mjs';
@@ -43,16 +44,42 @@ async function captureMatchingInitialSourceEvidence(w, records, capturedAt) {
   if (changed) return { association: null, observation: null, issue: changed };
   return { association: observation.status === 'matched-record' ? associationFor(w, freezeSourceContext(w)) : null, observation, issue: null };
 }
+export async function listRecentUserTasks(args) {
+  request(args, [], ['taskCursor']);
+  if (args.taskCursor !== undefined && (typeof args.taskCursor !== 'string' || !args.taskCursor.length
+    || args.taskCursor.length > 512 || /[\u0000-\u001f\u007f]/.test(args.taskCursor))) fail('invalid-request');
+  const w = await openWorkspace(args.workspace), app = applicationFor(w.reg.context);
+  if (!app.listRecentTasks) return { available: false, reason: 'unsupported-application', tasks: [], nextCursor: null };
+  // Preserve the registered location boundary without requiring unchanged
+  // settings merely to browse metadata. No task transcript is read here.
+  await assertCurrent(w, await captureRegistered(w.reg));
+  const result = await app.listRecentTasks(w.reg.context, args.taskCursor);
+  const current = await openWorkspace(args.workspace);
+  if (current.scopeId !== w.scopeId || !isDeepStrictEqual(current.reg.context, w.reg.context)) fail('source-conflict');
+  await assertCurrent(current, await captureRegistered(current.reg));
+  return result;
+}
 export async function reviewUserRun(args) {
-  request(args, ['taskId'], ['throughTurnId']);
+  request(args, ['taskId'], ['throughTurnId', 'latestCompleted']);
   if (!validUuid(args.taskId)) fail('invalid-request');
+  if ((args.latestCompleted !== undefined && typeof args.latestCompleted !== 'boolean')
+    || (args.latestCompleted && args.throughTurnId !== undefined)) fail('invalid-request');
   const taskId = args.taskId.toLowerCase();
   return locked(args.workspace, async w => {
     const captureIssue = await sourceGuard(w), sourceContext = freezeSourceContext(w);
     const app = applicationFor(w.reg.context);
     const read = await app.readRunRecords(w, taskId);
     await sourceTransactionHook('comparison-read');
-    const { measurement, outputText } = await app.projectRun(w, read.records, { taskId, expectedProject: w.reg.context.project, ...(args.throughTurnId === undefined ? {} : { throughTurnId: args.throughTurnId }), recordRead: read.recordRead });
+    const options = { taskId, expectedProject: w.reg.context.project,
+      ...(args.throughTurnId === undefined ? {} : { throughTurnId: args.throughTurnId }), recordRead: read.recordRead };
+    let projected = await app.projectRun(w, read.records, options);
+    if (args.latestCompleted) {
+      const completed = projected.measurement.availableTurns.filter(turn => turn.completed).at(-1);
+      if (!completed) fail('comparison-no-completed-turn');
+      if (completed.turnId !== projected.measurement.throughTurnId)
+        projected = await app.projectRun(w, read.records, { ...options, throughTurnId: completed.turnId });
+    }
+    const { measurement, outputText } = projected;
     const capturedAt = new Date().toISOString();
     const source = await captureMatchingInitialSourceEvidence({ ...w, selectedTaskId: taskId, captureIssue, readIssue: read.recordRead.incompleteTrailingLine ? 'task-record-invalid' : null }, read.records, capturedAt);
     const reviewId = await record(w.workspace, 'application', { role: 'run-review', schemaVersion: 1, scopeId: w.scopeId,
