@@ -10,7 +10,7 @@ test('public entry, synthetic demo and platform guidance do not connect or chang
   const s = await publicBrowser(t, { clipboardFails: true }), { page } = s;
   await page.goto(PUBLIC_WEB_ORIGIN);
   await page.getByRole('button', { name: '設定を変えずにデモを試す', exact: true }).waitFor();
-  await page.getByText('ローカル画面では「モード」「設定」「外観」を中心に使い、「比較・記録」「接続・復旧」はその他から開けます。公開サイトへの接続許可は不要です。', { exact: true }).waitFor();
+  await page.getByText('ローカル画面は「モード」が入口です。「記録・比較」「外観」「設定」「接続・復旧」は「その他」から開けます。公開サイトへの接続許可は不要です。', { exact: true }).waitFor();
   assert.match(await page.title(), /Unharness/); assert.equal(new URL(page.url()).origin, PUBLIC_WEB_ORIGIN);
   assert.equal(await page.locator('vite-error-overlay').count(), 0);
   await page.getByRole('button', { name: '「零式に切り替えて」', exact: true }).click();

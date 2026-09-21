@@ -4,23 +4,23 @@
   "platform": "darwin-arm64",
   "channel": "mac-preview",
   "release": {
-    "version": "0.0.10",
-    "archiveUrl": "https://github.com/NemuKei/unharness/releases/download/v0.0.10/unharness-0.0.10-macos-arm64.zip",
-    "archiveSha256": "6cb6b171af3f3f2c84aa923f65d72e96fa5978f88ea16a3e6271bacda2c364bd",
-    "distributionId": "1cdca75fa41f38ee7d43f54aeb017d77647dad617dbcece4ca1794436f52a200",
-    "sourceUrl": "https://github.com/NemuKei/unharness/tree/6ca76702fefc867a66416c8fa434256e99025d0c",
-    "releaseUrl": "https://github.com/NemuKei/unharness/releases/tag/v0.0.10",
-    "publishedAt": "2026-09-14T04:32:16Z",
+    "version": "0.0.11",
+    "archiveUrl": "https://github.com/NemuKei/unharness/releases/download/v0.0.11/unharness-0.0.11-macos-arm64.zip",
+    "archiveSha256": "b27128dd3852c776a98417ec2739c1071bb4f0947ad8162093a64dec798472d6",
+    "distributionId": "a4a9196fe2f3aef4447dc1a6531d0ca6ecc3c3d2c3f90dc0c1a305e8d3b658a1",
+    "sourceUrl": "https://github.com/NemuKei/unharness/tree/caad44acaddfe58ba8e29e03e15d3a973a6092df",
+    "releaseUrl": "https://github.com/NemuKei/unharness/releases/tag/v0.0.11",
+    "publishedAt": "2026-09-21T04:49:04Z",
     "changes": {
       "ja": [
-        "画面・導入案内・復旧を日英で使えるようになりました。",
-        "起動時に現在の状態と公開版を確認し、必要な次の操作へ案内します。",
-        "元のNormalを残したまま、更新時の導入元変更を確認して引き継ぎます。"
+        "日常操作をローカル画面に集約し、モード選択と保存した指示・Skillを確認しやすくしました。",
+        "変更前の確認、処理状態、明暗テーマと外観、狭い画面での操作を改善しました。",
+        "仕事の記録と比較を整理し、限定解除の追加指示を明示的に保存できるようにしました。"
       ],
       "en": [
-        "Use the interface, installation guidance and recovery in Japanese or English.",
-        "Startup checks the current state and published release, then guides your next useful action.",
-        "Review and retain the changed installation source while preserving original Normal versions."
+        "Use the local workbench to select modes and inspect saved instructions and Skill states.",
+        "Review changes before applying them, with clearer status, light/dark themes and narrow-screen controls.",
+        "Record and compare named work, and explicitly save custom UNSEAL instructions."
       ]
     }
   }

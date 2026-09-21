@@ -12,6 +12,6 @@ export function ChatEntries() {
         prompt={request.id === 'mode' ? modeChatRequest('trueform') : request.example}
         description={null} preview={false}/><p>{request.description}</p></dd>
     </div>)}</dl>
-    <p className="entry-functions-note">{t("ローカル画面では「モード」「設定」「外観」を中心に使い、「比較・記録」「接続・復旧」はその他から開けます。公開サイトへの接続許可は不要です。", "Use Mode, Settings and Appearance as the primary local pages. Open Comparisons & records or Connection & recovery from More. No public-site pairing is needed.")}</p>
+    <p className="entry-functions-note">{t("ローカル画面は「モード」が入口です。「記録・比較」「外観」「設定」「接続・復旧」は「その他」から開けます。公開サイトへの接続許可は不要です。", "Start with Mode in the local workbench. Open Work records, Appearance, Settings or Connection & recovery from More. No public-site pairing is needed.")}</p>
   </section>;
 }
