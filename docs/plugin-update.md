@@ -134,6 +134,22 @@ independent edit. The synthetic check restored 0.0.9 after installing 0.0.10 and
 retained the unrelated fixture configuration. This is CLI source/cache evidence,
 not a real user's full distribution update or Desktop runtime qualification.
 
+### Recovery after adopting setup v4
+
+Installing 0.0.11 does not adopt v4 or rewrite saved mode definitions. Adopting
+custom UNSEAL instructions is a separate reviewed setup operation. Once a
+workspace adopts v4, 0.0.10 and earlier writers refuse that workspace rather
+than reinterpret its records. Keep the verified 0.0.11 independent recovery
+copy before adopting v4; use that copy or a compatible corrected release for
+Normal restoration and interrupted-operation recovery.
+
+Withdrawing a public release or pointing the catalog back to an earlier package
+is not a recovery procedure for a v4 workspace. Do not remove the writer fence,
+edit saved version fields, recapture Normal or overwrite its records to make a
+downgrade work. Earlier frozen favorites remain usable through the compatible
+new writer. The native source-rollback procedure above applies only while the
+saved workspace format is supported by the selected older writer.
+
 ## Confirm actual reflection
 
 Native install output, files, running MCP and the new task's Skill loading are
