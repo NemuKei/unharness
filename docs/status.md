@@ -32,7 +32,8 @@ Plan and Codex handoff: [plan](superpowers/plans/2026-09-23-chat-led-redesign.md
   or recovery.
 
 Not yet verified: Playwright browser tests, the real Mac Codex desktop journey
-with a user's own configuration, and the public-site demo update (plan Task 8).
+with a user's own configuration ([trial procedure](trial-0.1.0-mac.md)), and the
+public-site demo update (plan Task 8).
 The package is not released; 0.0.11 below remains the published preview.
 
 ## Published 0.0.11 Mac preview
