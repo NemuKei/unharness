@@ -14,6 +14,7 @@ import { listRecords } from '../src/core/local-store.mjs';
 import { readSetup, reviewSetup, applySetup } from '../src/setup/service.mjs';
 import { setSourceTransactionTestHook } from '../src/sources/transaction.mjs';
 import * as sources from '../src/sources/service.mjs';
+import { transitionStoredProposal } from '../src/proposals/store.mjs';
 
 const proposals = await import('../src/proposals/service.mjs').catch(() => ({}));
 const { createProposal, listProposals, decideProposal } = proposals;
@@ -193,4 +194,59 @@ test('authenticated HTTP proposals GET and decide route use the selected synthet
   assert.equal(decided.value.status, 'applied');
   const forbidden = await fetch(gui.url + '/api/sources/proposals', { headers: { Origin: gui.url, 'X-Unharness-Client': '1' } });
   assert.equal(forbidden.status, 403);
+});
+
+test('an unexpected mode application failure leaves the proposal stale and returns the original error', async t => {
+  const s = await fixture(t), proposal = await create(s);
+  setSourceTransactionTestHook(phase => { if (phase === 'before-completion') throw Object.assign(Error('synthetic failure'), { kind: 'operation-failed' }); });
+  await assert.rejects(decideProposal({ workspace: s.workspace, proposalId: proposal.proposalId, decision: 'approve' }), { kind: 'operation-failed' });
+  assert.equal((await listProposals({ workspace: s.workspace })).find(p => p.proposalId === proposal.proposalId).status, 'stale');
+  await assert.rejects(decideProposal({ workspace: s.workspace, proposalId: proposal.proposalId, decision: 'approve' }), { kind: 'proposal-stale' });
+});
+
+test('failure after setup adoption keeps the prepared mode and returns its source conflict', async t => {
+  const s = await fixture(t, { adopt: false });
+  const review = await reviewSetup({ workspace: s.workspace, proposal: s.setup });
+  const proposal = await create(s, { setupReviewId: review.reviewId });
+  const before = await openWorkspace(s.workspace);
+  const path = join(s.context.codexHome, 'AGENTS.md');
+  setSourceTransactionTestHook(async phase => { if (phase === 'setup-state') await writeFile(path, '# Independent edit during setup\n'); });
+  await assert.rejects(decideProposal({ workspace: s.workspace, proposalId: proposal.proposalId, decision: 'approve' }), { kind: 'source-conflict' });
+  const after = await openWorkspace(s.workspace);
+  assert.ok(after.state.setupId);
+  assert.equal(after.state.preparedMode, before.state.preparedMode);
+  assert.equal(after.state.snapshotId, before.state.snapshotId);
+  assert.equal(await readFile(path, 'utf8'), '# Independent edit during setup\n');
+  assert.equal((await listProposals({ workspace: s.workspace })).find(p => p.proposalId === proposal.proposalId).status, 'stale');
+});
+
+async function abandonedApplying(s, proposalId) {
+  await transitionStoredProposal(s.workspace, proposalId, 'applying');
+  await writeFile(join(s.workspace, 'proposals.lock'), JSON.stringify({ pid: 999999999, token: randomUUID() }), { flag: 'wx', mode: 0o600 });
+}
+
+test('an abandoned applying proposal with an unchanged basis becomes pending on the next list', async t => {
+  const s = await fixture(t), proposal = await create(s);
+  await abandonedApplying(s, proposal.proposalId);
+  const listed = await listProposals({ workspace: s.workspace });
+  assert.equal(listed.find(p => p.proposalId === proposal.proposalId).status, 'pending');
+  const applied = await decideProposal({ workspace: s.workspace, proposalId: proposal.proposalId, decision: 'approve' });
+  assert.equal(applied.status, 'applied');
+});
+
+test('an abandoned applying proposal with a changed basis becomes stale on approval', async t => {
+  const s = await fixture(t), proposal = await create(s);
+  await abandonedApplying(s, proposal.proposalId);
+  const plan = await sources.planUserMode({ workspace: s.workspace, mode: 'normal' });
+  await sources.applyUserPlan({ workspace: s.workspace, planId: plan.planId });
+  await assert.rejects(decideProposal({ workspace: s.workspace, proposalId: proposal.proposalId, decision: 'approve' }), { kind: 'proposal-stale' });
+  assert.equal((await listProposals({ workspace: s.workspace })).find(p => p.proposalId === proposal.proposalId).status, 'stale');
+});
+
+test('an older abandoned applying proposal can be retried even when it is beyond the list limit', async t => {
+  const s = await fixture(t), proposal = await create(s);
+  await transitionStoredProposal(s.workspace, proposal.proposalId, 'applying');
+  for (let n = 0; n < 21; n++) await create(s, { items: [{ sourceId: s.sourceId, reason: `Later ${n}` }] });
+  await writeFile(join(s.workspace, 'proposals.lock'), JSON.stringify({ pid: 999999999, token: randomUUID() }), { flag: 'wx', mode: 0o600 });
+  assert.equal((await decideProposal({ workspace: s.workspace, proposalId: proposal.proposalId, decision: 'approve' })).status, 'applied');
 });

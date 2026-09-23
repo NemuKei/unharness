@@ -10,8 +10,6 @@ import { withProposalLock, createStoredProposal, listStoredProposals, readStored
 const ID = /^[a-f0-9]{64}$/;
 const SOURCE_ID = /^(instructions|skill)-[a-f0-9]{64}$/;
 const REASON = /^[^\u0000-\u001f\u007f-\u009f]*$/;
-const staleKinds = new Set(['stale-plan', 'source-conflict', 'stale-discovery', 'setup-record-invalid',
-  'setup-inventory-invalid', 'setup-inventory-unavailable', 'setup-upgrade-required', 'setup-required']);
 const exact = (value, required, optional = []) => value && typeof value === 'object' && !Array.isArray(value)
   && required.every(key => Object.hasOwn(value, key))
   && Object.keys(value).every(key => [...required, ...optional].includes(key));
@@ -66,13 +64,28 @@ export async function createProposal(args) {
 }
 export async function listProposals({ workspace }) {
   await checkedWorkspace(workspace);
-  return listStoredProposals(workspace);
+  try { return await withProposalLock(workspace, async () => {
+    await settleInterrupted(workspace);
+    return listStoredProposals(workspace);
+  }); }
+  catch (error) { if (error?.kind === 'proposal-busy') return listStoredProposals(workspace); throw error; }
+}
+async function settleInterrupted(workspace, proposalId) {
+  const rows = proposalId ? [await readStoredProposal(workspace, proposalId)] : await listStoredProposals(workspace);
+  for (const proposal of rows.filter(row => row.status === 'applying')) {
+    let basis;
+    try { ({ basis } = await currentBasis(workspace)); }
+    catch (error) { if (error?.kind !== 'source-conflict') throw error; }
+    await transitionStoredProposal(workspace, proposal.proposalId,
+      basis && equal(basis, proposal.basis) ? 'pending' : 'stale');
+  }
 }
 export async function decideProposal({ workspace, proposalId, decision }) {
   if (typeof proposalId !== 'string' || !ID.test(proposalId) || !['approve', 'dismiss'].includes(decision)) fail('proposal-invalid');
   await checkedWorkspace(workspace);
   return withProposalLock(workspace, async () => {
     await checkedWorkspace(workspace);
+    await settleInterrupted(workspace, proposalId);
     let proposal = await readStoredProposal(workspace, proposalId);
     if (decision === 'dismiss') {
       if (proposal.status !== 'pending') fail('proposal-invalid');
@@ -96,10 +109,7 @@ export async function decideProposal({ workspace, proposalId, decision }) {
       return transitionStoredProposal(workspace, proposalId, 'applied', {
         planId: plan.planId, preparedMode: applied.preparedMode, revision: applied.revision, readback: applied.readback });
     } catch (error) {
-      if (staleKinds.has(error?.kind)) {
-        await transitionStoredProposal(workspace, proposalId, 'stale');
-        fail('proposal-stale');
-      }
+      await transitionStoredProposal(workspace, proposalId, 'stale');
       throw error;
     }
   });

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { open, unlink } from 'node:fs/promises';
+import { lstat, open, readFile, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { loadRecord, record, writeJson, readJson } from '../sources/records.mjs';
 import { fail } from '../sources/errors.mjs';
@@ -34,9 +34,36 @@ export async function withProposalLock(workspace, action) {
   const path = join(workspace, 'proposals.lock');
   let handle;
   try { handle = await open(path, 'wx', 0o600); }
-  catch (error) { if (error?.code === 'EEXIST') fail('proposal-busy'); throw error; }
-  try { return await action(); }
+  catch (error) {
+    if (error?.code !== 'EEXIST') throw error;
+    if (!await reclaimAbandonedLock(path)) fail('proposal-busy');
+    try { handle = await open(path, 'wx', 0o600); }
+    catch (retry) { if (retry?.code === 'EEXIST') fail('proposal-busy'); throw retry; }
+  }
+  try {
+    await handle.writeFile(JSON.stringify({ pid: process.pid, token: randomUUID() }));
+    await handle.sync();
+    return await action();
+  }
   finally { await handle.close(); await unlink(path); }
+}
+async function reclaimAbandonedLock(path) {
+  let before;
+  try { before = await lstat(path); }
+  catch (error) { if (error?.code === 'ENOENT') return true; throw error; }
+  if (!before.isFile() || before.isSymbolicLink() || before.size > 256) fail('proposal-record-invalid');
+  let owner;
+  try { owner = JSON.parse(await readFile(path, 'utf8')); }
+  catch { return false; }
+  if (!Number.isSafeInteger(owner?.pid) || owner.pid < 1 || typeof owner.token !== 'string') return false;
+  try { process.kill(owner.pid, 0); return false; }
+  catch (error) { if (error?.code !== 'ESRCH') return false; }
+  let current;
+  try { current = await lstat(path); }
+  catch (error) { if (error?.code === 'ENOENT') return true; throw error; }
+  if (current.dev !== before.dev || current.ino !== before.ino) return false;
+  await unlink(path);
+  return true;
 }
 async function materialize(workspace, index, proposalId) {
   if (!ID.test(proposalId) || !Object.hasOwn(index.heads, proposalId)) fail('proposal-invalid');
@@ -78,10 +105,10 @@ export async function createStoredProposal(workspace, fields) {
   return materialize(workspace, index, proposalId);
 }
 export async function transitionStoredProposal(workspace, proposalId, status, result) {
-  if (!statuses.has(status) || status === 'pending') fail('proposal-invalid');
+  if (!statuses.has(status)) fail('proposal-invalid');
   const index = await indexFor(workspace), before = await materialize(workspace, index, proposalId);
   const allowed = before.status === 'pending' ? ['applying', 'dismissed', 'stale']
-    : before.status === 'applying' ? ['applied', 'stale'] : [];
+    : before.status === 'applying' ? ['pending', 'applied', 'stale'] : [];
   if (!allowed.includes(status)) fail('proposal-invalid');
   const payload = { role: 'proposal-transition', proposalId, status, nonce: randomUUID(),
     ...(result === undefined ? {} : { result }) };
