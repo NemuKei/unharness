@@ -2,24 +2,23 @@ import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { text as t } from '../locale.ts';
 import { Api, ApiError } from '../api.ts';
-import { AiRequestButton, stateCheckPrompt } from '../AiRequestButton.tsx';
+import { AiRequestButton } from '../AiRequestButton.tsx';
 import { bindChatScope } from '../chat-requests.ts';
 import { FreshTaskHandoff } from '../SetupHandoff.tsx';
 import { modePresentation } from '../sources.ts';
 import type { SourceMode, SourcePlan, SourceView } from '../sources.ts';
 import type { useSourceController } from '../useSourceController.ts';
-import { homeView, modeChoice, modeForAction, proposalFailureMessage, removedCount } from './home-view.ts';
+import { consultationCopy, homeView, modeChoice, modeForAction, proposalFailureMessage, removedCount, restoreHint } from './home-view.ts';
 import type { HomeProposal } from './home-view.ts';
 import { ProposalCard } from './ProposalCard.tsx';
 import { SwitchSheet } from './SwitchSheet.tsx';
+import { FailureNotice } from './FailureNotice.tsx';
 
 type Controller = ReturnType<typeof useSourceController>;
 type Contents = { modes: Partial<Record<SourceMode, { available: boolean;
   instructions: { style: string }; skills: { id: string; state: 'automatic' | 'manual' | 'disabled' | 'unknown' }[] }>> };
-type Sheet = { mode: SourceMode; removed: number | null; issue: boolean };
+type Sheet = { mode: SourceMode; removed: number | null; issue: string | null };
 type Failure = { message: string; detail: string };
-const consultPrompt = () => t('Unharnessの限定解除に足すSkillを一緒に考えてください。今の零式と保存した構成を確認し、試す候補を1〜2件、理由と戻し方を添えて提案してください。まだ設定は変えないでください。',
-  'Help me choose one or two Skills to try in UNSEAL. Check the current TRUEFORM and saved setup, explain the reasons and how to return, and do not change settings yet.');
 
 export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onResolve, blocker }: {
   controller: Controller; artwork: ReactNode; onSettings: () => void; onSupport: () => void; onResolve: () => void; blocker: string | null;
@@ -64,11 +63,12 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
   async function openSheet(mode: SourceMode) {
     if (locked || !source || !canPlan) return;
     setFailure(null);
-    setSheet({ mode, removed: null, issue: false });
+    setSheet({ mode, removed: null, issue: null });
     const response = await c.executeAuxiliary<Contents>('mode-contents', {});
     const count = response.status === 'completed' ? removedCount(response.result, source.preparedMode, mode) : null;
     if (latestContext.current !== context) return;
-    setSheet({ mode, removed: count, issue: count === null });
+    setSheet({ mode, removed: count, issue: count === null
+      ? response.status === 'failed' && response.error instanceof ApiError ? response.error.kind : 'mode-contents-unavailable' : null });
   }
   async function switchMode(mode: SourceMode) {
     if (locked || !source || !c.confirmed || !sheet || sheet.removed === null) return;
@@ -115,26 +115,27 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
         <p>{view.mode ? modePresentation[view.mode].description : t('今の設定を確かめてから切り替えられます。', 'Check the current settings before switching.')}</p>
         <small>{view.mode ? t('次の新しいタスクから', 'From the next new task') : t('現在のタスクは未確認です', 'The current task is unverified')}</small>
       </section>
-      {view.proposal && <ProposalCard proposal={view.proposal} busy={locked || !connected}
+      {view.proposal && <ProposalCard proposal={view.proposal}
+        sourceNames={Object.fromEntries((source?.registration.sources ?? []).map(row => [row.id, row.label]))}
+        busy={locked || !connected}
         onApprove={() => void decide(view.proposal!.proposalId, 'approve')}
         onDismiss={() => void decide(view.proposal!.proposalId, 'dismiss')}/>}
       <div className="home-mode-actions" aria-label={t('使うモードを選ぶ', 'Choose a mode')}>
         {view.switchTargets.map(mode => modeChoice(source, mode) === 'consult'
           ? <div className="home-mode-choice" key={mode}><strong>{modePresentation[mode].title}</strong><p>{modePresentation[mode].description}</p>
-              <AiRequestButton label={t('AIと足すものを相談', 'Ask AI what to add')} prompt={bindChatScope(consultPrompt(), source?.registration.scopeId)} preview={false} description={null}/></div>
+              <AiRequestButton label={consultationCopy(mode).label} prompt={bindChatScope(consultationCopy(mode).prompt, source?.registration.scopeId)} preview={false} description={null}/></div>
           : <button className="home-mode-choice" type="button" key={mode} disabled={locked || !canPlan || !!blocker} onClick={() => void openSheet(mode)}>
               <strong>{modePresentation[mode].title}</strong><small>{modePresentation[mode].label}</small><span>{modePresentation[mode].description}</span></button>)}
-        <button type="button" className="home-restore" disabled={!view.canRestore} onClick={() => void openSheet(modeForAction('restore'))}>{t('元に戻す', 'Restore Normal')}</button>
+        <div className="home-restore-choice"><button type="button" className="home-restore" disabled={!view.canRestore} onClick={() => void openSheet(modeForAction('restore'))}>{t('元に戻す', 'Restore Normal')}</button>
+          {restoreHint(source) && <small>{restoreHint(source)}</small>}</div>
       </div>
       {blocker && <p className="home-blocker" role="status">{blocker} <button type="button" className="text-button" onClick={onResolve}>{t('確認する', 'Review')}</button></p>}
     </div>
     {sheet && <div className="home-sheet-area">{sheet.removed !== null
       ? <SwitchSheet mode={sheet.mode} removed={sheet.removed} busy={locked} onConfirm={() => void switchMode(sheet.mode)} onCancel={() => setSheet(null)}/>
-      : <p role="status">{sheet.issue ? t('変更内容を確認できませんでした。AIに調べてもらってください。', 'Could not check the changes. Ask AI to investigate.')
-        : t('変更内容を確かめています…', 'Checking changes…')}</p>}</div>}
-    {shownFailure && <div className="home-failure" role="alert"><p>{shownFailure.message}</p>
-      <AiRequestButton label={t('AIに調べてもらう', 'Ask AI to investigate')} prompt={bindChatScope(stateCheckPrompt(), source?.registration.scopeId)} preview={false} description={null}/>
-      {shownFailure.detail && <details><summary>{t('詳しく', 'Details')}</summary><code>{shownFailure.detail}</code></details>}</div>}
+      : sheet.issue ? <FailureNotice message={t('変更内容を確認できませんでした。', 'Could not check the changes.')} detail={sheet.issue} scopeId={source?.registration.scopeId}/>
+        : <p role="status">{t('変更内容を確かめています…', 'Checking changes…')}</p>}</div>}
+    {shownFailure && <FailureNotice message={shownFailure.message} detail={shownFailure.detail} scopeId={source?.registration.scopeId}/>}
     {success && <div className="home-success" role="status"><p>{t(`次の新しいタスクから${modePresentation[success].title}です。`, `Use ${modePresentation[success].title} from your next new task.`)}</p>
       {c.view && <FreshTaskHandoff view={c.view} disabled={!c.confirmed} label={t('新しいタスクを始める', 'Start a new task')}/>}</div>}
     <p className="home-usage muted">{t('最近7日の使用量：まだ目安がありません。', 'Last 7 days of usage: no estimate yet.')}</p>

@@ -4,7 +4,8 @@ import { sourceControllerReducer, initialSourceControllerState } from '../src/so
 import { ApiError } from '../src/api.ts';
 
 const home = await import('../src/workbench/home-view.ts').catch(() => ({}));
-const { homeView, modeChoice, switchSheetText, modeForAction, failureAfterRefresh, proposalFailureMessage, removedCount } = home;
+const { homeView, modeChoice, consultationCopy, restoreHint, savedDetailsVisible,
+  switchSheetText, modeForAction, failureAfterRefresh, proposalFailureMessage, removedCount } = home;
 const source = (overrides = {}) => ({ preparedMode: 'trueform', revision: 7, setup: { setupId: 'a'.repeat(64) },
   registration: { scopeId: 'b'.repeat(64) }, conflict: null, recovery: { pending: false }, ...overrides });
 const input = (overrides = {}) => ({ source: source(), confirmed: true, busy: false, proposals: [], failure: null, ...overrides });
@@ -29,7 +30,14 @@ test('2. confirmation names the count and fresh task without claiming a switch o
 
 test('3. UNSEAL without saved setup invites an AI consultation instead of switching', () => {
   assert.equal(modeChoice(source({ setup: { setupId: null } }), 'unseal'), 'consult');
+  assert.equal(modeChoice(source({ setup: { setupId: null } }), 'trueform'), 'consult');
   assert.equal(modeChoice(source(), 'unseal'), 'switch');
+  assert.equal(modeChoice(source(), 'trueform'), 'switch');
+  const trueform = consultationCopy('trueform');
+  assert.equal(trueform.label, 'AIと零式の中身を決める');
+  assert.match(trueform.prompt, /外すもの/);
+  assert.match(trueform.prompt, /理由/);
+  assert.match(trueform.prompt, /まだ設定は変えない/);
 });
 
 test('4. failure appears once and unchanged is said only after matched readback', () => {
@@ -49,8 +57,15 @@ test('4. failure appears once and unchanged is said only after matched readback'
 
 test('5. restore selects Normal through the same local plan and apply journey', () => {
   assert.equal(modeForAction('restore'), 'normal');
+  assert.equal(homeView(input({ source: source({ preparedMode: 'normal' }) })).canRestore, false);
+  assert.equal(restoreHint(source({ preparedMode: 'normal' })), '今は元の構成です');
   assert.equal(homeView(input({ source: source({ preparedMode: 'unseal' }) })).canRestore, true);
   assert.equal(homeView(input({ source: source({ recovery: { pending: true } }) })).canRestore, false);
   assert.equal(homeView(input({ confirmed: false })).canRestore, false);
   assert.equal(homeView(input({ source: source({ conflict: { kind: 'source-conflict' }, modePlanningAvailable: true }) })).canRestore, true);
+});
+
+test('saved-configuration details exist only after Normal has been saved', () => {
+  assert.equal(savedDetailsVisible(null), false);
+  assert.equal(savedDetailsVisible(source()), true);
 });

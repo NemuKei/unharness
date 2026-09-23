@@ -130,6 +130,9 @@ button.home-mode-choice { cursor: pointer; }
 .home-mode-choice span, .home-mode-choice p { font-size: 12px; line-height: 1.5; margin: 0; }
 .home-mode-choice .ai-request-action { margin: auto 0 0; }
 .home-restore { min-width: 130px; min-height: 104px; padding: 12px 18px; border: 1px solid var(--amber); background: transparent; color: var(--text); font-weight: 700; }
+.home-restore-choice { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 130px; }
+.home-restore-choice small { color: var(--muted); font-size: 11px; text-align: center; }
+.home-restore-choice .home-restore { width: 100%; }
 .home-mode-choice:disabled, .home-restore:disabled { opacity: .52; cursor: not-allowed; }
 .home-blocker { margin: 0; padding: 10px 14px; border-left: 2px solid var(--amber); background: var(--surface); font-size: 13px; }
 .home-blocker button { margin-left: 6px; }
@@ -144,7 +147,7 @@ button.home-mode-choice { cursor: pointer; }
 .home-artwork { max-width: 380px; margin: 8px auto 0; }
 .home-artwork .hangar-scene { width: 100%; height: auto; aspect-ratio: 1; }
 .home-more-links { display: flex; justify-content: center; gap: 22px; flex-wrap: wrap; margin-top: 14px; }
-.legacy-mode-settings { padding-top: 8px; }
+.legacy-mode-settings { max-width: 1000px; margin: 12px auto 0; padding: 8px 30px 0; }
 @media (max-width: 700px) {
   .home-screen { padding: 8px 18px 30px; }
   .home-first { gap: 10px; }
@@ -154,7 +157,9 @@ button.home-mode-choice { cursor: pointer; }
   .home-mode-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .home-mode-choice { min-height: 106px; padding: 10px; }
   .home-mode-choice strong { font-size: 17px; }
-  .home-restore { grid-column: 1 / -1; min-height: 46px; }
+  .home-restore-choice { grid-column: 1 / -1; width: 100%; }
+  .home-restore { min-height: 46px; }
+  .legacy-mode-settings { margin: 8px 0 0; padding: 8px 18px 0; }
   .home-proposal, .home-switch-sheet, .home-failure, .home-success { padding: 12px 14px; }
   .home-usage { margin-top: 12px; }
   .source-workbench .workbench-place { display: none; }

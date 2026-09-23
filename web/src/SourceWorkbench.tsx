@@ -56,6 +56,7 @@ import { appearanceThemeFor } from './ui/appearance-tokens';
 import { UpdateInfoPanel } from './workbench/UpdateInfoPanel';
 import { savedModeIsPrepared } from './workbench/mode-preparation';
 import { HomeScreen } from './workbench/HomeScreen';
+import { savedDetailsVisible } from './workbench/home-view';
 
 function displayPreference() {
   try {
@@ -154,7 +155,7 @@ export function SourceWorkbench() {
           onResolve={() => selectPage(homeBlocker?.kind === 'initial' || homeBlocker?.kind === 'settings' ? 'settings' : 'support')}
           artwork={activeTab === 'mode' ? <Hangar condition={modePresentation[source?.preparedMode ?? 'normal'].scene} effects={effects} artwork={artwork} imageLoader={imageLoader} locale={getLocale()}/> : null}/>
       </div>
-      <details hidden={activeTab !== 'settings'} className="legacy-mode-settings"><summary>{t('保存した構成と過去の版を詳しく見る', 'Inspect saved configurations and earlier versions')}</summary>
+      <details hidden={activeTab !== 'settings' || !savedDetailsVisible(source ?? null)} className="legacy-mode-settings"><summary>{t('保存した構成と過去の版を詳しく見る', 'Inspect saved configurations and earlier versions')}</summary>
         <StatusOverview application={c.view?.metadata.applicationLabel ?? t('このMac', 'This Mac')}
           prepared={source ? preparationState === 'ready' ? modePresentation[source.preparedMode].title : t(`最後に確認：${modePresentation[source.preparedMode].title}`, `Last confirmed: ${modePresentation[source.preparedMode].title}`) : t('未登録', 'Not registered')}
           state={preparationState}
