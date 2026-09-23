@@ -319,6 +319,8 @@ git commit -m "Give the management Skill everyday judgment criteria"
 
 **Files:**
 - Create: `src/proposals/usage.mjs`（モード別の最近7日の目安）
+- Create: `src/sources/preparation-history.mjs`（切替の履歴：追記と読み出し）
+- Modify: `src/sources/transaction.mjs`（切替の成功と、復旧で状態が戻ったときに履歴へ追記）
 - Create: `web/src/workbench/CheckInCard.tsx`
 - Modify: `src/proposals/service.mjs`（`kind: 'initial'` は登録後に使う：setup の review を含む零式の提案として作り、承認で setup の適用 → 零式の適用を行う）
 - Modify: `web/src/SourceWorkbench.tsx` の登録画面（パス・実行ファイル・分類語を「詳しく」へ移し、候補を日常語で示す）
@@ -334,7 +336,7 @@ git commit -m "Give the management Skill everyday judgment criteria"
 **振る舞い（テストで固定する）:**
 1. 提案はworkspace（登録後に作られる）に保存されるため、登録前にAIは提案を作れない。登録（対象の確認と通常装備の保存）は今までどおりこのMacの画面で利用者が行う。登録画面の普段の表示から、Codex home・プロジェクト・実行ファイルのパス、保存場所、「任意の役割」などの分類語を外して「詳しく」に置き、候補は名前と日常語の説明で示す。宣言のチェックは「これは自分で追加したもので、外しても仕事の決まりには影響しません」の一文にする。
 1b. 登録の直後、画面は「AIと零式の中身を決める」へ案内する。AIは `review_setup` で零式の定義を作り、その `setupReviewId` を付けた `kind: 'initial'`・`mode: 'trueform'` の提案を作る。画面の提案カードは [いつもの構成を保存して零式にする] ではなく [零式にする] と表示する（通常装備は保存済みのため）。承認は既存の提案の承認（setup の適用 → 零式の適用）をそのまま使う。途中で失敗した場合は既存の復旧で戻せる。
-2. タスクのモードは、そのタスクの開始時刻に準備されていたモードで決める。判定できないタスクは集計しない。
+2. タスクのモードは、そのタスクの開始時刻に準備されていたモードで決める。そのために、切替の成功（通常の適用と、復旧で状態が戻った場合の両方）のたびに `{ mode, revision, preparedAt }` をworkspace配下の追記専用の記録（切替の履歴）へ1行加える。既存の `state.json` や変更前の記録の形式は変えない。タスクの開始時刻以前で最も新しい履歴の行がそのタスクのモード。履歴の最初の行より前に始まったタスクと、判定できないタスクは集計しない（2026-09-24 Solの確認：既存の記録には過去の切替時刻が残らないため）。
 3. token記録のないタスクしかない、またはタスクがない場合は `perTask: null`、画面は「まだ目安がありません」。
 4. Claude Codeの記録（合計なし）は、同じアプリ内で同じ基準の値だけを比べる。推定の合計を作らない。アプリをまたいで比べない。
 5. 声かけは `checkInDue` が真で、同じ追加について未回答のときだけ出す。[残す] [外す] [AIに相談]。
