@@ -86,11 +86,11 @@ export function SetupHandoff({ view, confirmed, busy, execute }: { view: SourceV
   </section>;
 }
 
-export function FreshTaskHandoff({ view, disabled }: { view: SourceView; disabled: boolean }) {
+export function FreshTaskHandoff({ view, disabled, label }: { view: SourceView; disabled: boolean; label?: string }) {
   const prompt = freshTaskHandoffPrompt(view);
   if (!prompt) return null;
   return <details className="fresh-task-handoff">
-    <summary>{t("この設定で新しいタスクを始める", "Start a fresh task with this setup")}</summary>
+    <summary>{label ?? t("この設定で新しいタスクを始める", "Start a fresh task with this setup")}</summary>
     <p className="muted">{t("同じプロジェクトの新しいタスクへ依頼文を貼り付け、最初の短い応答を完了させてください。その後、この画面か元の管理タスクから読み込みを確認します。現在の会話の読み込みは変わりません。", "Paste the request into a fresh task in the same project and let its first short response finish. Then check loading from this screen or the original management task. The current conversation's loaded input stays unchanged.")}</p>
     {disabled ? <p className="muted">{t("まず現在の準備状態を確認してください。", "Check the current preparation first.")}</p>
       : <PromptCopy prompt={prompt} label={t("新しいタスクへの依頼文", "Request for a fresh task")} />}

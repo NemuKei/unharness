@@ -102,3 +102,60 @@
   .source-workbench .hangar-layout > * { width: 100%; }
   .public-workbench .public-mode-layout { flex-direction: column-reverse; }
 }
+
+/* Chat-led everyday surface; saved contents and records stay under More. */
+.home-display-menu { position: relative; }
+.home-display-menu > summary { cursor: pointer; list-style: none; min-height: 44px; display: flex; align-items: center; color: var(--text); }
+.home-display-menu > div { position: absolute; z-index: 12; top: 100%; right: 0; width: min(320px, calc(100vw - 24px));
+  padding: 18px; display: grid; gap: 16px; background: var(--surface-raised); border: 1px solid var(--line); box-shadow: 0 14px 30px #0008; }
+.home-screen { max-width: 1000px; margin: 0 auto; padding: 12px 30px 42px; }
+.home-first { display: grid; gap: 16px; }
+.home-current { padding: 16px 20px; border: 1px solid var(--border); background: var(--surface); }
+.home-current > span, .home-current small { color: var(--muted); font-size: 12px; }
+.home-current h1 { margin: 4px 0 2px; font-size: clamp(30px, 4vw, 50px); line-height: 1.2; }
+.home-current p { margin: 0 0 6px; font-size: 15px; }
+.home-proposal, .home-switch-sheet, .home-failure, .home-success { padding: 18px 20px; border: 1px solid var(--border); background: var(--surface); }
+.home-proposal h2, .home-switch-sheet h2 { margin: 0 0 8px; font-size: 18px; }
+.home-proposal p { margin: 0 0 8px; }
+.home-proposal ul { margin: 8px 0 14px; padding-left: 20px; }
+.home-proposal li { margin: 6px 0; }
+.home-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.home-actions button { min-height: 44px; }
+.home-mode-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) auto; gap: 12px; align-items: stretch; }
+.home-mode-choice { min-width: 0; min-height: 104px; padding: 14px; border: 1px solid var(--border); background: var(--surface);
+  color: var(--text); text-align: left; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+button.home-mode-choice { cursor: pointer; }
+.home-mode-choice strong { font-size: 19px; }
+.home-mode-choice small { color: var(--amber); font-size: 11px; }
+.home-mode-choice span, .home-mode-choice p { font-size: 12px; line-height: 1.5; margin: 0; }
+.home-mode-choice .ai-request-action { margin: auto 0 0; }
+.home-restore { min-width: 130px; min-height: 104px; padding: 12px 18px; border: 1px solid var(--amber); background: transparent; color: var(--text); font-weight: 700; }
+.home-mode-choice:disabled, .home-restore:disabled { opacity: .52; cursor: not-allowed; }
+.home-blocker { margin: 0; padding: 10px 14px; border-left: 2px solid var(--amber); background: var(--surface); font-size: 13px; }
+.home-blocker button { margin-left: 6px; }
+.home-sheet-area { margin: 16px 0; }
+.home-failure { margin-top: 16px; border-color: var(--amber); }
+.home-failure p { margin: 0 0 12px; }
+.home-failure .ai-request-action { margin: 0; }
+.home-failure details { margin-top: 12px; font-size: 12px; }
+.home-success { margin-top: 16px; border-color: var(--success); }
+.home-success p { margin: 0 0 10px; }
+.home-usage { margin: 18px 0 8px; font-size: 12px; }
+.home-artwork { max-width: 380px; margin: 8px auto 0; }
+.home-artwork .hangar-scene { width: 100%; height: auto; aspect-ratio: 1; }
+.home-more-links { display: flex; justify-content: center; gap: 22px; flex-wrap: wrap; margin-top: 14px; }
+.legacy-mode-settings { padding-top: 8px; }
+@media (max-width: 700px) {
+  .home-screen { padding: 8px 18px 30px; }
+  .home-first { gap: 10px; }
+  .home-current { padding: 12px 14px; }
+  .home-current h1 { font-size: 31px; }
+  .home-current p { font-size: 13px; }
+  .home-mode-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .home-mode-choice { min-height: 106px; padding: 10px; }
+  .home-mode-choice strong { font-size: 17px; }
+  .home-restore { grid-column: 1 / -1; min-height: 46px; }
+  .home-proposal, .home-switch-sheet, .home-failure, .home-success { padding: 12px 14px; }
+  .home-usage { margin-top: 12px; }
+  .source-workbench .workbench-place { display: none; }
+}

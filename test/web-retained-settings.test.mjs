@@ -546,7 +546,7 @@ test("a later rejected or uncertain action replaces the previous success notice"
     });
     assert.equal(failed.confirmed, false);
     assert.notEqual(failed.notice, reviewed.notice);
-    assert.equal(failed.notice, failed.error);
-    assert.match(failed.notice, /うまくいきませんでした|まだ確かめていません/);
+    assert.equal(failed.notice, '');
+    assert.match(failed.error, /うまくいきませんでした|まだ確かめていません/);
   }
 });

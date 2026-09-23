@@ -95,8 +95,8 @@ export function useSourceController() {
   function failed(e: unknown) {
     dispatch({ type: "failed", error: e });
   }
-  async function refresh() {
-    if (lock.current) return;
+  async function refresh(): Promise<SourceView | null> {
+    if (lock.current) return null;
     lock.current = true;
     ++foregroundGeneration.current;
     setBusy(true);
@@ -113,8 +113,10 @@ export function useSourceController() {
         type: "set-notice",
         notice: t("状態を再取得しました。実行中のタスクは未検証です。", "State refreshed. The running task is unverified."),
       });
+      return next;
     } catch (e) {
       failed(e);
+      return null;
     } finally {
       lock.current = false;
       setBusy(false);

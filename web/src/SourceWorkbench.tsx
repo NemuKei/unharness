@@ -55,6 +55,7 @@ import { ModeCard } from './workbench/ModeCard';
 import { appearanceThemeFor } from './ui/appearance-tokens';
 import { UpdateInfoPanel } from './workbench/UpdateInfoPanel';
 import { savedModeIsPrepared } from './workbench/mode-preparation';
+import { HomeScreen } from './workbench/HomeScreen';
 
 function displayPreference() {
   try {
@@ -114,10 +115,12 @@ export function SourceWorkbench() {
     else if (initialContext.current && !initialContext.current.registered) selectPage('mode', true);
     initialContext.current = { id, registered };
   }, [c.view?.metadata.contextId, !!source, c.confirmed]);
-  const blocker = modeBlocker({ busy: c.busy, connected: true, confirmed: c.confirmed,
+  const blockerState = { busy: c.busy, connected: true, confirmed: c.confirmed,
     registered: !!source, conflict: !!source?.conflict, recoveryPending: !!source?.recovery.pending,
     modePlanningAvailable: source?.modePlanningAvailable,
-    setupRequired: !!source?.setup?.setupRequired }, c.selected);
+    setupRequired: !!source?.setup?.setupRequired };
+  const blocker = modeBlocker(blockerState, c.selected);
+  const homeBlocker = modeBlocker(blockerState, 'trueform');
   const modeNotice = ['状態を再取得しました。実行中のタスクは未検証です。', '接続情報を確認しています。', 'State refreshed. The running task is unverified.', 'Checking the connection.'].includes(c.notice) ? undefined : c.notice;
   const preparationState = !c.confirmed || c.busy ? 'checking' : savedModeIsPrepared(source, c.confirmed, source?.preparedMode ?? 'normal') ? 'ready' : 'attention';
   const resolveBlocker = blocker && blocker.kind !== 'busy' ? <>
@@ -132,27 +135,13 @@ export function SourceWorkbench() {
         <a className="wordmark" href="#main">
           UNHARNESS<span>{t("装備を見直す。", "Find your fit.")}</span>
         </a>
-        <div className="header-right"><LanguageSwitch/><ThemeSwitch/>
-          <span className="scope-label">
-            {source ? t("登録した追加設定", "Registered optional settings") : t("追加設定の確認", "Review optional settings")}
-          </span>
-          <label className="effects">
-            <input
-              type="checkbox"
-              checked={effects}
-              onChange={(e) => {
-                setEffects(e.target.checked);
-                try {
-                  localStorage.setItem(
-                    "unharness.effects.v1",
-                    e.target.checked ? "on" : "off",
-                  );
-                } catch {}
-              }}
-            />
-            {t("演出 ", "Animation ")}<span>{effects ? "ON" : "OFF"}</span>
-          </label>
-        </div>
+        <div className="header-right"><details className="home-display-menu"><summary>{t('表示設定', 'Display settings')}</summary><div>
+          <LanguageSwitch/><ThemeSwitch/>
+          <label className="effects"><input type="checkbox" checked={effects} onChange={(e) => {
+            setEffects(e.target.checked);
+            try { localStorage.setItem("unharness.effects.v1", e.target.checked ? "on" : "off"); } catch {}
+          }}/>{t('演出', 'Animation')} <span>{effects ? 'ON' : 'OFF'}</span></label>
+        </div></details></div>
       </header>
     <WorkbenchNavigation page={activeTab} select={selectPage}/>
     <div className="workbench-place"><p>{t("このMacの設定と記録を操作しています。オフラインでも使えます。", "Manage the settings and records on this Mac, including offline.")}</p>
@@ -161,13 +150,18 @@ export function SourceWorkbench() {
     {c.syncNotice && c.syncIssue && <p className="source-sync-notice muted" role="status">{c.syncNotice}</p>}
     <main id="main">
       <div hidden={activeTab !== 'mode'}>
+        <HomeScreen controller={c} blocker={homeBlocker?.message ?? null} onSettings={() => selectPage('settings')} onSupport={() => selectPage('support')}
+          onResolve={() => selectPage(homeBlocker?.kind === 'initial' || homeBlocker?.kind === 'settings' ? 'settings' : 'support')}
+          artwork={activeTab === 'mode' ? <Hangar condition={modePresentation[source?.preparedMode ?? 'normal'].scene} effects={effects} artwork={artwork} imageLoader={imageLoader} locale={getLocale()}/> : null}/>
+      </div>
+      <details hidden={activeTab !== 'settings'} className="legacy-mode-settings"><summary>{t('保存した構成と過去の版を詳しく見る', 'Inspect saved configurations and earlier versions')}</summary>
         <StatusOverview application={c.view?.metadata.applicationLabel ?? t('このMac', 'This Mac')}
           prepared={source ? preparationState === 'ready' ? modePresentation[source.preparedMode].title : t(`最後に確認：${modePresentation[source.preparedMode].title}`, `Last confirmed: ${modePresentation[source.preparedMode].title}`) : t('未登録', 'Not registered')}
           state={preparationState}
           next={blocker ? t('変更前に確認が必要です。保存内容はそのまま閲覧できます。', 'Review is required before changes. Saved contents remain available to inspect.') : t('表示するモードを選び、保存内容を確認できます。選ぶだけでは設定を変えません。', 'Choose a mode to inspect its saved contents. Selection alone does not change settings.')}/>
         <div className="simple-mode-layout">
           <section className="mode-appearance-preview" aria-label={t("選択したモードの姿", "Selected mode appearance")}>
-            {activeTab === 'mode' && <Hangar condition={presentation.scene} effects={effects} artwork={artwork} imageLoader={imageLoader} locale={getLocale()}/>}
+            {activeTab === 'settings' && <Hangar condition={presentation.scene} effects={effects} artwork={artwork} imageLoader={imageLoader} locale={getLocale()}/>}
             <p className="scene-caption">{t("選択したモードの姿です。確定するまで設定は変わりません。", "Preview of the selected mode. Settings stay unchanged until you apply it.")}</p>
           </section>
           <aside className="control-column" aria-label={t("設定と保存", "Settings and saved versions")}>
@@ -179,7 +173,7 @@ export function SourceWorkbench() {
 
             <ModeChoices key={c.selectionKey + ':' + (source?.registration.normalId ?? 'setup') + ':' + (source?.setup?.setupId ?? 'legacy')} controller={c} selections={legacySelections} setSelections={setLegacySelections}/>
             <ModeActions compact={!c.plan || sourceModes.includes(c.plan.mode as SourceMode)} title={presentation.title} blocker={blocker} planReady={!!c.plan && c.plan.preparedMode === c.selected}
-              review={() => c.choose(c.selected, !source?.setup?.setupId && !source?.setup?.setupRequired ? legacySelections[c.selected] : undefined)} confirm={() => { if (canApplyMode && c.plan) void c.run('apply', { planId: c.plan.planId }); }} resolve={resolveBlocker} statusMessage={activeTab === 'mode' ? modeNotice : undefined}>
+              review={() => c.choose(c.selected, !source?.setup?.setupId && !source?.setup?.setupRequired ? legacySelections[c.selected] : undefined)} confirm={() => { if (canApplyMode && c.plan) void c.run('apply', { planId: c.plan.planId }); }} resolve={resolveBlocker} statusMessage={activeTab === 'settings' ? modeNotice : undefined}>
                   {c.plan && source ? (
                     <>
                       <p className="mode-plan-description">{presentation.description}</p>
@@ -224,7 +218,7 @@ export function SourceWorkbench() {
                       {t("モードまたは保存版を選び、変更計画を確認してください。", "Select a mode or saved version and review the change plan.")}</p>
                   )}
             </ModeActions>
-            {source && (!c.plan || sourceModes.includes(c.plan.mode as SourceMode)) && <ModeContents key={c.view?.metadata.contextId} controller={c} visible={activeTab === 'mode'}/>}
+            {source && (!c.plan || sourceModes.includes(c.plan.mode as SourceMode)) && <ModeContents key={c.view?.metadata.contextId} controller={c} visible={activeTab === 'settings'}/>}
             <section className="mode-saved-configurations" aria-label={t('保存した構成', 'Saved configurations')}>
               <div className="section-heading"><h2>{t('保存した構成', 'Saved configurations')}</h2><span>{t('お気に入りと過去の版', 'Favorites and earlier versions')}</span></div>
               <p className="muted">{t('保存した時点の内容です。現在の同名モードと異なる旧版も、確認してから復帰します。', 'These keep the content saved at that time. Earlier versions may differ from the current mode with the same name and are reviewed before restoration.')}</p>
@@ -241,7 +235,7 @@ export function SourceWorkbench() {
             <button className="text-button" onClick={() => selectPage('settings')}>{t("各モードの指示・Skillを見直す", "Review each mode's instructions and Skills")}</button>
           </aside>
         </div>
-      </div>
+      </details>
       <section className="workbench-pane" hidden={activeTab !== 'settings'} aria-label={t("設定の見直し", "Review settings")}>
         <div className="settings-flow" role="region" aria-label={t('設定の流れ', 'Settings flow')}>
           <section className="settings-stage"><h2>{t('1. 保存内容を見る', '1. Review saved contents')}</h2><p>{t('日常の確認はモード画面で行います。見るだけでは変更しません。', 'Use Modes for everyday inspection. Viewing alone does not change settings.')}</p><button className="secondary" onClick={() => selectPage('mode')}>{t('モードと保存内容を見る', 'View modes and saved contents')}</button></section>
@@ -417,7 +411,7 @@ export function SourceWorkbench() {
         </div>
       </div>
       {activeTab !== 'mode' && modeNotice && <div className="status-strip"><div role="status" aria-live="polite">{modeNotice}</div></div>}
-      {c.error && <div className="global-error" role="alert">{c.error}{c.errorDetail && <details><summary>{t('詳しく', 'Details')}</summary><code>{c.errorDetail}</code></details>}</div>}
+      {activeTab !== 'mode' && c.error && <div className="global-error" role="alert">{c.error}{c.errorDetail && <details><summary>{t('詳しく', 'Details')}</summary><code>{c.errorDetail}</code></details>}</div>}
       <footer><span>UNHARNESS</span><span className="muted">{t("画面でも、チャットでも。同じ設定を使えます。", "The screen and chat use the same saved settings.")}</span></footer>
     </main>
   </div>;

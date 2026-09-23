@@ -204,7 +204,7 @@ export function sourceControllerReducer(
   }
   if (action.type === "failed") {
     const { message, detail } = failureFeedback(action.error);
-    return { ...state, confirmed: false, error: message, errorDetail: detail, notice: message };
+    return { ...state, confirmed: false, error: message, errorDetail: detail, notice: "" };
   }
   if (action.type === "clear-error") return { ...state, error: "", errorDetail: "" };
   if (action.type === "set-error") return { ...state, error: action.error, errorDetail: "" };
