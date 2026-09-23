@@ -162,7 +162,7 @@ test("retained review renders private-record-only disclosure and explicit accept
     }),
   );
   assert.ok(rendered.includes("共通設定だけを取り込む"));
-  assert.ok(rendered.includes("準備済みのモードはUNSEALのまま"));
+  assert.ok(rendered.includes("準備済みのモードは限定解除のまま"));
   assert.ok(rendered.includes("管理対象ファイルは変更しません"));
   assert.ok(rendered.includes("選択した指示・Skillは登録済みの内容を維持"));
   assert.ok(rendered.includes("古い保存版はそのまま残ります"));
@@ -547,6 +547,6 @@ test("a later rejected or uncertain action replaces the previous success notice"
     assert.equal(failed.confirmed, false);
     assert.notEqual(failed.notice, reviewed.notice);
     assert.equal(failed.notice, failed.error);
-    assert.match(failed.notice, /完了できませんでした|結果は未確認/);
+    assert.match(failed.notice, /うまくいきませんでした|まだ確かめていません/);
   }
 });

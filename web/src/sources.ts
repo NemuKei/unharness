@@ -7,24 +7,27 @@ export const modePresentation: Record<
   { title: string; label: string; description: string; scene: FixtureCase }
 > = {
   normal: {
-    title: "Normal",
-    get label() { return t("通常装備", "Saved loadout"); },
-    get description() { return t("保存した追加指示とSkillを使う。", "Use saved instructions and Skills."); },
+    get title() { return t("通常装備", "Normal"); },
+    get label() { return t("Normal", "Saved loadout"); },
+    get description() { return t("最初に保存した、元の構成。", "The configuration you saved at the start."); },
     scene: "baseline",
   },
   unseal: {
-    title: "UNSEAL",
-    get label() { return t("限定解除", "Limited release"); },
-    get description() { return t("保存した限定解除の指示・Skill構成を使う。", "Use the saved UNSEAL instruction and Skill configuration."); },
+    get title() { return t("限定解除", "UNSEAL"); },
+    get label() { return t("UNSEAL", "Limited release"); },
+    get description() { return t("零式を土台に、選んだ装備だけを解放する。", "Starts from TRUEFORM and releases only the gear you choose."); },
     scene: "manual-only",
   },
   trueform: {
-    title: "TRUEFORM",
-    get label() { return t("零式", "Zero"); },
-    get description() { return t("保存した零式の指示・Skill構成を使う。", "Use the saved TRUEFORM instruction and Skill configuration."); },
+    get title() { return t("零式", "TRUEFORM"); },
+    get label() { return t("TRUEFORM", "Zero"); },
+    get description() { return t("何も足さない、素のAI。", "Nothing added — the AI as it is."); },
     scene: "fixed-only",
   },
 };
+// Headings lead with the concept name; the other language's name is decoration.
+export const modeHeading = (mode: SourceMode) =>
+  t(`${modePresentation[mode].title}（${modePresentation[mode].label}）`, `${modePresentation[mode].title} (${modePresentation[mode].label})`);
 export type SourceApplication = "codex" | "claude";
 export type CodexSourceContext = {
   codexHome: string;

@@ -94,8 +94,8 @@ function failureFeedback(error: unknown) {
   const kind = error instanceof ApiError ? error.kind : "request-failed";
   const message =
     error instanceof ApiError && error.disposition === "uncertain"
-      ? t("結果は未確認です。状態を再取得してください。自動再送は行いません。", "The result is unconfirmed. Refresh the state; no automatic retry will be sent.")
-      : t(`操作を完了できませんでした（${kind}）。外部の変更を確認し、状態を再取得してください。`, `Operation failed (${kind}). Review external changes and refresh state.`);
+      ? t("結果をまだ確かめていません。もう一度押さずに、「状態を再取得」で確かめてください。自動でやり直すことはありません。", "The result is not confirmed yet. Don’t press again — use Refresh state. Nothing is retried automatically.")
+      : t(`うまくいきませんでした。「状態を再取得」で今の設定を確かめてください。（詳しく：${kind}）`, `That didn’t work. Use Refresh state to check the current settings. (Details: ${kind})`);
   return { message };
 }
 

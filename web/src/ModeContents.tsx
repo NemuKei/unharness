@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { text as t } from './locale.ts';
-import { modePresentation, sourceModes } from './sources';
+import { modeHeading, modePresentation, sourceModes } from './sources';
 import type { SourceMode } from './sources';
 import type { useSourceController } from './useSourceController';
 import './mode-contents.css';
@@ -68,7 +68,7 @@ export function ModeContents({ controller: c, visible }: { controller: ReturnTyp
     setBody(response.result);
   }
   return <section className="mode-contents" aria-label={t('このモードの内容', 'Contents of this mode')}>
-    <div className="mode-contents-heading"><h1>{modePresentation[c.selected].label} — {modePresentation[c.selected].title}{t('の内容', ' contents')}</h1><span>{t('保存済みの構成', 'Saved configuration')}</span></div><p className="muted mode-read-only">{t('見るだけでは設定は変わりません。', 'Viewing does not change settings.')}</p>
+    <div className="mode-contents-heading"><h1>{modeHeading(c.selected)}{t('の内容', ' contents')}</h1><span>{t('保存済みの構成', 'Saved configuration')}</span></div><p className="muted mode-read-only">{t('見るだけでは設定は変わりません。', 'Viewing does not change settings.')}</p>
     {source?.conflict && <p className="mode-contents-state">{t('保存内容を表示しています。今の設定との差分は、切替前に確認します。', 'Showing saved contents. Current differences are checked before switching.')}</p>}
     {c.selected !== 'normal' && !source?.conflict && source?.setup?.setupId && source.setup.preparedSetupId !== source.setup.setupId && <p className="mode-contents-state">{t('この保存内容は、まだ次のタスク用に準備されていません。', 'These saved contents have not been prepared for the next task yet.')}</p>}
     {error ? <p role="alert">{error} <button className="text-button" onClick={() => void load()} disabled={c.busy}>{t('読み直す', 'Retry')}</button></p>

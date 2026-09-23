@@ -33,6 +33,7 @@ import {
   canObserveTask,
   currentTaskObservation,
   isClaudeContext,
+  modeHeading,
   modePresentation,
   observationIssueText,
   sourceHomeOf,
@@ -171,7 +172,7 @@ export function SourceWorkbench() {
           </section>
           <aside className="control-column" aria-label={t("設定と保存", "Settings and saved versions")}>
             <section className="mode-current control-section"><div className="section-heading"><h2>{source?.conflict && source.modePlanningAvailable ? t("最後に準備したモード", "Last prepared mode") : t("現在の準備", "Currently prepared")}</h2></div>
-              <p className="selected-name">{source ? modePresentation[source.preparedMode].title : c.confirmed ? t("通常装備はまだ保存されていません", "Normal has not been saved yet") : t("確認中", "Checking")}</p>
+              <p className="selected-name">{source ? modeHeading(source.preparedMode) : c.confirmed ? t("通常装備はまだ保存されていません", "Normal has not been saved yet") : t("確認中", "Checking")}</p>
               {source && (!c.confirmed || (source.conflict && !source.modePlanningAvailable) || source.recovery.pending) && <p className="muted">{t("前回確認した構成です。現在の状態を確認してください。", "This is the last confirmed loadout. Check the current state.")}</p>}
               {source?.registration.modeChangeRequired && <p className="scope-enrollment-notice" role="status">{t("登録が更新されました。次のタスク用の設定を、まだ準備していません。", "Registration changed. Settings for the next task have not been prepared yet. ")}{source.setup?.setupRequired ? t("先に「設定をAIと見直す」で両モードの構成を確認・保存してください。Normalと過去の保存版には戻せます。", "Use Review settings with AI to review and save both modes first. Normal and earlier saved versions remain available.") : t("使うモードを選び、変更内容を確認してください。", "Select a mode and review its changes.")}</p>}
             </section>

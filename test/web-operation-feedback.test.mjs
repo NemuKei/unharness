@@ -37,7 +37,7 @@ test('Modes keeps overview, preview, confirmation and saved versions close while
   assert.equal(await page.locator('.source-workbench').getAttribute('data-appearance'), 'default');
   const choices = page.getByLabel('モードを選択', { exact: true });
   await choices.getByRole('button', { name: /^TRUEFORM/ }).click();
-  await page.getByRole('heading', { name: '零式 — TRUEFORMの内容', exact: true }).waitFor();
+  await page.getByRole('heading', { name: '零式（TRUEFORM）の内容', exact: true }).waitFor();
   assert.equal(posts.filter(path => /\/(plan|apply)$/.test(path)).length, 0, 'previewing a mode never plans or applies it');
   await page.getByRole('region', { name: 'モード切替', exact: true }).getByRole('button', { name: '変更内容を確認', exact: true }).waitFor();
   await page.getByRole('region', { name: '保存した構成', exact: true }).waitFor();
@@ -64,7 +64,7 @@ test('Modes keeps overview, preview, confirmation and saved versions close while
   await page.goForward(); await settings.waitFor(); assert.equal(new URL(page.url()).hash, '#view=settings');
   await page.goBack(); await page.getByRole('region', { name: '次のタスク用の準備', exact: true }).waitFor();
   await page.getByRole('button', { name: /^Normal/ }).click();
-  await page.getByRole('heading', { name: '通常装備 — Normalの内容', exact: true }).waitFor();
+  await page.getByRole('heading', { name: '通常装備（Normal）の内容', exact: true }).waitFor();
 
   const entered = Promise.withResolvers(), release = Promise.withResolvers(); t.after(() => release.resolve());
   await page.route('**/api/sources/mode-source', async route => { const response = await route.fetch(); entered.resolve(); await release.promise; await route.fulfill({ response }); });

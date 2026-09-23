@@ -147,7 +147,7 @@ test('background readback does not confirm or repeat an uncertain GUI applicatio
   await page.getByRole('button', { name: /TRUEFORM/ }).click();
   await page.getByRole('button', { name: '変更内容を確認', exact: true }).click();
   await page.getByRole('button', { name: 'この内容で確定する', exact: true }).click();
-  await page.getByText('結果は未確認です。状態を再取得してください。自動再送は行いません。', { exact: true }).first().waitFor();
+  await page.getByText('結果をまだ確かめていません。もう一度押さずに、「状態を再取得」で確かめてください。自動でやり直すことはありません。', { exact: true }).first().waitFor();
   await s.expectMode('TRUEFORM');
   await page.getByText('前回確認した構成です。現在の状態を確認してください。', { exact: true }).waitFor();
   assert.equal(s.posts.filter(path => path.endsWith('/apply')).length, 1);
@@ -155,7 +155,7 @@ test('background readback does not confirm or repeat an uncertain GUI applicatio
   await s.ai.mode('normal'); await s.expectMode('Normal');
   await page.getByText('前回確認した構成です。現在の状態を確認してください。', { exact: true }).waitFor();
   await page.getByRole('button', { name: '状態を再取得', exact: true }).click();
-  await page.locator('.control-column .selected-name').filter({ hasText: /^Normal$/ }).waitFor();
+  await page.locator('.control-column .selected-name').filter({ hasText: /^通常装備（Normal）$/ }).waitFor();
   assert.deepEqual(s.errors, []);
 });
 

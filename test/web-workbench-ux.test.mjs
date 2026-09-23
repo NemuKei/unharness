@@ -26,7 +26,7 @@ test('a source conflict keeps a nearby AI state-check available without enabling
   page.on('request', r => { if (r.method() === 'POST') posts.push(new URL(r.url()).pathname); });
   await page.goto(gui.url);
   const actions = page.getByRole('region', { name: 'モード切替', exact: true });
-  await actions.getByText('保存時と今の設定が異なるため、切替を止めています。', { exact: true }).waitFor();
+  await actions.getByText('前に保存したときから設定が変わっています。安全のため、切り替えを止めています。', { exact: true }).waitFor();
   const choicesBox = await page.getByLabel('モードを選択', { exact: true }).boundingBox(), actionsBox = await actions.boundingBox();
   assert.ok(choicesBox && actionsBox && actionsBox.y - choicesBox.y - choicesBox.height <= 40, 'the reason and confirmation stay next to mode selection');
   assert.equal(await actions.getByRole('button', { name: 'この内容で確定する', exact: true }).isDisabled(), true);

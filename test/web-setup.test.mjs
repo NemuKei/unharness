@@ -84,7 +84,7 @@ test('clipboard failure leaves a selectable prompt and conflicts offer a state-c
   await writeFile(join(s.context.codexHome, 'AGENTS.md'), '# An independent edit\n');
   await openWorkbenchPage(page, 'モード');
   await page.getByRole('button', { name: '状態を再取得', exact: true }).click();
-  await page.getByText('保存時と今の設定が異なるため、切替を止めています。', { exact: true }).waitFor();
+  await page.getByText('前に保存したときから設定が変わっています。安全のため、切り替えを止めています。', { exact: true }).waitFor();
   assert.equal(await page.getByRole('button', { name: 'この内容で確定する', exact: true }).isDisabled(), true);
   await openWorkbenchPage(page, '設定');
   assert.equal(await page.getByRole('button', { name: '状態の確認をAIに頼む', exact: true }).isEnabled(), true);
