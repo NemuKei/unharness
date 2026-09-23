@@ -8,7 +8,6 @@ import { parseStrictJson } from '../core/strict-json.mjs';
 import { createGuiController } from './controller.mjs';
 import { createGuiInventory } from './inventory.mjs';
 import { createSourceController, sourceRequestShape } from './sources.mjs';
-import { createRemoteHttp } from './remote-http.mjs';
 import { APPEARANCE_UPLOAD_BODY_LIMIT } from '../appearances/template.mjs';
 import { USER_SOURCE_ERROR_KINDS, APPEARANCE_OPERATIONS, SETUP_OPERATIONS, ENROLLMENT_OPERATIONS } from '../sources/service.mjs';
 
@@ -20,8 +19,6 @@ const COMPARISON_ACTIONS = new Set([
   'run-favorite',
 ]);
 const STARTING_ACTIONS = new Set(['review-start', 'save-start', 'start', 'starts']);
-const REPLAY_ACTIONS = new Set(['review-replay', 'prepare-replay', 'handoff-replay', 'replay', 'replays', 'cancel-replay',
-  'observe-replay', 'save-replay-result', 'replay-result', 'open-replay', 'compare-replays', 'replay-favorite']);
 const CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'";
 const SAFE_ERRORS = new Set([
   'gui-recovery-operation-forbidden', 'plugin-recovery-invalid', 'distribution-invalid', 'plugin-binding-invalid', 'plugin-binding-changed',
@@ -57,7 +54,7 @@ function safeError(error) {
 }
 
 function statusFor(kind) {
-  if (kind === 'starting-publication-uncertain' || kind === 'replay-publication-uncertain' || kind === 'replay-desktop-open-uncertain' || kind === 'appearance-publication-uncertain' || kind === 'appearance-image-publication-uncertain') return 500;
+  if (kind === 'starting-publication-uncertain' || kind === 'appearance-publication-uncertain' || kind === 'appearance-image-publication-uncertain') return 500;
   if (kind === 'starting-files-changed') return 409;
   if (kind === 'gui-request-forbidden') return 403;
   if (kind === 'gui-request-too-large') return 413;
@@ -156,7 +153,7 @@ async function readJson(request, strict = false, maxBodyBytes = strict ? 64 * 10
 }
 
 export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0, codexHome, manageSources, sourceWorkspace, launchId, recoveryBinding, inventory: inventoryOptions } = {}, {
-  collectInventory, handleControlRequest, remoteNow,
+  collectInventory, handleControlRequest,
 } = {}) {
   if (!Number.isSafeInteger(port) || port < 0 || port > 65535) {
     throw Object.assign(new Error('gui-invalid-port'), { kind: 'gui-invalid-port' });
@@ -181,8 +178,6 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
     queue = run.then(() => undefined, () => undefined);
     return run;
   };
-  const remote = sourceController && !recoveryBinding
-    ? await createRemoteHttp({ controller: sourceController, enqueue, readJson, now: remoteNow }) : null;
 
   const server = createServer(async (request, response) => {
     if (stopping) { response.destroy(); return; }
@@ -190,11 +185,6 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
       const parsed = new URL(request.url, origin);
       if (parsed.pathname.startsWith('/_unharness/') && handleControlRequest) {
         await handleControlRequest(request, response); return;
-      }
-      if (parsed.pathname.startsWith('/remote/')) {
-        if (remote) await remote.publicRequest(request, response, parsed, origin);
-        else sendJson(response, 403, { error: { kind: 'gui-request-forbidden' } });
-        return;
       }
       const isApi = parsed.pathname.startsWith('/api/');
       if (!isApi) {
@@ -227,9 +217,6 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
         return;
       }
 
-      if (remote && parsed.pathname.startsWith('/api/remote/')) {
-        await remote.localRequest(request, response, parsed); return;
-      }
       if (request.method === 'GET') {
         const params = [...parsed.searchParams.keys()];
         if (parsed.pathname === '/api/bootstrap' && params.length === 0) sendJson(response, 200, { token, kind });
@@ -270,10 +257,9 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
       }
       const action = parsed.pathname.slice(sourceRoute ? '/api/sources/'.length : '/api/'.length);
       const starting = sourceRoute && STARTING_ACTIONS.has(action);
-      const replay = sourceRoute && REPLAY_ACTIONS.has(action);
       const parsedBody = (sourceRoute ? sourceRequestShape : requestShape)(
-        await readJson(request, !!recoveryBinding || sourceRoute && (COMPARISON_ACTIONS.has(action) || starting || replay || Object.hasOwn(APPEARANCE_OPERATIONS, action) || Object.hasOwn(SETUP_OPERATIONS, action) || Object.hasOwn(ENROLLMENT_OPERATIONS, action)),
-          action === 'review-appearance-import' && sourceRoute && !recoveryBinding ? APPEARANCE_UPLOAD_BODY_LIMIT : starting ? 128 * 1024 : replay ? 65536 : (Object.hasOwn(SETUP_OPERATIONS, action) || Object.hasOwn(ENROLLMENT_OPERATIONS, action)) ? MAX_BODY_BYTES : undefined),
+        await readJson(request, !!recoveryBinding || sourceRoute && (COMPARISON_ACTIONS.has(action) || starting || Object.hasOwn(APPEARANCE_OPERATIONS, action) || Object.hasOwn(SETUP_OPERATIONS, action) || Object.hasOwn(ENROLLMENT_OPERATIONS, action)),
+          action === 'review-appearance-import' && sourceRoute && !recoveryBinding ? APPEARANCE_UPLOAD_BODY_LIMIT : starting ? 128 * 1024 : (Object.hasOwn(SETUP_OPERATIONS, action) || Object.hasOwn(ENROLLMENT_OPERATIONS, action)) ? MAX_BODY_BYTES : undefined),
         action,
       );
       if (stopping) { response.destroy(); return; }
@@ -331,10 +317,6 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
   return {
     server,
     url: origin,
-    requestPublicPairing() {
-      if (!remote || stopping) throw Object.assign(Error('remote-registration-required'), { kind: 'remote-registration-required' });
-      return remote.issueForLauncher();
-    },
     async close() {
       if (closing) return closing;
       stopping = true;
@@ -344,9 +326,6 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
         // idle-HTTP cleanup alone cannot release them. Closing transport never
         // cancels accepted writes: the existing operation queue is drained.
         for (const socket of sockets) socket.destroy();
-        // Remote receipts finish after the underlying source transaction and
-        // remain durable even when all browser transports have disconnected.
-        await remote?.close();
         await queue;
         await stopped;
       })();

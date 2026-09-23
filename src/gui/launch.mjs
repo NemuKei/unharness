@@ -10,7 +10,6 @@ import { acquire } from '../sources/transaction.mjs';
 import { LAUNCH_PROTOCOL, launchFail, launchDirectory, readLaunchReceipt, publishLaunchReceipt, processPresent } from './launch-records.mjs';
 import { nonce, probeLaunch, signature, launchRequest } from './launch-protocol.mjs';
 import { resolveWorkbenchTarget } from './launch-target.mjs';
-import { isUuid } from './remote-policy.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const worker = fileURLToPath(new URL('./launch-worker.mjs', import.meta.url));
@@ -32,7 +31,7 @@ async function runtimeIdentity(assetsDirectory, recovery) {
   await canonical(assetsDirectory);
   const hash = createHash('sha256').update(root + '\n' + assetsDirectory);
   if (recovery) hash.update(JSON.stringify(recovery));
-  const guiModules = ['server.mjs', 'launch-protocol.mjs', 'pairing.mjs', 'remote-policy.mjs', 'remote-controller.mjs', 'remote-http.mjs'];
+  const guiModules = ['server.mjs', 'launch-protocol.mjs'];
   for (const path of [join(root, 'package.json'), worker, ...guiModules.map(name => fileURLToPath(new URL(name, import.meta.url))), join(assetsDirectory, 'index.html')]) hash.update(await readFile(path));
   return hash.digest('hex');
 }
@@ -55,17 +54,6 @@ export async function workbenchStatus(input) {
   if (!receipt) return summary(null, 'not-started');
   if (await probeLaunch(receipt)) return summary(receipt, 'running', { rootScopeId: w.rootScopeId });
   return summary(receipt, receipt.phase === 'stopped' || !processPresent(receipt.pid) ? 'stopped' : 'unknown');
-}
-export async function requestPublicConnection(input, { requestId }) {
-  if (!isUuid(requestId)) launchFail('gui-launch-target-invalid');
-  const w = await resolveWorkbenchTarget(input);
-  if (!w.workspace) launchFail('gui-launch-target-invalid');
-  return withLock(w, async () => {
-    const receipt = await readLaunchReceipt(w);
-    if (!await probeLaunch(receipt)) launchFail('gui-launch-unconfirmed');
-    return { kind: 'unharness-local-entry', launchId: receipt.launchId,
-      publicConnection: 'retired', workbenchUrl: receipt.loopbackOrigin };
-  });
 }
 export async function stopWorkbench(input) {
   const w = await resolveWorkbenchTarget(input);

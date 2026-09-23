@@ -12,8 +12,6 @@ import {reviewAppearanceImport,saveAppearanceImport} from '../src/appearances/im
 import {readUserAppearance,selectUserAppearance} from '../src/appearances/service.mjs';
 import {validLayerManifest} from '../web/src/appearance-layers.ts';
 import {matchesArtworkUpload} from '../web/src/artwork-review.ts';
-import {projectArtworkReview} from '../src/gui/remote-artwork.mjs';
-import {remoteRequestShape} from '../src/gui/remote-policy.mjs';
 
 const input=(workspace,bytes=entityMotionSheet())=>({workspace,expectedStateId:null,requestId:randomUUID(),
   manifest:{templateId:getAppearanceTemplate().id,baseItemId:null,name:'Motion',author:'',parts:[{partId:'entity-motion',fileId:'sheet'}]},
@@ -48,11 +46,6 @@ test('motion import fixes every frame reference and preserves review corresponde
   assert.equal(profile.entityAssetIds(review.manifest).length,12);
   assert.equal(validLayerManifest(review.manifest),true);
   assert.equal(matchesArtworkUpload(review,args),true);
-  const publicReview=projectArtworkReview(review,{scopeId:review.scopeId,collectionScopeId:review.collectionScopeId});
-  assert.deepEqual(publicReview,review);
-  assert.equal(matchesArtworkUpload(publicReview,args),true);
-  assert.doesNotThrow(()=>remoteRequestShape('review-appearance-import',{requestId:randomUUID(),importId:args.requestId,
-    expectedStateId:null,manifest:args.manifest,files:args.files.map(file=>({fileId:file.fileId,base64:file.bytes.toString('base64')}))}));
   assert.deepEqual(await reviewAppearanceImport(args),review);
   for(const edit of [m=>m.layers.entity.unfold.pop(),m=>m.layers.entity.unfold.push(m.layers.entity.unfold[0]),
     m=>m.layers.entity.profileId='entity-awakening/v3',m=>m.layers.entity.unfold[0].script='run()']) {

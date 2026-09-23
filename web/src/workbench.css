@@ -22,7 +22,6 @@
 .workbench-pane > h1 { margin: 4px 0 18px; font-size: clamp(30px, 4vw, 48px); }
 .workbench-pane > p { color: var(--muted); line-height: 1.8; }
 .workbench-pane .setup-handoff { margin: 0; }
-.workbench-pane .local-connection { padding: 0; }
 .settings-manual { margin-top: 28px !important; padding-top: 22px; border-top: 1px solid var(--line); }
 .settings-manual > summary { font-size: 14px; }
 .settings-flow { display: grid; gap: 16px; }
@@ -80,12 +79,11 @@
 .appearance-workbench-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 30px; }
 .appearance-workbench-layout .hangar-scene { width: 100%; height: auto; aspect-ratio: 1; }
 .appearance-workbench-layout .static-scene, .appearance-workbench-layout .pixi-host { width: 100%; height: 100%; left: 0; right: 0; transform: none; }
-.public-operation-notice { margin: 18px 36px; font-size: 13px; color: var(--muted); }
 .support-state { max-width: 850px; margin-top: 26px; }
 .support-state .control-section { border-top: 1px solid var(--line); }
 @media (max-width: 950px) {
-  .source-workbench .hangar-layout, .public-workbench .public-mode-layout { display: flex; flex-direction: column-reverse; }
-  .source-workbench .hangar-layout > *, .public-workbench .public-mode-layout > * { width: 100%; }
+  .source-workbench .hangar-layout { display: flex; flex-direction: column-reverse; }
+  .source-workbench .hangar-layout > * { width: 100%; }
 }
 @media (max-width: 700px) {
   .workbench-tabs.workbench-navigation { padding: 0 18px; gap: 24px; }
@@ -97,10 +95,8 @@
   .mode-action { padding: 16px; }
   .mode-action h2 { font-size: 18px; }
   .mode-action-buttons { flex-direction: column; }
-  .public-operation-notice { margin: 16px 18px; }
   .source-workbench .hangar-layout { display: flex; flex-direction: column-reverse; }
   .source-workbench .hangar-layout > * { width: 100%; }
-  .public-workbench .public-mode-layout { flex-direction: column-reverse; }
 }
 
 /* Chat-led everyday surface; saved contents and records stay under More. */

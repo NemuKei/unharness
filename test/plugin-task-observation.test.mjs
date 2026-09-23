@@ -1,3 +1,5 @@
+import * as replayResults from '../src/experiments/replay-results.mjs';
+import * as replayService from '../src/experiments/replay-service.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -146,22 +148,22 @@ test('saved replay results retain plugin evidence and cannot qualify a mode comp
     budget: { maxAttempts: 2, maxTurnsPerAttempt: 1, maxRecordedTokens: 150 } };
   const startReview = await sources.reviewUserStart({ workspace: s.workspace, declaration });
   const start = await sources.saveUserStart({ workspace: s.workspace, reviewId: startReview.reviewId });
-  const replayReview = await sources.reviewUserReplay({ workspace: s.workspace, startId: start.startId });
-  const attempt = await sources.prepareUserReplay({ workspace: s.workspace, reviewId: replayReview.reviewId });
-  const handoff = await sources.handoffUserReplay({ workspace: s.workspace, attemptId: attempt.attemptId });
+  const replayReview = await replayService.reviewUserReplay({ workspace: s.workspace, startId: start.startId });
+  const attempt = await replayService.prepareUserReplay({ workspace: s.workspace, reviewId: replayReview.reviewId });
+  const handoff = await replayService.handoffUserReplay({ workspace: s.workspace, attemptId: attempt.attemptId });
   const { taskId } = await recordTask(s, { project: handoff.project });
-  const observed = await sources.observeUserReplay({ workspace: s.workspace, attemptId: attempt.attemptId, taskId });
+  const observed = await replayResults.observeUserReplay({ workspace: s.workspace, attemptId: attempt.attemptId, taskId });
   assert.equal(observed.qualification.sourceStatus, 'matched-record');
   assert.equal(observed.qualification.status, 'unknown-record');
   assert.equal(observed.qualification.coverage.inputStatus, 'matched');
   assert.equal(observed.qualification.plugins[0].runtimeStatus, 'unknown');
   const stored = await loadRecord(s.workspace, 'application', observed.resultReviewId);
   assert.equal(stored.schemaVersion, 2);
-  const result = await sources.saveUserReplayResult({ workspace: s.workspace, resultReviewId: observed.resultReviewId,
+  const result = await replayResults.saveUserReplayResult({ workspace: s.workspace, resultReviewId: observed.resultReviewId,
     assessment: { outcome: 'accepted', provenance: 'agent', requirements: [{ id: 'complete', result: 'pass' }], ratings: [] } });
-  assert.equal((await sources.readUserReplayResult({ workspace: s.workspace, resultId: result.resultId })).qualification.status, 'unknown-record');
-  const comparison = await sources.compareUserReplayResults({ workspace: s.workspace, resultIds: [result.resultId] });
+  assert.equal((await replayResults.readUserReplayResult({ workspace: s.workspace, resultId: result.resultId })).qualification.status, 'unknown-record');
+  const comparison = await replayResults.compareUserReplayResults({ workspace: s.workspace, resultIds: [result.resultId] });
   assert.ok(comparison.aggregate.reasons.includes('unqualified-or-unavailable-records'));
   assert.equal(comparison.aggregate.totalTokens, null);
-  await assert.rejects(sources.saveUserReplayFavorite({ workspace: s.workspace, resultId: result.resultId }), { kind: 'replay-result-unavailable' });
+  await assert.rejects(replayResults.saveUserReplayFavorite({ workspace: s.workspace, resultId: result.resultId }), { kind: 'replay-result-unavailable' });
 });

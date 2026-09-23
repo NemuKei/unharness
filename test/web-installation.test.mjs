@@ -6,8 +6,7 @@ import { build, createServer } from 'vite';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
-import { publicBrowser, publicBrowserCase } from '../test-support/public-browser.mjs';
-import { PUBLIC_WEB_ORIGIN } from '../src/gui/remote-policy.mjs';
+import { publicBrowser, publicBrowserCase, PUBLIC_WEB_ORIGIN } from '../test-support/public-browser.mjs';
 import { readSourceProfileFiles } from '../src/sources/owned-profile.mjs';
 
 const release = Object.freeze({ version: '0.0.1', archiveUrl: 'https://releases.example.test/unharness-0.0.1-macos-arm64.zip',

@@ -25,10 +25,9 @@ test('registered update snapshots are read-only, bounded summaries and unchanged
   assert.equal(first.status, 'updated');
   assert.equal(first.view.source.preparedMode, 'normal');
   assert.match(first.token, /^[a-f0-9]{64}$/);
-  assert.deepEqual(Object.keys(first.versions).sort(), ['appearance', 'favorites', 'replays', 'runs', 'source', 'starts']);
+  assert.deepEqual(Object.keys(first.versions).sort(), ['appearance', 'favorites', 'runs', 'source', 'starts']);
   assert.equal(first.view.changeVersion, first.versions.source);
   assert.deepEqual(first.history.favorites.data.favorites, []);
-  assert.equal(first.history.replays.data.activeAttemptId, null);
   assert.equal(first.history.appearance.data.stateId, null);
   assert.equal(first.history.appearance.data.itemCount, 0);
   assert.deepEqual(first.history.appearance.data.collection, []);
@@ -67,7 +66,6 @@ test('source changes and favorite publications update their own versions for the
   const third = await s.updates(second.token);
   assert.equal(third.view.source.preparedMode, 'unseal');
   assert.notEqual(third.versions.source, second.versions.source);
-  assert.notEqual(third.versions.replays, second.versions.replays);
   assert.equal(third.versions.favorites, second.versions.favorites);
   await writeFile(join(s.context.codexHome, 'AGENTS.override.md'), 'Independent edit');
   const conflict = await s.updates(third.token);

@@ -1,6 +1,5 @@
 import { text as t } from './locale.ts';
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
-import type { LocalConnectionAction } from "./local-connection";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { Api, ApiError } from "./api";
 import {
   initialSourceControllerState,
@@ -35,8 +34,6 @@ export type AuxiliarySourceOperationResult<T> =
 
 export function useSourceController() {
   const api = useRef(new Api()).current;
-  const requestConnection = useCallback(<T,>(action: LocalConnectionAction, input: object) =>
-    api.post<T>("/remote/" + action, input), [api]);
   const lock = useRef(false);
   const [state, dispatch] = useReducer(
     sourceControllerReducer,
@@ -467,7 +464,6 @@ export function useSourceController() {
       const params = new URLSearchParams({ launchId: view.metadata.launchId, contextId: view.metadata.contextId, referenceId, assetId: asset.assetId });
       return api.image('/sources/appearance-image?' + params, asset.bytes, signal);
     },
-    requestConnection,
     setDiscovery,
     setReview,
     setRetainedPlan: (next: RetainedPlan) =>

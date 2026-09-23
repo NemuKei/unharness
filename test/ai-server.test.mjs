@@ -44,8 +44,11 @@ for (const protocols of [undefined, ['2025-11-25']]) test(`official stdio client
   assert.equal(s.client.getNegotiatedProtocolVersion(), protocols?.[0] ?? '2026-07-28');
   const tools = (await s.client.listTools()).tools;
   const names = tools.map(tool => tool.name);
-  for (const name of ['status', 'operation_status', 'plan_mode', 'apply_plan', 'save_favorite', 'recover', 'observe_task', 'list_recent_tasks', 'compare_runs', 'review_start', 'handoff_replay', 'save_replay_favorite'])
+  for (const name of ['status', 'operation_status', 'plan_mode', 'apply_plan', 'save_favorite', 'recover', 'observe_task', 'list_recent_tasks', 'compare_runs', 'review_start', 'read_start', 'list_starts'])
     assert.ok(names.includes(name), name);
+  for (const name of ['request_public_connection', 'public_operation_status', 'review_replay', 'prepare_replay', 'handoff_replay',
+    'open_replay', 'read_replay', 'list_replays', 'cancel_replay', 'observe_replay', 'save_replay_result',
+    'read_replay_result', 'compare_replays', 'save_replay_favorite']) assert.ok(!names.includes(name), name);
   assert.ok(!names.some(name => /register|source_body/.test(name) || /discover/.test(name) && name !== 'discover_appearance'));
   for (const tool of tools) {
     assert.equal(tool.inputSchema.additionalProperties, false, tool.name);
@@ -111,7 +114,7 @@ test('MCP ordinary observations, attributed assessments, explicit output and his
   assert.equal((await s.mutate('save_run_favorite', { runId })).structuredContent.ok, true);
 });
 
-test('MCP saved starts and sequential replay preserve exact inputs and expose recorded results', async t => {
+test('MCP saved starts preserve exact inputs without a replay operation', async t => {
   const p = await aiProfile(t, { skills: false }), s = await connect(t, p);
   const declaration = { request: '  READY\n', requirements: [{ id: 'complete', label: 'Exactly READY', critical: true }], ratings: [],
     budget: { maxAttempts: 2, maxTurnsPerAttempt: 1, maxRecordedTokens: 150 } };
@@ -123,30 +126,6 @@ test('MCP saved starts and sequential replay preserve exact inputs and expose re
   const { startId } = start.result;
   assert.deepEqual((await s.call('read_start', { startId })).structuredContent.result.declaration, declaration);
   assert.equal((await s.call('list_starts')).structuredContent.result.starts.length, 1);
-  const plan = (await s.mutate('review_replay', { startId })).structuredContent;
-  assert.equal(plan.ok, true, JSON.stringify(plan));
-  const prepared = (await s.mutate('prepare_replay', { reviewId: plan.result.reviewId })).structuredContent;
-  assert.equal(prepared.ok, true, JSON.stringify(prepared));
-  const { attemptId } = prepared.result;
-  const ready = (await s.mutate('handoff_replay', { attemptId })).structuredContent;
-  assert.equal(ready.ok, true, JSON.stringify(ready));
-  assert.equal(ready.result.request, declaration.request);
-  assert.equal(ready.result.desktopRuntimeVerified, false);
-  const taskId = await syntheticRecording(p, { project: ready.result.project, createdAt: new Date(Date.parse(ready.result.readyAt) + 1).toISOString() });
-  await writeFile(join(ready.result.project, 'answer.txt'), 'Produced output');
-  const observed = (await s.mutate('observe_replay', { attemptId, taskId })).structuredContent;
-  assert.equal(observed.ok, true, JSON.stringify(observed));
-  assert.equal(observed.result.qualification.status, 'matched-record');
-  const saved = (await s.mutate('save_replay_result', { resultReviewId: observed.result.resultReviewId,
-    assessment: { outcome: 'accepted', requirements: [{ id: 'complete', result: 'pass' }], ratings: [], provenance: 'agent' } })).structuredContent;
-  assert.equal(saved.ok, true, JSON.stringify(saved));
-  assert.equal(saved.result.acceptance.accepted, true);
-  const { resultId } = saved.result;
-  assert.equal((await s.call('read_replay_result', { resultId })).structuredContent.result.resultId, resultId);
-  assert.equal((await s.call('read_replay', { attemptId })).structuredContent.result.phase, 'recorded');
-  assert.equal((await s.call('list_replays')).structuredContent.result.activeAttemptId, null);
-  assert.equal((await s.call('compare_replays', { resultIds: [resultId] })).structuredContent.result.aggregate.totalTokens, 100);
-  assert.equal((await s.mutate('save_replay_favorite', { resultId })).structuredContent.ok, true);
   assert.deepEqual(await readFile(join(p.context.project, 'work.bin')), Buffer.from([0, 255, 2]));
 });
 

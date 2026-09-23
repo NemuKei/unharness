@@ -1,3 +1,4 @@
+import * as replayService from '../src/experiments/replay-service.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
@@ -213,7 +214,7 @@ test('a sequential replay is refused for Claude with its own reason', async (t) 
 
   // The replay itself is refused, and the refusal is specific.
   await assert.rejects(
-    service.reviewUserReplay({ workspace, startId: saved.startId }),
+    replayService.reviewUserReplay({ workspace, startId: saved.startId }),
     { kind: 'replay-application-unsupported' }
   );
   const { applicationById } = await import('../src/apps/index.mjs');

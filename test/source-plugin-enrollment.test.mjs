@@ -1,3 +1,4 @@
+import * as replayService from '../src/experiments/replay-service.mjs';
 import nativeTest from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, realpath, mkdir, writeFile, readFile, rm, rename, cp } from 'node:fs/promises';
@@ -241,8 +242,8 @@ test('active replay and pending appearance recording prevent plugin enrollment',
   const p = await review(s);
   const startReview = await sources.reviewUserStart({ workspace: s.workspace, declaration });
   const start = await sources.saveUserStart({ workspace: s.workspace, reviewId: startReview.reviewId });
-  const replay = await sources.reviewUserReplay({ workspace: s.workspace, startId: start.startId });
-  await sources.prepareUserReplay({ workspace: s.workspace, reviewId: replay.reviewId });
+  const replay = await replayService.reviewUserReplay({ workspace: s.workspace, startId: start.startId });
+  await replayService.prepareUserReplay({ workspace: s.workspace, reviewId: replay.reviewId });
   await assert.rejects(review(s), { kind: 'replay-active-attempt' });
   // An existing review cannot bypass the newly active replay either.
   await assert.rejects(enrollment.adoptPluginEnrollment({ workspace: s.workspace, reviewId: p.reviewId }), { kind: 'replay-active-attempt' });

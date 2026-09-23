@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
-import { channel } from 'node:diagnostics_channel';
 import { createServer } from 'node:http';
 import { mkdir, readFile, writeFile, rename, symlink } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -60,33 +59,14 @@ test('stopping and reopening preserves data and gives the browser a new launch i
   assert.deepEqual(await readSourceProfileFiles(p.context), p.originalFiles);
 });
 
-test('legacy pairing requests return the verified local workbench without issuing public authority', async t => {
+test('the private launcher refuses the retired pairing path without changing saved state', async t => {
   const p = await setup(t), launched = await p.openWorkbench({ workspace: p.workspace }, { assetsDirectory: p.assetsDirectory });
   const before = await readFile(join(p.workspace, 'state.json'));
-  const { requestPublicConnection } = await import('../src/gui/launch.mjs');
-  const requestId = randomUUID();
-  const requests = [], http = channel('http.client.request.start');
-  const record = ({ request }) => requests.push({ method: request.method, path: request.path });
-  let a, b;
-  http.subscribe(record);
-  try {
-    a = await requestPublicConnection({ workspace: p.workspace }, { requestId });
-    b = await requestPublicConnection({ workspace: p.workspace }, { requestId });
-  } finally { http.unsubscribe(record); }
-  assert.ok(requests.length > 0, 'observe the real launcher transport');
-  assert.ok(requests.every(request => request.method === 'GET' && request.path.startsWith('/_unharness/launch?challenge=')),
-    'legacy entry only probes identity; it never dispatches a pairing or approval request');
-  assert.deepEqual(a, b);
-  assert.deepEqual(a, { kind: 'unharness-local-entry', launchId: launched.launchId,
-    publicConnection: 'retired', workbenchUrl: launched.loopbackOrigin });
-  const link = new URL(a.workbenchUrl);
-  assert.equal(link.origin, launched.loopbackOrigin);
-  assert.equal(link.hash, '');
-  assert.match(await (await fetch(a.workbenchUrl)).text(), /Offline Unharness/);
+  const response = await fetch(launched.loopbackOrigin + '/_unharness/pair', { method: 'POST',
+    body: JSON.stringify({ launchId: launched.launchId, nonce: '0'.repeat(64), requestId: randomUUID(), signature: '0'.repeat(64) }) });
+  assert.equal(response.status, 403);
   assert.deepEqual(await readFile(join(p.workspace, 'state.json')), before);
   assert.deepEqual(await readSourceProfileFiles(p.context), p.originalFiles);
-  await p.stopWorkbench({ workspace: p.workspace });
-  await assert.rejects(requestPublicConnection({ workspace: p.workspace }, { requestId: randomUUID() }), { kind: 'gui-launch-unconfirmed' });
 });
 
 test('a stale port owned by another server never receives the launcher secret or a stop request', async t => {

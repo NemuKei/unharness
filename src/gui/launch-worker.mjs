@@ -44,8 +44,7 @@ process.once('message', async message => {
     running = await startGuiServer({ ...(recoveryBinding ? { recoveryBinding }
       : { manageSources: bound.context, sourceWorkspace: bound.workspace ?? undefined }),
       launchId: receipt.launchId, assetsDirectory: message.assetsDirectory }, {
-      handleControlRequest: createLaunchHandler({ current: () => receipt.loopbackOrigin ? receipt : null, close,
-        issuePairing: () => running.requestPublicPairing() }),
+      handleControlRequest: createLaunchHandler({ current: () => receipt.loopbackOrigin ? receipt : null, close }),
     });
     receipt = { ...receipt, phase: 'running', loopbackOrigin: running.url };
     if (!process.connected || stopping) { await close(); return; }

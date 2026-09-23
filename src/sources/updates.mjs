@@ -28,12 +28,12 @@ export async function sourceChangeVersion(metadata, opened) {
   return digest([metadata.contextId, 'source', await Promise.all(paths.map(stamp))]);
 }
 async function versions(metadata) {
-  if (!metadata.workspace) return Object.fromEntries(['source', 'favorites', 'runs', 'starts', 'replays', 'appearance'].map(k => [k, digest([metadata.contextId, k, null])]));
+  if (!metadata.workspace) return Object.fromEntries(['source', 'favorites', 'runs', 'starts', 'appearance'].map(k => [k, digest([metadata.contextId, k, null])]));
   const w = await openWorkspace(metadata.workspace);
   const root = w.workspace, records = join(root, 'records');
   const groups = {
     favorites: [join(records, 'favorite')], runs: [join(records, 'observation')],
-    starts: [join(records, 'experiment')], replays: [join(root, 'replay-index.json'), join(root, 'replay-index-initialized.json')],
+    starts: [join(records, 'experiment')],
     appearance: [join(root, 'appearance-index.json'), join(root, 'appearance-initialized.json'), join(root, 'appearance-pending.json'),
       join(records, 'appearance'), join(root, 'replay-index.json')],
   };
@@ -42,14 +42,14 @@ async function versions(metadata) {
     Promise.all(Object.entries(groups).map(async ([key, paths]) => [key, await Promise.all(paths.map(stamp))])),
   ]);
   return { source, ...Object.fromEntries(entries.map(([key, values]) => [key,
-    digest([metadata.contextId, key, key === 'favorites' ? activeNormalId(w) : ['replays', 'appearance'].includes(key) ? source : null, values])])) };
+    digest([metadata.contextId, key, key === 'favorites' ? activeNormalId(w) : key === 'appearance' ? source : null, values])])) };
 }
 async function history(metadata) {
   if (!metadata.workspace) return null;
   const args = { workspace: metadata.workspace };
   return Object.fromEntries(await Promise.all([
     ['favorites', () => service.listUserFavorites({ ...args, limit: 20 })],
-    ['runs', () => service.listUserRuns(args)], ['starts', () => service.listUserStarts(args)], ['replays', () => service.listUserReplays(args)],
+    ['runs', () => service.listUserRuns(args)], ['starts', () => service.listUserStarts(args)],
     ['appearance', () => service.readUserAppearance(args)],
   ].map(async ([key, read]) => {
     try { return [key, { data: await read(), error: null }]; }

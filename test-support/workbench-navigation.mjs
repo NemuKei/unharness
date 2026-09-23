@@ -8,11 +8,6 @@ export async function openWorkbenchPage(page, name) {
   await nav.getByRole('button', { name, exact: true }).click();
 }
 
-export async function openReplayWorkbench(page) {
-  await openWorkbenchPage(page, '記録・比較');
-  await page.getByRole('button', { name: '同じお題で試す', exact: true }).click();
-}
-
 export async function openSetupDetails(page) {
   await openWorkbenchPage(page, '設定');
   const details = page.locator('.setup-conversation');

@@ -18,8 +18,6 @@ import { PluginEnrollmentPanel } from './PluginEnrollmentPanel';
 import { ModeContents } from './ModeContents';
 import { SourceStateEditor } from './SourceStateEditor';
 import { PluginObservationSummary } from './PluginObservationSummary';
-import { PublicOperationLookup } from './PublicOperationLookup';
-import { pairingFromHash } from './local-connection';
 import { useLocalAppearance } from './useLocalAppearance';
 import { AppearancePanel } from './AppearancePanel';
 import type { ArtworkImageLoader } from './artwork';
@@ -73,10 +71,6 @@ export function SourceWorkbench() {
   const imageLoader = useMemo<ArtworkImageLoader | undefined>(() => artwork?.kind === 'layered'
     ? (asset, signal) => art.image(artwork.id, asset, signal, art.key) : undefined, [art.key, artwork?.id, art.image]);
   const [effects, setEffects] = useState(displayPreference);
-  const [earlierPublicLink] = useState(() => pairingFromHash(location.hash) !== null);
-  useEffect(() => {
-    if (earlierPublicLink) history.replaceState(history.state, '', location.pathname + location.search);
-  }, []);
   const [activeTab, setActiveTab] = useState<WorkbenchPage>(() => workbenchPageFromHash(location.hash) ?? 'mode');
   const selectPage = useCallback((page: WorkbenchPage, replace = false) => {
     const hash = '#' + new URLSearchParams({ view: page }).toString();
@@ -148,7 +142,6 @@ export function SourceWorkbench() {
     <WorkbenchNavigation page={activeTab} select={selectPage}/>
     <div className="workbench-place"><p>{t("このMacの設定と記録を操作しています。オフラインでも使えます。", "Manage the settings and records on this Mac, including offline.")}</p>
       <button className="text-button" disabled={c.busy} onClick={() => void c.refresh()}>{t("状態を再取得", "Refresh state")}</button></div>
-    {earlierPublicLink && <p className="public-operation-notice">{t('公開画面への接続は不要になりました。このMacの画面で、そのまま使えます。', 'Public-page pairing is no longer needed. Continue in this local workbench.')}</p>}
     {c.syncNotice && c.syncIssue && <p className="source-sync-notice muted" role="status">{c.syncNotice}</p>}
     <main id="main">
       <div hidden={activeTab !== 'mode'}>
@@ -271,7 +264,6 @@ export function SourceWorkbench() {
         <p>{t("手元の設定や復旧の案内を確認します。完了したら「モード」に戻って使えます。", "Review local settings and recovery guidance. Return to Mode when finished.")}</p>
         {!source && <details><summary>{t('更新情報と指示の切り替わり方', 'Updates and instruction details')}</summary>
           <UpdateInfoPanel/><InstructionScopeNote application={c.view?.metadata.application}/></details>}
-        {c.view?.source && <PublicOperationLookup key={c.view.metadata.launchId + ':' + c.view.metadata.contextId} request={c.requestConnection}/>}
         <div className="support-state">
             <section className="control-section">
               <div className="section-heading">

@@ -1,4 +1,4 @@
-import { openWorkbenchPage, openReplayWorkbench } from '../test-support/workbench-navigation.mjs';
+import { openWorkbenchPage } from '../test-support/workbench-navigation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -28,12 +28,12 @@ async function setup(t) {
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', message => { if (['warning', 'error'].includes(message.type())) consoleMessages.push({ type: message.type(), text: message.text(), url: message.location().url }); });
   page.on('request', r => { if (r.method() === 'POST') posts.push(new URL(r.url()).pathname); });
-  const tab = name => name === '比較' ? openReplayWorkbench(page) : openWorkbenchPage(page, name);
+  const tab = name => openWorkbenchPage(page, name);
   const expectMode = mode => page.locator('.control-column .selected-name').filter({ hasText: mode }).waitFor();
   return { ...p, gui, ai, browser, browserContext: context, page, errors, posts, consoleMessages, tab, expectMode };
 }
 
-test('an open built GUI receives MCP modes, favorites and histories while preserving a request draft', browserCase, async t => {
+test('an open built GUI receives MCP modes, favorites and ordinary work history', browserCase, async t => {
   const s = await setup(t), { page, ai } = s;
   await page.goto(s.gui.url); await s.expectMode('Normal');
   assert.match(await page.title(), /Unharness/i);
@@ -47,20 +47,9 @@ test('an open built GUI receives MCP modes, favorites and histories while preser
   const reviewMode = page.getByRole('button', { name: '変更内容を確認', exact: true });
   await reviewMode.and(page.locator(':enabled')).waitFor(); await reviewMode.click();
   await page.getByRole('button', { name: 'この内容で確定する', exact: true }).and(page.locator(':enabled')).waitFor();
-  await s.tab('比較');
-  await page.getByText('実行前に条件を保存', { exact: true }).click();
-  await page.getByLabel('依頼文', { exact: true }).fill('KEEP THIS UNSAVED REQUEST');
   await ai.mode('unseal');
   await s.tab('モード'); await s.expectMode('UNSEAL');
   assert.equal(await page.getByRole('button', { name: 'この内容で確定する', exact: true }).isDisabled(), true);
-  await s.tab('比較');
-  assert.equal(await page.getByLabel('依頼文', { exact: true }).inputValue(), 'KEEP THIS UNSAVED REQUEST');
-
-  const declaration = { title: 'AI saved start', request: '  READY\n', requirements: [{ id: 'complete', label: 'Exactly READY', critical: true }], ratings: [],
-    budget: { maxAttempts: 2, maxTurnsPerAttempt: 1, maxRecordedTokens: 150 } };
-  const review = await ai.mutate('review_start', { declaration }), start = await ai.mutate('save_start', { reviewId: review.reviewId });
-  await page.locator('.starting-history').getByText('AI saved start', { exact: true }).waitFor();
-  assert.equal(await page.getByLabel('依頼文', { exact: true }).inputValue(), 'KEEP THIS UNSAVED REQUEST');
 
   const taskId = randomUUID(), instructions = (await readFile(join(s.context.codexHome, 'AGENTS.override.md'), 'utf8')).trim();
   const rows = replayRecording({ taskId, project: s.context.project, createdAt: new Date().toISOString(),
@@ -72,15 +61,7 @@ test('an open built GUI receives MCP modes, favorites and histories while preser
   await ai.mutate('save_run', { reviewId: run.reviewId, title: 'AI observed run',
     assessment: { outcome: 'accepted', requirements: [{ id: 'complete', label: 'Exactly READY', critical: true, result: 'pass' }], ratings: [], provenance: 'agent' } });
   await s.tab('記録・比較');
-  await page.getByRole('button', { name: '仕事を振り返る', exact: true }).click();
   await page.getByText('AI observed run', { exact: true }).waitFor();
-  const replay = await ai.mutate('review_replay', { startId: start.startId });
-  const prepared = await ai.mutate('prepare_replay', { reviewId: replay.reviewId });
-  await s.tab('比較');
-  await page.locator('.replay-history').getByText(/^作業場所の準備済み ／/).waitFor();
-  await ai.mutate('cancel_replay', { attemptId: prepared.attemptId });
-  await page.locator('.replay-history').getByText(/^取り消し済み ／/).waitFor();
-  assert.equal(await page.getByLabel('依頼文', { exact: true }).inputValue(), 'KEEP THIS UNSAVED REQUEST');
   assert.equal(s.posts.filter(path => /save|apply|prepare|cancel|observe|review-start/.test(path)).length, 0);
   await ai.mode('normal'); await s.tab('モード'); await s.expectMode('Normal');
   await page.setViewportSize({ width: 390, height: 844 });

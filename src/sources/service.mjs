@@ -505,18 +505,6 @@ export const saveUserStart = wrap(async args => (await import('../experiments/se
 export const readUserStart = wrap(async args => (await import('../experiments/service.mjs')).readUserStart(args));
 export const listUserStarts = wrap(async args => (await import('../experiments/service.mjs')).listUserStarts(args));
 
-export const reviewUserReplay = wrap(async args => (await import('../experiments/replay-service.mjs')).reviewUserReplay(args));
-export const prepareUserReplay = wrap(async args => (await import('../experiments/replay-service.mjs')).prepareUserReplay(args));
-export const handoffUserReplay = wrap(async args => (await import('../experiments/replay-service.mjs')).handoffUserReplay(args));
-export const readUserReplay = wrap(async args => (await import('../experiments/replay-service.mjs')).readUserReplay(args));
-export const listUserReplays = wrap(async args => (await import('../experiments/replay-service.mjs')).listUserReplays(args));
-export const cancelUserReplay = wrap(async args => (await import('../experiments/replay-service.mjs')).cancelUserReplay(args));
-export const observeUserReplay = wrap(async args => (await import('../experiments/replay-results.mjs')).observeUserReplay(args));
-export const saveUserReplayResult = wrap(async args => (await import('../experiments/replay-results.mjs')).saveUserReplayResult(args));
-export const readUserReplayResult = wrap(async args => (await import('../experiments/replay-results.mjs')).readUserReplayResult(args));
-export const openUserReplay = wrap(async args => (await import('../experiments/replay-service.mjs')).openUserReplay(args));
-export const compareUserReplayResults = wrap(async args => (await import('../experiments/replay-results.mjs')).compareUserReplayResults(args));
-export const saveUserReplayFavorite = wrap(async args => (await import('../experiments/replay-results.mjs')).saveUserReplayFavorite(args));
 
 export const readUserSetup = wrap(async args => (await import('../setup/service.mjs')).readSetup(args));
 export const reviewUserSetup = wrap(async args => (await import('../setup/service.mjs')).reviewSetup(args));

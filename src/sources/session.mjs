@@ -61,18 +61,6 @@ const fields = {
   "save-start": [["reviewId"], []],
   start: [["startId"], []],
   starts: [[], ["after"]],
-  "review-replay": [["startId"], []],
-  "prepare-replay": [["reviewId"], []],
-  "handoff-replay": [["attemptId"], []],
-  replay: [["attemptId"], []],
-  replays: [[], ["after"]],
-  "cancel-replay": [["attemptId"], []],
-  "observe-replay": [["attemptId", "taskId"], []],
-  "save-replay-result": [["resultReviewId", "assessment"], ["previousResultId"]],
-  "replay-result": [["resultId"], []],
-  "open-replay": [["attemptId"], []],
-  "compare-replays": [["resultIds"], []],
-  "replay-favorite": [["resultId"], ["name"]],
   appearance: [[], ["after"]],
   artwork: [[], ["after"]],
   "artwork-item": [["itemId"], []],
@@ -402,18 +390,6 @@ export async function createSourceController(input, { workspace: selectedWorkspa
       if (action === "save-start") return service.saveUserStart({ workspace, ...input });
       if (action === "start") return service.readUserStart({ workspace, ...input });
       if (action === "starts") return service.listUserStarts({ workspace, ...input });
-      if (action === "review-replay") return service.reviewUserReplay({ workspace, ...input });
-      if (action === "prepare-replay") return service.prepareUserReplay({ workspace, ...input });
-      if (action === "handoff-replay") return service.handoffUserReplay({ workspace, ...input });
-      if (action === "replay") return service.readUserReplay({ workspace, ...input });
-      if (action === "replays") return service.listUserReplays({ workspace, ...input });
-      if (action === "cancel-replay") return service.cancelUserReplay({ workspace, ...input });
-      if (action === "observe-replay") return service.observeUserReplay({ workspace, ...input });
-      if (action === "save-replay-result") return service.saveUserReplayResult({ workspace, ...input });
-      if (action === "replay-result") return service.readUserReplayResult({ workspace, ...input });
-      if (action === "open-replay") return service.openUserReplay({ workspace, ...input });
-      if (action === "compare-replays") return service.compareUserReplayResults({ workspace, ...input });
-      if (action === "replay-favorite") return service.saveUserReplayFavorite({ workspace, ...input });
       fail("gui-invalid-request");
     },
   };

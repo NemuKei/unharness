@@ -31,9 +31,6 @@ import { modePresentation, validTaskId } from "./sources";
 import type { SourceMode } from "./sources";
 import { comparisonContextKey, useComparisonController } from "./useComparisonController";
 import type { useSourceController } from "./useSourceController";
-import { StartingConditions } from "./StartingConditions";
-import { ReplayWorkbench } from "./ReplayWorkbench";
-import { useReplayController } from "./useReplayController";
 import { OperationStatus } from './workbench/OperationStatus';
 import type { OperationKind } from './workbench/OperationStatus';
 
@@ -289,9 +286,8 @@ function recordRequest() {
 export function ComparisonWorkbench({ sourceController, taskHandoff }: {
   sourceController: SourceController; taskHandoff?: Readonly<{ taskId: string }>;
 }) {
-  const comparison = useComparisonController(sourceController), replay = useReplayController(sourceController);
+  const comparison = useComparisonController(sourceController);
   const { state } = comparison;
-  const [purpose, setPurpose] = useState<'records' | 'replay'>('records');
   const [pendingOperation, setPendingOperation] = useState<OperationKind | null>(null);
   const operationGeneration = useRef(0);
   const localContextKey = comparisonContextKey(sourceController.view), previousLocalContext = useRef(localContextKey);
@@ -313,7 +309,7 @@ export function ComparisonWorkbench({ sourceController, taskHandoff }: {
   const recordedTaskIds = new Set(state.runs.map(run => run.measurement.taskId));
   useEffect(() => {
     if (!taskHandoff) return;
-    setPurpose('records'); setAdding(true); setChoosingTask(false); setOpenedRunId(null);
+    setAdding(true); setChoosingTask(false); setOpenedRunId(null);
     setTaskId(taskHandoff.taskId); setTaskTitle(''); setThroughTurnId('');
     comparison.clearReview();
     void perform('review', () => comparison.reviewRun(taskHandoff.taskId, undefined, true));
@@ -324,7 +320,7 @@ export function ComparisonWorkbench({ sourceController, taskHandoff }: {
       results.current.scrollIntoView({ block: 'start' });
   }, [openedRunId, state.comparison]);
   function openRun(run: SavedRun) {
-    setPurpose('records'); setAdding(false); setOpenedRunId(run.runId);
+    setAdding(false); setOpenedRunId(run.runId);
     comparison.selectRuns([]);
   }
   function chooseTask(task: RecentTask) {
@@ -335,7 +331,7 @@ export function ComparisonWorkbench({ sourceController, taskHandoff }: {
     void perform('review', () => comparison.reviewRun(task.taskId, undefined, true));
   }
   function addRecord() {
-    setPurpose('records'); setAdding(true); setChoosingTask(!state.review); setOpenedRunId(null);
+    setAdding(true); setChoosingTask(!state.review); setOpenedRunId(null);
     comparison.selectRuns([]);
   }
   async function saveRecord(value: { title?: string; assessment: RunAssessment }) {
@@ -371,16 +367,12 @@ export function ComparisonWorkbench({ sourceController, taskHandoff }: {
     <header className="record-hero"><div><p className="eyebrow">{t('記録・比較', 'WORK RECORDS')}</p><h1>{t('仕事の記録', 'Your work')}</h1>
       <p>{t('1件を振り返る。気になる2件を並べる。自分に合う装備を見つけましょう。', 'Reflect on one job or put two side by side. Find the loadout that suits your work.')}</p></div>
       <button className="primary" disabled={!sourceReady || sourceController.busy} onClick={addRecord}>{t('仕事を記録する', 'Record work')}</button></header>
-    <nav className="record-purpose" aria-label={t('記録の使い方', 'Ways to review work')}>
-      <button type="button" aria-current={purpose === 'records' ? 'page' : undefined} onClick={() => setPurpose('records')}>{t('仕事を振り返る', 'Review work')}</button>
-      <button type="button" aria-current={purpose === 'replay' ? 'page' : undefined} onClick={() => setPurpose('replay')}>{t('同じお題で試す', 'Try the same task')}</button>
-    </nav>
     <OperationStatus kind={pendingOperation}/>
     {!sourceReady && <section className="comparison-panel">{!sourceController.confirmed || sourceController.view?.source
       ? <p role="status">{t('このMacの記録を確認しています…', 'Checking the records on this Mac…')}</p>
       : <><h2>{t('まず、いつもの装備を保存します', 'Save your usual loadout first')}</h2><p>{t('「設定」で対象を確認してNormalを保存すると、仕事の記録を残せます。', 'Review the targets and save Normal in Settings, then start recording work.')}</p></>}</section>}
     {sourceReady && <>
-      <div hidden={purpose !== 'records'}>
+      <div>
         <section className="comparison-panel record-add" hidden={!adding} aria-label={t('仕事を記録する', 'Record work')}>
           <div className="comparison-heading"><h2>{t('どの仕事を記録しますか？', 'Which work would you like to record?')}</h2>
             <button className="text-button" onClick={() => setAdding(false)}>{t('閉じる', 'Close')}</button></div>
@@ -430,12 +422,6 @@ export function ComparisonWorkbench({ sourceController, taskHandoff }: {
         {state.notice && <p className="comparison-notice" role="status" aria-live="polite">{state.notice}</p>}
         {state.backgroundError && <p className="comparison-error" role="alert">{state.backgroundError}</p>}
         {state.error && <div className="comparison-error" role="alert">{state.error}{state.uncertainOperation && <p>{t('同じ保存操作を自動では繰り返しません。', 'The same save operation is not retried automatically.')}</p>}</div>}
-      </div>
-      <div hidden={purpose !== 'replay'} className="controlled-replay">
-        <h2>{t('同じお題で、別の装備を試す', 'Try another loadout on the same task')}</h2>
-        <p>{t('作業前に、お題・必要な結果・元のファイルを保存しておきます。普段の過去記録だけでは、同じ開始状態に戻せない場合があります。', 'Save the task, required outcome and original files before work begins. Ordinary past records may not let you recreate that starting state.')}</p>
-        <StartingConditions sourceController={sourceController} onReplay={startId => { void replay.review(startId); document.getElementById('replay-workbench')?.scrollIntoView({ block: 'start' }); }}/>
-        <ReplayWorkbench controller={replay} shared={sourceController}/>
       </div>
     </>}
   </div>;

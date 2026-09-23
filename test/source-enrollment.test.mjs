@@ -1,3 +1,5 @@
+import * as replayResults from '../src/experiments/replay-results.mjs';
+import * as replayService from '../src/experiments/replay-service.mjs';
 import nativeTest from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, realpath, rm, readFile, writeFile, mkdir } from 'node:fs/promises';
@@ -173,9 +175,9 @@ test('historical runs, replay results, saved requests and the appearance collect
     budget: { maxAttempts: 2, maxTurnsPerAttempt: 1, maxRecordedTokens: 150 } };
   const startReview = await sources.reviewUserStart({ workspace: s.workspace, declaration });
   const start = await sources.saveUserStart({ workspace: s.workspace, reviewId: startReview.reviewId });
-  const r = await sources.reviewUserReplay({ workspace: s.workspace, startId: start.startId });
-  const attempt = await sources.prepareUserReplay({ workspace: s.workspace, reviewId: r.reviewId });
-  const handoff = await sources.handoffUserReplay({ workspace: s.workspace, attemptId: attempt.attemptId });
+  const r = await replayService.reviewUserReplay({ workspace: s.workspace, startId: start.startId });
+  const attempt = await replayService.prepareUserReplay({ workspace: s.workspace, reviewId: r.reviewId });
+  const handoff = await replayService.handoffUserReplay({ workspace: s.workspace, attemptId: attempt.attemptId });
   const inventory = await enrollment.inspectEnrollment({ workspace: s.workspace });
   await assert.rejects(enrollment.reviewEnrollment({ workspace: s.workspace, discoveryId: inventory.discoveryId,
     additions: [{ sourceId: inventory.candidates[0].id, origin: 'self', reason: 'Confirmed fixture.', unseal: 'manual', trueform: 'manual' }] }),
@@ -186,9 +188,9 @@ test('historical runs, replay results, saved requests and the appearance collect
     instructions: '# PRIVATE_TEST optional user guide\n\n--- project-doc ---\n\n# Required project instructions' });
   await mkdir(join(s.context.codexHome, 'sessions'), { recursive: true });
   await writeFile(join(s.context.codexHome, 'sessions', `rollout-${taskId}.jsonl`), recording.map(r => JSON.stringify(r)).join('\n') + '\n');
-  const observed = await sources.observeUserReplay({ workspace: s.workspace, attemptId: attempt.attemptId, taskId });
+  const observed = await replayResults.observeUserReplay({ workspace: s.workspace, attemptId: attempt.attemptId, taskId });
   assert.equal(observed.qualification.status, 'matched-record');
-  const result = await sources.saveUserReplayResult({ workspace: s.workspace, resultReviewId: observed.resultReviewId,
+  const result = await replayResults.saveUserReplayResult({ workspace: s.workspace, resultReviewId: observed.resultReviewId,
     assessment: { outcome: 'accepted', provenance: 'agent', requirements: [{ id: 'complete', result: 'pass' }], ratings: [] } });
   const ordinaryId = randomUUID(), ordinary = replayRecording({ taskId: ordinaryId, project: s.context.project,
     request: 'READY', createdAt: new Date().toISOString(),
@@ -202,16 +204,16 @@ test('historical runs, replay results, saved requests and the appearance collect
   const review = await reviewNew(s, n);
   await enrollment.applyEnrollment({ workspace: s.workspace, reviewId: review.reviewId });
   assert.deepEqual(await sources.readUserRun({ workspace: s.workspace, runId: run.runId }), run);
-  assert.deepEqual(await sources.readUserReplayResult({ workspace: s.workspace, resultId: result.resultId }),
+  assert.deepEqual(await replayResults.readUserReplayResult({ workspace: s.workspace, resultId: result.resultId }),
     Object.fromEntries(Object.entries(result).filter(([key]) => key !== 'duplicate')));
   assert.equal((await sources.listUserStarts({ workspace: s.workspace })).starts[0].scopeId, s.scopeId);
-  const history = await sources.listUserReplays({ workspace: s.workspace });
+  const history = await replayService.listUserReplays({ workspace: s.workspace });
   assert.equal(history.attempts[0].scopeId, s.scopeId);
   assert.equal(history.attempts[0].phase, 'recorded');
   assert.equal(history.attempts[0].conditionIssue, 'replay-preparation-stale');
   assert.equal((await sources.listUserRuns({ workspace: s.workspace })).runs[0].scopeId, s.scopeId);
   const fromRun = await sources.saveUserRunFavorite({ workspace: s.workspace, runId: run.runId });
-  const fromReplay = await sources.saveUserReplayFavorite({ workspace: s.workspace, resultId: result.resultId });
+  const fromReplay = await replayResults.saveUserReplayFavorite({ workspace: s.workspace, resultId: result.resultId });
   for (const f of [fromRun, fromReplay]) {
     assert.equal((await loadRecord(s.workspace, 'favorite', f.favoriteId)).scopeId, s.scopeId);
     assert.equal((await sources.planUserFavorite({ workspace: s.workspace, favoriteId: f.favoriteId })).adaptation.kind, 'source-enrollment');
@@ -219,7 +221,7 @@ test('historical runs, replay results, saved requests and the appearance collect
   const readAppearance = await appearance.readUserAppearance({ workspace: s.workspace });
   assert.deepEqual(readAppearance.state, collected.state);
   assert.equal(readAppearance.stateId, collected.stateId);
-  await assert.rejects(sources.reviewUserReplay({ workspace: s.workspace, startId: start.startId }), { kind: 'replay-preparation-stale' });
+  await assert.rejects(replayService.reviewUserReplay({ workspace: s.workspace, startId: start.startId }), { kind: 'replay-preparation-stale' });
 });
 
 test('multiple enrollments preserve the ancestry and an actual previous writer refuses the expanded target set', async t => {

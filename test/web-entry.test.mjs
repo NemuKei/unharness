@@ -1,8 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { publicBrowser, publicBrowserCase } from '../test-support/public-browser.mjs';
-import { PUBLIC_WEB_ORIGIN } from '../src/gui/remote-policy.mjs';
+import { publicBrowser, publicBrowserCase, PUBLIC_WEB_ORIGIN } from '../test-support/public-browser.mjs';
 import { readSourceProfileFiles } from '../src/sources/owned-profile.mjs';
 import { openWorkbenchPage } from '../test-support/workbench-navigation.mjs';
 
@@ -75,7 +74,7 @@ test('public entry, synthetic demo and platform guidance do not connect or chang
 });
 
 
-test('production entry hands off Japanese and English drafts and retains live connection state across language changes', publicBrowserCase, async t => {
+test('production entry offers Japanese and English drafts without an operating connection', publicBrowserCase, async t => {
   const s = await publicBrowser(t), { page } = s;
   await page.goto(PUBLIC_WEB_ORIGIN);
   const source = page.getByRole('link', { name: 'GitHub', exact: true });
@@ -99,61 +98,7 @@ test('production entry hands off Japanese and English drafts and retains live co
   await s.assertNoSecrets();
 });
 
-test('incompatible and invalid legacy links retain diagnosis without tools, redeem or new pairing guidance', publicBrowserCase, async t => {
-  const s = await publicBrowser(t), { page } = s, approved = new URL(await s.approveLink());
-  const incompatible = new URL(approved); const incompatibleHash = new URLSearchParams(incompatible.hash.slice(1));
-  incompatibleHash.set('unharness', '999'); incompatible.hash = incompatibleHash.toString();
-  await page.goto(incompatible.href);
-  await page.getByRole('heading', { name: '更新が必要', exact: true }).waitFor();
-  await page.getByText('以前の公開接続とローカル版の方式が一致しません。新しい公開接続は作らず、ローカル画面で版と現在の状態を確認してください。', { exact: true }).waitFor();
-  assert.equal(new URL(page.url()).hash, ''); assert.equal(await page.evaluate(() => window.__unharnessTestTools.size), 0);
-  assert.equal(s.posts.filter(post => post.path.endsWith('/redeem')).length, 0);
 
-  await page.goto(incompatible.origin + '/#unharness=2&port=invalid&launch=invalid&ticket=invalid');
-  await page.getByRole('heading', { name: '接続状態は未確認', exact: true }).waitFor();
-  await page.getByText('このリンクの接続状態は確認できません。新しい公開接続は作らず、ローカル画面で確認してください。', { exact: true }).waitFor();
-  assert.equal(new URL(page.url()).hash, ''); assert.equal(await page.evaluate(() => window.__unharnessTestTools.size), 0);
-  assert.equal(await page.getByRole('button', { name: '状態を再取得', exact: true }).count(), 0);
-  assert.equal(s.posts.filter(post => post.path.endsWith('/redeem')).length, 0);
-  assert.deepEqual(s.errors, []); await s.assertNoSecrets();
-});
-
-test('language changes preserve the live connection, selected mode and reviewed plan without applying it', publicBrowserCase, async t => {
-  const s = await publicBrowser(t), { page } = s;
-  await page.goto(await s.approveLink());
-  await page.getByRole('button', { name: 'English', exact: true }).click();
-  await page.getByRole('button', { name: 'Connect to this Mac', exact: true }).click();
-  await page.locator('.prepared-mode').filter({ hasText: /^Normal$/ }).waitFor();
-  const before = await s.callPageTool('unharness_status', {});
-  await page.getByRole('button', { name: /^UNSEAL/ }).click();
-  await page.getByRole('button', { name: 'Review changes', exact: true }).click();
-  await page.getByLabel('Change plan to review', { exact: true }).waitFor();
-  const planned = await s.callPageTool('unharness_status', {}), posts = s.posts.length;
-  await page.getByRole('button', { name: '日本語', exact: true }).click();
-  assert.equal(await page.getByRole('button', { name: 'この内容で確定する', exact: true }).isEnabled(), true);
-  assert.equal(await page.getByRole('button', { name: /^UNSEAL/ }).getAttribute('aria-pressed'), 'true');
-  assert.equal(s.posts.length, posts);
-  await page.getByRole('button', { name: 'English', exact: true }).click();
-  const after = await s.callPageTool('unharness_status', {});
-  assert.equal(after.connectionState, before.connectionState);
-  assert.equal(after.ok, planned.ok);
-  assert.equal(after.state?.preparedMode ?? 'normal', planned.state?.preparedMode ?? 'normal');
-  await openWorkbenchPage(page, 'Appearance');
-  await page.getByRole('heading', { name: 'Appearance', exact: true }).waitFor();
-  await page.getByText('Choose a bundled appearance', { exact: true }).waitFor();
-  await openWorkbenchPage(page, 'Settings');
-  await page.getByText('Review local loadouts and targets', { exact: true }).click();
-  const local = page.getByRole('link', { name: 'Review settings on this Mac', exact: true });
-  assert.equal(new URL(await local.getAttribute('href')).searchParams.get('lang'), 'en');
-  await page.getByRole('button', { name: '日本語', exact: true }).click();
-  assert.equal(new URL(await page.getByRole('link', { name: 'このMacで設定を確認する', exact: true }).getAttribute('href')).searchParams.get('lang'), 'ja');
-  await page.getByRole('button', { name: 'English', exact: true }).click();
-  await page.setViewportSize({ width: 390, height: 844 });
-  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-  assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
-  assert.equal(s.posts.filter(p => p.path.endsWith('/apply')).length, 0);
-  assert.deepEqual(s.errors, []); await s.assertNoSecrets();
-});
 
 test('English local workbench preserves the selected mode, artwork brief and user text across language switches', publicBrowserCase, async t => {
   const s = await publicBrowser(t), { page } = s, localPosts = [];
@@ -185,27 +130,5 @@ test('English local workbench preserves the selected mode, artwork brief and use
   await s.screenshot('guided-local-en-history-mobile.png');
   assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
   assert.equal(localPosts.filter(path => /\/(apply|register|save-appearance-import|apply-setup)$/.test(path)).length, 0);
-  assert.deepEqual(s.errors, []);
-});
-
-test('an older connected workbench keeps its original local links when it does not advertise language support', publicBrowserCase, async t => {
-  const s = await publicBrowser(t), { page } = s;
-  await s.browserContext.route(s.gui.url + '/remote/v2/redeem', async route => {
-    const response = await route.fetch(), headers = response.headers();
-    delete headers['x-unharness-ui-languages'];
-    await route.fulfill({ response, headers });
-  });
-  await page.goto(await s.approveLink());
-  await page.getByRole('button', { name: 'English', exact: true }).click();
-  await page.getByRole('button', { name: 'Connect to this Mac', exact: true }).click();
-  await page.locator('.prepared-mode').filter({ hasText: /^Normal$/ }).waitFor();
-  await openWorkbenchPage(page, 'Settings');
-  await page.getByText('Review local loadouts and targets', { exact: true }).click();
-  const url = new URL(await page.getByRole('link', { name: 'Review settings on this Mac', exact: true }).getAttribute('href'));
-  assert.equal(url.origin, s.gui.url);
-  assert.equal(url.search, '');
-  assert.equal(url.hash, '#view=settings');
-  assert.equal((await s.callPageTool('unharness_status', {})).connectionState, 'connected');
-  assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
   assert.deepEqual(s.errors, []);
 });

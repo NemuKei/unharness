@@ -1,21 +1,7 @@
 import * as service from './service.mjs';
 import { parseStrictJson } from '../core/strict-json.mjs';
 export const SOURCES_USAGE =
-  '  node bin/unharness.mjs sources <discover|locate|register|status|plan|plan-retained|accept-retained|apply|save|list|favorite|checkpoint|recover|observe|review|review-discovered|recent-tasks|review-run|save-run|runs|run|run-output|compare-runs|run-favorite|review-start|save-start|start|starts|review-replay|prepare-replay|handoff-replay|open-replay|replay|replays|cancel-replay|observe-replay|save-replay-result|replay-result|compare-replays|replay-favorite> --json <object>\n';
-const replayOperations = {
-  'review-replay': service.reviewUserReplay,
-  'prepare-replay': service.prepareUserReplay,
-  'handoff-replay': service.handoffUserReplay,
-  replay: service.readUserReplay,
-  replays: service.listUserReplays,
-  'cancel-replay': service.cancelUserReplay,
-  'observe-replay': service.observeUserReplay,
-  'save-replay-result': service.saveUserReplayResult,
-  'replay-result': service.readUserReplayResult,
-  'open-replay': service.openUserReplay,
-  'compare-replays': service.compareUserReplayResults,
-  'replay-favorite': service.saveUserReplayFavorite
-};
+  '  node bin/unharness.mjs sources <discover|locate|register|status|plan|plan-retained|accept-retained|apply|save|list|favorite|checkpoint|recover|observe|review|review-discovered|recent-tasks|review-run|save-run|runs|run|run-output|compare-runs|run-favorite|review-start|save-start|start|starts> --json <object>\n';
 const startingOperations = {
   'review-start': service.reviewUserStart,
   'save-start': service.saveUserStart,
@@ -37,7 +23,6 @@ const operations = {
   ...service.ENROLLMENT_OPERATIONS,
   ...service.SETUP_OPERATIONS,
   ...service.APPEARANCE_OPERATIONS,
-  ...replayOperations,
   ...comparisonOperations,
   ...startingOperations,
   discover: service.discoverUserSources,
@@ -78,7 +63,7 @@ export async function sourcesMain(
     return 2;
   }
   try {
-    const args = Object.hasOwn(comparisonOperations, argv[1]) || Object.hasOwn(startingOperations, argv[1]) || Object.hasOwn(replayOperations, argv[1]) || Object.hasOwn(service.APPEARANCE_OPERATIONS, argv[1]) || Object.hasOwn(service.SETUP_OPERATIONS, argv[1]) || Object.hasOwn(service.ENROLLMENT_OPERATIONS, argv[1]) || Object.hasOwn(service.DIRECTORY_REBIND_OPERATIONS, argv[1]) ? parseStrictJson(argv[3]) : JSON.parse(argv[3]);
+    const args = Object.hasOwn(comparisonOperations, argv[1]) || Object.hasOwn(startingOperations, argv[1]) || Object.hasOwn(service.APPEARANCE_OPERATIONS, argv[1]) || Object.hasOwn(service.SETUP_OPERATIONS, argv[1]) || Object.hasOwn(service.ENROLLMENT_OPERATIONS, argv[1]) || Object.hasOwn(service.DIRECTORY_REBIND_OPERATIONS, argv[1]) ? parseStrictJson(argv[3]) : JSON.parse(argv[3]);
     if (!args || typeof args !== 'object' || Array.isArray(args)) throw Error();
     const result = await operations[argv[1]](args);
     stdout.write(JSON.stringify(result) + '\n');

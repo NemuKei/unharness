@@ -3,9 +3,6 @@
 .record-hero h1 { font-size: clamp(26px, 3vw, 38px); margin: 8px 0 12px; }
 .record-hero p:last-child { color: var(--muted); line-height: 1.8; max-width: 660px; margin-bottom: 0; }
 .record-hero > button { flex: 0 0 auto; margin-top: 22px; }
-.record-purpose { display: flex; gap: 8px; padding-bottom: 16px; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
-.record-purpose button { background: transparent; border: 1px solid var(--line); color: var(--muted); padding: 12px 18px; }
-.record-purpose button[aria-current="page"] { color: var(--foreground); background: var(--surface-raised); border-color: var(--accent); }
 .record-library { margin-top: 28px; }
 .record-list, .recent-task-list { list-style: none; padding: 0; margin: 18px 0; display: grid; gap: 10px; }
 .record-list > li { border: 1px solid var(--line); background: var(--surface); padding: 18px; min-width: 0; }
@@ -46,13 +43,11 @@
 .work-comparison[data-record-count="3"] .comparison-table { min-width: 570px; }
 .comparison-reference { color: var(--muted); line-height: 1.8; font-size: 13px; margin: 14px 0 24px; }
 .compared-record-details { margin-top: 24px; }.compared-record-details > h3 { font-size: 15px; }
-.controlled-replay > p { max-width: 780px; line-height: 1.9; color: var(--muted); }
 @media (min-width: 960px) { .record-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 700px) {
   .workbench-tabs.workbench-navigation { gap: 18px; flex-wrap: wrap; }
   .workbench-tabs.workbench-navigation > button { font-size: 13px; }
   .record-hero { display: block; }.record-hero > button { width: 100%; margin-top: 20px; }
-  .record-purpose { gap: 8px; }.record-purpose > button { padding: 10px 12px; font-size: 13px; flex: 1; }
   .record-compare-bar { align-items: stretch; flex-direction: column; }
   .record-compare-bar > button { width: 100%; }.record-list > li { padding: 15px 12px; }
   .record-favorite { flex-direction: column; align-items: stretch; }
