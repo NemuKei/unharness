@@ -1,12 +1,39 @@
 # Project status
 
-As of 2026-09-21. Read [the documentation guide](README.md) for the canonical
+As of 2026-09-24. Read [the documentation guide](README.md) for the canonical
 contracts and [the continuity brief](handoff.md) when starting another task.
-The next platform priority is Windows Codex, followed by Claude Code. Read the
-current user request and live state before starting platform implementation.
-The [Windows Codex handoff](handoff-windows-codex.md) now gives the native
-preflight, remaining Mac-only boundaries and staged implementation/acceptance
-plan. Preparing that handoff does not qualify or publish a Windows build.
+The current work is the 0.1.0 chat-led redesign on Mac Codex, followed by Mac
+Claude Code (0.2.0), then Windows. The [Windows Codex handoff](handoff-windows-codex.md)
+remains the entry for later Windows work; it does not qualify a Windows build.
+
+## In development: 0.1.0 chat-led redesign (not released)
+
+Spec: [chat-led redesign](superpowers/specs/2026-09-23-chat-led-redesign.md).
+Plan and Codex handoff: [plan](superpowers/plans/2026-09-23-chat-led-redesign.md),
+[handoff](handoff-chat-led-redesign.md). Implemented on `main` and verified with
+`npm run check`, `npm run build`, `npm run build:site` and `node --test`
+(Playwright browser tests skipped where the module is unavailable):
+
+- Everyday wording: 零式 / 限定解除 / 通常装備 with one-line meanings; blocked
+  reasons and failures in everyday words, codes under 詳しく.
+- AI proposals: `propose_change`, `read_proposals`, `decide_proposal`. A proposal
+  stores its basis and optional setup review; approval re-checks the basis, then
+  applies setup, plans and applies in one step. Stale, double and interrupted
+  approvals are handled.
+- Home screen: current mode, 零式 and 限定解除 as everyday choices, Restore for
+  通常装備, one confirmation sheet, a single failure notice with an automatic
+  state re-read, and その他 (appearance first).
+- First run: registration opens first with names and everyday descriptions;
+  after saving Normal the screen guides to an AI-proposed 零式.
+- Switch history (append-only) for per-mode usage estimates; failures to record
+  it never fail a switch. Check-in after three days or five tasks.
+- Retired: public-site operation and same-request replay. Existing receipts,
+  starts and replay records remain on disk and do not block state, switching
+  or recovery.
+
+Not yet verified: Playwright browser tests, the real Mac Codex desktop journey
+with a user's own configuration, and the public-site demo update (plan Task 8).
+The package is not released; 0.0.11 below remains the published preview.
 
 ## Published 0.0.11 Mac preview
 
@@ -232,4 +259,4 @@ verified publication evidence.
 
 ## Deferred work
 
-The maintainer set the next-platform priority on 2026-09-13: **Mac Codex → Windows Codex → Claude Code**. Windows Codex is next; afterward resume Claude Code's existing adapter and [native qualification](claude-native-qualification.md). Both applications on macOS and Windows remain the target. Preserve existing adapters and evidence boundaries; this order does not establish new support. Reusable artwork packs and a public gallery remain separate future decisions. See [delivery](delivery.md), [compatibility](compatibility.md) and the [completed Mac experience plan](superpowers/plans/2026-09-09-mac-product-experience.md).
+On 2026-09-24 the priority became **Mac Codex redesign (0.1.0) → Mac Claude Code (0.2.0) → Windows** (see [delivery](delivery.md)). After 0.1.0, resume Claude Code's existing adapter and [native qualification](claude-native-qualification.md). Both applications on macOS and Windows remain the target. Preserve existing adapters and evidence boundaries; this order does not establish new support. Reusable artwork packs and a public gallery remain separate future decisions. See [delivery](delivery.md), [compatibility](compatibility.md) and the [completed Mac experience plan](superpowers/plans/2026-09-09-mac-product-experience.md).

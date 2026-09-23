@@ -1,5 +1,7 @@
 # Unharness
 
+**In development (0.1.0, not released):** a [chat-led redesign](docs/superpowers/specs/2026-09-23-chat-led-redesign.md) for people who are not engineers. 零式 (TRUEFORM) becomes the everyday default, your AI proposes what to remove or add and you approve it on the screen or in chat, and a simpler home screen shows the current mode, one-step switching and Restore. Operating from the public site and same-request replay are retired in 0.1.0; existing records stay on disk. The description below is for the published 0.0.11.
+
 **0.0.11 Mac preview:** Daily operation now uses the bundled local GUI. Its main screen shows three mode selectors and the saved instructions/Skill states; other tools are under More. The public site provides introduction, demos, installation and update guidance. Work records have a named-task picker and a short result/note form; one record opens on its own and two can be compared. This version adds clearer mode confirmation, light/dark appearance controls and saved-versus-proposed configuration views. The public site's local-opening guide was [deployed separately on 2026-09-21](docs/evidence/2026-09-21-ui-publication.md); installing this package and loading it in a fresh task remain separate steps. See [local entry](docs/spec-local-entry.md) and [work-record UX](docs/spec-work-record-ux.md).
 
 **New model. Same old harness?**

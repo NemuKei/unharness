@@ -9,7 +9,7 @@ The requirements below define the current product contract. The initial Apple Si
 | macOS | Phase 1 / Phase 3 initial scope qualified | Phase 2 native qualification deferred; adapter retained |
 | Windows | Phase 4, deferred | Phase 5, deferred |
 
-The current sequence follows the 2026-09-13 decision in [delivery](delivery.md): start with Mac Codex, work on Windows Codex next, then resume Claude Code support. Both applications on macOS and Windows remain the final target. Retain the existing Claude adapter and its evidence; Claude qualification does not block either Codex delivery. Preserve portable boundaries and use a final cross-platform review. The target is the desktop experience using local work, not an assumption that a successful CLI run covers it. Windows native and WSL execution must be identified separately in evidence.
+The current sequence follows the 2026-09-24 decision in [delivery](delivery.md): the [chat-led redesign](superpowers/specs/2026-09-23-chat-led-redesign.md) on Mac Codex (0.1.0), then Mac Claude Code (0.2.0), then Windows. Both applications on macOS and Windows remain the final target. Retain the existing Claude adapter and its evidence; Claude qualification does not block either Codex delivery. Preserve portable boundaries and use a final cross-platform review. The target is the desktop experience using local work, not an assumption that a successful CLI run covers it. Windows native and WSL execution must be identified separately in evidence.
 
 ## One useful loop
 
@@ -104,7 +104,7 @@ Simultaneous dispatch to different modes is a possible later feature, not an ini
 
 ## Entry points and visuals
 
-The intended primary web interface is served from the user's domain and opened in Codex / Claude Code Desktop's in-app browser through the bundled management Skill. [The domain-entry contract](spec-domain-entry.md) defines protected pairing with the local runtime, restricted data exposure, installation and demo pages, clear connection identity, author/site attribution and an offline local fallback. The public HTTPS-to-loopback route and website-tool operations have [Mac qualification](evidence/2026-09-13-mac-codex-completion.md); other OS/app combinations still require their own evidence. Web and AI operations use the same core; the screen need not remain open for core operations to work.
+**Superseded:** daily operation uses the bundled local GUI (2026-09-14) and public-site operation was retired on 2026-09-24. The following records the former public-domain design. The intended primary web interface was served from the user's domain and opened in Codex / Claude Code Desktop's in-app browser through the bundled management Skill. [The domain-entry contract](spec-domain-entry.md) defines protected pairing with the local runtime, restricted data exposure, installation and demo pages, clear connection identity, author/site attribution and an offline local fallback. The public HTTPS-to-loopback route and website-tool operations have [Mac qualification](evidence/2026-09-13-mac-codex-completion.md); other OS/app combinations still require their own evidence. Web and AI operations use the same core; the screen need not remain open for core operations to work.
 
 Retain the chosen pixel-art hangar, progressively opening outer equipment, and the AI entity emerging in Zero. Use the divine reveal as a brief switching effect, then return to a readable idle view. Support effects off and reduced motion. Display preferences are separate from favorite content.
 

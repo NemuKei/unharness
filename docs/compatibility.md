@@ -31,7 +31,7 @@ The development task picker has separate [metadata-only verification on Codex 0.
 | macOS | Claude Code desktop, Code tab | 2, after Windows Codex | Adapter implemented and qualified on owned fixtures, the built interface and a real recording; fresh native mode loading and the native AI connection remain unverified |
 | Windows | Claude Code desktop, Code tab | 5, deferred | Test environment available per maintainer; no test result yet |
 
-Both applications on both OSes remain design targets. The 2026-09-13 priority is Mac Codex (Phases 1 and 3), then Windows Codex (Phase 4), then Claude Code (Phases 2 and 5). Phase 6 later reconciles all four combinations. These priorities do not enable unqualified Windows or Claude writes. See [delivery](delivery.md).
+Both applications on both OSes remain design targets. The 2026-09-24 priority is the Mac Codex redesign (0.1.0), then Mac Claude Code (0.2.0), then Windows Codex and Windows Claude Code. Phase 6 later reconciles all four combinations. These priorities do not enable unqualified Windows or Claude writes. See [delivery](delivery.md).
 
 Record the desktop app version, embedded or external runtime version, CPU architecture, and execution environment. Native Windows and WSL results must not be merged into one undifferentiated “Windows passed” result. The [native Windows baseline](evidence/2026-09-07-windows-baseline.md) records a Windows 11 x64 result separately; it does not satisfy the remaining fresh-task or full desktop criteria. See [the probe guide](codex-probe.md).
 

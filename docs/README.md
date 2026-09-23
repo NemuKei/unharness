@@ -26,6 +26,7 @@ The canonical contracts are split by responsibility:
 | Change | Contract |
 | --- | --- |
 | Product behavior and acceptance | [Specification](spec.md) |
+| 0.1.0 chat-led redesign (everyday screen, AI proposals, wording) | [Redesign spec](superpowers/specs/2026-09-23-chat-led-redesign.md), [plan](superpowers/plans/2026-09-23-chat-led-redesign.md), [Codex handoff](handoff-chat-led-redesign.md) |
 | Ordinary Skill states, retained plugins and inheritance | [Current mode contract](spec-mode-inheritance.md) |
 | Source registration, writes and independent recovery | [User sources](spec-user-sources.md), [retained settings](spec-retained-settings.md) |
 | General startup, language and update discovery | [Guided entry](guided-product-entry.md), [plugin updates](plugin-update.md) |
