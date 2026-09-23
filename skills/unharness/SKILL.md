@@ -98,9 +98,7 @@ Opening the workbench preserves the current mode. `workbench_status` checks curr
 
 ### Earlier public connections
 
-Use `open_workbench` for the local screen. The legacy `request_public_connection` command now returns that verified local entrance without issuing a pairing. Do not begin a new public operating session. Earlier issued links/receipts remain versioned history; a returned historical approval URL is not present authority.
-
-For an earlier public-page operation, use `public_operation_status` with its operation UUID, including after expiry or GUI shutdown. This reads the public workspace ledger; ordinary `operation_status` reads local MCP requests instead. A missing or unconfirmed result does not authorize repeating a mode change with a new ID.
+Operating from the public site is retired. Use `open_workbench` for the local screen. Earlier public-page receipts remain on disk as history; read them only when the user asks, and never treat them as present authority or repeat their mode changes.
 
 ## Record work
 
@@ -109,7 +107,7 @@ For an earlier public-page operation, use `public_operation_status` with its ope
 3. Ask only for missing outcome or experience information. Keep the measured scope, partial/missing values and mode-loading uncertainty. User judgments use user provenance; an AI assessment uses agent provenance. Do not invent a quality score or infer human effort from elapsed time.
 4. Use `save_run` for the reviewed work and attributed assessment, then confirm its saved title. Inspect or compare that record without replaying the work. Corrections use the same frozen review and `previousRunId`, preserving earlier versions. Open its answer only if the user asks to inspect it.
 
-The GUI's **記録・比較** page offers **仕事を記録する** → recent task selection → short outcome/note → save. A saved job can be opened alone or selected with another job to compare. **同じお題で試す** is a separate, explicitly requested workflow requiring saved starting conditions; ordinary past records do not prove that the original files can be recreated.
+The GUI's **記録・比較** page offers **仕事を記録する** → recent task selection → short outcome/note → save. A saved job can be opened alone or selected with another job to compare. Re-running the same request under another mode is retired; compare saved records instead.
 
 ## Operate the saved scope
 
@@ -118,7 +116,7 @@ The GUI's **記録・比較** page offers **仕事を記録する** → recent t
 - Explain the instruction target concretely: the selected optional global instructions loaded as AGENTS.md. The existing Codex operation uses AGENTS.override.md while preserving the base AGENTS.md and repository AGENTS.md. Its global effect is shared by fresh tasks using that Codex home, including other projects; leaving the repository file unchanged does not isolate the effect to one project.
 - For favorites and recovery, use the corresponding saved-version plan and shared recovery tools. Never rewrite configuration files directly or restore a backup over an independent edit. The local workbench and Node-only recovery remain separate from a model's availability.
 - Before an explicitly requested plugin removal or update, run `scripts/unharness plugin recovery --data-directory <verified native data directory>` from the installed root and retain the returned `Open Unharness Recovery.command` path. That command opens the local recovery screen after cache removal; it performs no automatic mode switch. The screen permits only its own Normal/retained-setting review and recovery actions. Retained-only conflict review needs the selected local Codex executable, but no model call. See [offline recovery](../../docs/plugin-recovery.md). Do not delete the user's saved data or older recovery copies with the plugin.
-- For comparisons, use explicitly selected saved runs or replay results. Preserve unknown evidence and evaluator attribution. Do not start duplicate tasks in multiple modes. Native task observations require an explicitly selected fresh completed task; preparing files does not verify loading into the current conversation.
+- For comparisons, use explicitly selected saved runs. Preserve unknown evidence and evaluator attribution. Do not start duplicate tasks in multiple modes. Native task observations require an explicitly selected fresh completed task; preparing files does not verify loading into the current conversation.
 - In plugin-bearing scopes, read `coverage` and the individual `plugins` observations. Skill input correspondence can be matched while the whole-plugin runtime remains unknown. Codex 0.153.4 records no per-plugin MCP, hook, app or scheduled-task state. Do not turn a matching Skill catalog into a complete mode-loading claim or a qualified performance verdict.
 - For release configuration advice, read [Unharness Setup](../unharness-setup/SKILL.md) only when the user asks for that consultation. Keep the existing Normal intact.
 
