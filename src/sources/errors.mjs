@@ -1,4 +1,8 @@
 export const USER_SOURCE_ERROR_KINDS = Object.freeze([
+  'proposal-invalid',
+  'proposal-stale',
+  'proposal-busy',
+  'proposal-record-invalid',
   'comparison-tasks-unavailable',
   'comparison-no-completed-turn',
   'directory-rebind-confirmation-required',

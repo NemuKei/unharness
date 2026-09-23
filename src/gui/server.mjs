@@ -236,6 +236,7 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
         else if (sourceController) {
           if (parsed.pathname === '/api/sources/metadata' && params.length === 0) sendJson(response, 200, await sourceController.metadata());
           else if (parsed.pathname === '/api/sources/state' && params.length === 0) sendJson(response, 200, await sourceController.state());
+          else if (parsed.pathname === '/api/sources/proposals' && params.length === 0) sendJson(response, 200, await sourceController.proposals());
           else if (!recoveryBinding && parsed.pathname === '/api/sources/appearance-image' && params.length === 4 && new Set(params).size === 4
             && params.every(key => ['launchId', 'contextId', 'referenceId', 'assetId'].includes(key))) {
             const image = await enqueue(()=>sourceController.image(Object.fromEntries(parsed.searchParams)));
@@ -295,7 +296,7 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
           const result = action === 'inspect'
             ? await inventory.inspect()
             : await controller.execute(action, parsedBody.input);
-          return { status: 200, body: { result, state: await controller.state() } };
+          return { status: 200, body: sourceRoute && action === 'decide-proposal' ? result : { result, state: await controller.state() } };
         } catch (error) {
           const safe = safeError(error);
           return { status: statusFor(safe.kind), body: { error: safe } };

@@ -25,6 +25,9 @@ const fields = {
     [],
   ],
   plan: [["mode"], ["selectedIds"]],
+  propose: [["kind", "mode", "items"], ["setupReviewId"]],
+  proposals: [[], []],
+  "decide-proposal": [["proposalId", "decision"], []],
   "plan-retained": [[], []],
   "accept-retained": [["planId"], []],
   setup: [[], ["schemaVersion"]],
@@ -109,6 +112,8 @@ export function sourceRequestShape(body, action) {
   for (const key of [
     "discoveryId",
     "planId",
+    "proposalId",
+    "setupReviewId",
     "snapshotId",
     "favoriteId",
     "checkpointId",
@@ -138,6 +143,13 @@ export function sourceRequestShape(body, action) {
   if (Object.hasOwn(input, "sourceId") && !sourceId(input.sourceId))
     fail("gui-invalid-request");
   if (Object.hasOwn(input, "schemaVersion") && !isVersionedSetup(input.schemaVersion)) fail("gui-invalid-request");
+  if (Object.hasOwn(input, "kind") && !["initial", "add", "remove", "restore"].includes(input.kind)) fail("gui-invalid-request");
+  if (Object.hasOwn(input, "decision") && !["approve", "dismiss"].includes(input.decision)) fail("gui-invalid-request");
+  if (Object.hasOwn(input, "items") && (!Array.isArray(input.items) || input.items.length > 32
+    || input.items.some(item => !item || typeof item !== "object" || Array.isArray(item)
+      || Object.keys(item).sort().join() !== "reason,sourceId" || !sourceId(item.sourceId)
+      || typeof item.reason !== "string" || item.reason.length < 1 || item.reason.length > 200
+      || /[\u0000-\u001f\u007f-\u009f]/.test(item.reason)))) fail("gui-invalid-request");
   if (Object.hasOwn(input, 'taskCursor') && (typeof input.taskCursor !== 'string' || !input.taskCursor.length
     || input.taskCursor.length > 512 || /[\u0000-\u001f\u007f]/.test(input.taskCursor))) fail('gui-invalid-request');
   if (Object.hasOwn(input, 'latestCompleted') && (typeof input.latestCompleted !== 'boolean'
@@ -290,6 +302,14 @@ export async function createSourceController(input, { workspace: selectedWorkspa
       const { readSourceUpdates } = await import("./updates.mjs");
       return readSourceUpdates({ metadata: meta, readState: state, readMetadata: metadata, after: input.after });
     },
+    async proposals() {
+      const meta = await metadata();
+      if (!meta.workspace) return { proposals: [] };
+      const { listProposals } = await import("../proposals/service.mjs");
+      const proposals = await listProposals({ workspace: meta.workspace });
+      if ((await metadata()).contextId !== meta.contextId) fail("gui-source-context-changed");
+      return { proposals };
+    },
     async execute(
       action,
       { launchId: acceptedLaunch, contextId: acceptedContext, ...input },
@@ -310,6 +330,12 @@ export async function createSourceController(input, { workspace: selectedWorkspa
         return service.reviewDiscoveredUserSource({ context, ...input });
       if (!located) fail("workspace-invalid");
       const workspace = located.workspace;
+      if (["propose", "proposals", "decide-proposal"].includes(action)) {
+        const proposals = await import("../proposals/service.mjs");
+        if (action === "propose") return proposals.createProposal({ workspace, ...input });
+        if (action === "proposals") return { proposals: await proposals.listProposals({ workspace }) };
+        return proposals.decideProposal({ workspace, ...input });
+      }
       if (Object.hasOwn(service.SETUP_OPERATIONS, action))
         return service.SETUP_OPERATIONS[action]({ workspace, ...input });
       if (Object.hasOwn(service.ENROLLMENT_OPERATIONS, action))
