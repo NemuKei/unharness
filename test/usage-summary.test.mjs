@@ -117,3 +117,29 @@ test('local authenticated GUI reads a scoped usage summary without task text', a
   assert.equal(summary.availability, 'none');
   assert.ok(!JSON.stringify(summary).includes('PRIVATE'));
 });
+
+for (const variant of ['corrupt', 'limit']) test(`a ${variant} history cannot turn a successful switch into an error`, async t => {
+  const s = await setupProfile(t), path = join(s.workspace, 'preparation-history.jsonl');
+  if (variant === 'corrupt') await writeFile(path, '{broken}\n');
+  else await writeFile(path, (JSON.stringify({ mode: 'normal', revision: 0, preparedAt: ago(1) }) + '\n').repeat(10000));
+  const planned = await planUserMode({ workspace: s.workspace, mode: 'trueform' });
+  const applied = await applyUserPlan({ workspace: s.workspace, planId: planned.planId });
+  assert.equal(applied.readback, 'matched');
+  assert.equal((await openWorkspace(s.workspace)).state.preparedMode, 'trueform');
+  const estimate = await usageSummary({ workspace: s.workspace, days: 7 });
+  assert.ok(['none', 'partial'].includes(estimate.availability));
+  assert.equal(estimate.byMode.trueform.perTask, null);
+});
+
+test('a damaged history cannot turn completed offline recovery into an error', async t => {
+  const s = await setupProfile(t);
+  t.after(() => setSourceTransactionTestHook(null));
+  const planned = await planUserMode({ workspace: s.workspace, mode: 'trueform' });
+  setSourceTransactionTestHook(phase => { if (phase === 'state') throw Error('synthetic interruption'); });
+  await assert.rejects(applyUserPlan({ workspace: s.workspace, planId: planned.planId }));
+  setSourceTransactionTestHook(null);
+  await writeFile(join(s.workspace, 'preparation-history.jsonl'), '{broken}\n');
+  const recovered = await recoverUserSources({ workspace: s.workspace });
+  assert.equal(recovered.status, 'restored');
+  assert.equal((await openWorkspace(s.workspace)).state.preparedMode, 'normal');
+});

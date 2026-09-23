@@ -33,6 +33,7 @@ import { samePath } from '../sources/paths.mjs';
 import { hash } from '../sources/hash.mjs';
 import { conditionId, QUALIFIED_CLAUDE_VERSIONS } from '../sources/observation-record.mjs';
 import { fail, verification } from '../sources/errors.mjs';
+import { descriptionFromFrontmatter } from '../sources/skill-frontmatter.mjs';
 
 const object = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const digest = (text) => createHash('sha256').update(text).digest('hex');
@@ -182,7 +183,8 @@ export const application = {
         body = null,
         binding = null,
         modelInvocable = null,
-        userInvocable = true;
+        userInvocable = true,
+        description = null;
       // The current state is read for every user or project Skill, including
       // one this cannot control: a shadowed Skill still has a truthful state.
       const readable =
@@ -200,6 +202,7 @@ export const application = {
           binding = await parentBinding(s.path);
           const front = await readSkillFrontmatter(body.text);
           if (front === null) fail('unsupported-source');
+          description = descriptionFromFrontmatter(front);
           const disableModel = frontmatterBoolean(
             front['disable-model-invocation']
           );
@@ -232,6 +235,7 @@ export const application = {
         id: 'skill-' + hash({ identity, sourceDigest }),
         sourceDigest,
         label: s.name,
+        description,
         path: s.path,
         scope: s.scope,
         pluginId: s.pluginId,

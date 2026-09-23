@@ -186,3 +186,9 @@ button.home-mode-choice { cursor: pointer; }
 .home-usage details { margin-top: 8px; }
 .home-usage ul { padding-left: 20px; }
 @media (max-width: 700px) { .home-check-in { padding: 12px 14px; } }
+
+.initial-setup { max-width: 820px; margin: 0 auto; }
+.initial-setup h1 { margin: 0 0 12px; font-size: clamp(25px, 3vw, 36px); }
+.initial-setup > p { color: var(--muted); line-height: 1.7; }
+.initial-setup .source-setup { margin-top: 20px; padding: 20px; border: 1px solid var(--border); background: var(--surface); }
+@media (max-width: 700px) { .initial-setup .source-setup { padding: 14px; } }

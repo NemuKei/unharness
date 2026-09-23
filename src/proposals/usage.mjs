@@ -45,9 +45,11 @@ async function taskTotal(w, app, task) {
 export async function usageSummary({ workspace, days }) {
   if (!Number.isSafeInteger(days) || days < 1 || days > 30) fail('invalid-request');
   const w = await openWorkspace(workspace), app = applicationFor(w.reg.context);
-  const history = await readPreparationHistory({ workspace });
   const byMode = Object.fromEntries(MODES.map(mode => [mode, blank()]));
   const ratioToTrueform = Object.fromEntries(MODES.map(mode => [mode, null]));
+  let history;
+  try { history = await readPreparationHistory({ workspace }); }
+  catch { return { byMode, ratioToTrueform, availability: 'none' }; }
   if (!history.length) return { byMode, ratioToTrueform, availability: 'none' };
   const recent = await recentMetadata(workspace);
   if (!recent.available) return { byMode, ratioToTrueform, availability: 'none' };

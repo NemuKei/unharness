@@ -65,7 +65,7 @@ async function registerThroughBrowser(page) {
   await openSourceSettings(page);
   await openSourceSettings(page);
   await page.getByRole('button', { name: '追加設定の候補を確認', exact: true }).click();
-  for (const label of ['Global Claude Code instructions', 'example'])
+  for (const label of ['いつもの追加指示（CLAUDE.md）', 'example'])
     await page.getByRole('checkbox', { name: label, exact: true }).check();
   await page
     .getByRole('checkbox', { name: /これは自分で追加したもので/ })

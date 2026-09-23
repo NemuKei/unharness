@@ -63,6 +63,7 @@ export const sourceRuntimeOf = (context: SourceContext) =>
 export type SourceRow = {
   id: string;
   label: string;
+  description?: string | null;
   path: string;
   eligible?: boolean;
   reason?: string | null;

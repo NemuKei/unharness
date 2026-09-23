@@ -22,10 +22,11 @@ import { promisify } from 'node:util';
 import { captureFile } from '../sources/platform.mjs';
 import { readSkillOverrides, AUTOMATIC_OVERRIDES, validSkillName } from './settings.mjs';
 import { fail } from '../sources/errors.mjs';
+import { readSkillFrontmatter } from '../sources/skill-frontmatter.mjs';
+export { readSkillFrontmatter } from '../sources/skill-frontmatter.mjs';
 
 const exec = promisify(execFile);
 const MAX_ENTRIES = 4096;
-const MAX_FRONTMATTER_BYTES = 64 * 1024;
 
 export const MANAGED_SYSTEM_DIRECTORY = '/Library/Application Support/ClaudeCode';
 export const MANAGED_POLICY_INSTRUCTIONS = join(MANAGED_SYSTEM_DIRECTORY, 'CLAUDE.md');
@@ -92,48 +93,6 @@ async function directoryNames(path) {
     .map((e) => e.name)
     .filter((name) => !name.startsWith('.'))
     .sort();
-}
-
-/**
- * Parse only the leading YAML frontmatter of a SKILL.md. Anything that cannot
- * be read as a plain mapping leaves the invocation flags unknown, which keeps
- * the Skill out of the eligible set rather than guessing its current state.
- */
-export async function readSkillFrontmatter(text) {
-  if (typeof text !== 'string') return null;
-  const normalized = text.replaceAll('\r\n', '\n');
-  if (!normalized.startsWith('---\n')) return {};
-  const end = normalized.indexOf('\n---', 3);
-  if (end === -1) return null;
-  const block = normalized.slice(4, end + 1);
-  if (Buffer.byteLength(block, 'utf8') > MAX_FRONTMATTER_BYTES) return null;
-  try {
-    const { parseDocument, isMap, isScalar, isAlias, visit } = await import('yaml');
-    const doc = parseDocument(block, {
-      logLevel: 'silent',
-      prettyErrors: false,
-      uniqueKeys: true,
-      strict: true
-    });
-    if (doc.errors.length || doc.warnings.length) return null;
-    visit(doc, {
-      Node(_key, node) {
-        if (isAlias(node) || node.anchor || node.tag) throw Error('unsupported');
-        if (
-          isMap(node) &&
-          node.items.some(
-            (pair) => !isScalar(pair.key) || typeof pair.key.value !== 'string'
-          )
-        )
-          throw Error('unsupported');
-      }
-    });
-    if (doc.contents === null) return {};
-    if (!isMap(doc.contents)) return null;
-    return doc.toJS({ maxAliasCount: 0 }) ?? {};
-  } catch {
-    return null;
-  }
 }
 
 // Claude Code accepts several spellings for a boolean frontmatter flag.

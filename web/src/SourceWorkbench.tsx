@@ -56,7 +56,7 @@ import { appearanceThemeFor } from './ui/appearance-tokens';
 import { UpdateInfoPanel } from './workbench/UpdateInfoPanel';
 import { savedModeIsPrepared } from './workbench/mode-preparation';
 import { HomeScreen } from './workbench/HomeScreen';
-import { RegistrationChoices } from './workbench/RegistrationChoices';
+import { RegistrationChoices, InitialSetupPanel } from './workbench/RegistrationChoices';
 import { savedDetailsVisible } from './workbench/home-view';
 
 function displayPreference() {
@@ -239,7 +239,8 @@ export function SourceWorkbench() {
         </div>
       </details>
       <section className="workbench-pane" hidden={activeTab !== 'settings'} aria-label={t("設定の見直し", "Review settings")}>
-        <div className="settings-flow" role="region" aria-label={t('設定の流れ', 'Settings flow')}>
+        {c.confirmed && !source ? <InitialSetupPanel><Setup key={c.selectionKey} controller={c}/></InitialSetupPanel>
+          : source ? <div className="settings-flow" role="region" aria-label={t('設定の流れ', 'Settings flow')}>
           <section className="settings-stage"><h2>{t('1. 保存内容を見る', '1. Review saved contents')}</h2><p>{t('日常の確認はモード画面で行います。見るだけでは変更しません。', 'Use Modes for everyday inspection. Viewing alone does not change settings.')}</p><button className="secondary" onClick={() => selectPage('mode')}>{t('モードと保存内容を見る', 'View modes and saved contents')}</button></section>
           <section className="settings-stage"><h2>{t('2. AIと相談する', '2. Consult with AI')}</h2>
             {c.view ? <SetupHandoff key={c.view.metadata.contextId + ':' + (source?.setup?.setupId ?? 'initial')}
@@ -247,17 +248,15 @@ export function SourceWorkbench() {
               : <p>{t("状態を確認しています。", "Checking the state.")}</p>}
           </section>
           <section className="settings-stage"><h2>{t('3. このMacで詳細を確認', '3. Review details on this Mac')}</h2>
-            {!source ? <details className="settings-manual"><summary>{t("このMacで対象を確認・登録する", "Review and register targets on this Mac")}</summary><Setup key={c.selectionKey} controller={c}/></details>
-              : <details className="settings-manual"><summary>{t("このMacで構成と対象を確認・編集する", "Review and edit local loadouts and targets")}</summary>
+            <details className="settings-manual"><summary>{t("このMacで構成と対象を確認・編集する", "Review and edit local loadouts and targets")}</summary>
                 <div className="saved-mode-settings">{source.setup && [3, 4].includes(source.setup.schemaVersion ?? 0) && source.setup.setupId && (['unseal', 'trueform'] as const).map(mode =>
                   <div data-mode={mode} key={mode}><SourceStateEditor key={c.view!.metadata.contextId + ':' + source.revision + ':' + mode} controller={c} mode={mode}/></div>)}</div>
                 <EnrollmentPanel key={c.view?.metadata.contextId + ':' + source.revision} controller={c}/>
                 <PluginEnrollmentPanel key={c.view?.metadata.contextId + ':plugins:' + source.revision} controller={c}/>
-              </details>}
+              </details>
           </section>
-        </div>
-        <UpdateInfoPanel/>
-        <InstructionScopeNote application={c.view?.metadata.application}/>
+        </div> : <p>{t('今の状態を確認しています。', 'Checking the current state.')}</p>}
+        {source && <><UpdateInfoPanel/><InstructionScopeNote application={c.view?.metadata.application}/></>}
       </section>
       <section className="workbench-pane appearance-workbench" hidden={activeTab !== 'appearance'} aria-label={t("外観の変更", "Change appearance")}>
         <h1>{t("外観", "Appearance")}</h1><p>{t("好きな姿で使えます。指示・Skillの構成や性能の評価は変わりません。", "Choose any look. Instructions, Skills and performance assessments stay unchanged.")}</p>
@@ -270,6 +269,8 @@ export function SourceWorkbench() {
       <section hidden={activeTab !== 'support'} className="workbench-pane" aria-label={t("このMacの接続と復旧", "Connection and recovery on this Mac")}>
         <h1>{t("接続・復旧", "Connection & recovery")}</h1>
         <p>{t("手元の設定や復旧の案内を確認します。完了したら「モード」に戻って使えます。", "Review local settings and recovery guidance. Return to Mode when finished.")}</p>
+        {!source && <details><summary>{t('更新情報と指示の切り替わり方', 'Updates and instruction details')}</summary>
+          <UpdateInfoPanel/><InstructionScopeNote application={c.view?.metadata.application}/></details>}
         {c.view?.source && <PublicOperationLookup key={c.view.metadata.launchId + ':' + c.view.metadata.contextId} request={c.requestConnection}/>}
         <div className="support-state">
             <section className="control-section">
@@ -678,6 +679,7 @@ function Setup({ controller: c }: { controller: Controller }) {
       >
         {t("追加設定の候補を確認", "Review optional-source candidates")}</button>
       <RegistrationChoices rows={rows.filter(row => row.eligible)} selectedIds={ids} checked={optional} busy={c.busy}
+        application={c.view?.metadata.application ?? 'codex'}
         onToggle={(id, selected) => setIds(old => selected ? [...old, id] : old.filter(value => value !== id))}
         onChecked={setOptional} details={<>
           <Context controller={c}/>

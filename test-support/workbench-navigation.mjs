@@ -21,6 +21,7 @@ export async function openSetupDetails(page) {
 
 export async function openSourceSettings(page) {
   await openWorkbenchPage(page, '設定');
+  if (await page.locator('.initial-setup').count()) return;
   const details = page.locator('.settings-manual');
   if (await details.getAttribute('open') === null) await details.locator('summary').first().click();
 }

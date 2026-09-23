@@ -16,6 +16,7 @@ import { hash } from '../sources/hash.mjs';
 import { conditionId } from '../sources/observation-record.mjs';
 import { parseSkillCatalog, selectedSkillIntent } from '../codex/skill-listing.mjs';
 import { fail, verification } from '../sources/errors.mjs';
+import { readSkillDescription } from '../sources/skill-frontmatter.mjs';
 import { usesSourceStates } from '../setup/schema.mjs';
 
 export { parseSkillCatalog, selectedSkillIntent };
@@ -180,7 +181,8 @@ export const application = {
         format = null,
         binding = null,
         policyBinding = null,
-        formatBinding = null;
+        formatBinding = null,
+        description = null;
       let manual = false;
       if (eligible)
         try {
@@ -192,6 +194,7 @@ export const application = {
             fail('unsupported-source');
           body = await captureFile(s.path);
           if (!body) fail('unsupported-source');
+          description = await readSkillDescription(body.text);
           binding = await parentBinding(s.path);
           const policyPath = join(dirname(s.path), 'agents', 'openai.yaml');
           policy = await captureFile(policyPath);
@@ -225,6 +228,7 @@ export const application = {
         id,
         sourceDigest,
         label: s.name,
+        description,
         path: s.path,
         scope: s.scope,
         pluginId: s.pluginId,

@@ -304,8 +304,10 @@ export async function transact(w, plan, planId) {
   newState.ownedDirs = [];
   for (const d of dirs) if (await exists(d.path)) newState.ownedDirs.push(d);
   await writeJson(join(w.workspace, 'state.json'), newState);
-  await appendPreparationHistory({ workspace: w.workspace, mode: newState.preparedMode,
-    revision: newState.revision, preparedAt: newState.preparation.preparedAt });
+  try {
+    await appendPreparationHistory({ workspace: w.workspace, mode: newState.preparedMode,
+      revision: newState.revision, preparedAt: newState.preparation.preparedAt });
+  } catch { /* Usage history cannot change a verified mode application. */ }
 
   return {
     planId,
@@ -490,8 +492,10 @@ export async function recoverTransaction(w) {
   validateState(w.reg, recoveredState);
   await writeJson(join(w.workspace, 'state.json'), recoveredState);
   await unlink(join(w.workspace, 'pending.json'));
-  await appendPreparationHistory({ workspace: w.workspace, mode: recoveredState.preparedMode,
-    revision: recoveredState.revision, preparedAt: recoveredState.preparation.preparedAt });
+  try {
+    await appendPreparationHistory({ workspace: w.workspace, mode: recoveredState.preparedMode,
+      revision: recoveredState.revision, preparedAt: recoveredState.preparation.preparedAt });
+  } catch { /* Usage history cannot change a completed recovery. */ }
   return {
     status: dependencyConflicts.length
       ? 'controls-restored-dependencies-changed'
