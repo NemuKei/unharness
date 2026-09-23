@@ -263,19 +263,21 @@ git commit -m "Give the management Skill everyday judgment criteria"
     - `items`: `{ sourceId: string; reason: string /* 1〜200文字の日常語 */ }[]`
   - `listProposals({ workspace }) → Proposal[]`（新しい順、最大20件）
   - `decideProposal({ workspace, proposalId, decision: 'approve' | 'dismiss' }) → Proposal`
-  - `Proposal = { proposalId: string /* 64桁hex */; kind; mode; items; planId: string; setupReviewId: string | null; revision: number; createdAt: string; status: 'pending' | 'applied' | 'dismissed' | 'stale'; result?: { preparedMode; revision; readback } }`
+  - `Proposal = { proposalId: string /* 64桁hex */; kind; mode; items; setupReviewId: string | null; basis: { revision: number; snapshotId: string }; createdAt: string; status: 'pending' | 'applying' | 'applied' | 'dismissed' | 'stale'; result?: { planId: string; preparedMode; revision; readback } }`
+  - 計画（`planId`）は提案の作成時には作らない。承認時に作ってすぐ適用し、`result.planId` に残す（2026-09-23 Solの再現：作成時の計画は、承認時にsetupを適用すると必ず `stale-plan` になるため）。
   - MCP：`propose_change`（write）、`read_proposals`（read）、`decide_proposal`（write, destructive）。入力は zod の strictObject。`reason` は既存の `text(200)` と同じ制約。
   - HTTP：`GET /api/sources/proposals` → `{ proposals: Proposal[] }`、`POST /api/sources/decide-proposal` → `Proposal`
 
 **振る舞い（テストで固定する）:**
-1. 作成時に `planUserMode` で計画を作り、`planId` と現在の `revision` を保存する。`setupReviewId` があるときは承認時に先に setup を適用する。
-2. 同じ `mode` の承認待ち提案が既にあれば、古い方を `stale` にする。
-3. 承認時に `revision` が現在と違う、または `applyUserPlan` が `stale-plan` / source conflict を返したら、提案を `stale` にして `proposal-stale` を返す。書き込みはしない。
-4. 同じ提案の承認を2回受けたら、2回目は適用せず、1回目の結果を返す（既存の `duplicate: true` と整合）。
+1. 作成時は設定を変えない。現在の `revision` と `snapshotId` を `basis` に保存し、`setupReviewId` があれば一緒に保存する。作成時に `setupReviewId` の中身（setup review）が現在のinventoryで有効かを確かめ、無効なら `proposal-invalid` で拒否する。
+2. 承認は1回の操作で順に行う：`basis` と現在の状態を比べる → 一致したら状態を `applying` にする → `setupReviewId` があれば既存の setup の apply → `planUserMode({ mode })` → `applyUserPlan({ planId })` → 状態を `applied` にし `result` を保存する。
+3. 承認時に `basis` が現在と違う、または途中の既存処理が `stale-plan` / source conflict / setup の不一致を返したら、提案を `stale` にして `proposal-stale` を返す。`basis` の比較で止まった場合は何も書き込まない。setup の適用後に止まった場合は、既存の setup・復旧の仕組みの範囲に留め、通常装備と準備中のモードは変えない。
+4. 同じ提案の承認を2回受けたら、2回目は適用しない：`applied` なら1回目の `result` を返し、`applying` なら `proposal-busy` を返す（既存の `duplicate: true` と整合）。
+4b. 同じ `mode` の承認待ち提案が既にあれば、新しい提案の作成時に古い方を `stale` にする。
 5. `items` に管理Skill（`src/setup/control-sources.mjs` の `requiredControlSources`）や、そのモードで扱えないsourceが入っていたら、作成を `proposal-invalid` で拒否する。
 6. 提案の保存は既存のworkspace配下の不変記録と同じ方式（`src/sources/record-file.mjs` の書き方）に従い、既存形式を変えない。
 
-- [ ] **Step 1:** 上の振る舞い1〜6をそれぞれ `test/proposals.test.mjs` のテストにする。合成workspaceは既存の `test/gui-sources.test.mjs` と同じ作り方を使う。
+- [ ] **Step 1:** 上の振る舞い1〜6（4bを含む）をそれぞれ `test/proposals.test.mjs` のテストにする。合成workspaceは既存の `test/gui-sources.test.mjs` と同じ作り方を使う。
 - [ ] **Step 2:** `node --test test/proposals.test.mjs` で失敗を確認する。
 - [ ] **Step 3:** `src/proposals/store.mjs` と `service.mjs` を実装する。
 - [ ] **Step 4:** `session.mjs`・`tools.mjs`・`server.mjs` へ配線する。MCPの説明文は「利用者の承認が必要。提案の作成は設定を変えない」と書く。
