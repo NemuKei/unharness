@@ -13,7 +13,7 @@
 ## 担当の読み方
 
 - **Opus** と書いたTaskは、Claude（Opus）がこの計画のコードどおりに実装する。
-- **Sol** と書いたTaskは、Codex（`gpt-5.6-sol`）が実装し、コードレビューもSolが行う。計画はインターフェース・テスト・受入条件を固定し、実装コードはSolが書く。Solへの渡し方は [handoff-chat-led-redesign.md](../../handoff-chat-led-redesign.md) に従う。
+- **Sol** と書いたTaskは、Codex（`gpt-6-sol`）が実装し、コードレビューもSolが行う。計画はインターフェース・テスト・受入条件を固定し、実装コードはSolが書く。Solへの渡し方は [handoff-chat-led-redesign.md](../../handoff-chat-led-redesign.md) に従う。
 - 各Taskの終わりに、Opusが合成HOMEで画面を実際に操作して監修する（UI/UXの受入）。
 
 ## Global Constraints
