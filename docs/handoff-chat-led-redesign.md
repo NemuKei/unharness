@@ -12,6 +12,8 @@
 
 計画の **Task 3 → Task 4 → Task 5 → Task 6** を、この順に1つずつ進める。Task 1・2・7・8はOpusが担当する。着手時に `git log` で、前のTaskとOpusのTaskがmainに入っているか確認する。
 
+最初に、Opusが実装したTask 1（`d65d2fa`）とTask 2（`7224acf`）をコードレビューする。範囲は `git diff f4d55ee..7224acf`。Playwrightの画面テスト（88件）はOpusの環境では実行されずskipされているため、`UNHARNESS_PLAYWRIGHT_MODULE` を設定できる環境なら実行して、文言変更に合わせた期待値の更新が正しいか確かめる。指摘は修正してから Task 3 に進む。
+
 ## 進め方
 
 - 各Taskは、計画に書かれた「振る舞い」を先にテストにし、失敗を確認してから実装する。
