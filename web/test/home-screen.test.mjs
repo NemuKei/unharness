@@ -5,7 +5,7 @@ import { ApiError } from '../src/api.ts';
 
 const home = await import('../src/workbench/home-view.ts').catch(() => ({}));
 const { homeView, modeChoice, consultationCopy, restoreHint, savedDetailsVisible,
-  switchSheetText, modeForAction, failureAfterRefresh, proposalFailureMessage, removedCount } = home;
+  switchSheetText, modeForAction, failureAfterRefresh, proposalFailureMessage, removedCount, usageDisplay } = home;
 const source = (overrides = {}) => ({ preparedMode: 'trueform', revision: 7, setup: { setupId: 'a'.repeat(64) },
   registration: { scopeId: 'b'.repeat(64) }, conflict: null, recovery: { pending: false }, ...overrides });
 const input = (overrides = {}) => ({ source: source(), confirmed: true, busy: false, proposals: [], failure: null, ...overrides });
@@ -68,4 +68,22 @@ test('5. restore selects Normal through the same local plan and apply journey', 
 test('saved-configuration details exist only after Normal has been saved', () => {
   assert.equal(savedDetailsVisible(null), false);
   assert.equal(savedDetailsVisible(source()), true);
+});
+
+test('after registration the next action is to decide TRUEFORM with AI', () => {
+  const view = homeView(input({ source: source({ preparedMode: 'normal', setup: { setupId: null } }) }));
+  assert.match(view.notice, /AIと零式の中身を決める/);
+});
+
+test('usage leads with an in-app ratio and keeps absolute counts in details', () => {
+  const data = { byMode: { normal: { tasks: 1, perTask: 150000 }, trueform: { tasks: 2, perTask: 100000 },
+    unseal: { tasks: 2, perTask: 130000 } },
+    ratioToTrueform: { normal: 1.5, trueform: 1, unseal: 1.3 }, availability: 'complete' };
+  const display = usageDisplay(data);
+  assert.match(display.message, /限定解除は零式に比べて約1.3倍/);
+  assert.ok(!display.message.includes('130,000'));
+  assert.ok(display.details.some(row => row.includes('130,000')));
+  assert.equal(usageDisplay(null).message, 'まだ目安がありません');
+  assert.equal(usageDisplay({ ...data, byMode: { ...data.byMode, trueform: { tasks: 0, perTask: null } },
+    ratioToTrueform: { normal: null, trueform: null, unseal: null }, availability: 'none' }).message, 'まだ目安がありません');
 });

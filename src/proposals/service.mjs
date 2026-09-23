@@ -28,7 +28,8 @@ function validateCreate(args) {
       || typeof item.reason !== 'string' || item.reason.length < 1 || item.reason.length > 200
       || !item.reason.trim() || !REASON.test(item.reason))
     || new Set(args.items.map(item => item.sourceId)).size !== args.items.length
-    || args.setupReviewId !== undefined && (typeof args.setupReviewId !== 'string' || !ID.test(args.setupReviewId))) fail('proposal-invalid');
+    || args.setupReviewId !== undefined && (typeof args.setupReviewId !== 'string' || !ID.test(args.setupReviewId))
+    || args.kind === 'initial' && (args.mode !== 'trueform' || args.setupReviewId === undefined)) fail('proposal-invalid');
 }
 async function currentBasis(workspace) {
   const state = await userSourceState({ workspace });

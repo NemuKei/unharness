@@ -1,4 +1,5 @@
 export const USER_SOURCE_ERROR_KINDS = Object.freeze([
+  'preparation-history-invalid',
   'proposal-invalid',
   'proposal-stale',
   'proposal-busy',

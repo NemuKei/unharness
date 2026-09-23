@@ -35,6 +35,7 @@ import { pathsFor } from './capture.mjs';
 import { applicationFor } from '../apps/index.mjs';
 import { fail, verification } from './errors.mjs';
 import { captureDirectoryIdentity, directoryIdentity, hasVolumeUuid, matchesDirectoryIdentity } from '../platform/directory-identity.mjs';
+import { appendPreparationHistory } from './preparation-history.mjs';
 let testHook = null;
 // Internal process-local seam: never accepted as service/CLI/browser input.
 export function setSourceTransactionTestHook(hook) {
@@ -303,6 +304,8 @@ export async function transact(w, plan, planId) {
   newState.ownedDirs = [];
   for (const d of dirs) if (await exists(d.path)) newState.ownedDirs.push(d);
   await writeJson(join(w.workspace, 'state.json'), newState);
+  await appendPreparationHistory({ workspace: w.workspace, mode: newState.preparedMode,
+    revision: newState.revision, preparedAt: newState.preparation.preparedAt });
 
   return {
     planId,
@@ -487,6 +490,8 @@ export async function recoverTransaction(w) {
   validateState(w.reg, recoveredState);
   await writeJson(join(w.workspace, 'state.json'), recoveredState);
   await unlink(join(w.workspace, 'pending.json'));
+  await appendPreparationHistory({ workspace: w.workspace, mode: recoveredState.preparedMode,
+    revision: recoveredState.revision, preparedAt: recoveredState.preparation.preparedAt });
   return {
     status: dependencyConflicts.length
       ? 'controls-restored-dependencies-changed'

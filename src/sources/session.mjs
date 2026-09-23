@@ -310,6 +310,15 @@ export async function createSourceController(input, { workspace: selectedWorkspa
       if ((await metadata()).contextId !== meta.contextId) fail("gui-source-context-changed");
       return { proposals };
     },
+    async usage() {
+      const meta = await metadata();
+      if (!meta.workspace) return { byMode: Object.fromEntries(['normal', 'unseal', 'trueform'].map(mode => [mode, { tasks: 0, perTask: null }])),
+        ratioToTrueform: { normal: null, unseal: null, trueform: null }, availability: 'none' };
+      const { usageSummary } = await import('../proposals/usage.mjs');
+      const result = await usageSummary({ workspace: meta.workspace, days: 7 });
+      if ((await metadata()).contextId !== meta.contextId) fail('gui-source-context-changed');
+      return result;
+    },
     async execute(
       action,
       { launchId: acceptedLaunch, contextId: acceptedContext, ...input },

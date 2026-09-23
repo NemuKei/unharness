@@ -164,3 +164,25 @@ button.home-mode-choice { cursor: pointer; }
   .home-usage { margin-top: 12px; }
   .source-workbench .workbench-place { display: none; }
 }
+
+.registration-choices { margin: 16px 0; }
+.registration-candidates { display: grid; gap: 10px; margin-bottom: 18px; }
+.registration-candidate { display: flex; align-items: flex-start; gap: 12px; padding: 13px 15px;
+  border: 1px solid var(--border); background: var(--surface-raised); cursor: pointer; }
+.registration-candidate input { margin-top: 4px; flex: none; }
+.registration-candidate span { display: grid; gap: 4px; }
+.registration-candidate strong { font-size: 15px; }
+.registration-candidate small { color: var(--muted); line-height: 1.5; }
+.registration-choices > .source-declaration { display: flex; align-items: flex-start; gap: 10px; margin: 0 0 16px; line-height: 1.6; }
+.registration-choices > .source-declaration input { flex: none; margin-top: 4px; }
+.registration-details { margin: 10px 0; }
+.registration-details > summary { cursor: pointer; }
+
+.home-next { margin: 0; padding: 10px 14px; border-left: 2px solid var(--amber); background: var(--surface); font-size: 13px; }
+.home-check-in { margin-top: 16px; padding: 18px 20px; border: 1px solid var(--amber); background: var(--surface); }
+.home-check-in h2 { margin: 0 0 8px; font-size: 18px; }
+.home-check-in p { margin: 0 0 12px; font-size: 13px; line-height: 1.6; }
+.home-usage p { margin: 4px 0; }
+.home-usage details { margin-top: 8px; }
+.home-usage ul { padding-left: 20px; }
+@media (max-width: 700px) { .home-check-in { padding: 12px 14px; } }

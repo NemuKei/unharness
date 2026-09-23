@@ -4,15 +4,17 @@ import { text as t } from '../locale.ts';
 import { Api, ApiError } from '../api.ts';
 import { AiRequestButton } from '../AiRequestButton.tsx';
 import { bindChatScope } from '../chat-requests.ts';
+import { checkInDue } from '../../../src/proposals/check-in-rule.mjs';
 import { FreshTaskHandoff } from '../SetupHandoff.tsx';
 import { modePresentation } from '../sources.ts';
 import type { SourceMode, SourcePlan, SourceView } from '../sources.ts';
-import type { useSourceController } from '../useSourceController.ts';
-import { consultationCopy, homeView, modeChoice, modeForAction, proposalFailureMessage, removedCount, restoreHint } from './home-view.ts';
-import type { HomeProposal } from './home-view.ts';
+import type { useSourceController, AuxiliarySourceOperationResult } from '../useSourceController.ts';
+import { consultationCopy, homeView, modeChoice, modeForAction, proposalFailureMessage, removedCount, restoreHint, usageDisplay } from './home-view.ts';
+import type { HomeProposal, HomeUsageSummary } from './home-view.ts';
 import { ProposalCard } from './ProposalCard.tsx';
 import { SwitchSheet } from './SwitchSheet.tsx';
 import { FailureNotice } from './FailureNotice.tsx';
+import { CheckInCard } from './CheckInCard.tsx';
 
 type Controller = ReturnType<typeof useSourceController>;
 type Contents = { modes: Partial<Record<SourceMode, { available: boolean;
@@ -26,14 +28,26 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
   const api = useRef(new Api()).current;
   const [connected, setConnected] = useState(false);
   const [proposalState, setProposalState] = useState<{ context: string | null; rows: HomeProposal[] }>({ context: null, rows: [] });
+  const [usageState, setUsageState] = useState<{ context: string | null; summary: HomeUsageSummary | null }>({ context: null, summary: null });
+  const [taskCount, setTaskCount] = useState<{ proposalId: string; count: number } | null>(null);
+  const [answered, setAnswered] = useState<Set<string>>(() => {
+    try { const value = JSON.parse(sessionStorage.getItem('unharness.check-in.v1') ?? '[]');
+      return new Set(Array.isArray(value) ? value.filter(id => typeof id === 'string') : []); } catch { return new Set(); }
+  });
+  const [checkInCopy, setCheckInCopy] = useState<string | null>(null);
   const [sheet, setSheet] = useState<Sheet | null>(null), [working, setWorking] = useState(false);
   const [failure, setFailure] = useState<Failure | null>(null), [success, setSuccess] = useState<SourceMode | null>(null);
   const context = c.view?.metadata.contextId ?? null, latestContext = useRef(context);
   latestContext.current = context;
   const source = c.view?.source ?? null, locked = working || c.busy;
   const proposals = proposalState.context === context ? proposalState.rows : [];
+  const usage = usageState.context === context ? usageState.summary : null;
+  const usageText = usageDisplay(usage);
   const view = homeView({ source, confirmed: c.confirmed, busy: locked, proposals, failure: failure?.message ?? null });
   const canPlan = !!source && c.confirmed && !source.recovery.pending && (!source.conflict || source.modePlanningAvailable === true);
+  const added = source?.preparedMode === 'unseal' && source.preparation && !source.conflict
+    ? proposals.find(p => p.kind === 'add' && p.status === 'applied' && p.result?.revision === source.revision) : null;
+  const addedAt = added && source?.preparation?.preparedAt;
   useEffect(() => { let active = true; void api.connect().then(() => { if (active) setConnected(true); }).catch(() => {
     if (active) setConnected(false);
   }); return () => { active = false; }; }, [api]);
@@ -51,6 +65,38 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
     const timer = window.setInterval(() => { if (document.visibilityState === 'visible') void loadProposals(context); }, 3000);
     return () => window.clearInterval(timer);
   }, [connected, context, source?.revision]);
+  useEffect(() => {
+    if (!connected || !context) return;
+    let active = true;
+    const load = async () => { try {
+      const summary = await api.get<HomeUsageSummary>('/sources/usage');
+      if (active && latestContext.current === context) setUsageState({ context, summary });
+    } catch { if (active && latestContext.current === context) setUsageState({ context, summary: null }); } };
+    void load();
+    const timer = window.setInterval(() => { if (document.visibilityState === 'visible') void load(); }, 60000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [connected, context, source?.revision]);
+  useEffect(() => {
+    if (!added || !addedAt) { setTaskCount(null); return; }
+    let active = true;
+    void (async () => {
+      let cursor: string | null = null, count = 0;
+      const seen = new Set<string>();
+      for (let page = 0; page < 50 && count < 5; page++) {
+        const response: AuxiliarySourceOperationResult<{ available: boolean; tasks: { createdAt: number }[]; nextCursor: string | null }> = await c.executeAuxiliary<{
+          available: boolean; tasks: { createdAt: number }[]; nextCursor: string | null }>(
+          'recent-tasks', cursor ? { taskCursor: cursor } : {});
+        if (!active || response.status !== 'completed' || !response.result.available) return;
+        count += response.result.tasks.filter(task => Number.isSafeInteger(task.createdAt)
+          && task.createdAt * 1000 >= Date.parse(addedAt)).length;
+        cursor = response.result.nextCursor;
+        if (!cursor || seen.has(cursor)) break;
+        seen.add(cursor);
+      }
+      if (active) setTaskCount({ proposalId: added.proposalId, count });
+    })();
+    return () => { active = false; };
+  }, [added?.proposalId, addedAt, context]);
   useEffect(() => { setSheet(null); setFailure(null); setSuccess(null); }, [context]);
   useEffect(() => { setSheet(null); }, [source?.revision, source?.preparedMode]);
   async function reportFailure(error: unknown, before: SourceView['source'] | null) {
@@ -107,6 +153,17 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
   }
   const externalFailure = !failure && c.error ? { message: c.error, detail: c.errorDetail } : null;
   const shownFailure = failure ?? externalFailure;
+  function markAnswered(proposalId: string) {
+    const next = new Set(answered); next.add(proposalId); setAnswered(next);
+    try { sessionStorage.setItem('unharness.check-in.v1', JSON.stringify([...next])); } catch {}
+  }
+  async function copyCheckIn(proposalId: string, prompt: string) {
+    try { await navigator.clipboard.writeText(bindChatScope(prompt, source?.registration.scopeId));
+      setCheckInCopy(null); markAnswered(proposalId); }
+    catch { setCheckInCopy(prompt); }
+  }
+  const addedName = added?.items.map(item => source?.registration.sources.find(row => row.id === item.sourceId)?.label)
+    .filter((name): name is string => !!name).join('・') || t('追加したSkill', 'Added Skill');
   return <section className="home-screen" aria-label={t('普段の画面', 'Home')}>
     <div className="home-first">
       <section className="home-current" aria-label={t('今のモード', 'Current mode')}>
@@ -115,6 +172,7 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
         <p>{view.mode ? modePresentation[view.mode].description : t('今の設定を確かめてから切り替えられます。', 'Check the current settings before switching.')}</p>
         <small>{view.mode ? t('次の新しいタスクから', 'From the next new task') : t('現在のタスクは未確認です', 'The current task is unverified')}</small>
       </section>
+      {!shownFailure && view.notice && <p className="home-next" role="status">{view.notice}</p>}
       {view.proposal && <ProposalCard proposal={view.proposal}
         sourceNames={Object.fromEntries((source?.registration.sources ?? []).map(row => [row.id, row.label]))}
         busy={locked || !connected}
@@ -138,7 +196,18 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
     {shownFailure && <FailureNotice message={shownFailure.message} detail={shownFailure.detail} scopeId={source?.registration.scopeId}/>}
     {success && <div className="home-success" role="status"><p>{t(`次の新しいタスクから${modePresentation[success].title}です。`, `Use ${modePresentation[success].title} from your next new task.`)}</p>
       {c.view && <FreshTaskHandoff view={c.view} disabled={!c.confirmed} label={t('新しいタスクを始める', 'Start a new task')}/>}</div>}
-    <p className="home-usage muted">{t('最近7日の使用量：まだ目安がありません。', 'Last 7 days of usage: no estimate yet.')}</p>
+    {added && addedAt && <CheckInCard name={addedName}
+      due={checkInDue({ addedAt, tasksSince: taskCount?.proposalId === added.proposalId ? taskCount.count : 0, now: new Date().toISOString() })}
+      answered={answered.has(added.proposalId)} ratio={usage?.ratioToTrueform.unseal ?? null}
+      onKeep={() => markAnswered(added.proposalId)}
+      onRemove={() => void copyCheckIn(added.proposalId, t('Unharnessで追加したSkillを外す提案をしてください。今の構成を読み、理由と元に戻す方法を示してください。まだ設定を変えないでください。',
+        'Propose removing the added Skill from Unharness. Review the current setup, explain why and how to return, and do not change settings yet.'))}
+      onConsult={() => void copyCheckIn(added.proposalId, t('Unharnessで追加したSkillを残すか相談したいです。最近の使い方と使用量の目安を見て、理由つきで提案してください。まだ設定を変えないでください。',
+        'Help me decide whether to keep the added Skill. Consider recent work and available usage estimates, explain your reasons, and do not change settings yet.'))}/>}
+    {checkInCopy && <details open><summary>{t('依頼文を確認', 'Review request')}</summary><textarea readOnly value={checkInCopy}/></details>}
+    <div className="home-usage muted"><p>{t('最近7日の使用量：', 'Last 7 days of usage: ')}{usageText.message}</p>
+      <p>{t('仕事の内容が違うため、性能差を示すものではありません。', 'Different work can affect usage; this is not a performance claim.')}</p>
+      {usageText.details.length > 0 && <details><summary>{t('詳しく', 'Details')}</summary><ul>{usageText.details.map(row => <li key={row}>{row}</li>)}</ul></details>}</div>
     <section className="home-artwork" aria-label={t('選んだ姿', 'Selected appearance')}>{artwork}</section>
     <div className="home-more-links"><button className="text-button" onClick={onSettings}>{t('設定を見直す', 'Review settings')}</button>
       <button className="text-button" onClick={onSupport}>{t('復旧を開く', 'Open recovery')}</button></div>

@@ -56,6 +56,7 @@ import { appearanceThemeFor } from './ui/appearance-tokens';
 import { UpdateInfoPanel } from './workbench/UpdateInfoPanel';
 import { savedModeIsPrepared } from './workbench/mode-preparation';
 import { HomeScreen } from './workbench/HomeScreen';
+import { RegistrationChoices } from './workbench/RegistrationChoices';
 import { savedDetailsVisible } from './workbench/home-view';
 
 function displayPreference() {
@@ -676,75 +677,21 @@ function Setup({ controller: c }: { controller: Controller }) {
         }}
       >
         {t("追加設定の候補を確認", "Review optional-source candidates")}</button>
-      <details>
-        <summary>
-          {t("対象の選択と任意の役割の確認", "Choose targets and confirm optional roles")}{c.discovery ? t(`（候補 ${rows.length} 件）`, ` (${rows.length} candidates)`) : ""}
-        </summary>
-        <Context controller={c} />
-        {rows
-          .filter((row) => row.eligible)
-          .map((row) => (
-            <div className="source-choice" key={row.id}>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={ids.includes(row.id)}
-                  disabled={c.busy}
-                  onChange={(e) =>
-                    setIds((old) =>
-                      e.target.checked
-                        ? [...old, row.id]
-                        : old.filter((id) => id !== row.id),
-                    )
-                  }
-                />
-                {row.label}
-              </label>
-              <SourceDetail row={row} controller={c} />
-            </div>
-          ))}
-        {c.discovery && (
-          <details>
-            <summary>
-              {t("利用できない候補（", "Unavailable candidates (")}{rows.filter((row) => !row.eligible).length}{" "}
-              {t("件）", " items)")}</summary>
-            {rows
-              .filter((row) => !row.eligible)
-              .map((row) => (
-                <SourceDetail key={row.id} row={row} controller={c} />
-              ))}
-            {c.discovery.unavailableSources.map((row) => (
-              <p key={row.id}>
-                {row.id}: {row.reason}
-              </p>
-            ))}
-            {/* Sources no mode manages. Shown so "selected extras absent"
-                is never read as covering more than it does. */}
-            {(c.discovery.notices ?? []).map((notice) => (
-              <div className="source-notice" key={notice.id + notice.path}>
-                <p>
-                  {notice.label}
-                  {notice.count > 0 ? `（${notice.count}）` : ""}
-                </p>
-                <p>
-                  <code>{notice.path}</code>
-                </p>
-                <p className="muted">{notice.detail}</p>
-              </div>
-            ))}
-          </details>
-        )}
-        <label className="source-declaration">
-          <input
-            type="checkbox"
-            checked={optional}
-            disabled={c.busy}
-            onChange={(e) => setOptional(e.target.checked)}
-          />
-          {t("選んだ指示・Skillは自分が追加した任意の設定です。必須要件や管理者・提供元の設定は含めていません。", "These selected instructions and Skills are optional settings I added. They exclude required, managed and provider settings.")}</label>
-        <p className="muted">
-          {t("配置場所だけでは任意と判断できません。必須と任意が混在する指示は選ばないでください。Skillは最大32件です。", "Location alone does not prove a source is optional. Do not select instructions that mix required and optional content. Up to 32 Skills can be selected.")}</p>
-      </details>
+      <RegistrationChoices rows={rows.filter(row => row.eligible)} selectedIds={ids} checked={optional} busy={c.busy}
+        onToggle={(id, selected) => setIds(old => selected ? [...old, id] : old.filter(value => value !== id))}
+        onChecked={setOptional} details={<>
+          <Context controller={c}/>
+          {rows.filter(row => row.eligible).map(row => <SourceDetail key={row.id} row={row} controller={c}/>)}
+          {c.discovery && <details><summary>{t('利用できない候補', 'Unavailable candidates')}</summary>
+            {rows.filter(row => !row.eligible).map(row => <SourceDetail key={row.id} row={row} controller={c}/>)}
+            {c.discovery.unavailableSources.map(row => <p key={row.id}>{row.id}: {row.reason}</p>)}
+            {c.discovery.notices?.map(notice => <div className="source-notice" key={notice.id + notice.path}>
+              <p>{notice.label}{notice.count > 0 ? `（${notice.count}）` : ''}</p><code>{notice.path}</code><p className="muted">{notice.detail}</p>
+            </div>)}
+          </details>}
+          <p className="muted">{t('置き場所だけでは判断できません。仕事の決まりと混ざった指示は選ばないでください。Skillは最大32件です。',
+            'Location alone does not prove removability. Do not select instructions mixed with work requirements. Up to 32 Skills can be selected.')}</p>
+        </>}/>
       <button
         className="primary"
         disabled={

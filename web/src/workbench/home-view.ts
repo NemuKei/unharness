@@ -17,7 +17,9 @@ export function homeView(state: HomeInput): HomeView {
     && (!state.source.conflict || state.source.modePlanningAvailable === true);
   return { mode: ready ? state.source!.preparedMode : null,
     proposal: state.proposals.find(p => p.status === 'pending') ?? null,
-    switchTargets: ['trueform', 'unseal'], canRestore: canPlan && !state.busy, notice: state.failure };
+    switchTargets: ['trueform', 'unseal'], canRestore: canPlan && !state.busy,
+    notice: state.failure ?? (state.source && state.confirmed && state.source.preparedMode === 'normal' && !state.source.setup?.setupId
+      ? t('次はAIと零式の中身を決める', 'Next, decide TRUEFORM with AI') : null) };
 }
 export function modeChoice(source: HomeSource | null, mode: SourceMode): 'switch' | 'consult' {
   return mode !== 'normal' && !source?.setup?.setupId ? 'consult' : 'switch';
@@ -37,6 +39,22 @@ export function restoreHint(source: HomeSource | null): string | null {
   return source?.preparedMode === 'normal' ? t('今は元の構成です', 'You are already using the original setup') : null;
 }
 export function savedDetailsVisible(source: HomeSource | null): boolean { return source !== null; }
+export type HomeUsageSummary = { byMode: Record<SourceMode, { tasks: number; perTask: number | null }>;
+  ratioToTrueform: Record<SourceMode, number | null>; availability: 'none' | 'partial' | 'complete' };
+export function usageDisplay(summary: HomeUsageSummary | null): { message: string; details: string[] } {
+  const details = summary ? (['trueform', 'unseal', 'normal'] as const)
+    .filter(mode => summary.byMode[mode]?.perTask !== null && summary.byMode[mode]?.perTask !== undefined)
+    .map(mode => t(`${modePresentation[mode].title}：約${Number(summary.byMode[mode].perTask).toLocaleString('ja-JP')}／タスク`,
+      `${modePresentation[mode].title}: about ${Number(summary.byMode[mode].perTask).toLocaleString('en-US')} per task`)) : [];
+  const comparison = summary && summary.availability !== 'none'
+    ? (['unseal', 'normal'] as const).find(mode => summary.ratioToTrueform[mode] !== null && Number.isFinite(summary.ratioToTrueform[mode])
+      && summary.ratioToTrueform[mode]! > 0) : null;
+  const ratio = comparison ? summary!.ratioToTrueform[comparison]! : null;
+  return { message: comparison && ratio !== null
+    ? t(`${modePresentation[comparison].title}は零式に比べて約${ratio.toFixed(1)}倍です。`,
+      `${modePresentation[comparison].title} is about ${ratio.toFixed(1)} times TRUEFORM.`)
+    : t('まだ目安がありません', 'No estimate yet'), details };
+}
 export function modeForAction(action: SourceMode | 'restore'): SourceMode {
   return action === 'restore' ? 'normal' : action;
 }

@@ -5,7 +5,7 @@ import type { HomeProposal } from './home-view.ts';
 export function ProposalCard({ proposal, sourceNames = {}, onApprove, onDismiss, busy }: {
   proposal: HomeProposal; sourceNames?: Record<string, string>; onApprove: () => void; onDismiss: () => void; busy: boolean;
 }) {
-  const action = proposal.kind === 'initial' ? t('いつもの構成を保存して零式にする', 'Save Normal and use TRUEFORM')
+  const action = proposal.kind === 'initial' ? t('零式にする', 'Use TRUEFORM')
     : proposal.kind === 'add' ? t('足して試す', 'Try adding it')
       : proposal.kind === 'remove' ? t('外す', 'Remove it') : t('元に戻す', 'Restore');
   return <section className="home-proposal" aria-label={t('AIからの提案', 'AI proposal')}>

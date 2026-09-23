@@ -65,12 +65,10 @@ async function registerThroughBrowser(page) {
   await openSourceSettings(page);
   await openSourceSettings(page);
   await page.getByRole('button', { name: '追加設定の候補を確認', exact: true }).click();
-  const targets = page.locator('.source-setup summary').filter({ hasText: '対象の選択と任意の役割の確認' }).locator('..');
-  await targets.locator(':scope > summary').click();
   for (const label of ['Global Claude Code instructions', 'example'])
     await page.getByRole('checkbox', { name: label, exact: true }).check();
   await page
-    .getByRole('checkbox', { name: /自分が追加した任意の設定です/ })
+    .getByRole('checkbox', { name: /これは自分で追加したもので/ })
     .check();
   await page
     .getByRole('button', { name: '選んだ対象で通常装備を保存', exact: true })
@@ -141,8 +139,7 @@ test('the workbench explains an unselectable Claude source instead of hiding it'
   await page.goto(s.gui.url);
   await openSourceSettings(page);
   await page.getByRole('button', { name: '追加設定の候補を確認', exact: true }).click();
-  const targets = page.locator('.source-setup summary').filter({ hasText: '対象の選択と任意の役割の確認' }).locator('..');
-  await targets.locator(':scope > summary').click();
+  const targets = page.locator('.registration-choices');
   // The selectable Skill is offered; the shadowed one is explained, not hidden.
   await page.getByRole('checkbox', { name: 'second-example', exact: true }).waitFor();
   assert.equal(
@@ -150,8 +147,9 @@ test('the workbench explains an unselectable Claude source instead of hiding it'
     0,
     'a Skill a mode cannot control is never a working toggle'
   );
+  await targets.locator('.registration-details > summary').click();
   const unavailable = targets
-    .locator('details')
+    .locator('.registration-details > details')
     .filter({ has: page.locator('summary', { hasText: '利用できない候補' }) })
     .first();
   await unavailable.locator(':scope > summary').click();
