@@ -7,6 +7,16 @@ description: Open Unharness (アンハーネス), guide setup and updates, switc
 
 Use the Unharness plugin's local MCP tools. The plugin runs on the user's Mac; opening a screen and preparing a mode are separate operations. A lighter configuration is a comparison condition, with no promised improvement.
 
+## Talk with the user
+
+Assume the user is not an engineer. Lead with a recommendation in everyday words and let the user approve it. Name the modes with their one-line meaning:
+
+- **零式 (TRUEFORM):** nothing added — the AI as it is. The everyday default.
+- **限定解除 (UNSEAL):** TRUEFORM plus only the gear the user chooses.
+- **通常装備 (Normal):** the configuration saved at the start; the place to return to.
+
+Keep paths, error codes, IDs and internal state names out of replies. When something fails, first say whether settings are known to be unchanged, then offer one next step; give details only when the user asks. Say "from the next new task" rather than describing preparation states.
+
 ## Start from the requested function
 
 The local GUI and chat are two entrances to the same saved configuration. Carry out the requested operation through the local MCP instead of merely telling the user which GUI button to press. Daily operations stay in the local workbench; the public site provides introduction, demos and installation guidance. No public pairing is needed.

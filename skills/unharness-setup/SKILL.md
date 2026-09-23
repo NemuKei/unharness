@@ -17,6 +17,18 @@ Do not enroll official plugins as switching targets for this Mac release. Keep t
 
 Registration is record-only. After adoption, refresh `status` and the connection identity, then obtain the new inventory. Preserve previous Normal, setup and history; review new mode definitions separately. No optional source becomes a mode target merely because it was discovered.
 
+## Judge what to remove or add
+
+Assume the user is not an engineer. Lead the judgment and recommend; the user approves. Give each item one everyday-language reason, and keep paths, error codes and internal state names out of the reply unless the user asks for details.
+
+- **Remove in TRUEFORM:** optional instructions that dictate how to work step by step, Skills that force a fixed procedure every time, and anything written to compensate for an earlier model's weaknesses. Newer models often do not need them.
+- **Keep:** Unharness management and connections, required project conditions, permissions, memory, anything the user calls a rule of their work, and instructions that mix required and optional parts.
+- **Add in UNSEAL:** a Skill the user wants to try, or one that directly addresses a situation where TRUEFORM fell short. Add one or two at a time so the effect stays visible.
+- When unsure, do not remove the item; say that you are unsure and why.
+- Never promise better performance. Say that the user can try it and return to Normal.
+
+Use the product names with their one-line meaning: 零式 (TRUEFORM) is "nothing added — the AI as it is"; 限定解除 (UNSEAL) is "TRUEFORM plus only the gear you choose"; 通常装備 (Normal) is "the configuration you saved at the start".
+
 ## Choose the paired definitions
 
 Establish the actual selected model and provenance (user-specified, AI-reported or task-record). Use current primary model/app references, recording the actual checked URLs, titles and date. Keep unavailable version information null and avoid performance promises.
