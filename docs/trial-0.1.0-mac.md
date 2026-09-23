@@ -38,7 +38,18 @@ Codexの新しいタスクで「アンハーネスの状態を確認して」と
 node scripts/build-plugin.mjs --output "<新しいフォルダー>/unharness" --runtime-archive "<照合済みのNodeアーカイブ>"
 ```
 
-結果のJSONで、`sourceRevision` が試したいcommit、`dirty` が `false` であることを確かめる。
+結果のJSONで、`sourceRevision` が試したいcommit、`sourceDirty` が `false` であることを確かめる。
+
+Codexの導入元は、組み立てた `unharness` そのものではなく、0.0.11と同じ形の配布フォルダーにする（[配布の形](mac-installation.md)）。repoの外に新しく作る。
+
+```text
+<配布フォルダー>/
+  .agents/plugins/marketplace.json   # packaging/mac-release/marketplace.json の写し
+  plugins/unharness/                 # 組み立てた unharness をそのまま写す
+  はじめに.md                         # packaging/mac-release/はじめに.md の写し
+```
+
+写した後、`<配布フォルダー>/plugins/unharness/scripts/unharness plugin status --data-directory <保存データの場所>`（読むだけ）で、`versions.files` の配布IDと `sourceRevision` が組み立ての結果と一致することを確かめる。
 
 ### 3. 導入元を入れ替える
 
@@ -47,7 +58,7 @@ node scripts/build-plugin.mjs --output "<新しいフォルダー>/unharness" --
 ```text
 <Codex> plugin marketplace list --json
 <Codex> plugin marketplace remove deltahelmlab-unharness --json
-<Codex> plugin marketplace add "<新しいフォルダー>/unharness" --json
+<Codex> plugin marketplace add "<配布フォルダー>" --json
 <Codex> plugin add unharness@deltahelmlab-unharness --json
 ```
 
