@@ -31,12 +31,12 @@ test('blocked-switch reasons use everyday words', () => {
   }
 });
 
-test('a failed operation shows no raw code in the main sentence', () => {
+test('a failed operation keeps the raw code out of the visible message', () => {
   const next = sourceControllerReducer(initialSourceControllerState, { type: 'failed', error: new ApiError('config-transform-failed') });
-  const [main] = next.error.split('（詳しく：');
-  assert.ok(!main.includes('config-transform-failed'));
-  assert.ok(!main.includes('外部の変更'));
-  assert.ok(next.error.includes('config-transform-failed'), 'the code stays available as detail');
+  assert.ok(!next.error.includes('config-transform-failed'));
+  assert.ok(!next.notice.includes('config-transform-failed'));
+  assert.ok(!next.error.includes('外部の変更'));
+  assert.equal(next.errorDetail, 'config-transform-failed');
 });
 
 test('an uncertain result still forbids pressing again', () => {

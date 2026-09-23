@@ -57,6 +57,7 @@ export function useSourceController() {
     favorites,
     cursor,
     error,
+    errorDetail,
     notice,
   } = state;
   const [discovery, setDiscovery] = useState<Discovery | null>(null);
@@ -444,6 +445,7 @@ export function useSourceController() {
     syncNotice: syncError || syncNotice,
     syncIssue: !!syncError || !!externalUpdate?.retryRequired,
     error,
+    errorDetail,
     notice,
     selectionKey,
     refresh,

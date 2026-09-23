@@ -30,6 +30,7 @@ export type SourceControllerState = {
   favorites: SourceFavorite[];
   cursor: string | null;
   error: string;
+  errorDetail: string;
   notice: string;
 };
 
@@ -41,6 +42,7 @@ export const initialSourceControllerState: SourceControllerState = {
   favorites: [],
   cursor: null,
   error: "",
+  errorDetail: "",
   get notice() { return t("接続情報を確認しています。", "Checking the connection."); },
 };
 
@@ -95,8 +97,8 @@ function failureFeedback(error: unknown) {
   const message =
     error instanceof ApiError && error.disposition === "uncertain"
       ? t("結果をまだ確かめていません。もう一度押さずに、「状態を再取得」で確かめてください。自動でやり直すことはありません。", "The result is not confirmed yet. Don’t press again — use Refresh state. Nothing is retried automatically.")
-      : t(`うまくいきませんでした。「状態を再取得」で今の設定を確かめてください。（詳しく：${kind}）`, `That didn’t work. Use Refresh state to check the current settings. (Details: ${kind})`);
-  return { message };
+      : t("うまくいきませんでした。「状態を再取得」で今の設定を確かめてください。", "That didn’t work. Use Refresh state to check the current settings.");
+  return { message, detail: kind };
 }
 
 type PlanKind = "source" | "retained";
@@ -201,11 +203,11 @@ export function sourceControllerReducer(
     };
   }
   if (action.type === "failed") {
-    const { message } = failureFeedback(action.error);
-    return { ...state, confirmed: false, error: message, notice: message };
+    const { message, detail } = failureFeedback(action.error);
+    return { ...state, confirmed: false, error: message, errorDetail: detail, notice: message };
   }
-  if (action.type === "clear-error") return { ...state, error: "" };
-  if (action.type === "set-error") return { ...state, error: action.error };
+  if (action.type === "clear-error") return { ...state, error: "", errorDetail: "" };
+  if (action.type === "set-error") return { ...state, error: action.error, errorDetail: "" };
   if (action.type === "set-notice")
     return { ...state, notice: action.notice };
   if (action.type === "plan-response")

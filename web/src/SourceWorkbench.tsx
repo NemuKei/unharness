@@ -417,7 +417,7 @@ export function SourceWorkbench() {
         </div>
       </div>
       {activeTab !== 'mode' && modeNotice && <div className="status-strip"><div role="status" aria-live="polite">{modeNotice}</div></div>}
-      {c.error && <div className="global-error" role="alert">{c.error}</div>}
+      {c.error && <div className="global-error" role="alert">{c.error}{c.errorDetail && <details><summary>{t('詳しく', 'Details')}</summary><code>{c.errorDetail}</code></details>}</div>}
       <footer><span>UNHARNESS</span><span className="muted">{t("画面でも、チャットでも。同じ設定を使えます。", "The screen and chat use the same saved settings.")}</span></footer>
     </main>
   </div>;

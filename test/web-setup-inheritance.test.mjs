@@ -93,7 +93,7 @@ test('built v2 GUI separates saved inheritance, role-only registration, setup ap
   await openWorkbenchPage(page, 'モード');
   assert.equal(await page.getByRole('button', { name: /UNSEAL/ }).isEnabled(), true);
   await openWorkbenchPage(page, 'モード');
-  assert.equal(await page.getByRole('button', { name: /^Normal/ }).isEnabled(), true);
+  assert.equal(await page.getByRole('button', { name: /^通常装備/ }).isEnabled(), true);
   assert.equal(await page.getByText('対象を調整', { exact: true }).count(), 0);
   await openSetupDetails(page);
   assert.equal(await page.getByLabel('現在の構成から相談する', { exact: true }).isChecked(), true);
