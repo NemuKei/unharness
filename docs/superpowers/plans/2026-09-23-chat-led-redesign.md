@@ -371,6 +371,23 @@ git commit -m "Give the management Skill everyday judgment criteria"
 - [ ] **Step 3:** `npm run check && npm run build && npm run build:site && node --test` を通す。
 - [ ] **Step 4:** Solのコードレビュー後にcommit・pushする。公開サイトのdeployはしない（Task 8で利用者の承認後）。
 
+### Task 6b: 新しいCodexの版での書き込み（Sol、Opusが監修）
+
+2026-09-24の実機確認で判明：このMacのCodexは `0.155.0-alpha.16.3` に自動更新されており、Unharnessは確認済みの `0.153.4` 以外ではCodex設定の読み書きを止める（`src/codex/config-editor.mjs` と `plugin-config-editor.mjs` の版の固定、`config-native-profile.mjs` の版の読み取りが `-alpha` 付きを受け付けない）。そのため公開中の0.0.11も含めて、このMacでは切替・差分の取り込みが `config-transform-failed` で止まる。安全装置としては正しいが、利用者には理由が伝わらない。
+
+**Files:**
+- Modify: `src/codex/config-native-profile.mjs`（`-alpha.N` などの付いた版を読み取る。版の文字列は付加部分も含めて保持する）
+- Modify: `src/codex/config-editor.mjs`、`src/codex/plugin-config-editor.mjs`（確認済みの版の一覧として扱い、今回確認した版を加える）
+- Modify: `src/codex/source-state-compiler.mjs`、`src/sources/observation-record.mjs`、`src/apps/codex.mjs`（版の比較・形式の確認を同じ一覧に合わせる）
+- Modify: 画面・MCPの失敗表示（確認していない版のときは「このCodexの版は、まだ確認していません。今の設定はそのままです」と出す）
+- Test: 版の読み取り、確認済み一覧、未確認の版での停止と文言
+
+**振る舞い（テストで固定する）:**
+1. `userAgent` の `0.155.0-alpha.16.3` のような版を読み取れる。形式が不正なものは今までどおり止める。
+2. 書き込みは確認済みの版の一覧にある版だけで行う。一覧にない版では書き込まず、`codex-version-unqualified` を返す。
+3. `0.155.0-alpha.16.3` を一覧に加える前に、合成プロファイルで、`skills/config/write` による無効化・`config/read` の読み戻し・コメントと他の設定の保持・元に戻す、が `0.153.4` と同じ結果になることを確かめる（既存の `test/fixtures/config-editor-server.mjs` と同じ観点で、実際の実行ファイルを使う確認を1回行い、証拠を `docs/evidence/` に残す）。
+4. 未確認の版のとき、普段の画面は「このCodexの版は、まだ確認していません。今の設定はそのままです」と [AIに調べてもらう] を出す。
+
 ### Task 7: 文書の更新と0.1.0の準備（Opus）
 
 **Files:**
