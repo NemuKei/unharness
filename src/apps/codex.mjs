@@ -18,6 +18,7 @@ import { parseSkillCatalog, selectedSkillIntent } from '../codex/skill-listing.m
 import { fail, verification } from '../sources/errors.mjs';
 import { readSkillDescription } from '../sources/skill-frontmatter.mjs';
 import { usesSourceStates } from '../setup/schema.mjs';
+import { assertQualifiedCodexConfigVersion, isCodexVersion, isQualifiedCodexConfigVersion } from '../codex/config-versions.mjs';
 
 export { parseSkillCatalog, selectedSkillIntent };
 
@@ -344,6 +345,7 @@ export const application = {
     const { catalog, catalogIdentity } = await import('../codex/catalog.mjs');
     const { equal } = await import('../sources/platform.mjs');
     const current = await catalog(reg.context);
+    assertQualifiedCodexConfigVersion(current.version);
     if (current.version !== reg.version) fail('stale-discovery');
     for (const s of reg.skills)
       if (!current.skills.some((c) => equal(catalogIdentity(c), s.identity)))
@@ -393,6 +395,7 @@ export const application = {
   // Stored legacy plans keep their original disabled-Skill contract. Reviewed
   // release presets explicitly request manual invocation for either mode.
   async compile({ reg, mode, selection, normal, targetFile, releasePreset }) {
+    assertQualifiedCodexConfigVersion(reg.version);
     const after = structuredClone(normal);
     let guide = null;
     const skillStates = [];
@@ -504,8 +507,8 @@ export const application = {
                 configText: files.config?.text ?? ''
               });
         if (
-          first.codexVersion === '0.153.4' &&
-          second.codexVersion === '0.153.4'
+          isQualifiedCodexConfigVersion(first.codexVersion) &&
+          isQualifiedCodexConfigVersion(second.codexVersion)
         ) {
           normalFlags = first.selectors;
           preparedFlags = second.selectors;
@@ -700,7 +703,7 @@ function projection(w, taskId, expected, records, observedAt, readIssue, boundar
   const conditions = {
     codexVersion:
       typeof meta?.cli_version === 'string' &&
-      /^\d{1,8}\.\d{1,8}\.\d{1,8}$/.test(meta.cli_version)
+      isCodexVersion(meta.cli_version)
         ? meta.cli_version
         : null,
     model: conditionId(context?.model),
@@ -767,10 +770,10 @@ function projection(w, taskId, expected, records, observedAt, readIssue, boundar
     )
       reject('task-incomplete');
   }
-  if (conditions.codexVersion !== '0.153.4') add('unsupported-codex-version');
+  if (!isQualifiedCodexConfigVersion(conditions.codexVersion)) add('unsupported-codex-version');
   if (!state) add('initial-world-state-unavailable');
   const catalog =
-    conditions.codexVersion === '0.153.4'
+    isQualifiedCodexConfigVersion(conditions.codexVersion)
       ? parseSkillCatalog(state?.host_skills)
       : null;
   const sources = expected.map((s) => {
@@ -781,7 +784,7 @@ function projection(w, taskId, expected, records, observedAt, readIssue, boundar
       recorded: 'unknown',
       status: 'unknown'
     };
-    if (conditions.codexVersion !== '0.153.4' || s.expected === 'unknown') {
+    if (!isQualifiedCodexConfigVersion(conditions.codexVersion) || s.expected === 'unknown') {
       if (s.expected === 'unknown') add('skill-state-unavailable');
       return result;
     }
@@ -834,7 +837,7 @@ function projection(w, taskId, expected, records, observedAt, readIssue, boundar
     readIssue ||
     !meta ||
     reasons.includes('task-record-invalid') ||
-    conditions.codexVersion !== '0.153.4' ||
+    !isQualifiedCodexConfigVersion(conditions.codexVersion) ||
     !state ||
     sources.some((s) => s.status === 'unknown');
   const status = boundary.issue

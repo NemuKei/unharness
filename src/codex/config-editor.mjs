@@ -49,7 +49,6 @@ async function selectedConfig({ configText, skillPaths, executable, executableAr
       editing,
       clientName: 'unharness_config_editor',
     }, async ({ client, codexVersion, file, layer: before, read }) => {
-      if (states && codexVersion !== '0.153.4') throw failed();
       if (!editing) {
         // Validate shape without returning unrelated native configuration.
         selectedConfigValue(before.config, selections);
@@ -81,8 +80,9 @@ async function selectedConfig({ configText, skillPaths, executable, executableAr
       if (states && !preservesUnselectedConfig(configText, text, skillPaths)) throw failed();
       return { text, changed: text !== configText, codexVersion };
     });
-  } catch {
+  } catch (error) {
     // Native diagnostics can include configuration paths and values.
+    if (error?.kind === 'codex-version-unqualified') throw error;
     throw failed();
   }
 }
@@ -101,5 +101,5 @@ export async function setSkillStatesConfig(args) {
         || typeof s.enabled !== 'boolean')) throw failed();
     const states = args.skillStates.map(s => ({ path: s.path, enabled: s.enabled }));
     return await selectedConfig({ ...args, skillPaths: states.map(s => s.path) }, true, states);
-  } catch { throw failed(); }
+  } catch (error) { if (error?.kind === 'codex-version-unqualified') throw error; throw failed(); }
 }

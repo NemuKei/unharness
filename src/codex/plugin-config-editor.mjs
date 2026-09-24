@@ -98,7 +98,6 @@ async function selectedPluginConfig(value, editing) {
       : { selectors: [], codexVersion: null };
     return await withPrivateNativeConfig({ ...native, configText, editing, clientName: 'unharness_plugin_config_editor' },
       async ({ client, codexVersion, file, layer: before, read }) => {
-        if (editing && codexVersion !== '0.153.4') throw failed();
         const original = typedConfig(configText);
         const selectors = partitionPluginEnablement(before.config, pluginIds).selected;
         if (!isDeepStrictEqual(selectors, partitionPluginEnablement(original, pluginIds).selected)) throw failed();
@@ -119,7 +118,7 @@ async function selectedPluginConfig(value, editing) {
           || !preservesPluginComments(configText, text, original, pluginIds)) throw failed();
         return { text, changed: text !== configText, codexVersion };
       });
-  } catch { throw failed(); }
+  } catch (error) { if (error?.kind === 'codex-version-unqualified') throw error; throw failed(); }
 }
 
 export const disablePluginConfig = args => selectedPluginConfig(args, true);

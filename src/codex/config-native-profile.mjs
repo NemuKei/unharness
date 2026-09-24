@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { createRpcTransport } from './rpc-transport.mjs';
+import { parseCodexVersionFromUserAgent, assertQualifiedCodexConfigVersion } from './config-versions.mjs';
 
 import { MAX_CONFIG_BYTES, configTransformFailed } from './config-transform-contract.mjs';
 export { MAX_CONFIG_BYTES, configTransformFailed } from './config-transform-contract.mjs';
@@ -73,18 +74,18 @@ export async function withPrivateNativeConfig({
       clientInfo: { name: clientName, version: '0.0.1' },
       capabilities: { experimentalApi: true },
     });
-    const codexVersion = typeof initialization?.userAgent === 'string'
-      ? initialization.userAgent.match(/^[^/\r\n]{1,80}\/(\d{1,8}\.\d{1,8}\.\d{1,8})(?=[ (]|$)/)?.[1]
-      : null;
+    const codexVersion = parseCodexVersionFromUserAgent(initialization?.userAgent);
     if (!codexVersion || initialization.codexHome !== profile) throw configTransformFailed();
     client.initialized();
+    if (editing) assertQualifiedCodexConfigVersion(codexVersion);
     const read = async () => userLayer(
       await client.request('config/read', { cwd: project, includeLayers: true }),
       file,
     );
     const layer = await read();
     return await operation({ client, codexVersion, file, layer, read });
-  } catch {
+  } catch (error) {
+    if (error?.kind === 'codex-version-unqualified') throw error;
     throw configTransformFailed();
   } finally {
     try {

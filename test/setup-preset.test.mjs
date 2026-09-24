@@ -24,6 +24,12 @@ test('the two release definitions keep selected automatic use in UNSEAL and requ
   assert.equal(proposal.unseal.instructions, 'minimal');
 });
 
+test('a prerelease Codex runtime version remains intact in a reviewed proposal', () => {
+  const candidate = structuredClone(proposal);
+  candidate.basis.runtimeVersion = '0.155.0-alpha.16.3';
+  assert.equal(presets.validatePresetProposal(candidate, scope).basis.runtimeVersion, '0.155.0-alpha.16.3');
+});
+
 test('external releases also retain explicit invocation and UNSEAL may use no additional instruction text', () => {
   const p = structuredClone(proposal); p.unseal.instructions = 'none'; p.trueform.automaticExternalSkillIds = [];
   assert.equal(presets.compileReleasePreset(p, 'unseal', scope).instructionStyle, 'none');

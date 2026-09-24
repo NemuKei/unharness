@@ -3,8 +3,10 @@
 // newly owned native configuration copy and never provider package contents.
 import { fail } from '../sources/errors.mjs';
 import { requiredControlSources } from '../setup/control-sources.mjs';
+import { assertQualifiedCodexConfigVersion } from './config-versions.mjs';
 
 export async function compileCodexSourceStates({ reg, normal, after, sourceStates, targetFile }) {
+  assertQualifiedCodexConfigVersion(reg.version);
   const control = requiredControlSources(reg.skills).sourceIds;
   const optional = reg.skills.filter(s => !control.includes(s.id));
   if (!sourceStates || !Array.isArray(sourceStates.skills) || sourceStates.skills.length !== optional.length

@@ -325,7 +325,7 @@ enabled = true
       const ctx = await reconcileSetup(t, scenario);
       const currentText = scenario === 'version-disagreement' ? text.replace('model = "base"', 'model = "current"') : text;
       await assert.rejects(ctx.run({ baseText: text, targetText: text, currentText, skillPaths: [selectedPath] }), error => {
-        assert.equal(error.kind, 'config-transform-failed');
+        assert.equal(error.kind, scenario === 'version-disagreement' ? 'codex-version-unqualified' : 'config-transform-failed');
         assert.equal(String(error).includes('SECRET_MARKER'), false);
         return true;
       });

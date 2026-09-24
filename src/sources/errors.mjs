@@ -128,7 +128,8 @@ export const USER_SOURCE_ERROR_KINDS = Object.freeze([
   'foreign-stage',
   'operation-failed',
   'unsupported-skill-policy',
-  'config-transform-failed'
+  'config-transform-failed',
+  'codex-version-unqualified'
 ]);
 export function fail(kind) {
   const e = new Error(kind);

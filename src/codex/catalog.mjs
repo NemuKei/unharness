@@ -3,6 +3,7 @@
 // unchanged.
 import { createReadOnlyClient } from './rpc-client.mjs';
 import { fail } from '../sources/errors.mjs';
+import { parseCodexVersionFromUserAgent } from './config-versions.mjs';
 
 export async function catalog(context) {
   const c = createReadOnlyClient({
@@ -19,8 +20,7 @@ export async function catalog(context) {
     c.initialized();
     if (
       init.codexHome !== context.codexHome ||
-      typeof init.userAgent !== 'string' ||
-      !init.userAgent.match(/\d+\.\d+\.\d+/)
+      !parseCodexVersionFromUserAgent(init.userAgent)
     )
       fail('discovery-failed');
     const raw = await c.request('skills/list', {
@@ -53,7 +53,7 @@ export async function catalog(context) {
         };
       })
       .sort((a, b) => a.path.localeCompare(b.path));
-    return { version: init.userAgent.match(/\d+\.\d+\.\d+/)[0], skills };
+    return { version: parseCodexVersionFromUserAgent(init.userAgent), skills };
   } catch {
     fail('discovery-failed');
   } finally {

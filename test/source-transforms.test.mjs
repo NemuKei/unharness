@@ -74,7 +74,7 @@ async function editorSetup(t, scenario = 'ok') {
   return {
     run: overrides => disableSkillConfig({ configText, skillPaths: ['/skills/selected/SKILL.md', '/skills/new/SKILL.md'], executable: process.execPath, executableArgs: [editorFixture, scenario, record], timeoutMs: SUBPROCESS_TIMEOUT_MS, ...overrides }),
     events: async () => (await readFile(record, 'utf8')).trim().split('\n').map(JSON.parse),
-    original,
+    original, record,
   };
 }
 
@@ -214,6 +214,30 @@ test('read-only private selector projection preserves duplicate order and absent
   assert.deepEqual(events.filter(e => e.method).map(e => e.method), ['initialize', 'initialized', 'config/read']);
   await assert.rejects(stat(launch.profile), { code: 'ENOENT' });
   await assert.rejects(readSkillSelectors({ configText: 'PRIVATE', skillPaths: ['PRIVATE'] }), e => e.kind === 'config-transform-failed' && !String(e).includes('PRIVATE'));
+});
+
+test('prerelease userAgent keeps its complete version for a read-only selector', async t => {
+  const ctx = await editorSetup(t, 'alpha-version');
+  const { readSkillSelectors } = await import('../src/codex/config-editor.mjs');
+  const result = await readSkillSelectors({ configText, skillPaths: ['/skills/selected/SKILL.md'],
+    executable: process.execPath, executableArgs: [editorFixture, 'alpha-version', ctx.record] });
+  assert.equal(result.codexVersion, '0.155.0-alpha.16.3');
+  assert.equal((await ctx.events()).some(event => ['skills/config/write', 'config/batchWrite'].includes(event.method)), false);
+  const malformed = await editorSetup(t, 'malformed-alpha-version');
+  await assert.rejects(readSkillSelectors({ configText, skillPaths: ['/skills/selected/SKILL.md'],
+    executable: process.execPath, executableArgs: [editorFixture, 'malformed-alpha-version', malformed.record] }), { kind: 'config-transform-failed' });
+});
+
+test('unqualified versions refuse both legacy and v3 Skill edits before native writes', async t => {
+  for (const scenario of ['alpha-version', 'unqualified-version']) await t.test(scenario, async t => {
+    const ctx = await editorSetup(t, scenario);
+    await assert.rejects(ctx.run(), { kind: 'codex-version-unqualified' });
+    const { setSkillStatesConfig } = await import('../src/codex/config-editor.mjs');
+    await assert.rejects(setSkillStatesConfig({ configText, skillStates: [{ path: '/skills/selected/SKILL.md', enabled: false }],
+      executable: process.execPath, executableArgs: [editorFixture, scenario, ctx.record] }), { kind: 'codex-version-unqualified' });
+    assert.equal((await ctx.events()).some(event => ['skills/config/write', 'config/batchWrite'].includes(event.method)), false);
+    assert.equal(await readFile(ctx.original, 'utf8'), configText);
+  });
 });
 
 test('read-only native selector errors stay private and await owned process/profile cleanup', async t => {

@@ -59,7 +59,7 @@ test('the reader reports true, false and missing overrides without exposing othe
 test('a later native version remains readable but cannot authorize a plugin edit', async t => {
   const s = await fixture(t, 'new-version');
   assert.deepEqual(await s.read(), { selectors: [{ pluginId: selected, enabled: true }], codexVersion: '0.154.0' });
-  await assert.rejects(s.disable(), rejected);
+  await assert.rejects(s.disable(), { kind: 'codex-version-unqualified' });
   assert.ok(!(await s.events()).some(event => event.method === 'config/batchWrite'));
   await s.unchangedAndClean();
 });

@@ -5,6 +5,7 @@ import { diff3Merge, diffIndices } from '../vendor/node-diff3/index.mjs';
 import { parse } from '../vendor/smol-toml/parse.js';
 import { preservesTomlComments } from './toml-comments.mjs';
 import { partitionPluginEnablement, validatePluginIds } from './plugin-config-selection.mjs';
+import { assertQualifiedCodexConfigVersion } from './config-versions.mjs';
 
 import {
   configTransformFailed as failed,
@@ -161,12 +162,14 @@ export async function mergeRetainedConfig(args) {
     const current = await readConfig(currentText, nativeArgs);
     const result = await readConfig(text, nativeArgs);
     const versions = new Set([base.codexVersion, target.codexVersion, current.codexVersion, result.codexVersion]);
+    for (const value of versions) assertQualifiedCodexConfigVersion(value);
     if (versions.size !== 1) throw failed();
 
     assertMergedParts([base.config, target.config, current.config, result.config], skillPaths, pluginIds);
 
     return { text, changed: text !== currentText, codexVersion: result.codexVersion };
-  } catch {
+  } catch (error) {
+    if (error?.kind === 'codex-version-unqualified') throw error;
     throw failed();
   }
 }

@@ -1,6 +1,7 @@
 // Pure persisted-observation validation. Status/recovery must not load native or YAML code.
 import { verification } from './errors.mjs';
 import { PLUGIN_OBSERVATION_REASONS, validatePluginEvidence } from '../codex/plugin-task-observation.mjs';
+import { isCodexVersion, isQualifiedCodexConfigVersion } from '../codex/config-versions.mjs';
 export const OBSERVATION_REASONS = Object.freeze([
   'preparation-boundary-unavailable', 'preparation-metadata-invalid',
   'task-record-unavailable', 'task-record-invalid', 'task-identity-mismatch',
@@ -96,7 +97,7 @@ function projectCodexObservation(p, observationId, w) {
   });
   const c = p.conditions;
   if (!object(c) ||
-      (c.codexVersion !== null && !/^\d{1,8}\.\d{1,8}\.\d{1,8}$/.test(c.codexVersion)) ||
+      (c.codexVersion !== null && !isCodexVersion(c.codexVersion)) ||
       (c.model !== null && conditionId(c.model) !== c.model) ||
       ![null, 'none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra'].includes(c.reasoningEffort) ||
       ![c.executionPolicyDigest, c.projectInstructionsDigest].every(v => v === null || hash(v)) ||
@@ -104,7 +105,7 @@ function projectCodexObservation(p, observationId, w) {
   if (!object(p.verification) ||
       Object.entries(verification).some(([k, v]) => p.verification[k] !== v)) reject();
   if (p.status === 'matched-record' && (!boundary.preparation ||
-      c.codexVersion !== '0.153.4' ||
+      !isQualifiedCodexConfigVersion(c.codexVersion) ||
       p.reasons.length || sources.some(s => s.status !== 'matched'))) reject();
   return {
     observationId, taskId: p.taskId, scopeId: p.scopeId,

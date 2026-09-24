@@ -8,6 +8,7 @@ import { resolveModeSkillSets } from './mode-inheritance.mjs';
 import { resolveSourceStatesV3 } from './source-state-v3.mjs';
 import { isSetupVersion, usesSourceStates } from './schema.mjs';
 import { validateCustomInstructions } from './custom-instructions.mjs';
+import { isCodexVersion } from '../codex/config-versions.mjs';
 
 const kind = 'setup-proposal-invalid';
 const hash = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
@@ -37,8 +38,10 @@ export function validatePresetProposal(value, scope) {
     if (basis.application !== scope.application || !['codex', 'claude'].includes(basis.application)
       || !['user-specified', 'ai-reported', 'task-record'].includes(basis.modelSource)) fail(kind);
     text(basis.modelId, 200); text(basis.rationale, 2000, true);
-    for (const version of [basis.desktopVersion, basis.runtimeVersion])
-      if (version !== null && (typeof version !== 'string' || !/^\d+(?:\.\d+){1,3}$/.test(version) || version.length > 40)) fail(kind);
+    for (const [field, version] of [['desktopVersion', basis.desktopVersion], ['runtimeVersion', basis.runtimeVersion]])
+      if (version !== null && (typeof version !== 'string' || version.length > 40
+        || !(field === 'runtimeVersion' && basis.application === 'codex'
+          ? isCodexVersion(version) : /^\d+(?:\.\d+){1,3}$/.test(version)))) fail(kind);
     references(basis.references);
     const ids = scope.skills.map(s => s.id);
     if (!Array.isArray(value.roles) || value.roles.length !== ids.length || value.roles.length > 32

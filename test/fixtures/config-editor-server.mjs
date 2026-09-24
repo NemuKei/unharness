@@ -54,9 +54,12 @@ else for await (const line of createInterface({ input: process.stdin })) {
   if (msg.error) continue;
   if (msg.method === 'initialize') {
     if (scenario === 'rpc-error') { send({ id: msg.id, error: { code: -32000, message: 'SECRET_MARKER', data: { path: '/private/SECRET_MARKER' } } }); continue; }
-    const fixtureVersion = scenario === 'version-disagreement' && config.model === 'current' ? '0.154.0' : '0.153.4';
+    const fixtureVersion = scenario === 'alpha-version' ? '0.155.0-alpha.16.3'
+      : scenario === 'malformed-alpha-version' ? '0.155.0-alpha..3'
+      : scenario === 'unqualified-version' || scenario === 'version-disagreement' && config.model === 'current' ? '0.154.0' : '0.153.4';
     respond(msg.id, {
-      userAgent: scenario === 'missing-version' ? 'Codex Desktop/PRIVATE' : `Codex Desktop/${fixtureVersion} (fixture)`,
+      userAgent: scenario === 'missing-version' ? 'Codex Desktop/PRIVATE'
+        : `${scenario === 'alpha-version' ? 'probe' : 'Codex Desktop'}/${fixtureVersion} (fixture)`,
       codexHome: scenario === 'wrong-home' ? '/private/SECRET_MARKER' : process.env.CODEX_HOME,
     });
     send({ id: 'inbound', method: 'item/commandExecution/requestApproval', params: { command: 'SECRET_MARKER' } });

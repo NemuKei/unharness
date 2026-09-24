@@ -95,7 +95,9 @@ function acceptView(
 function failureFeedback(error: unknown) {
   const kind = error instanceof ApiError ? error.kind : "request-failed";
   const message =
-    error instanceof ApiError && error.disposition === "uncertain"
+    kind === 'codex-version-unqualified'
+      ? t('このCodexの版は、まだ確認していません。今の設定はそのままです', 'This Codex version has not been checked yet. Your settings are unchanged.')
+      : error instanceof ApiError && error.disposition === "uncertain"
       ? t("結果をまだ確かめていません。もう一度押さずに、「状態を再取得」で確かめてください。自動でやり直すことはありません。", "The result is not confirmed yet. Don’t press again — use Refresh state. Nothing is retried automatically.")
       : t("うまくいきませんでした。「状態を再取得」で今の設定を確かめてください。", "That didn’t work. Use Refresh state to check the current settings.");
   return { message, detail: kind };
