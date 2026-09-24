@@ -36,7 +36,9 @@ for await (const line of createInterface({ input: process.stdin })) {
   if (msg.method === 'initialized') continue;
   let result;
   if (msg.method === 'initialize') {
-    result = { codexHome: home, userAgent: 'Codex/0.153.4 synthetic' };
+    let runtimeVersion = '0.153.4';
+    try { runtimeVersion = (await readFile(join(home, 'runtime-version-fixture.txt'), 'utf8')).trim(); } catch {}
+    result = { codexHome: home, userAgent: `Codex/${process.env.UNHARNESS_TEST_RUNTIME_VERSION ?? runtimeVersion} synthetic` };
     if (msg.params.clientInfo.name === 'unharness_recent_tasks') {
       try { Object.assign(result, JSON.parse(await readFile(join(home, 'recent-tasks-fixture.json'), 'utf8')).initialization); } catch {}
     }

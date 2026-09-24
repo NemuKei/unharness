@@ -96,7 +96,8 @@ async function selectedPluginConfig(value, editing) {
     const { configText, pluginIds, ...native } = argumentsFor(value);
     if (!pluginIds.length) return editing ? { text: configText, changed: false, codexVersion: null }
       : { selectors: [], codexVersion: null };
-    return await withPrivateNativeConfig({ ...native, configText, editing, clientName: 'unharness_plugin_config_editor' },
+    return await withPrivateNativeConfig({ ...native, configText, editing,
+      ...(editing ? { writeOperation: 'plugin-disable' } : {}), clientName: 'unharness_plugin_config_editor' },
       async ({ client, codexVersion, file, layer: before, read }) => {
         const original = typedConfig(configText);
         const selectors = partitionPluginEnablement(before.config, pluginIds).selected;

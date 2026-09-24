@@ -86,9 +86,11 @@ export function failureAfterRefresh(before: HomeSource | null, after: HomeSource
       ? t('状況が変わりました。AIに調べてもらってください。', 'The situation changed. Ask AI to investigate.')
       : t('今の設定を確認できませんでした。', 'The current settings could not be confirmed.');
 }
-export function proposalFailureMessage(kind: string, before: HomeSource | null, after: HomeSource | null): string {
+export function proposalFailureMessage(kind: string, before: HomeSource | null, after: HomeSource | null, reason?: string): string {
   return kind === 'codex-version-unqualified'
-    ? t('このCodexの版は、まだ確認していません。今の設定はそのままです', 'This Codex version has not been checked yet. Your settings are unchanged.')
+    ? reason === 'skill-enable'
+      ? t('このCodexの版では、このSkillを足すことはまだ確認していません。今の設定はそのままです', 'Adding this Skill has not been checked for this Codex version. Your settings are unchanged.')
+      : t('このCodexの版は、まだ確認していません。今の設定はそのままです', 'This Codex version has not been checked yet. Your settings are unchanged.')
     : kind === 'proposal-stale'
     ? t('状況が変わりました。AIにもう一度聞いてください。', 'The situation changed. Ask AI for a new proposal.')
     : t('うまくいきませんでした。', 'That did not work.') + ' ' + failureAfterRefresh(before, after);

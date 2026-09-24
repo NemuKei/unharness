@@ -47,6 +47,7 @@ const MIME = new Map([
 
 function safeError(error) {
   const result = { kind: SAFE_ERRORS.has(error?.kind) ? error.kind : 'gui-operation-error' };
+  if (result.kind === 'codex-version-unqualified' && error?.reason === 'skill-enable') result.reason = 'skill-enable';
   if (typeof error?.checkpointId === 'string' && /^[a-f0-9]{64}$/.test(error.checkpointId)) {
     result.checkpointId = error.checkpointId;
   }

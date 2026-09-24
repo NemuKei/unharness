@@ -102,7 +102,8 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
   async function reportFailure(error: unknown, before: SourceView['source'] | null) {
     const checked = await c.refresh();
     const kind = error instanceof ApiError ? error.kind : 'request-failed';
-    setFailure({ message: proposalFailureMessage(kind, before, checked?.source ?? null), detail: kind });
+    setFailure({ message: proposalFailureMessage(kind, before, checked?.source ?? null,
+      error instanceof ApiError ? error.reason : undefined), detail: kind });
     setSuccess(null);
     await loadProposals(context);
   }

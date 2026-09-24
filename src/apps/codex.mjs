@@ -345,11 +345,12 @@ export const application = {
     const { catalog, catalogIdentity } = await import('../codex/catalog.mjs');
     const { equal } = await import('../sources/platform.mjs');
     const current = await catalog(reg.context);
-    assertQualifiedCodexConfigVersion(current.version);
-    if (current.version !== reg.version) fail('stale-discovery');
+    assertQualifiedCodexConfigVersion(current.version, 'read');
+    assertQualifiedCodexConfigVersion(reg.version, 'read');
     for (const s of reg.skills)
       if (!current.skills.some((c) => equal(catalogIdentity(c), s.identity)))
         fail('stale-discovery');
+    return current.version;
   },
 
   supportsReleasePresets: true,
@@ -395,7 +396,7 @@ export const application = {
   // Stored legacy plans keep their original disabled-Skill contract. Reviewed
   // release presets explicitly request manual invocation for either mode.
   async compile({ reg, mode, selection, normal, targetFile, releasePreset }) {
-    assertQualifiedCodexConfigVersion(reg.version);
+    assertQualifiedCodexConfigVersion(reg.version, 'read');
     const after = structuredClone(normal);
     let guide = null;
     const skillStates = [];

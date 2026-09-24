@@ -6,6 +6,7 @@ import { fail } from '../sources/errors.mjs';
 import { requiredControlSources } from './control-sources.mjs';
 import { setupInventoryId } from './inventory.mjs';
 import { isDeepStrictEqual } from 'node:util';
+import { canCodexConfigOperation } from '../codex/config-versions.mjs';
 
 export const sourceStatePluginInventory = p => ({ id: p.id, normalEnabled: p.normalEnabled,
   wholePluginControl: p.wholePluginControl, requiredControl: p.requiredControl, eligibility: p.eligibility,
@@ -18,7 +19,7 @@ export function validateSourceStateInventory(value, scope) {
     const { inventoryId, ...data } = value;
     if (data.schemaVersion !== 2 || inventoryId !== setupInventoryId(data) || data.scopeId !== scope.scopeId
       || data.normalId !== scope.normalId || data.application !== 'codex' || data.application !== scope.application
-      || data.runtimeVersion !== scope.runtimeVersion || data.runtimeVersion !== '0.153.4'
+      || data.runtimeVersion !== scope.runtimeVersion || !canCodexConfigOperation(data.runtimeVersion, 'read')
       || !Array.isArray(data.skills) || data.skills.length !== scope.skills.length || data.skills.length > 32
       || !Array.isArray(data.plugins) || data.plugins.length > 32
       || !isDeepStrictEqual(data.plugins, (scope.plugins ?? []).map(sourceStatePluginInventory))) fail('setup-inventory-invalid');

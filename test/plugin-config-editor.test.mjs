@@ -64,6 +64,14 @@ test('a later native version remains readable but cannot authorize a plugin edit
   await s.unchangedAndClean();
 });
 
+test('alpha Skill-disable qualification does not authorize plugin table writes', async t => {
+  const s = await fixture(t, 'alpha-version');
+  assert.equal((await s.read()).codexVersion, '0.155.0-alpha.16.3');
+  await assert.rejects(s.disable(), { kind: 'codex-version-unqualified' });
+  assert.equal((await s.events()).some(event => event.method === 'config/batchWrite'), false);
+  await s.unchangedAndClean();
+});
+
 test('an already disabled selection is an exact no-op even with an unrepresentable retained integer', async t => {
   const s = await fixture(t), text = disabled.replace('precision = 7.0', 'precision = 9007199254740993');
   assert.deepEqual(await s.disable(text), { text, changed: false, codexVersion: '0.153.4' });

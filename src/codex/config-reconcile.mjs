@@ -162,7 +162,7 @@ export async function mergeRetainedConfig(args) {
     const current = await readConfig(currentText, nativeArgs);
     const result = await readConfig(text, nativeArgs);
     const versions = new Set([base.codexVersion, target.codexVersion, current.codexVersion, result.codexVersion]);
-    for (const value of versions) assertQualifiedCodexConfigVersion(value);
+    for (const value of versions) assertQualifiedCodexConfigVersion(value, 'read');
     if (versions.size !== 1) throw failed();
 
     assertMergedParts([base.config, target.config, current.config, result.config], skillPaths, pluginIds);

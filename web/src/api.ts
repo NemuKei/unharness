@@ -2,16 +2,19 @@ import { text as t } from './locale.ts';
 export class ApiError extends Error {
   kind: string;
   checkpointId?: string;
+  reason?: 'skill-enable';
   disposition: "rejected" | "uncertain" | "auth-required";
   constructor(
     kind: string,
     checkpointId?: string,
     disposition: "rejected" | "uncertain" | "auth-required" = "rejected",
+    reason?: 'skill-enable',
   ) {
     super(kind);
     this.kind = kind;
     this.checkpointId = checkpointId;
     this.disposition = disposition;
+    this.reason = reason;
   }
 }
 export class RequestGeneration {
@@ -106,6 +109,7 @@ export class Api {
         payload.error.kind,
         payload.error.checkpointId,
         disposition,
+        payload.error.kind === 'codex-version-unqualified' && payload.error.reason === 'skill-enable' ? 'skill-enable' : undefined,
       );
     }
     return payload as T;

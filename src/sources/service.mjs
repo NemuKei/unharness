@@ -54,6 +54,12 @@ const recoveryArgv = (workspace) => [
 function targets(reg) {
   return [...(reg.instructions ? [reg.instructions] : []), ...reg.skills];
 }
+async function assertForwardSkillElevation(reg, skillStates, runtimeVersion) {
+  if (applicationFor(reg.context).id !== 'codex' || !skillStates.some(state => state.enabled === true
+    && reg.skills.some(skill => skill.id === state.id && skill.enabled === false))) return;
+  const { assertQualifiedCodexConfigVersion } = await import('../codex/config-versions.mjs');
+  assertQualifiedCodexConfigVersion(runtimeVersion, 'enable');
+}
 export const discoverUserSources = wrap(async (context) =>
   discoverySummary(await discoveryCapture(context))
 );
@@ -190,7 +196,8 @@ async function buildPlan(
   }
 ) {
   if (await pending(w.workspace)) fail('recovery-required');
-  if (['unseal', 'trueform'].includes(mode)) await freshCatalog(w.reg);
+  if (['unseal', 'trueform'].includes(mode))
+    await assertForwardSkillElevation(w.reg, skillStates, await freshCatalog(w.reg));
   const before = await loadSnapshot(w.workspace, w.reg, w.state.snapshotId);
   await assertCurrent(w, before);
   assertControlChanges({ sources: w.reg.skills, plugins: w.reg.plugins, before, after });
@@ -306,12 +313,12 @@ export const applyUserPlan = wrap(async ({ workspace, planId }) => {
       current,
       await loadSnapshot(workspace, current.reg, plan.beforeId)
     );
-    if (['unseal', 'trueform'].includes(plan.mode))
-      await freshCatalog(current.reg);
+    const runtimeVersion = ['unseal', 'trueform'].includes(plan.mode) ? await freshCatalog(current.reg) : null;
     if (current.manifestVersion >= 2) {
       const { assertV2ApplicationPlan } = await import('../setup/apply-plan.mjs');
       await assertV2ApplicationPlan(current, plan);
     }
+    if (runtimeVersion) await assertForwardSkillElevation(current.reg, plan.skillStates, runtimeVersion);
     return await transact(current, plan, planId);
   } finally {
     await release();

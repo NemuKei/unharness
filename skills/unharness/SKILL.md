@@ -122,7 +122,7 @@ The GUI's **記録・比較** page offers **仕事を記録する** → recent t
 
 ## Retry and evidence
 
-When an operation reports `codex-version-unqualified`, tell the user: **このCodexの版は、まだ確認していません。今の設定はそのままです**. Offer **AIに調べてもらう** to check the installed Codex version and the current saved state. Do not retry the write, edit the user's configuration directly, or treat the new version as qualified. A version needs a separate native compatibility review before Unharness may write with it.
+When an operation reports `codex-version-unqualified` with reason `skill-enable`, tell the user: **このCodexの版では、このSkillを足すことはまだ確認していません。今の設定はそのままです**. For the same error without that reason, say: **このCodexの版は、まだ確認していません。今の設定はそのままです**. Offer **AIに調べてもらう** to check the installed Codex version and the current saved state. Do not retry the refused write or edit the user's configuration directly. A newly allowed operation needs its own native compatibility review.
 
 Use a new lowercase request UUID for each new logical mutation. After a timeout or reconnect, preserve its original connection UUID, request UUID and arguments, and inspect `operation_status`. A `running` or `unconfirmed` result is not permission to repeat the operation with a new ID. Source journals and independent-edit checks remain authoritative.
 

@@ -50,6 +50,14 @@ test('an unqualified Codex version explains that settings were left unchanged', 
   assert.equal(proposalFailureMessage('codex-version-unqualified', null, null), next.error);
 });
 
+test('an unqualified Skill addition uses the specific explanation', () => {
+  const error = new ApiError('codex-version-unqualified', undefined, 'rejected', 'skill-enable');
+  const next = sourceControllerReducer(initialSourceControllerState, { type: 'failed', error });
+  const copy = 'このCodexの版では、このSkillを足すことはまだ確認していません。今の設定はそのままです';
+  assert.equal(next.error, copy);
+  assert.equal(proposalFailureMessage(error.kind, null, null, error.reason), copy);
+});
+
 test('the everyday failure panel offers an AI investigation action for this version', async t => {
   const vite = await createServer({ appType: 'custom', logLevel: 'silent', server: { middlewareMode: true } });
   t.after(() => vite.close());

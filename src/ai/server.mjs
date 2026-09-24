@@ -22,7 +22,8 @@ function failure(error) {
   const kind = error?.kind === 'gui-invalid-request' ? 'invalid-request'
     : error?.kind === 'gui-source-context-changed' ? 'source-session-changed'
       : safeKinds.has(error?.kind) ? error.kind : 'operation-failed';
-  return { ok: false, error: { kind } };
+  return { ok: false, error: { kind,
+    ...(kind === 'codex-version-unqualified' && error?.reason === 'skill-enable' ? { reason: 'skill-enable' } : {}) } };
 }
 const invalid = () => failure({ kind: 'invalid-request' });
 function response(value) {

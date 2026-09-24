@@ -28,6 +28,7 @@ export async function withPrivateNativeConfig({
   executableArgs = [],
   timeoutMs = 10000,
   editing = false,
+  writeOperation,
   clientName,
 }, operation) {
   let root;
@@ -44,6 +45,7 @@ export async function withPrivateNativeConfig({
       || timeoutMs < 1
       || timeoutMs > 120000
       || typeof editing !== 'boolean'
+      || (editing && !['disable', 'enable', 'plugin-disable'].includes(writeOperation))
       || typeof clientName !== 'string'
       || !clientName
       || typeof operation !== 'function'
@@ -77,7 +79,7 @@ export async function withPrivateNativeConfig({
     const codexVersion = parseCodexVersionFromUserAgent(initialization?.userAgent);
     if (!codexVersion || initialization.codexHome !== profile) throw configTransformFailed();
     client.initialized();
-    if (editing) assertQualifiedCodexConfigVersion(codexVersion);
+    if (editing) assertQualifiedCodexConfigVersion(codexVersion, writeOperation);
     const read = async () => userLayer(
       await client.request('config/read', { cwd: project, includeLayers: true }),
       file,

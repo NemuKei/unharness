@@ -131,10 +131,11 @@ export const USER_SOURCE_ERROR_KINDS = Object.freeze([
   'config-transform-failed',
   'codex-version-unqualified'
 ]);
-export function fail(kind) {
+export function fail(kind, reason) {
   const e = new Error(kind);
   e.name = 'UserSourceError';
   e.kind = kind;
+  if (kind === 'codex-version-unqualified' && reason === 'skill-enable') e.reason = reason;
   throw e;
 }
 export async function privateCall(fn) {
@@ -142,7 +143,7 @@ export async function privateCall(fn) {
     return await fn();
   } catch (e) {
     fail(
-      USER_SOURCE_ERROR_KINDS.includes(e?.kind) ? e.kind : 'operation-failed'
+      USER_SOURCE_ERROR_KINDS.includes(e?.kind) ? e.kind : 'operation-failed', e?.reason
     );
   }
 }

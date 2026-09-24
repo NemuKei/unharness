@@ -5,9 +5,10 @@ import { applicationFor } from '../apps/index.mjs';
 import { requiredControlSources } from './control-sources.mjs';
 import { setupInventoryId } from './inventory.mjs';
 import { sourceStatePluginInventory } from './inventory-v3.mjs';
+import { canCodexConfigOperation } from '../codex/config-versions.mjs';
 
 export async function captureSourceStateInventory(w, normalId = activeNormalId(w)) {
-  if (applicationFor(w.reg.context).id !== 'codex' || w.reg.version !== '0.153.4') fail('setup-application-unsupported');
+  if (applicationFor(w.reg.context).id !== 'codex' || !canCodexConfigOperation(w.reg.version, 'read')) fail('setup-application-unsupported');
   const normal = await loadNormal(w.workspace, w.reg, normalId);
   if (w.reg.plugins?.length) {
     const { validateRegisteredPlugins } = await import('../codex/plugin-dependency.mjs');

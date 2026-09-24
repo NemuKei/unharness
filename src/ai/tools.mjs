@@ -83,7 +83,7 @@ const mutation = { connectionId: uuid.describe('Identity returned by status; pre
 
 export const AI_OUTPUT_SCHEMA = Object.freeze({ type: 'object', required: ['ok'], additionalProperties: false,
   properties: { ok: { type: 'boolean' }, result: { type: 'object' }, error: { type: 'object', required: ['kind'], additionalProperties: false,
-    properties: { kind: { type: 'string' } } }, operation: { type: 'object' } } });
+    properties: { kind: { type: 'string' }, reason: { type: 'string', enum: ['skill-enable'] } } }, operation: { type: 'object' } } });
 
 function tool(name, action, description, fields = {}, write = false, destructive = false) {
   const schema = z.strictObject({ ...fields, ...(write ? mutation : {}) });

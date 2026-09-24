@@ -58,6 +58,16 @@ enabled = true
   for (const launch of launches) await assert.rejects(stat(launch.profile), { code: 'ENOENT' });
 });
 
+test('alpha native reads may prove a retained-only merge without a write RPC', async t => {
+  const ctx = await reconcileSetup(t, 'alpha-version');
+  const baseText = 'model = "base"\n';
+  const currentText = 'model = "current"\n';
+  const result = await ctx.run({ baseText, targetText: baseText, currentText, skillPaths: [] });
+  assert.equal(result.codexVersion, '0.155.0-alpha.16.3');
+  assert.equal(result.text, currentText);
+  assert.equal((await ctx.events()).some(event => ['skills/config/write', 'config/batchWrite'].includes(event.method)), false);
+});
+
 test('native proof preserves retained edits when a saved Skill block shares an appended blank separator', async t => {
   const ctx = await reconcileSetup(t);
   const baseText = 'model = "base"\n\n[plugins.unharness]\nenabled = true\n';

@@ -49,7 +49,8 @@ for await (const line of createInterface({ input: process.stdin })) {
   await appendFile(record, JSON.stringify(message) + '\n');
   if (message.method === 'initialized' || message.error) continue;
   if (message.method === 'initialize') {
-    const fixtureVersion = scenario === 'new-version' ? '0.154.0' : '0.153.4';
+    const fixtureVersion = scenario === 'new-version' ? '0.154.0'
+      : scenario === 'alpha-version' ? '0.155.0-alpha.16.3' : '0.153.4';
     send(message.id, { userAgent: 'Plugin editor fixture/' + fixtureVersion + ' (fixture)',
       codexHome: scenario === 'wrong-home' ? '/synthetic/PRIVATE_PLUGIN_MARKER' : process.env.CODEX_HOME });
   } else if (message.method === 'config/read') {

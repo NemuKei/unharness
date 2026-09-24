@@ -6,7 +6,7 @@ import { requiredControlSources } from '../setup/control-sources.mjs';
 import { assertQualifiedCodexConfigVersion } from './config-versions.mjs';
 
 export async function compileCodexSourceStates({ reg, normal, after, sourceStates, targetFile }) {
-  assertQualifiedCodexConfigVersion(reg.version);
+  assertQualifiedCodexConfigVersion(reg.version, 'read');
   const control = requiredControlSources(reg.skills).sourceIds;
   const optional = reg.skills.filter(s => !control.includes(s.id));
   if (!sourceStates || !Array.isArray(sourceStates.skills) || sourceStates.skills.length !== optional.length
@@ -33,7 +33,7 @@ export async function compileCodexSourceStates({ reg, normal, after, sourceState
     const { setSkillStatesConfig } = await import('./config-editor.mjs');
     const compiled = await setSkillStatesConfig({ configText: normal.config?.text ?? '',
       skillStates: changedFlags, executable: reg.context.executable });
-    if (compiled.codexVersion !== reg.version) fail('stale-discovery');
+    assertQualifiedCodexConfigVersion(compiled.codexVersion, changedFlags.some(s => s.enabled) ? 'enable' : 'disable');
     after.config = await targetFile('config', compiled.text);
   }
   const pluginStates = [], disabled = [];
@@ -50,7 +50,7 @@ export async function compileCodexSourceStates({ reg, normal, after, sourceState
     const { disablePluginConfig } = await import('./plugin-config-editor.mjs');
     const compiled = await disablePluginConfig({ configText: after.config?.text ?? '',
       pluginIds: disabled, executable: reg.context.executable });
-    if (compiled.codexVersion !== reg.version) fail('stale-discovery');
+    assertQualifiedCodexConfigVersion(compiled.codexVersion, 'plugin-disable');
     after.config = await targetFile('config', compiled.text);
   }
   return { after, skillStates, pluginStates };

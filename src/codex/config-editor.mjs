@@ -47,6 +47,7 @@ async function selectedConfig({ configText, skillPaths, executable, executableAr
       executableArgs,
       timeoutMs,
       editing,
+      ...(editing ? { writeOperation: selections.some(s => s.enabled) ? 'enable' : 'disable' } : {}),
       clientName: 'unharness_config_editor',
     }, async ({ client, codexVersion, file, layer: before, read }) => {
       if (!editing) {

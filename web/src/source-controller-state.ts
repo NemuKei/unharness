@@ -96,7 +96,9 @@ function failureFeedback(error: unknown) {
   const kind = error instanceof ApiError ? error.kind : "request-failed";
   const message =
     kind === 'codex-version-unqualified'
-      ? t('このCodexの版は、まだ確認していません。今の設定はそのままです', 'This Codex version has not been checked yet. Your settings are unchanged.')
+      ? error instanceof ApiError && error.reason === 'skill-enable'
+        ? t('このCodexの版では、このSkillを足すことはまだ確認していません。今の設定はそのままです', 'Adding this Skill has not been checked for this Codex version. Your settings are unchanged.')
+        : t('このCodexの版は、まだ確認していません。今の設定はそのままです', 'This Codex version has not been checked yet. Your settings are unchanged.')
       : error instanceof ApiError && error.disposition === "uncertain"
       ? t("結果をまだ確かめていません。もう一度押さずに、「状態を再取得」で確かめてください。自動でやり直すことはありません。", "The result is not confirmed yet. Don’t press again — use Refresh state. Nothing is retried automatically.")
       : t("うまくいきませんでした。「状態を再取得」で今の設定を確かめてください。", "That didn’t work. Use Refresh state to check the current settings.");

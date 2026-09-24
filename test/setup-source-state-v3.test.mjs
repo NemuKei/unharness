@@ -16,10 +16,17 @@ import { inspectEnrollment, reviewEnrollment, applyEnrollment } from '../src/set
 import { addSetupSkill } from '../test-support/setup-profile.mjs';
 const mac = { skip: process.platform !== 'darwin' };
 
-async function fixture(t, disabled = false, legacyRevision) {
+async function fixture(t, disabled = false, legacyRevision, runtimeVersion = '0.153.4') {
   const parent = await realpath(await mkdtemp(join(tmpdir(), 'unharness-v3-')));
   t.after(async () => { setSourceTransactionTestHook(null); await rm(parent, { recursive: true, force: true }); });
   const owned = await createOwnedSourceProfile({ parent, executable: resolve('test-support/user-source-server.mjs') });
+  if (runtimeVersion !== '0.153.4') {
+    const prior = process.env.UNHARNESS_TEST_RUNTIME_VERSION;
+    process.env.UNHARNESS_TEST_RUNTIME_VERSION = runtimeVersion;
+    t.after(() => { if (prior === undefined) delete process.env.UNHARNESS_TEST_RUNTIME_VERSION;
+      else process.env.UNHARNESS_TEST_RUNTIME_VERSION = prior; });
+    await writeFile(join(owned.context.codexHome, 'runtime-version-fixture.txt'), runtimeVersion + '\n');
+  }
   if (disabled) {
     const config = join(owned.context.codexHome, 'config.toml'), path = join(owned.context.codexHome, 'skills/example/SKILL.md');
     await writeFile(config, await readFile(config, 'utf8') + `\n[[skills.config]]\npath = ${JSON.stringify(path)}\nenabled = false\n`);
@@ -33,7 +40,7 @@ async function fixture(t, disabled = false, legacyRevision) {
   const ids = w.reg.skills.map(s => s.id);
   const proposal = { schemaVersion: 3, scopeId: r.scopeId, normalId: r.normalId, inventoryId: current.inventory.inventoryId,
     basis: { application: 'codex', modelId: 'synthetic-model', modelSource: 'user-specified', desktopVersion: null,
-      runtimeVersion: '0.153.4', references: [{ url: 'https://developers.openai.com/codex/skills', title: 'Official fixture reference',
+      runtimeVersion, references: [{ url: 'https://developers.openai.com/codex/skills', title: 'Official fixture reference',
         checkedAt: '2026-09-11T00:00:00Z' }], rationale: 'Explicit synthetic v3 states' },
     roles: ids.map(sourceId => ({ sourceId, origin: 'self', reason: 'Owned synthetic Skill' })),
     trueform: { skillStates: ids.map(sourceId => ({ sourceId, state: disabled ? 'manual' : 'disabled' })), retainedOfficialPluginIds: [] },
@@ -69,6 +76,37 @@ test('v3 saved modes absorb only common settings on confirmation without rewriti
     assert.match(await readFile(config, 'utf8'), new RegExp(retainedModel));
     assert.equal((await sources.userSourceState({ workspace: s.workspace })).conflict, null);
   }
+});
+
+test('alpha refuses a frozen UNSEAL elevation from disabled Normal before a plan or source write', mac, async t => {
+  const s = await fixture(t, true);
+  await adopt(s);
+  const reviewed = await sources.planUserMode({ workspace: s.workspace, mode: 'unseal' });
+  const before = await openWorkspace(s.workspace), files = await readSourceProfileFiles(s.context);
+  await writeFile(join(s.context.codexHome, 'runtime-version-fixture.txt'), '0.155.0-alpha.16.3\n');
+  for (const action of [() => sources.applyUserPlan({ workspace: s.workspace, planId: reviewed.planId }),
+    () => sources.planUserMode({ workspace: s.workspace, mode: 'unseal' })])
+    await assert.rejects(action(), { kind: 'codex-version-unqualified', reason: 'skill-enable' });
+  assert.deepEqual((await openWorkspace(s.workspace)).state, before.state);
+  assert.deepEqual(await readSourceProfileFiles(s.context), files);
+});
+
+test('a newly registered alpha profile can save a disable-only v3 setup and return to Normal', mac, async t => {
+  const s = await fixture(t, false, undefined, '0.155.0-alpha.16.3');
+  await adopt(s);
+  await prepare(s, 'trueform');
+  assert.equal((await sources.userSourceState({ workspace: s.workspace })).preparedMode, 'trueform');
+  await prepare(s, 'normal');
+  assert.deepEqual(await readSourceProfileFiles(s.context), s.originalFiles);
+});
+
+test('a newly registered alpha profile refuses a setup that enables a Normal-disabled Skill', mac, async t => {
+  const s = await fixture(t, true, undefined, '0.155.0-alpha.16.3');
+  assert.equal((await openWorkspace(s.workspace)).reg.skills[0].enabled, false);
+  assert.equal(s.proposal.trueform.skillStates[0].state, 'manual');
+  const before = await readSourceProfileFiles(s.context);
+  await assert.rejects(adopt(s), { kind: 'codex-version-unqualified', reason: 'skill-enable' });
+  assert.deepEqual(await readSourceProfileFiles(s.context), before);
 });
 
 test('v3 ordinary enrollment keeps the contract and requires explicit states for the new Skill', mac, async t => {

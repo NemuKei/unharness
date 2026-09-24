@@ -228,14 +228,17 @@ test('prerelease userAgent keeps its complete version for a read-only selector',
     executable: process.execPath, executableArgs: [editorFixture, 'malformed-alpha-version', malformed.record] }), { kind: 'config-transform-failed' });
 });
 
-test('unqualified versions refuse both legacy and v3 Skill edits before native writes', async t => {
+test('an alpha may disable but never enable a Skill; unknown versions cannot write', async t => {
   for (const scenario of ['alpha-version', 'unqualified-version']) await t.test(scenario, async t => {
     const ctx = await editorSetup(t, scenario);
-    await assert.rejects(ctx.run(), { kind: 'codex-version-unqualified' });
+    if (scenario === 'alpha-version') assert.equal((await ctx.run()).codexVersion, '0.155.0-alpha.16.3');
+    else await assert.rejects(ctx.run(), { kind: 'codex-version-unqualified' });
     const { setSkillStatesConfig } = await import('../src/codex/config-editor.mjs');
-    await assert.rejects(setSkillStatesConfig({ configText, skillStates: [{ path: '/skills/selected/SKILL.md', enabled: false }],
-      executable: process.execPath, executableArgs: [editorFixture, scenario, ctx.record] }), { kind: 'codex-version-unqualified' });
-    assert.equal((await ctx.events()).some(event => ['skills/config/write', 'config/batchWrite'].includes(event.method)), false);
+    await assert.rejects(setSkillStatesConfig({ configText, skillStates: [{ path: '/skills/selected/SKILL.md', enabled: true }],
+      executable: process.execPath, executableArgs: [editorFixture, scenario, ctx.record] }), error =>
+      error.kind === 'codex-version-unqualified' && (scenario !== 'alpha-version' || error.reason === 'skill-enable'));
+    const writes = (await ctx.events()).filter(event => ['skills/config/write', 'config/batchWrite'].includes(event.method));
+    assert.equal(writes.length, scenario === 'alpha-version' ? 2 : 0);
     assert.equal(await readFile(ctx.original, 'utf8'), configText);
   });
 });
