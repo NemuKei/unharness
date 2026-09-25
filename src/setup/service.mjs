@@ -130,6 +130,10 @@ export async function readSetup(args) {
   exactKeys(args, ['workspace'], ['schemaVersion'], 'invalid-request');
   if (args.schemaVersion !== undefined && !isVersionedSetup(args.schemaVersion)) fail('invalid-request');
   const w = await openWorkspace(args.workspace), saved = await loadSetup(w);
+  const normal = await loadNormal(w.workspace, w.reg, activeNormalId(w));
+  const { readSkillDescription } = await import('../sources/skill-frontmatter.mjs');
+  const sourceDescriptions = Object.fromEntries(await Promise.all(w.reg.skills.map(async skill => [skill.id,
+    await readSkillDescription(normal[skill.id + ':body']?.text ?? '')])));
   let inventory = null, inventoryError = null;
   if (applicationFor(w.reg.context).supportsReleasePresets) {
     try { inventory = await captureInventoryForSetup(w, args.schemaVersion ?? Math.max(2, w.manifestVersion)); }
@@ -154,7 +158,7 @@ export async function readSetup(args) {
     review: saved ? setupReviewSummary(saved.review) : null,
     proposal: saved?.review.proposal ?? null, inventory, inventoryError,
     ...(pluginControls ? { pluginControls } : {}), ...(codexOperations ? { codexOperations } : {}),
-    enrollment: await readEnrollmentContext(w), verification };
+    sourceDescriptions, enrollment: await readEnrollmentContext(w), verification };
 }
 
 // The caller is already planning a mode within the registered workspace. This

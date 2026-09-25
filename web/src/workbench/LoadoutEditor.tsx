@@ -8,7 +8,7 @@ import type { useSourceController } from '../useSourceController.ts';
 import { FailureNotice } from './FailureNotice.tsx';
 import { loadoutChoices, loadoutChanges, loadoutInitial, loadoutPrompt, loadoutProposal, loadoutStateLabel } from './loadout-editor-view.ts';
 import type { CodexOperations, LoadoutSkill, LoadoutState } from './loadout-editor-view.ts';
-import { applyLoadout } from './loadout-editor-action.ts';
+import { completeLoadoutChange } from './loadout-editor-action.ts';
 
 type Controller = ReturnType<typeof useSourceController>;
 type EditorSkill = LoadoutSkill & { label: string; description: string | null };
@@ -17,12 +17,19 @@ type Read = { scopeId: string; normalId: string; setupId: string | null;
     plugins: Array<{ id: string; eligibility: string; normalEnabled: boolean }> } | null;
   proposal: Parameters<typeof loadoutProposal>[0]['setup']['proposal'];
   enrollment?: Parameters<typeof loadoutProposal>[0]['setup']['enrollment'];
+  sourceDescriptions?: Record<string, string | null>;
   codexOperations?: CodexOperations };
 type Contents = { modes: Partial<Record<SourceMode, { available: boolean;
   skills: Array<{ id: string; state: LoadoutState | 'unknown' }> }>> };
 type Recommendation = { kind: string; mode: SourceMode; status: string; items: { sourceId: string }[] } | null;
 const normalOperations: CodexOperations = { read: false, disable: false, enable: false, 'plugin-disable': false };
 const stateMap = (rows: Array<{ id: string; state: LoadoutState }>) => Object.fromEntries(rows.map(row => [row.id, row.state])) as Record<string, LoadoutState>;
+
+export function loadoutSkillRows(skills: LoadoutSkill[], sources: SourceRow[], descriptions: Record<string, string | null> = {}): EditorSkill[] {
+  const names = new Map(sources.map(row => [row.id, row]));
+  return skills.map(skill => ({ ...skill, label: names.get(skill.id)?.label ?? t('登録済みのSkill', 'Registered Skill'),
+    description: Object.hasOwn(descriptions, skill.id) ? descriptions[skill.id] : names.get(skill.id)?.description ?? null }));
+}
 
 export function LoadoutChoices({ mode, skills, choices, trueformStates = {}, recommendedIds, codexOperations, onChoice }: {
   mode: Exclude<SourceMode, 'normal'>; skills: EditorSkill[]; choices: Record<string, LoadoutState>;
@@ -60,7 +67,7 @@ export function LoadoutConfirmation({ changes, busy, onConfirm, onCancel }: { ch
 
 export function LoadoutEditor({ controller: c, mode, recommendation, onClose, onApplied }: {
   controller: Controller; mode: Exclude<SourceMode, 'normal'>; recommendation: Recommendation;
-  onClose: () => void; onApplied: (mode: Exclude<SourceMode, 'normal'>) => void;
+  onClose: () => void; onApplied: (mode: Exclude<SourceMode, 'normal'>, view: NonNullable<Controller['view']>) => void;
 }) {
   const source = c.view?.source;
   const [loaded, setLoaded] = useState<{ setup: Read; skills: EditorSkill[]; before: Record<string, LoadoutState>;
@@ -86,9 +93,7 @@ export function LoadoutEditor({ controller: c, mode, recommendation, onClose, on
       if (!active) return;
       if (contents.status === 'context-updated') return;
       const inventory = setup.result.inventory;
-      const names = new Map((source.registration.sources ?? []).map(row => [row.id, row as SourceRow]));
-      const skills = inventory.skills.map(skill => ({ ...skill, label: names.get(skill.id)?.label ?? t('登録済みのSkill', 'Registered Skill'),
-        description: names.get(skill.id)?.description ?? null }));
+      const skills = loadoutSkillRows(inventory.skills, source.registration.sources ?? [], setup.result.sourceDescriptions);
       const savedBase = setup.result.proposal?.trueform?.skillStates ?? [];
       const trueform = stateMap(skills.filter(skill => !skill.requiredControl).map(skill => ({ id: skill.id,
         state: savedBase.find(row => row.sourceId === skill.id)?.state ?? (skill.normalState === 'disabled' ? 'disabled' : 'manual') })));
@@ -116,11 +121,9 @@ export function LoadoutEditor({ controller: c, mode, recommendation, onClose, on
     try {
       const proposal = loadoutProposal({ setup: { ...loaded.setup, inventory: loaded.setup.inventory! },
         mode, choices, sources: source.registration.sources });
-      await applyLoadout({ execute: (action, input) => c.executeAuxiliary(action, input), proposal, mode });
-      const checked = await c.refresh();
-      if (!checked?.source || checked.source.preparedMode !== mode || checked.source.conflict || checked.source.recovery.pending
-        || checked.source.registration.modeChangeRequired) throw new ApiError('readback-unconfirmed');
-      onApplied(mode);
+      const checked = await completeLoadoutChange({ execute: (action, input) => c.executeAuxiliary(action, input),
+        refresh: () => c.refresh(), proposal, mode, beforeRevision: source.revision });
+      onApplied(mode, checked);
     } catch (error) {
       await c.refresh();
       const kind = error instanceof ApiError ? error.kind : 'request-failed';

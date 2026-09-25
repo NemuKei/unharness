@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
-import { applyLoadout } from '../src/workbench/loadout-editor-action.ts';
+import { applyLoadout, completeLoadoutChange } from '../src/workbench/loadout-editor-action.ts';
 
 const id = 'skill-' + 'a'.repeat(64);
 const skill = { id, label: 'slide-polisher', description: '文章の仕上げを手伝います。',
@@ -29,6 +29,17 @@ test('1, 2, 5, 7. the editor shows a name, description, all three choices, a dis
     skills: [{ ...skill, description: null }], choices: { [id]: 'manual' }, recommendedIds: [],
     codexOperations: { read: true, disable: true, enable: true, 'plugin-disable': true }, onChoice() {} }));
   assert.match(fallback, /登録済みのSkillです/);
+});
+
+test('the editor projects saved Skill descriptions even though registration rows omit them', async t => {
+  const vite = await createServer({ appType: 'custom', logLevel: 'silent', server: { middlewareMode: true } });
+  t.after(() => vite.close());
+  const { loadoutSkillRows } = await vite.ssrLoadModule('/src/workbench/LoadoutEditor.tsx');
+  const rows = loadoutSkillRows([skill], [{ id, label: 'slide-polisher', description: null }],
+    { [id]: '文章の仕上げを手伝います。' });
+  assert.equal(rows[0].description, '文章の仕上げを手伝います。');
+  assert.equal(loadoutSkillRows([skill], [{ id, label: 'slide-polisher' }], {})[0].description, null);
+  assert.equal(loadoutSkillRows([skill], [{ id, label: 'slide-polisher', description: '古い説明' }], { [id]: null })[0].description, null);
 });
 
 test('6. approval uses review_setup, apply_setup, plan, apply in order and verifies readback', async () => {
@@ -67,6 +78,55 @@ test('6. a failed setup step stops the sequence before any mode write', async ()
       : { status: 'completed', result: { reviewId: 'c'.repeat(64), sourceFilesChanged: 0 } };
   }, proposal: { schemaVersion: 4 }, mode: 'trueform' }), error);
   assert.deepEqual(calls, ['review-setup', 'apply-setup']);
+});
+
+test('a completed switch closes against verified server state even when a follow-up refresh is busy', async () => {
+  const finalView = { source: { preparedMode: 'trueform', revision: 8, conflict: null,
+    recovery: { pending: false }, registration: { modeChangeRequired: false } } };
+  const calls = [];
+  const execute = async action => {
+    calls.push(action);
+    const result = action === 'review-setup' ? { reviewId: 'c'.repeat(64), sourceFilesChanged: 0 }
+      : action === 'apply-setup' ? { setupId: 'd'.repeat(64), adopted: true }
+        : action === 'plan' ? { planId: 'e'.repeat(64), mode: 'trueform' }
+          : { preparedMode: 'trueform', readback: 'matched' };
+    return { status: 'completed', result, state: action === 'apply' ? finalView : null };
+  };
+  const view = await completeLoadoutChange({ execute, refresh: async () => null,
+    proposal: { schemaVersion: 4 }, mode: 'trueform', beforeRevision: 7 });
+  assert.equal(view, finalView);
+  assert.deepEqual(calls, ['review-setup', 'apply-setup', 'plan', 'apply']);
+});
+
+test('a lost apply response does not claim this operation succeeded from matching state alone', async () => {
+  const finalView = { source: { preparedMode: 'trueform', revision: 8, conflict: null,
+    recovery: { pending: false }, registration: { modeChangeRequired: false } } };
+  const error = new Error('response lost');
+  const execute = async action => action === 'apply' ? { status: 'failed', error }
+    : { status: 'completed', result: action === 'review-setup' ? { reviewId: 'c'.repeat(64), sourceFilesChanged: 0 }
+      : action === 'apply-setup' ? { setupId: 'd'.repeat(64), adopted: true }
+        : { planId: 'e'.repeat(64), mode: 'trueform' } };
+  await assert.rejects(completeLoadoutChange({ execute, refresh: async () => finalView,
+    proposal: { schemaVersion: 4 }, mode: 'trueform', beforeRevision: 7 }), error);
+});
+
+test('a failed switch does not claim success from unchanged saved state', async () => {
+  const error = new Error('write failed');
+  await assert.rejects(completeLoadoutChange({ execute: async action => action === 'apply'
+    ? { status: 'failed', error } : { status: 'completed', result: action === 'review-setup'
+      ? { reviewId: 'c'.repeat(64), sourceFilesChanged: 0 } : action === 'apply-setup'
+        ? { setupId: 'd'.repeat(64), adopted: true } : { planId: 'e'.repeat(64), mode: 'trueform' } },
+  refresh: async () => ({ source: { preparedMode: 'normal', revision: 7, conflict: null,
+    recovery: { pending: false }, registration: { modeChangeRequired: false } } }),
+  proposal: { schemaVersion: 4 }, mode: 'trueform', beforeRevision: 7 }), error);
+});
+
+test('an earlier setup failure cannot claim a concurrent matching switch as its own success', async () => {
+  const error = new Error('review failed');
+  const otherView = { source: { preparedMode: 'trueform', revision: 8, conflict: null,
+    recovery: { pending: false }, registration: { modeChangeRequired: false } } };
+  await assert.rejects(completeLoadoutChange({ execute: async () => ({ status: 'failed', error }),
+    refresh: async () => otherView, proposal: { schemaVersion: 4 }, mode: 'trueform', beforeRevision: 7 }), error);
 });
 
 test('the everyday screen offers manual TRUEFORM selection as its only next step after Normal re-preparation', async t => {

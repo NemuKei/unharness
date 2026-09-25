@@ -46,6 +46,9 @@ export function consultationCopy(mode: SourceMode): { label: string; prompt: str
 export function restoreHint(source: HomeSource | null): string | null {
   return source?.preparedMode === 'normal' ? t('今は元の構成です', 'You are already using the original setup') : null;
 }
+export function homeDisplaySource<T extends { revision: number }>(current: T | null, verified: T | null): T | null {
+  return verified && (!current || verified.revision > current.revision) ? verified : current;
+}
 export function qualificationNotice(status: 'pending' | 'checking' | 'ready' | undefined, busy: boolean): string | null {
   return busy && (status === 'pending' || status === 'checking')
     ? t('新しいCodexの版を確認しています…', 'Checking this new Codex version…') : null;

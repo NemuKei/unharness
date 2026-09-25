@@ -8,7 +8,7 @@ import { FreshTaskHandoff } from '../SetupHandoff.tsx';
 import { modePresentation } from '../sources.ts';
 import type { SourceMode, SourcePlan, SourceView } from '../sources.ts';
 import type { useSourceController, AuxiliarySourceOperationResult } from '../useSourceController.ts';
-import { homeView, modeChoice, modeForAction, proposalFailureMessage, removedCount, restoreHint, usageDisplay, qualificationNotice } from './home-view.ts';
+import { homeView, homeDisplaySource, modeChoice, modeForAction, proposalFailureMessage, removedCount, restoreHint, usageDisplay, qualificationNotice } from './home-view.ts';
 import type { HomeProposal, HomeUsageSummary } from './home-view.ts';
 import { ProposalCard } from './ProposalCard.tsx';
 import { SwitchSheet } from './SwitchSheet.tsx';
@@ -22,6 +22,12 @@ type Contents = { modes: Partial<Record<SourceMode, { available: boolean;
   instructions: { style: string }; skills: { id: string; state: 'automatic' | 'manual' | 'disabled' | 'unknown' }[] }>> };
 type Sheet = { mode: SourceMode; removed: number | null; issue: string | null };
 type Failure = { message: string; detail: string };
+
+export function HomeSuccess({ mode, view, confirmed }: { mode: SourceMode; view: SourceView | null; confirmed: boolean }) {
+  return <div className="home-success" role="status"><p>{t(`次の新しいタスクから${modePresentation[mode].title}です。`,
+    `Use ${modePresentation[mode].title} from your next new task.`)}</p>
+    {view && <FreshTaskHandoff view={view} disabled={!confirmed} label={t('新しいタスクを始める', 'Start a new task')}/>}</div>;
+}
 
 export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onResolve, blocker }: {
   controller: Controller; artwork: ReactNode; onSettings: () => void; onSupport: () => void; onResolve: () => void; blocker: string | null;
@@ -39,9 +45,11 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
   const [sheet, setSheet] = useState<Sheet | null>(null), [working, setWorking] = useState(false);
   const [editorMode, setEditorMode] = useState<'trueform' | 'unseal' | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null), [success, setSuccess] = useState<SourceMode | null>(null);
+  const [successView, setSuccessView] = useState<SourceView | null>(null);
   const context = c.view?.metadata.contextId ?? null, latestContext = useRef(context);
   latestContext.current = context;
-  const source = c.view?.source ?? null, locked = working || c.busy;
+  const source = homeDisplaySource(c.view?.source ?? null, successView?.source ?? null), locked = working || c.busy;
+  const displayedView = source === successView?.source ? successView : c.view;
   const replaced = !source?.recovery.pending && source?.conflict?.kind === 'source-replaced'
     && source.conflict.sourceId && source.conflict.label
     ? { sourceId: source.conflict.sourceId, label: source.conflict.label } : null;
@@ -103,7 +111,7 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
     })();
     return () => { active = false; };
   }, [added?.proposalId, addedAt, context]);
-  useEffect(() => { setSheet(null); setEditorMode(null); setFailure(null); setSuccess(null); }, [context]);
+  useEffect(() => { setSheet(null); setEditorMode(null); setFailure(null); setSuccess(null); setSuccessView(null); }, [context]);
   useEffect(() => { setSheet(null); }, [source?.revision, source?.preparedMode]);
   async function reportFailure(error: unknown, before: SourceView['source'] | null) {
     const checked = await c.refresh();
@@ -203,9 +211,10 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
         {view.switchTargets.map(mode => <div className="home-mode-choice" key={mode}>
           <strong>{modePresentation[mode].title}</strong><small>{modePresentation[mode].label}</small><span>{modePresentation[mode].description}</span>
           <div className="home-actions">{modeChoice(source, mode) === 'switch' && <button type="button" className="secondary"
-            disabled={locked || !canPlan || !!blocker} onClick={() => void openSheet(mode)}>{t('切り替える', 'Switch')}</button>}
+            disabled={locked || !canPlan || !!blocker || view.mode === mode} onClick={() => void openSheet(mode)}>{t('切り替える', 'Switch')}</button>}
             <button type="button" className="secondary" disabled={locked || !canPlan} onClick={() => openEditor(mode)}>
               {t(`${modePresentation[mode].title}の中身を選ぶ`, `Choose ${modePresentation[mode].title} contents`)}</button></div>
+          {view.mode === mode && <small>{t(`今は${modePresentation[mode].title}です`, `Currently using ${modePresentation[mode].title}`)}</small>}
         </div>)}
         <div className="home-restore-choice"><button type="button" className="home-restore" disabled={!view.canRestore} onClick={() => void openSheet(modeForAction('restore'))}>{t('元に戻す', 'Restore Normal')}</button>
           {restoreHint(source) && <small>{restoreHint(source)}</small>}</div>
@@ -214,14 +223,13 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
     </div>
     {editorMode && <div className="home-sheet-area"><LoadoutEditor controller={c} mode={editorMode}
       recommendation={view.proposal?.mode === editorMode ? view.proposal : null}
-      onClose={() => setEditorMode(null)} onApplied={mode => { setEditorMode(null); setSuccess(mode); void loadProposals(context); }}/></div>}
+      onClose={() => setEditorMode(null)} onApplied={(mode, verified) => { setSuccessView(verified); setEditorMode(null); setSuccess(mode); void loadProposals(context); }}/></div>}
     {sheet && <div className="home-sheet-area">{sheet.removed !== null
       ? <SwitchSheet mode={sheet.mode} removed={sheet.removed} busy={locked} onConfirm={() => void switchMode(sheet.mode)} onCancel={() => setSheet(null)}/>
       : sheet.issue ? <FailureNotice message={t('変更内容を確認できませんでした。', 'Could not check the changes.')} detail={sheet.issue} scopeId={source?.registration.scopeId}/>
         : <p role="status">{t('変更内容を確かめています…', 'Checking changes…')}</p>}</div>}
     {shownFailure && <FailureNotice message={shownFailure.message} detail={shownFailure.detail} scopeId={source?.registration.scopeId}/>}
-    {success && <div className="home-success" role="status"><p>{t(`次の新しいタスクから${modePresentation[success].title}です。`, `Use ${modePresentation[success].title} from your next new task.`)}</p>
-      {c.view && <FreshTaskHandoff view={c.view} disabled={!c.confirmed} label={t('新しいタスクを始める', 'Start a new task')}/>}</div>}
+    {success && <HomeSuccess mode={success} view={displayedView} confirmed={c.confirmed}/>}
     {added && addedAt && <CheckInCard name={addedName}
       due={checkInDue({ addedAt, tasksSince: taskCount?.proposalId === added.proposalId ? taskCount.count : 0, now: new Date().toISOString() })}
       answered={answered.has(added.proposalId)} ratio={usage?.ratioToTrueform.unseal ?? null}

@@ -1,12 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { createServer } from 'vite';
 import { sourceControllerReducer, initialSourceControllerState } from '../src/source-controller-state.ts';
 import { ApiError } from '../src/api.ts';
 
 const home = await import('../src/workbench/home-view.ts').catch(() => ({}));
 const { homeView, modeChoice, consultationCopy, restoreHint, savedDetailsVisible,
   switchSheetText, modeForAction, failureAfterRefresh, proposalFailureMessage, removedCount, usageDisplay,
-  qualificationNotice } = home;
+  qualificationNotice, homeDisplaySource } = home;
 const source = (overrides = {}) => ({ preparedMode: 'trueform', revision: 7, setup: { setupId: 'a'.repeat(64) },
   registration: { scopeId: 'b'.repeat(64) }, conflict: null, recovery: { pending: false }, ...overrides });
 const input = (overrides = {}) => ({ source: source(), confirmed: true, busy: false, proposals: [], failure: null, ...overrides });
@@ -64,6 +67,40 @@ test('5. restore selects Normal through the same local plan and apply journey', 
   assert.equal(homeView(input({ source: source({ recovery: { pending: true } }) })).canRestore, false);
   assert.equal(homeView(input({ confirmed: false })).canRestore, false);
   assert.equal(homeView(input({ source: source({ conflict: { kind: 'source-conflict' }, modePlanningAvailable: true }) })).canRestore, true);
+});
+
+test('the header uses the verified successful state until the controller catches up', () => {
+  const old = source({ preparedMode: 'normal', revision: 7 });
+  const verified = source({ preparedMode: 'trueform', revision: 8 });
+  assert.equal(homeDisplaySource(old, verified), verified);
+  assert.equal(homeDisplaySource(verified, verified), verified);
+});
+
+test('a confirmed manual switch shows the next-task handoff used by ordinary switches', async t => {
+  const vite = await createServer({ appType: 'custom', logLevel: 'silent', server: { middlewareMode: true } });
+  t.after(() => vite.close());
+  const { HomeSuccess } = await vite.ssrLoadModule('/src/workbench/HomeScreen.tsx');
+  const view = { source: { preparedMode: 'trueform', preparation: { id: 'a'.repeat(32), preparedAt: '2026-09-25T00:00:00Z' },
+    registration: { scopeId: 'b'.repeat(64) } } };
+  const html = renderToStaticMarkup(createElement(HomeSuccess, { mode: 'trueform', view, confirmed: true }));
+  assert.match(html, /次の新しいタスクから零式です/);
+  assert.match(html, /新しいタスクを始める/);
+});
+
+test('the current release card cannot switch to itself and explains why', async t => {
+  const vite = await createServer({ appType: 'custom', logLevel: 'silent', server: { middlewareMode: true } });
+  t.after(() => vite.close());
+  const { HomeScreen } = await vite.ssrLoadModule('/src/workbench/HomeScreen.tsx');
+  for (const mode of ['trueform', 'unseal']) {
+    const current = source({ preparedMode: mode, registration: { scopeId: 'b'.repeat(64), sources: [], modeChangeRequired: false } });
+    const controller = { view: { metadata: { contextId: 'c'.repeat(64) }, source: current }, confirmed: true,
+      busy: false, error: '', errorDetail: '' };
+    const html = renderToStaticMarkup(createElement(HomeScreen, { controller, artwork: null,
+      onSettings() {}, onSupport() {}, onResolve() {}, blocker: null }));
+    const title = mode === 'trueform' ? '零式' : '限定解除';
+    assert.match(html, new RegExp(`今は${title}です`));
+    assert.match(html, new RegExp(`disabled=""[^>]*>切り替える<\\/button>`));
+  }
 });
 
 test('saved-configuration details exist only after Normal has been saved', () => {

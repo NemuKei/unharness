@@ -12,6 +12,8 @@ test('a user-chosen schema-4 loadout uses the existing review, apply, plan and a
     const p = await aiProfile(t);
     const read = await readSetup({ workspace: p.workspace, schemaVersion: 4 });
     assert.ok(read.inventory);
+    const skillId = read.inventory.skills.find(skill => !skill.requiredControl)?.id;
+    assert.equal(read.sourceDescriptions?.[skillId], 'Synthetic optional example');
     assert.deepEqual(read.codexOperations, { read: true, disable: true, enable: true, 'plugin-disable': true });
     const skillStates = read.inventory.skills.filter(s => !s.requiredControl).map(s => ({ sourceId: s.id, state: 'disabled' }));
     const proposal = { schemaVersion: 4, scopeId: read.scopeId, normalId: read.normalId,
