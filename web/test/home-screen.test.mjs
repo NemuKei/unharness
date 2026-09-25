@@ -16,7 +16,7 @@ const input = (overrides = {}) => ({ source: source(), confirmed: true, busy: fa
 
 test('1. everyday choices are only trueform and unseal; Normal is reached through restore', () => {
   assert.deepEqual(homeView(input()), { mode: 'trueform', proposal: null,
-    switchTargets: ['trueform', 'unseal'], canRestore: true, notice: null, reprepareMode: null });
+    switchTargets: ['trueform', 'unseal'], canRestore: true, notice: null, reprepareMode: null, retainedChangeRequired: false });
   assert.equal(modeForAction('restore'), 'normal');
 });
 
@@ -66,7 +66,7 @@ test('5. restore selects Normal through the same local plan and apply journey', 
   assert.equal(homeView(input({ source: source({ preparedMode: 'unseal' }) })).canRestore, true);
   assert.equal(homeView(input({ source: source({ recovery: { pending: true } }) })).canRestore, false);
   assert.equal(homeView(input({ confirmed: false })).canRestore, false);
-  assert.equal(homeView(input({ source: source({ conflict: { kind: 'source-conflict' }, modePlanningAvailable: true }) })).canRestore, true);
+  assert.equal(homeView(input({ source: source({ conflict: { kind: 'source-conflict' }, modePlanningAvailable: true }) })).canRestore, false);
 });
 
 test('the header uses the verified successful state until the controller catches up', () => {
@@ -118,6 +118,40 @@ test('a new Codex version shows a plain checking message only while its check is
   assert.equal(qualificationNotice('checking', true), '新しいCodexの版を確認しています…');
   assert.equal(qualificationNotice('ready', true), null);
   assert.equal(qualificationNotice('pending', false), null);
+});
+
+test('replacement, retained settings, and re-preparation appear one at a time in that order', () => {
+  const base = source({ preparedMode: 'trueform', registration: { scopeId: 'b'.repeat(64), modeChangeRequired: true } });
+  const replaced = homeView(input({ source: { ...base, conflict: { kind: 'source-replaced' } } }));
+  assert.equal(replaced.mode, 'trueform');
+  assert.equal(replaced.retainedChangeRequired, false);
+  assert.equal(replaced.reprepareMode, null);
+  const retained = homeView(input({ source: { ...base, conflict: { kind: 'source-conflict' }, modePlanningAvailable: true } }));
+  assert.equal(retained.mode, 'trueform');
+  assert.equal(retained.retainedChangeRequired, true);
+  assert.equal(retained.reprepareMode, null);
+  assert.deepEqual(retained.switchTargets, []);
+  const reprepare = homeView(input({ source: base }));
+  assert.equal(reprepare.retainedChangeRequired, false);
+  assert.equal(reprepare.reprepareMode, 'trueform');
+});
+
+test('retained settings conflict names the prepared mode and gives one import action', async t => {
+  const vite = await createServer({ appType: 'custom', logLevel: 'silent', server: { middlewareMode: true } });
+  t.after(() => vite.close());
+  const { HomeScreen } = await vite.ssrLoadModule('/src/workbench/HomeScreen.tsx');
+  const s = source({ preparedMode: 'trueform', conflict: { kind: 'source-conflict' }, modePlanningAvailable: true,
+    registration: { scopeId: 'b'.repeat(64), sources: [], modeChangeRequired: true } });
+  const controller = { view: { metadata: { contextId: 'c'.repeat(64) }, source: s }, confirmed: true,
+    busy: false, retainedPlan: null, error: '', errorDetail: '' };
+  const html = renderToStaticMarkup(createElement(HomeScreen, { controller, artwork: null,
+    onSettings() {}, onSupport() {}, onResolve() {}, blocker: 'generic blocker' }));
+  assert.match(html, /<h1>零式<\/h1>/);
+  assert.match(html, /確認が必要です/);
+  assert.match(html, /Codexの設定がUnharnessの外で変わっています。変わった内容を確認して取り込みますか？/);
+  assert.match(html, />変更を確認<\/button>/);
+  assert.ok(!html.includes('準備し直してください'));
+  assert.ok(!html.includes('generic blocker'));
 });
 
 test('usage leads with an in-app ratio and keeps absolute counts in details', () => {

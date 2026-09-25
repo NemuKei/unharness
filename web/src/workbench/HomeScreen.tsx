@@ -16,6 +16,7 @@ import { FailureNotice } from './FailureNotice.tsx';
 import { CheckInCard } from './CheckInCard.tsx';
 import { ReplacedSourcePanel } from './ReplacedSourcePanel.tsx';
 import { LoadoutEditor } from './LoadoutEditor.tsx';
+import { RetainedReview } from '../components/RetainedReview.tsx';
 
 type Controller = ReturnType<typeof useSourceController>;
 type Contents = { modes: Partial<Record<SourceMode, { available: boolean;
@@ -192,11 +193,20 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
         <span>{t('今のモード', 'Current mode')}</span>
         <h1>{view.mode ? modePresentation[view.mode].title : t('確認中', 'Checking')}</h1>
         <p>{view.mode ? modePresentation[view.mode].description : t('今の設定を確かめてから切り替えられます。', 'Check the current settings before switching.')}</p>
-        <small>{view.reprepareMode ? t('準備し直しが必要です', 'Needs to be prepared again')
+        <small>{source?.conflict && view.mode ? t('確認が必要です', 'Review needed')
+          : view.reprepareMode ? t('準備し直しが必要です', 'Needs to be prepared again')
           : view.mode ? t('次の新しいタスクから', 'From the next new task') : t('現在のタスクは未確認です', 'The current task is unverified')}</small>
       </section>
       {!shownFailure && view.notice && !editorMode && <p className="home-next" role="status">{view.notice}</p>}
       {replaced && <ReplacedSourcePanel controller={c} sourceId={replaced.sourceId} label={replaced.label}/>}
+      {view.retainedChangeRequired && <section className="home-reprepare" role="status">
+        <p>{t('Codexの設定がUnharnessの外で変わっています。変わった内容を確認して取り込みますか？',
+          'Codex settings changed outside Unharness. Review and keep those changes?')}</p>
+        <button type="button" className="secondary" disabled={locked || !c.confirmed}
+          onClick={() => void c.run('plan-retained', {}, c.setRetainedPlan)}>{t('変更を確認', 'Review changes')}</button>
+        {c.retainedPlan && <RetainedReview plan={c.retainedPlan} disabled={locked || !c.confirmed}
+          onAccept={() => void c.run('accept-retained', { planId: c.retainedPlan!.planId })}/>}
+      </section>}
       {view.reprepareMode && !editorMode && <section className="home-reprepare" role="status"><p>{t(`${modePresentation[view.reprepareMode].title}を準備し直してください`,
         `Prepare ${modePresentation[view.reprepareMode].title} again`)}</p>
         {reprepareNeedsSetup ? <button type="button" className="primary" disabled={locked} onClick={() => openEditor(view.reprepareMode! as 'trueform' | 'unseal')}>
@@ -207,7 +217,7 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
         busy={locked || !connected}
         onApprove={() => void decide(view.proposal!.proposalId, 'approve')}
         onDismiss={() => void decide(view.proposal!.proposalId, 'dismiss')}/>}
-      {!replaced && !view.reprepareMode && !editorMode && <div className="home-mode-actions" aria-label={t('使うモードを選ぶ', 'Choose a mode')}>
+      {!replaced && !view.retainedChangeRequired && !view.reprepareMode && !editorMode && <div className="home-mode-actions" aria-label={t('使うモードを選ぶ', 'Choose a mode')}>
         {view.switchTargets.map(mode => <div className="home-mode-choice" key={mode}>
           <strong>{modePresentation[mode].title}</strong><small>{modePresentation[mode].label}</small><span>{modePresentation[mode].description}</span>
           <div className="home-actions">{modeChoice(source, mode) === 'switch' && <button type="button" className="secondary"
@@ -219,7 +229,7 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
         <div className="home-restore-choice"><button type="button" className="home-restore" disabled={!view.canRestore} onClick={() => void openSheet(modeForAction('restore'))}>{t('元に戻す', 'Restore Normal')}</button>
           {restoreHint(source) && <small>{restoreHint(source)}</small>}</div>
       </div>}
-      {blocker && !replaced && !view.reprepareMode && !view.notice && !editorMode && <p className="home-blocker" role="status">{blocker} <button type="button" className="text-button" onClick={onResolve}>{t('確認する', 'Review')}</button></p>}
+      {blocker && !replaced && !view.retainedChangeRequired && !view.reprepareMode && !view.notice && !editorMode && <p className="home-blocker" role="status">{blocker} <button type="button" className="text-button" onClick={onResolve}>{t('確認する', 'Review')}</button></p>}
     </div>
     {editorMode && <div className="home-sheet-area"><LoadoutEditor controller={c} mode={editorMode}
       recommendation={view.proposal?.mode === editorMode ? view.proposal : null}

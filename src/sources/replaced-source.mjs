@@ -3,10 +3,11 @@ import { dirname, join } from 'node:path';
 import { exactKeys } from '../comparisons/assessment.mjs';
 import { openWorkspace, loadSnapshot, loadNormal, activeNormalId, saveSnapshot, record, readJson,
   writeJson, unlink, newPreparation } from './records.mjs';
-import { captureFile, parentBinding, checkBinding, equal } from './platform.mjs';
+import { captureFile, parentBinding, checkBinding, equal, assertWritableOwnership } from './platform.mjs';
 import { acquire, pending, assertCurrent, sourceTransactionHook } from './transaction.mjs';
 import { replacedSkillIdentity } from './replaced-source-identity.mjs';
-import { hash } from './capture.mjs';
+import { hash, captureRegistered } from './capture.mjs';
+import { applicationFor } from '../apps/index.mjs';
 import { fail, verification } from './errors.mjs';
 import { replacementRegistration, replacementState, replacementManifest, loadReplacementReview,
   replacementSummary } from './replaced-source-records.mjs';
@@ -74,6 +75,21 @@ async function target(w, sourceId) {
   return { source, nextSkill, files, normalFiles, bindings, ownedDirs, directory: candidate.current };
 }
 function candidateWorkspace(w, p, reg, state) { return { ...w, reg, state }; }
+const withRetained = (files, retainedSettings) => retainedSettings ? { ...files, config: retainedSettings.config } : files;
+async function reviewIndependentSettings(w, reg, state, expected) {
+  const actual = await captureRegistered(reg);
+  await assertCurrent(candidateWorkspace(w, null, reg, state), { ...expected, config: actual.config });
+  if (equal(expected.config, actual.config)) return null;
+  if (applicationFor(reg.context).id !== 'codex') fail('source-conflict');
+  assertWritableOwnership(actual.config);
+  try {
+    const text = actual.config?.text ?? '';
+    const merged = await applicationFor(reg.context).mergeRetained({ reg,
+      baseText: expected.config?.text ?? '', targetText: expected.config?.text ?? '', currentText: text });
+    if (merged.text !== text) fail('source-conflict');
+  } catch (error) { if (error?.kind === 'codex-version-unqualified') throw error; fail('source-conflict'); }
+  return { config: actual.config };
+}
 async function assertReviewedCurrent(w, p, reg, state, expectedManifest = w.manifest) {
   try {
     const current = await target(w, p.sourceId);
@@ -81,7 +97,7 @@ async function assertReviewedCurrent(w, p, reg, state, expectedManifest = w.mani
       || !equal(current.normalFiles, p.normalFiles)
       || !equal(current.bindings, p.bindings) || !equal(current.ownedDirs, p.ownedDirs)) fail('stale-review');
     const expected = await loadSnapshot(w.workspace, reg, p.observedId, 2);
-    await assertCurrent(candidateWorkspace(w, p, reg, state), expected);
+    await assertCurrent(candidateWorkspace(w, p, reg, state), withRetained(expected, p.retainedSettings));
     const reopened = await openWorkspace(w.workspace);
     if (reopened.scopeId !== w.scopeId || !equal(reopened.reg, w.reg) || !equal(reopened.state, w.state)
       || !equal(reopened.manifest, expectedManifest)) fail('stale-review');
@@ -101,7 +117,7 @@ export async function reviewReplacedSource(args) {
     const candidate = { ...w.reg, skills: w.reg.skills.map(s => s.id === t.source.id ? t.nextSkill : s), bindings: t.bindings };
     const nextState = { ...w.state, ownedDirs: t.ownedDirs };
     const after = withTarget(current, t.source.id, t.nextSkill.id, t.files);
-    await assertCurrent(candidateWorkspace(w, null, candidate, nextState), after);
+    const retainedSettings = await reviewIndependentSettings(w, candidate, nextState, after);
     const nextNormal = withTarget(normal, t.source.id, t.nextSkill.id, t.normalFiles);
     const normalId = await saveSnapshot(w.workspace, candidate, nextNormal, 2);
     const observedId = await saveSnapshot(w.workspace, candidate, after, 2);
@@ -109,6 +125,7 @@ export async function reviewReplacedSource(args) {
       scopeId: w.scopeId, rootScopeId: w.rootScopeId, beforeState: w.state, beforeManifest: w.manifest,
       sourceId: t.source.id, newSkill: t.nextSkill, targetFiles: t.files, normalFiles: t.normalFiles,
       bodyChanged, missingPreparedFiles,
+      ...(retainedSettings ? { retainedSettings } : {}),
       bindings: t.bindings, ownedDirs: t.ownedDirs, normalId, observedId, reviewedAt: new Date().toISOString() });
     const p = await loadReplacementReview(w, reviewId);
     await assertReviewedCurrent(w, p, replacementRegistration(w.reg, p, reviewId), nextState);
@@ -130,7 +147,7 @@ export async function applyReplacedSource(args) {
       revision: p.beforeState.revision + 1, adopted: true, duplicate, modeChangeRequired: true, verification });
     if (w.state.lastReplacedSourceReviewId === p.reviewId && w.scopeId === nextScopeId) {
       const expected = await loadSnapshot(w.workspace, reg, p.observedId, 2);
-      await assertCurrent(w, expected);
+      await assertCurrent(w, withRetained(expected, p.retainedSettings));
       return result(true);
     }
     if (w.scopeId !== p.scopeId || !equal(w.state, p.beforeState) || !equal(w.manifest, p.beforeManifest)) fail('stale-review');
@@ -156,7 +173,7 @@ export async function applyReplacedSource(args) {
     const published = await openWorkspace(w.workspace);
     if (!equal(published.reg, reg) || !equal(published.state, afterState)
       || !equal(await readJson(journalPath), journal)) fail('journal-invalid');
-    await assertCurrent(published, await loadSnapshot(w.workspace, reg, p.observedId, 2));
+    await assertCurrent(published, withRetained(await loadSnapshot(w.workspace, reg, p.observedId, 2), p.retainedSettings));
     await unlink(journalPath);
     return result(false);
   });

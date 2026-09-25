@@ -2,7 +2,7 @@ import { text as t } from '../locale.ts';
 
 export type ReplacedSourceReview = {
   reviewId: string; sourceId: string; nextScopeId: string; label: string; bodyChanged: boolean;
-  body?: string; missingPreparedFiles: string[];
+  body?: string; missingPreparedFiles: string[]; retainedSettingsPending?: boolean;
   details: { path: string; previousDirectory: { ino: number }; currentDirectory: { ino: number }; nextSourceId: string };
 };
 const hash = (value: unknown): value is string => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
@@ -12,6 +12,7 @@ export function validReplacementReview(value: unknown, sourceId: string): value 
   return hash(row.reviewId) && row.sourceId === sourceId && hash(row.nextScopeId)
     && typeof row.label === 'string' && row.label.length > 0 && row.label.length <= 256
     && typeof row.bodyChanged === 'boolean' && (!row.bodyChanged || typeof row.body === 'string')
+    && (row.retainedSettingsPending === undefined || typeof row.retainedSettingsPending === 'boolean')
     && Array.isArray(row.missingPreparedFiles) && row.missingPreparedFiles.every(v => v === 'policy' || v === 'format')
     && !!details && typeof details.path === 'string' && details.path.length > 0
     && typeof details.nextSourceId === 'string' && /^skill-[a-f0-9]{64}$/.test(details.nextSourceId)

@@ -6,7 +6,7 @@ import { aiProfile } from '../test-support/ai-profile.mjs';
 import { readSourceProfileFiles } from '../src/sources/owned-profile.mjs';
 import * as sources from '../src/sources/service.mjs';
 import { readSetup, reviewSetup, applySetup } from '../src/setup/service.mjs';
-import { openWorkspace, record, loadNormal, loadSnapshot } from '../src/sources/records.mjs';
+import { openWorkspace, record, loadNormal, loadSnapshot, loadRecord } from '../src/sources/records.mjs';
 import { setSourceTransactionTestHook } from '../src/sources/transaction.mjs';
 import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -90,6 +90,80 @@ test('same Skill body gets a new directory generation; missing TRUEFORM policy s
   assert.equal(ready.preparedMode, 'trueform');
   assert.equal(ready.registration.modeChangeRequired, false);
   assert.match(await readFile(join(s.directory, 'agents', 'openai.yaml'), 'utf8'), /allow_implicit_invocation: false/);
+});
+
+test('replacement and independent Codex settings reconcile in order without rewriting historical bytes', mac, async t => {
+  const s = await fixture(t), configPath = join(s.context.codexHome, 'config.toml');
+  await replace(s);
+  const changedConfig = (await readFile(configPath, 'utf8')).replace('model = "gpt-5"', 'model = "synthetic-next"');
+  await writeFile(configPath, changedConfig);
+  assert.equal((await sources.userSourceState({ workspace: s.workspace })).conflict.kind, 'source-replaced');
+  const reviewed = await sources.reviewUserReplacedSource({ workspace: s.workspace, sourceId: s.skill.id });
+  assert.equal(reviewed.retainedSettingsPending, true);
+  const savedReview = await loadRecord(s.workspace, 'input', reviewed.reviewId);
+  assert.equal(savedReview.retainedSettings.config.text, changedConfig);
+  assert.equal(await readFile(configPath, 'utf8'), changedConfig);
+  const adopted = await sources.applyUserReplacedSource({ workspace: s.workspace, reviewId: reviewed.reviewId,
+    confirmedNewLocation: true });
+  assert.equal(adopted.retainedSettingsPending, true);
+  assert.equal(await readFile(configPath, 'utf8'), changedConfig);
+  let status = await sources.userSourceState({ workspace: s.workspace });
+  assert.equal(status.conflict.kind, 'source-conflict');
+  assert.equal(status.modePlanningAvailable, true);
+  assert.equal(status.preparedMode, 'trueform');
+  assert.equal(status.registration.modeChangeRequired, true);
+  const retainedPlan = await sources.planUserRetainedSettings({ workspace: s.workspace });
+  await sources.acceptUserRetainedSettings({ workspace: s.workspace, planId: retainedPlan.planId });
+  status = await sources.userSourceState({ workspace: s.workspace });
+  assert.equal(status.conflict, null);
+  assert.equal(status.registration.modeChangeRequired, true);
+  const w = await openWorkspace(s.workspace), setup = await readSetup({ workspace: s.workspace, schemaVersion: 3 });
+  const proposal = { ...s.proposal, scopeId: w.scopeId, normalId: setup.normalId,
+    inventoryId: setup.inventory.inventoryId };
+  const nextReview = await reviewSetup({ workspace: s.workspace, proposal });
+  await applySetup({ workspace: s.workspace, reviewId: nextReview.reviewId });
+  const modePlan = await sources.planUserMode({ workspace: s.workspace, mode: 'trueform' });
+  const applied = await sources.applyUserPlan({ workspace: s.workspace, planId: modePlan.planId });
+  assert.equal(applied.readback, 'matched');
+  status = await sources.userSourceState({ workspace: s.workspace });
+  assert.equal(status.preparedMode, 'trueform');
+  assert.equal(status.registration.modeChangeRequired, false);
+  assert.equal(status.conflict, null);
+  assert.match(await readFile(configPath, 'utf8'), /model = "synthetic-next"/);
+  await unchangedHistory(s);
+});
+
+test('replacement review still refuses another registered source changed alongside retained settings', mac, async t => {
+  const s = await fixture(t), configPath = join(s.context.codexHome, 'config.toml');
+  await replace(s);
+  await writeFile(configPath, (await readFile(configPath, 'utf8')).replace('model = "gpt-5"', 'model = "synthetic-next"'));
+  await writeFile(join(s.context.codexHome, 'AGENTS.md'), '# separately changed instructions\n');
+  await assert.rejects(sources.reviewUserReplacedSource({ workspace: s.workspace, sourceId: s.skill.id }),
+    { kind: 'source-conflict' });
+  assert.equal((await openWorkspace(s.workspace)).scopeId, s.old.scopeId);
+  await unchangedHistory(s);
+});
+
+test('a retained Codex setting changed again after replacement review makes adoption stale', mac, async t => {
+  const s = await fixture(t), configPath = join(s.context.codexHome, 'config.toml');
+  await replace(s);
+  await writeFile(configPath, (await readFile(configPath, 'utf8')).replace('model = "gpt-5"', 'model = "synthetic-next"'));
+  const review = await sources.reviewUserReplacedSource({ workspace: s.workspace, sourceId: s.skill.id });
+  await writeFile(configPath, (await readFile(configPath, 'utf8')).replace('synthetic-next', 'synthetic-later'));
+  await assert.rejects(sources.applyUserReplacedSource({ workspace: s.workspace, reviewId: review.reviewId,
+    confirmedNewLocation: true }), { kind: 'stale-review' });
+  assert.equal((await openWorkspace(s.workspace)).scopeId, s.old.scopeId);
+  await unchangedHistory(s);
+});
+
+test('a selected Skill flag changed in config is not treated as retained Codex settings', mac, async t => {
+  const s = await fixture(t), configPath = join(s.context.codexHome, 'config.toml');
+  await replace(s);
+  await writeFile(configPath, (await readFile(configPath, 'utf8')).replace('model = "gpt-5"', 'model = "synthetic-next"')
+    + `\n[[skills.config]]\npath = ${JSON.stringify(s.skill.path)}\nenabled = false\n`);
+  await assert.rejects(sources.reviewUserReplacedSource({ workspace: s.workspace, sourceId: s.skill.id }),
+    { kind: 'source-conflict' });
+  assert.equal((await openWorkspace(s.workspace)).scopeId, s.old.scopeId);
 });
 
 test('changed Skill body requires its own confirmation and creates a successor Normal without changing old records', mac, async t => {
@@ -198,7 +272,8 @@ test(`interrupted adoption at ${phase} cancels without replacing the external Sk
 test('management Skill asks for new-content confirmation before re-registration and fresh TRUEFORM preparation', async () => {
   const guidance = await readFile(resolve('skills/unharness/SKILL.md'), 'utf8');
   for (const expected of ['source-replaced', 'review_replaced_source', 'apply_replaced_source',
-    'confirmedNewLocation', 'confirmedChangedContent', '零式を準備し直す']) assert.ok(guidance.includes(expected), expected);
+    'confirmedNewLocation', 'confirmedChangedContent', '零式を準備し直す', 'plan_retained_settings',
+    'accept_retained_settings', 'Codexの設定がUnharnessの外で変わっています']) assert.ok(guidance.includes(expected), expected);
 });
 
 test('MCP review and approval share the guarded successor path', mac, async t => {

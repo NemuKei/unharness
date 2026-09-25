@@ -36,7 +36,7 @@ export async function validateReplacementReview(workspace, parent, scopeId, p) {
   try {
     exactKeys(p, ['kind', 'role', 'schemaVersion', 'scopeId', 'rootScopeId', 'beforeState', 'beforeManifest',
       'sourceId', 'newSkill', 'targetFiles', 'normalFiles', 'bodyChanged', 'missingPreparedFiles', 'bindings', 'ownedDirs',
-      'normalId', 'observedId', 'reviewedAt'], [], 'replaced-source-record-invalid');
+      'normalId', 'observedId', 'reviewedAt'], ['retainedSettings'], 'replaced-source-record-invalid');
     if (p.kind !== 'unharness-user-source' || p.role !== 'replaced-source-review' || p.schemaVersion !== 1
       || p.scopeId !== scopeId || !id(p.rootScopeId) || !id(p.normalId) || !id(p.observedId)
       || workspaceManifestRoot(p.beforeManifest) !== p.rootScopeId
@@ -83,6 +83,16 @@ export async function validateReplacementReview(workspace, parent, scopeId, p) {
         if (!equal(to[p.newSkill.id + ':' + part], (saved === 'normal' ? p.normalFiles : p.targetFiles)[part])) invalid();
       if (saved === 'normal') await loadNormal(workspace, reg);
     }
+    if (p.retainedSettings !== undefined) {
+      exactKeys(p.retainedSettings, ['config'], [], 'replaced-source-record-invalid');
+      if (equal(before.config, p.retainedSettings.config)) invalid();
+      validateFiles(reg, { ...observed, config: p.retainedSettings.config });
+      const { mergeFrozenRetainedConfig } = await import('../codex/config-reconcile.mjs');
+      const currentText = p.retainedSettings.config?.text ?? '';
+      const proof = mergeFrozenRetainedConfig({ baseText: before.config?.text ?? '', targetText: before.config?.text ?? '',
+        currentText, skillPaths: reg.skills.map(skill => skill.path), pluginIds: (reg.plugins ?? []).map(plugin => plugin.id) });
+      if (proof.text !== currentText) invalid();
+    }
     validateFiles(reg, normal); validateFiles(reg, observed);
     return p;
   } catch { invalid(); }
@@ -108,7 +118,7 @@ export async function validateReplacementRegistration(workspace, rootScopeId, pa
 
 export const replacementSummary = p => ({ reviewId: p.reviewId, sourceId: p.sourceId,
   nextScopeId: recordId('scope', { kind: 'unharness-user-source', ...replacementRegistration(p.before.reg, p, p.reviewId) }),
-  label: p.newSkill.label, bodyChanged: p.bodyChanged,
+  label: p.newSkill.label, bodyChanged: p.bodyChanged, retainedSettingsPending: p.retainedSettings !== undefined,
   ...(p.bodyChanged ? { body: p.targetFiles.body.text } : {}),
   missingPreparedFiles: [...p.missingPreparedFiles],
   details: { path: p.newSkill.path, previousDirectory: p.before.reg.bindings[p.sourceId + ':body'],

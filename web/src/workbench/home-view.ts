@@ -10,22 +10,25 @@ type HomeSource = Pick<SourceState, 'preparedMode' | 'revision' | 'conflict' | '
   & { setup?: Pick<NonNullable<SourceState['setup']>, 'setupId'>; registration: Pick<SourceState['registration'], 'scopeId' | 'modeChangeRequired'> };
 export type HomeInput = { source: HomeSource | null; confirmed: boolean; busy: boolean; proposals: HomeProposal[]; failure: string | null };
 export type HomeView = { mode: SourceMode | null; proposal: HomeProposal | null;
-  switchTargets: Exclude<SourceMode, 'normal'>[]; canRestore: boolean; notice: string | null; reprepareMode: SourceMode | null };
+  switchTargets: Exclude<SourceMode, 'normal'>[]; canRestore: boolean; notice: string | null;
+  reprepareMode: SourceMode | null; retainedChangeRequired: boolean };
 
 export function homeView(state: HomeInput): HomeView {
   const ready = !!state.source && state.confirmed && !state.source.conflict && !state.source.recovery.pending
   const replaced = state.source?.conflict?.kind === 'source-replaced';
+  const retainedChangeRequired = !!state.source && state.confirmed && !state.source.recovery.pending && !replaced
+    && state.source.conflict?.kind === 'source-conflict' && state.source.modePlanningAvailable === true;
   const reprepareMode = ready && state.source?.registration.modeChangeRequired ? state.source.preparedMode : null;
   const canPlan = !!state.source && state.source.preparedMode !== 'normal' && state.confirmed && !state.source.recovery.pending
     && (!state.source.conflict || state.source.modePlanningAvailable === true);
-  const proposal = replaced || reprepareMode ? null : state.proposals.find(p => p.status === 'pending'
+  const proposal = replaced || retainedChangeRequired || reprepareMode ? null : state.proposals.find(p => p.status === 'pending'
     && (p.basis === undefined || p.basis.revision === state.source?.revision)) ?? null;
-  return { mode: ready ? state.source!.preparedMode : null,
+  return { mode: state.source && state.confirmed && !state.source.recovery.pending ? state.source.preparedMode : null,
     proposal,
-    switchTargets: replaced || reprepareMode ? [] : ['trueform', 'unseal'],
-    canRestore: !reprepareMode && !replaced && canPlan && !state.busy,
-    reprepareMode,
-    notice: state.failure ?? (replaced || reprepareMode || proposal ? null
+    switchTargets: replaced || retainedChangeRequired || reprepareMode ? [] : ['trueform', 'unseal'],
+    canRestore: !reprepareMode && !replaced && !retainedChangeRequired && canPlan && !state.busy,
+    reprepareMode, retainedChangeRequired,
+    notice: state.failure ?? (replaced || retainedChangeRequired || reprepareMode || proposal ? null
       : state.source && state.confirmed && state.source.preparedMode === 'normal' && !state.source.setup?.setupId
       ? t('次は零式の中身を選ぶ', 'Next, choose TRUEFORM contents') : null) };
 }

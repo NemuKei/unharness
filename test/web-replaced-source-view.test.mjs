@@ -39,6 +39,20 @@ test('review sheet requires the right confirmations and keeps paths in Details',
   assert.match(uncertain, /disabled=""[^>]*>登録し直す<\/button>/);
 });
 
+test('replacement review explains that independent Codex settings remain for later import', async t => {
+  const vite = await createServer({ appType: 'custom', logLevel: 'silent', server: { middlewareMode: true } });
+  t.after(() => vite.close());
+  const { ReplacedSourceReviewSheet } = await vite.ssrLoadModule('/src/workbench/ReplacedSourcePanel.tsx');
+  const review = { reviewId: 'a'.repeat(64), sourceId: 'skill-' + 'b'.repeat(64), nextScopeId: 'c'.repeat(64),
+    label: 'kanary', bodyChanged: false, missingPreparedFiles: [], retainedSettingsPending: true,
+    details: { path: '/synthetic/kanary/SKILL.md', previousDirectory: { ino: 1 }, currentDirectory: { ino: 2 },
+      nextSourceId: 'skill-' + 'd'.repeat(64) } };
+  const html = renderToStaticMarkup(createElement(ReplacedSourceReviewSheet, { review, preparedMode: 'trueform', busy: false,
+    confirmedLocation: false, confirmedContent: false, onLocation() {}, onContent() {}, onApply() {}, onClose() {} }));
+  assert.match(html, /Codexの設定の変更は、登録し直した後で取り込みます/);
+  assert.ok(!html.includes('model ='));
+});
+
 test('a refreshed registration names its last mode and prioritizes re-preparation', async () => {
   const { homeView } = await import('../web/src/workbench/home-view.ts');
   const source = { preparedMode: 'normal', revision: 3, conflict: null, recovery: { pending: false },
@@ -99,6 +113,8 @@ test('the everyday screen shows the affected Skill and review action without a p
   const controller = { view: { metadata: { contextId: 'c'.repeat(64) }, source }, confirmed: true, busy: false, error: '', errorDetail: '' };
   const html = renderToStaticMarkup(createElement(HomeScreen, { controller, artwork: null,
     onSettings: () => {}, onSupport: () => {}, onResolve: () => {}, blocker: 'Generic internal blocker' }));
+  assert.match(html, /<h1>零式<\/h1>/);
+  assert.match(html, /確認が必要です/);
   assert.match(html, /「Kanary」が更新され、フォルダーが入れ替わりました/);
   assert.match(html, />確認する<\/button>/);
   assert.ok(!html.includes('Generic internal blocker'));

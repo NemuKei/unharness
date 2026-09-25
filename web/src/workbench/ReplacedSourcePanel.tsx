@@ -23,6 +23,8 @@ export function ReplacedSourceReviewSheet({ review, preparedMode, busy, uncertai
         ? t('このSkillが自動で使われる状態に戻っています', 'This Skill can now be used automatically again.')
         : preparedMode === 'normal' ? t('通常装備の設定を確認し直す必要があります', 'Review the Normal settings again.')
           : t('このSkillの使われ方が変わっている可能性があります', 'How this Skill is used may have changed.')}</p></>}
+    {review.retainedSettingsPending && <p>{t('Codexの設定の変更は、登録し直した後で取り込みます',
+      'Changes to Codex settings will be reviewed after registering this folder.')}</p>}
     <label><input type="checkbox" checked={confirmedLocation} onChange={event => onLocation(event.target.checked)}/>
       {t('新しいフォルダーを登録し直すことを確認しました', 'I confirm this new folder should be registered')}</label>
     {review.bodyChanged && <label><input type="checkbox" checked={confirmedContent} onChange={event => onContent(event.target.checked)}/>
