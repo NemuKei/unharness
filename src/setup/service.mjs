@@ -140,11 +140,21 @@ export async function readSetup(args) {
   const app = applicationFor(w.reg.context);
   const pluginControls = w.reg.plugins?.length && app.currentPluginControls
     ? await app.currentPluginControls(w.reg) : null;
+  let codexOperations;
+  if (app.id === 'codex') {
+    const { codexConfigOperations, codexQualificationDirectory } = await import('../codex/config-self-qualify.mjs');
+    try {
+      const version = await app.assertFreshCatalog(w.reg);
+      codexOperations = await codexConfigOperations({ version, executable: w.reg.context.executable,
+        dataDirectory: codexQualificationDirectory(w.reg.context) });
+    } catch { codexOperations = { read: false, disable: false, enable: false, 'plugin-disable': false }; }
+  }
   return { scopeId: w.scopeId, normalId: activeNormalId(w), setupId: saved?.setupId ?? null,
     preparedSetupId: w.state.preparedSetupId ?? null,
     review: saved ? setupReviewSummary(saved.review) : null,
     proposal: saved?.review.proposal ?? null, inventory, inventoryError,
-    ...(pluginControls ? { pluginControls } : {}), enrollment: await readEnrollmentContext(w), verification };
+    ...(pluginControls ? { pluginControls } : {}), ...(codexOperations ? { codexOperations } : {}),
+    enrollment: await readEnrollmentContext(w), verification };
 }
 
 // The caller is already planning a mode within the registered workspace. This

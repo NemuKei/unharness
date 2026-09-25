@@ -4,12 +4,13 @@ import type { SourceMode, SourceState } from '../sources.ts';
 
 export type HomeProposal = { proposalId: string; kind: 'initial' | 'add' | 'remove' | 'restore'; mode: SourceMode;
   items: { sourceId: string; reason: string }[]; status: 'pending' | 'applying' | 'applied' | 'dismissed' | 'stale';
+  basis?: { revision: number; snapshotId?: string };
   result?: { planId: string; preparedMode: SourceMode; revision: number; readback: string } };
 type HomeSource = Pick<SourceState, 'preparedMode' | 'revision' | 'conflict' | 'recovery' | 'modePlanningAvailable'>
   & { setup?: Pick<NonNullable<SourceState['setup']>, 'setupId'>; registration: Pick<SourceState['registration'], 'scopeId' | 'modeChangeRequired'> };
 export type HomeInput = { source: HomeSource | null; confirmed: boolean; busy: boolean; proposals: HomeProposal[]; failure: string | null };
 export type HomeView = { mode: SourceMode | null; proposal: HomeProposal | null;
-  switchTargets: SourceMode[]; canRestore: boolean; notice: string | null; reprepareMode: SourceMode | null };
+  switchTargets: Exclude<SourceMode, 'normal'>[]; canRestore: boolean; notice: string | null; reprepareMode: SourceMode | null };
 
 export function homeView(state: HomeInput): HomeView {
   const ready = !!state.source && state.confirmed && !state.source.conflict && !state.source.recovery.pending
@@ -17,14 +18,16 @@ export function homeView(state: HomeInput): HomeView {
   const reprepareMode = ready && state.source?.registration.modeChangeRequired ? state.source.preparedMode : null;
   const canPlan = !!state.source && state.source.preparedMode !== 'normal' && state.confirmed && !state.source.recovery.pending
     && (!state.source.conflict || state.source.modePlanningAvailable === true);
+  const proposal = replaced || reprepareMode ? null : state.proposals.find(p => p.status === 'pending'
+    && (p.basis === undefined || p.basis.revision === state.source?.revision)) ?? null;
   return { mode: ready ? state.source!.preparedMode : null,
-    proposal: replaced || reprepareMode ? null : state.proposals.find(p => p.status === 'pending') ?? null,
+    proposal,
     switchTargets: replaced || reprepareMode ? [] : ['trueform', 'unseal'],
     canRestore: !reprepareMode && !replaced && canPlan && !state.busy,
     reprepareMode,
-    notice: state.failure ?? (replaced || reprepareMode ? null
+    notice: state.failure ?? (replaced || reprepareMode || proposal ? null
       : state.source && state.confirmed && state.source.preparedMode === 'normal' && !state.source.setup?.setupId
-      ? t('次はAIと零式の中身を決める', 'Next, decide TRUEFORM with AI') : null) };
+      ? t('次は零式の中身を選ぶ', 'Next, choose TRUEFORM contents') : null) };
 }
 export function modeChoice(source: HomeSource | null, mode: SourceMode): 'switch' | 'consult' {
   return mode !== 'normal' && !source?.setup?.setupId ? 'consult' : 'switch';

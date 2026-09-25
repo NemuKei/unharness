@@ -34,12 +34,18 @@ const declaration = z.strictObject({ title: text(120).optional(), request: text(
 const list = { after: id.optional() };
 const selected = z.array(id).min(1).max(3);
 const version = z.string().max(40).regex(/^\d+(?:\.\d+){1,3}$/).nullable();
-const setupFields = { scopeId: id, normalId: id,
-  basis: z.strictObject({ application: z.enum(['codex', 'claude']), modelId: text(200),
+const setupReference = z.strictObject({ url: text(2000), title: text(160), checkedAt: text(30) });
+const setupBasis = z.union([
+  z.strictObject({ application: z.enum(['codex', 'claude']), modelId: text(200),
     modelSource: z.enum(['user-specified', 'ai-reported', 'task-record']), desktopVersion: version, runtimeVersion: version,
-    references: z.array(z.strictObject({ url: text(2000), title: text(160), checkedAt: text(30) })).min(1).max(8),
+    references: z.array(setupReference).min(1).max(8), rationale: text(2000, true) }),
+  z.strictObject({ application: z.literal('codex'), modelId: z.null(), modelSource: z.literal('local-choice'),
+    desktopVersion: z.null(), runtimeVersion: z.null(), references: z.array(setupReference).length(0),
     rationale: text(2000, true) }),
-  roles: z.array(z.strictObject({ sourceId, origin: z.enum(['self', 'external', 'unknown']), reason: text(600, true) })).max(32),
+]);
+const setupFields = { scopeId: id, normalId: id,
+  basis: setupBasis,
+  roles: z.array(z.strictObject({ sourceId, origin: z.enum(['self', 'external', 'unknown', 'user-confirmed']), reason: text(600, true) })).max(32),
 };
 const stateTrueform = z.strictObject({
   skillStates: z.array(z.strictObject({ sourceId, state: z.enum(['disabled', 'manual']) })).max(32),

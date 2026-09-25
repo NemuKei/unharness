@@ -327,3 +327,16 @@ export async function assertCodexConfigOperation({ version, operation, ...input 
   if (record.version !== version || !record.operations[operation]
     || operation === 'disable' && !record.operations.restore) throw denied(operation, record.operations);
 }
+
+// Explicit setup reads can project the same bound decision used by writers.
+// A failed probe exposes no capability to the selection screen.
+export async function codexConfigOperations({ version, executable, executableArgs = [], dataDirectory }) {
+  const names = ['read', 'disable', 'enable', 'plugin-disable'];
+  if (Object.hasOwn(CODEX_CONFIG_OPERATIONS, version))
+    return Object.fromEntries(names.map(name => [name, canCodexConfigOperation(version, name)]));
+  try {
+    const record = await selfQualifyCodexConfig({ version, executable, executableArgs, dataDirectory });
+    return Object.fromEntries(names.map(name => [name, record.version === version && record.operations[name]
+      && (name !== 'disable' || record.operations.restore)]));
+  } catch { return Object.fromEntries(names.map(name => [name, false])); }
+}

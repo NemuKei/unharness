@@ -2,20 +2,20 @@ import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { text as t } from '../locale.ts';
 import { Api, ApiError } from '../api.ts';
-import { AiRequestButton } from '../AiRequestButton.tsx';
 import { bindChatScope } from '../chat-requests.ts';
 import { checkInDue } from '../../../src/proposals/check-in-rule.mjs';
 import { FreshTaskHandoff } from '../SetupHandoff.tsx';
 import { modePresentation } from '../sources.ts';
 import type { SourceMode, SourcePlan, SourceView } from '../sources.ts';
 import type { useSourceController, AuxiliarySourceOperationResult } from '../useSourceController.ts';
-import { consultationCopy, homeView, modeChoice, modeForAction, proposalFailureMessage, removedCount, restoreHint, usageDisplay, qualificationNotice } from './home-view.ts';
+import { homeView, modeChoice, modeForAction, proposalFailureMessage, removedCount, restoreHint, usageDisplay, qualificationNotice } from './home-view.ts';
 import type { HomeProposal, HomeUsageSummary } from './home-view.ts';
 import { ProposalCard } from './ProposalCard.tsx';
 import { SwitchSheet } from './SwitchSheet.tsx';
 import { FailureNotice } from './FailureNotice.tsx';
 import { CheckInCard } from './CheckInCard.tsx';
 import { ReplacedSourcePanel } from './ReplacedSourcePanel.tsx';
+import { LoadoutEditor } from './LoadoutEditor.tsx';
 
 type Controller = ReturnType<typeof useSourceController>;
 type Contents = { modes: Partial<Record<SourceMode, { available: boolean;
@@ -37,6 +37,7 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
   });
   const [checkInCopy, setCheckInCopy] = useState<string | null>(null);
   const [sheet, setSheet] = useState<Sheet | null>(null), [working, setWorking] = useState(false);
+  const [editorMode, setEditorMode] = useState<'trueform' | 'unseal' | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null), [success, setSuccess] = useState<SourceMode | null>(null);
   const context = c.view?.metadata.contextId ?? null, latestContext = useRef(context);
   latestContext.current = context;
@@ -102,7 +103,7 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
     })();
     return () => { active = false; };
   }, [added?.proposalId, addedAt, context]);
-  useEffect(() => { setSheet(null); setFailure(null); setSuccess(null); }, [context]);
+  useEffect(() => { setSheet(null); setEditorMode(null); setFailure(null); setSuccess(null); }, [context]);
   useEffect(() => { setSheet(null); }, [source?.revision, source?.preparedMode]);
   async function reportFailure(error: unknown, before: SourceView['source'] | null) {
     const checked = await c.refresh();
@@ -121,6 +122,10 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
     if (latestContext.current !== context) return;
     setSheet({ mode, removed: count, issue: count === null
       ? response.status === 'failed' && response.error instanceof ApiError ? response.error.kind : 'mode-contents-unavailable' : null });
+  }
+  function openEditor(mode: 'trueform' | 'unseal') {
+    if (locked || !source || !canPlan) return;
+    setSheet(null); setFailure(null); setEditorMode(mode);
   }
   async function switchMode(mode: SourceMode) {
     if (locked || !source || !c.confirmed || !sheet || sheet.removed === null) return;
@@ -182,29 +187,34 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
         <small>{view.reprepareMode ? t('準備し直しが必要です', 'Needs to be prepared again')
           : view.mode ? t('次の新しいタスクから', 'From the next new task') : t('現在のタスクは未確認です', 'The current task is unverified')}</small>
       </section>
-      {!shownFailure && view.notice && <p className="home-next" role="status">{view.notice}</p>}
+      {!shownFailure && view.notice && !editorMode && <p className="home-next" role="status">{view.notice}</p>}
       {replaced && <ReplacedSourcePanel controller={c} sourceId={replaced.sourceId} label={replaced.label}/>}
-      {view.reprepareMode && <section className="home-reprepare" role="status"><p>{t(`${modePresentation[view.reprepareMode].title}を準備し直してください`,
+      {view.reprepareMode && !editorMode && <section className="home-reprepare" role="status"><p>{t(`${modePresentation[view.reprepareMode].title}を準備し直してください`,
         `Prepare ${modePresentation[view.reprepareMode].title} again`)}</p>
-        {reprepareNeedsSetup ? <AiRequestButton label={consultationCopy(view.reprepareMode).label}
-          prompt={bindChatScope(consultationCopy(view.reprepareMode).prompt, source?.registration.scopeId)} preview={false} description={null}/>
+        {reprepareNeedsSetup ? <button type="button" className="primary" disabled={locked} onClick={() => openEditor(view.reprepareMode! as 'trueform' | 'unseal')}>
+          {t(`${modePresentation[view.reprepareMode].title}の中身を選ぶ`, `Choose ${modePresentation[view.reprepareMode].title} contents`)}</button>
           : <button type="button" className="primary" disabled={locked || !canPlan} onClick={() => void openSheet(view.reprepareMode!)}>{t('準備し直す', 'Prepare again')}</button>}</section>}
-      {view.proposal && <ProposalCard proposal={view.proposal}
+      {view.proposal && !editorMode && <ProposalCard proposal={view.proposal}
         sourceNames={Object.fromEntries((source?.registration.sources ?? []).map(row => [row.id, row.label]))}
         busy={locked || !connected}
         onApprove={() => void decide(view.proposal!.proposalId, 'approve')}
         onDismiss={() => void decide(view.proposal!.proposalId, 'dismiss')}/>}
-      {!replaced && !view.reprepareMode && <div className="home-mode-actions" aria-label={t('使うモードを選ぶ', 'Choose a mode')}>
-        {view.switchTargets.map(mode => modeChoice(source, mode) === 'consult'
-          ? <div className="home-mode-choice" key={mode}><strong>{modePresentation[mode].title}</strong><p>{modePresentation[mode].description}</p>
-              <AiRequestButton label={consultationCopy(mode).label} prompt={bindChatScope(consultationCopy(mode).prompt, source?.registration.scopeId)} preview={false} description={null}/></div>
-          : <button className="home-mode-choice" type="button" key={mode} disabled={locked || !canPlan || !!blocker} onClick={() => void openSheet(mode)}>
-              <strong>{modePresentation[mode].title}</strong><small>{modePresentation[mode].label}</small><span>{modePresentation[mode].description}</span></button>)}
+      {!replaced && !view.reprepareMode && !editorMode && <div className="home-mode-actions" aria-label={t('使うモードを選ぶ', 'Choose a mode')}>
+        {view.switchTargets.map(mode => <div className="home-mode-choice" key={mode}>
+          <strong>{modePresentation[mode].title}</strong><small>{modePresentation[mode].label}</small><span>{modePresentation[mode].description}</span>
+          <div className="home-actions">{modeChoice(source, mode) === 'switch' && <button type="button" className="secondary"
+            disabled={locked || !canPlan || !!blocker} onClick={() => void openSheet(mode)}>{t('切り替える', 'Switch')}</button>}
+            <button type="button" className="secondary" disabled={locked || !canPlan} onClick={() => openEditor(mode)}>
+              {t(`${modePresentation[mode].title}の中身を選ぶ`, `Choose ${modePresentation[mode].title} contents`)}</button></div>
+        </div>)}
         <div className="home-restore-choice"><button type="button" className="home-restore" disabled={!view.canRestore} onClick={() => void openSheet(modeForAction('restore'))}>{t('元に戻す', 'Restore Normal')}</button>
           {restoreHint(source) && <small>{restoreHint(source)}</small>}</div>
       </div>}
-      {blocker && !replaced && !view.reprepareMode && <p className="home-blocker" role="status">{blocker} <button type="button" className="text-button" onClick={onResolve}>{t('確認する', 'Review')}</button></p>}
+      {blocker && !replaced && !view.reprepareMode && !view.notice && !editorMode && <p className="home-blocker" role="status">{blocker} <button type="button" className="text-button" onClick={onResolve}>{t('確認する', 'Review')}</button></p>}
     </div>
+    {editorMode && <div className="home-sheet-area"><LoadoutEditor controller={c} mode={editorMode}
+      recommendation={view.proposal?.mode === editorMode ? view.proposal : null}
+      onClose={() => setEditorMode(null)} onApplied={mode => { setEditorMode(null); setSuccess(mode); void loadProposals(context); }}/></div>}
     {sheet && <div className="home-sheet-area">{sheet.removed !== null
       ? <SwitchSheet mode={sheet.mode} removed={sheet.removed} busy={locked} onConfirm={() => void switchMode(sheet.mode)} onCancel={() => setSheet(null)}/>
       : sheet.issue ? <FailureNotice message={t('変更内容を確認できませんでした。', 'Could not check the changes.')} detail={sheet.issue} scopeId={source?.registration.scopeId}/>

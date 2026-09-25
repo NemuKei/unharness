@@ -35,20 +35,25 @@ export function validatePresetProposal(value, scope) {
       || !hash(value.normalId) || value.normalId !== scope.normalId) fail(kind);
     const basis = value.basis;
     shape(basis, ['application', 'modelId', 'modelSource', 'desktopVersion', 'runtimeVersion', 'references', 'rationale']);
+    const localChoice = value.schemaVersion === 4 && basis.application === 'codex' && basis.modelSource === 'local-choice';
     if (basis.application !== scope.application || !['codex', 'claude'].includes(basis.application)
-      || !['user-specified', 'ai-reported', 'task-record'].includes(basis.modelSource)) fail(kind);
-    text(basis.modelId, 200); text(basis.rationale, 2000, true);
+      || ![...['user-specified', 'ai-reported', 'task-record'], ...(localChoice ? ['local-choice'] : [])].includes(basis.modelSource)) fail(kind);
+    if (localChoice) {
+      if (basis.modelId !== null || basis.desktopVersion !== null || basis.runtimeVersion !== null
+        || !Array.isArray(basis.references) || basis.references.length !== 0) fail(kind);
+    } else text(basis.modelId, 200);
+    text(basis.rationale, 2000, true);
     for (const [field, version] of [['desktopVersion', basis.desktopVersion], ['runtimeVersion', basis.runtimeVersion]])
       if (version !== null && (typeof version !== 'string' || version.length > 40
         || !(field === 'runtimeVersion' && basis.application === 'codex'
           ? isCodexVersion(version) : /^\d+(?:\.\d+){1,3}$/.test(version)))) fail(kind);
-    references(basis.references);
+    if (!localChoice) references(basis.references);
     const ids = scope.skills.map(s => s.id);
     if (!Array.isArray(value.roles) || value.roles.length !== ids.length || value.roles.length > 32
       || new Set(value.roles.map(r => r?.sourceId)).size !== ids.length) fail(kind);
     for (const role of value.roles) {
       shape(role, ['sourceId', 'origin', 'reason']);
-      if (!ids.includes(role.sourceId) || !['self', 'external', 'unknown'].includes(role.origin)) fail(kind);
+      if (!ids.includes(role.sourceId) || !['self', 'external', 'unknown', ...(localChoice ? ['user-confirmed'] : [])].includes(role.origin)) fail(kind);
       text(role.reason, 600, true);
     }
     if (usesSourceStates(value.schemaVersion)) {

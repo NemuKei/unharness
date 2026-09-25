@@ -54,7 +54,7 @@ test('a refreshed registration names its last mode and prioritizes re-preparatio
   assert.equal(replaced.notice, null);
   const first = homeView({ source: { ...source, registration: { ...source.registration, modeChangeRequired: false } },
     confirmed: true, busy: false, proposals: [], failure: null });
-  assert.equal(first.notice, '次はAIと零式の中身を決める');
+  assert.equal(first.notice, '次は零式の中身を選ぶ');
 });
 
 test('after re-registration the everyday screen has one Normal re-preparation action', async t => {
@@ -74,7 +74,7 @@ test('after re-registration the everyday screen has one Normal re-preparation ac
     assert.ok(!html.includes(copy), copy);
 });
 
-test('release mode with no saved setup offers one consultation instead of a broken switch', async t => {
+test('release mode with no saved setup offers one manual choice instead of a broken switch', async t => {
   const vite = await createServer({ appType: 'custom', logLevel: 'silent', server: { middlewareMode: true } });
   t.after(() => vite.close());
   const { HomeScreen } = await vite.ssrLoadModule('/src/workbench/HomeScreen.tsx');
@@ -85,7 +85,7 @@ test('release mode with no saved setup offers one consultation instead of a brok
     onSettings: () => {}, onSupport: () => {}, onResolve: () => {}, blocker: '零式と限定解除の中身がまだ決まっていません' }));
   assert.match(html, /<h1>零式<\/h1>/);
   assert.match(html, /零式を準備し直してください/);
-  assert.match(html, />AIと零式の中身を決める<\/button>/);
+  assert.match(html, />零式の中身を選ぶ<\/button>/);
   assert.ok(!html.includes('零式と限定解除の中身がまだ決まっていません'));
   assert.ok(!html.includes('>準備し直す</button>'));
 });

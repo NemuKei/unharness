@@ -133,6 +133,22 @@ button.home-mode-choice { cursor: pointer; }
 .home-blocker { margin: 0; padding: 10px 14px; border-left: 2px solid var(--amber); background: var(--surface); font-size: 13px; }
 .home-blocker button { margin-left: 6px; }
 .home-sheet-area { margin: 16px 0; }
+.loadout-editor { padding: 20px; border: 1px solid var(--border); background: var(--surface); }
+.loadout-editor > header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.loadout-editor h2 { margin: 0; font-size: 20px; }
+.loadout-editor > .primary { margin-top: 16px; min-height: 44px; }
+.loadout-choices { display: grid; gap: 12px; margin: 18px 0; }
+.loadout-skill { min-width: 0; padding: 14px; border: 1px solid var(--border); }
+.loadout-skill legend { padding: 0 6px; font-weight: 700; }
+.loadout-skill > p { margin: 0 0 10px; color: var(--muted); font-size: 13px; }
+.loadout-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.loadout-options label { display: flex; flex-direction: column; gap: 3px; min-width: 155px; flex: 1; padding: 10px; border: 1px solid var(--border); cursor: pointer; }
+.loadout-options label:has(input:disabled) { opacity: .6; cursor: not-allowed; }
+.loadout-options input { margin: 0 0 4px; }
+.loadout-options small { color: var(--muted); font-size: 11px; line-height: 1.5; }
+.loadout-confirm { margin-top: 16px; padding: 16px; border: 1px solid var(--amber); }
+.loadout-confirm h3 { margin: 0 0 8px; }
+.loadout-confirm li { margin: 5px 0; }
 .home-failure { margin-top: 16px; border-color: var(--amber); }
 .home-failure p { margin: 0 0 12px; }
 .home-failure .ai-request-action { margin: 0; }
@@ -162,6 +178,9 @@ button.home-mode-choice { cursor: pointer; }
   .home-mode-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .home-mode-choice { min-height: 106px; padding: 10px; }
   .home-mode-choice strong { font-size: 17px; }
+  .loadout-editor { padding: 14px; }
+  .loadout-options { flex-direction: column; }
+  .loadout-options label { min-width: 0; }
   .home-restore-choice { grid-column: 1 / -1; width: 100%; }
   .home-restore { min-height: 46px; }
   .legacy-mode-settings { margin: 8px 0 0; padding: 8px 18px 0; }

@@ -154,3 +154,11 @@ test('the version boundary consults local operation results for an unknown versi
     executableArgs: input.executableArgs, dataDirectory: input.dataDirectory }),
   { kind: 'codex-version-unqualified', reason: 'skill-enable' });
 });
+
+test('setup can read the actual operation results for the installed version', async t => {
+  const input = await setup(t, 'no-enable-no-plugin');
+  const { codexConfigOperations } = await import('../src/codex/config-self-qualify.mjs');
+  assert.deepEqual(await codexConfigOperations({ version, executable: input.executable,
+    executableArgs: input.executableArgs, dataDirectory: input.dataDirectory }),
+  { read: true, disable: true, enable: false, 'plugin-disable': false });
+});

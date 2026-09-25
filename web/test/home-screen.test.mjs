@@ -71,9 +71,9 @@ test('saved-configuration details exist only after Normal has been saved', () =>
   assert.equal(savedDetailsVisible(source()), true);
 });
 
-test('after registration the next action is to decide TRUEFORM with AI', () => {
+test('after registration the next action is to choose TRUEFORM contents', () => {
   const view = homeView(input({ source: source({ preparedMode: 'normal', setup: { setupId: null } }) }));
-  assert.match(view.notice, /AIと零式の中身を決める/);
+  assert.equal(view.notice, '次は零式の中身を選ぶ');
 });
 
 test('a new Codex version shows a plain checking message only while its check is running', () => {
