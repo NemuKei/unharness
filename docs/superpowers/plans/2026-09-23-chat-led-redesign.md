@@ -406,6 +406,27 @@ git commit -m "Give the management Skill everyday judgment criteria"
 
 **Step 2（Opus）:** 案を確認し、利用者向けの流れ（「○○が更新されました。新しい中身を確認して、登録し直しますか？」）と一緒に、この節へ振る舞いとテストを追記する。
 
+**Step 2の結果（2026-09-25、利用者が案Aを選択）:** 確認してから新しい登録世代を作る。
+
+**Files（目安）:**
+- Create: `src/sources/replaced-source.mjs`（入れ替わりの検出・確認・適用）
+- Modify: `src/sources/transaction.mjs`（`assertCurrent` で、同じ場所の別フォルダーを `source-replaced` として分けて返す）
+- Modify: `src/sources/service.mjs`、`src/sources/session.mjs`、`src/ai/tools.mjs`、`src/gui/server.mjs`（`review-replaced-source` / `apply-replaced-source`、MCP `review_replaced_source` / `apply_replaced_source`）
+- Modify: 普段の画面（止まった理由と確認シート）、管理Skill
+- Test: `test/replaced-source.test.mjs`、`web/test/replaced-source-view.test.mjs`
+
+**振る舞い（テストで固定する）:**
+1. 登録済みの場所に、別のフォルダー（inodeが違う、実体のあるディレクトリ）がある場合、状態は `source-replaced` と、その登録対象のIDと表示名を返す。シンボリックリンク・場所の違い・ファイルへの置き換えは、今までどおり `source-redirection` で止める。
+2. `review-replaced-source` は入れ替わった対象だけを読み、新しいフォルダーの識別、本文が同じか変わったか、零式などで置いていた設定ファイル（例：`agents/openai.yaml`）が消えたか、を返す。確認の記録だけを残し、設定ファイルやSkillは書き換えない。
+3. `apply-replaced-source` は確認IDと `confirmedNewLocation: true` を必須にする。本文が変わっていた場合は `confirmedChangedContent: true` も必須にし、無ければ `replaced-source-confirmation-required` で拒否する。
+4. 適用は記録だけを書く：新しい登録世代（既存の `registration-rebind` と同じ世代の仕組み）に新しいフォルダーの識別を記録する。本文が変わっていた場合は新しいsource IDと後継の通常装備を作る。元の通常装備・過去の版・お気に入り・evidenceのバイト列は変えない。SkillやCodex設定のファイルには書き込まない。
+5. 適用の前に、ロックの中で入れ替わった対象の識別と本文を読み直し、確認時と違えば `stale-review` で止める。適用の途中で中断した場合は、既存の復旧で元の世代に戻る。
+6. 零式などで置いていた設定ファイルが消えていた場合、適用後の状態は「準備済み」と表示せず、「零式を準備し直してください」と案内する（既存の `modeChangeRequired` を使う）。準備し直しは通常の切替（計画 → 確認 → 適用）で行い、利用者の承認を通る。
+7. 画面：止まった理由は「『（表示名）』が更新され、フォルダーが入れ替わりました。新しい中身を確認して、登録し直してください。」と [確認する]。確認シートには表示名、本文が同じか変わったか、変わった場合は「中身を見る」の折りたたみ、確認のチェック、[登録し直す] を置く。パス・inode・IDは「詳しく」の中だけ。
+8. 管理Skill：チャットで同じ流れ（読み直し → 変わった点の説明 → 利用者の確認 → 適用 → 零式の準備し直し）を案内する。
+
+**テスト（合成workspaceで）:** 本文が同じまま入れ替え → 確認 → 適用 → 切替が通る／本文を変えて入れ替え → 確認の同意なしの適用は拒否、同意ありで後継の通常装備ができる／シンボリックリンクへの入れ替えは `source-redirection` のまま／適用後も元の通常装備・お気に入りのバイト列が同じ／確認後にもう一度入れ替わると `stale-review`。
+
 **Step 3（Sol）:** 実装。
 
 ### Task 7: 文書の更新と0.1.0の準備（Opus）
