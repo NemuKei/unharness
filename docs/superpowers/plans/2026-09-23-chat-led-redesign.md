@@ -315,6 +315,30 @@ git commit -m "Give the management Skill everyday judgment criteria"
 - [ ] **Step 4:** Opusが合成HOMEで、デスクトップ幅と375px幅の4場面を操作して監修する。指摘はSolが反映する。
 - [ ] **Step 5:** Solのコードレビュー後にcommit・pushする。
 
+### Task 4b: 装備を自分で選ぶ画面（Sol、OpusがUI監修）
+
+2026-09-25に利用者が追加。AIの提案カードに加えて、自分でSkillごとの使い方を選べる入口を置く。反映はUnharnessが直接行い、AIは呼ばない（画面はAIを呼べないため。クォータも使わない）。
+
+**Files（目安）:**
+- Create: `web/src/workbench/LoadoutEditor.tsx`（零式・限定解除のタブ、Skillごとの3択、確認シート）
+- Create: `web/src/workbench/loadout-editor-view.ts`（選べる選択肢と理由を決める純関数）
+- Modify: `web/src/workbench/HomeScreen.tsx`（零式・限定解除のカードに「中身を選ぶ」を置く）
+- Test: `web/test/loadout-editor-view.test.mjs`、`web/test/loadout-editor.test.mjs`
+
+**Interfaces:**
+- Consumes: 既存の `read_setup`（`schemaVersion: 4`）、`review_setup`、`apply_setup`、`plan` / `apply`、`read_mode_contents`、Task 6bの `canCodexConfigOperation`、提案カードのAIのおすすめ（あれば）。
+- Produces: `loadoutChoices({ mode, skill, trueformState, normalEnabled, codexOperations }) → { options: { state: 'automatic' | 'manual' | 'disabled'; enabled: boolean; reason: string | null }[] }`
+
+**振る舞い（テストで固定する）:**
+1. 各Skillに「自動で使う」「呼んだときだけ」「使わない」の3択を出す（内部の `automatic` / `manual` / `disabled`）。名前の下にSkillの説明文を出す。
+2. 零式では「自動で使う」を選べない（理由：「零式は何も足さない構成です」）。
+3. 限定解除では、零式の状態より下は選べない（理由：「零式より下げることはできません」）。
+4. 今のCodexの版で許可されていない書き込みになる選択肢は選べない（理由：「このCodexの版では、まだ確認していません」）。例：0.155で、通常装備でも無効だったSkillを使える状態にする。
+5. AIの提案があれば、その選択を初期値にし、★で示す。
+6. [この内容で保存して切り替える] は、変わる項目の一覧（「slide-polisher：使わない → 呼んだときだけ」）を1枚の確認で見せ、承認後に `review_setup` → `apply_setup` → そのモードの `plan` → `apply` を行う。途中で止まった場合は既存の復旧に従い、失敗表示は共通の形にする。
+7. 管理Skill・プラグインなど外せないものは一覧に出さない（または「いつも残します」と固定表示）。
+8. [AIに意見を聞く] は、選んだ内容を添えた依頼文をコピーする。設定は変えない。
+
 ### Task 5: 初回の流れ・使用量の目安・声かけ（Sol）
 
 **Files:**
