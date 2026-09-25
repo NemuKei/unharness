@@ -137,6 +137,8 @@ button.home-mode-choice { cursor: pointer; }
 .home-failure p { margin: 0 0 12px; }
 .home-failure .ai-request-action { margin: 0; }
 .home-failure details { margin-top: 12px; font-size: 12px; }
+.home-reprepare { padding: 16px 20px; border: 1px solid var(--amber); background: var(--surface); }
+.home-reprepare p { margin: 0 0 12px; line-height: 1.6; }
 .replaced-source-panel, .replaced-source-sheet { padding: 16px; border: 1px solid var(--amber); background: var(--surface); }
 .replaced-source-panel > p { margin-top: 0; line-height: 1.7; }
 .replaced-source-sheet { margin-top: 14px; border-color: var(--border); }

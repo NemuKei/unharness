@@ -9,18 +9,20 @@ type HomeSource = Pick<SourceState, 'preparedMode' | 'revision' | 'conflict' | '
   & { setup?: Pick<NonNullable<SourceState['setup']>, 'setupId'>; registration: Pick<SourceState['registration'], 'scopeId' | 'modeChangeRequired'> };
 export type HomeInput = { source: HomeSource | null; confirmed: boolean; busy: boolean; proposals: HomeProposal[]; failure: string | null };
 export type HomeView = { mode: SourceMode | null; proposal: HomeProposal | null;
-  switchTargets: SourceMode[]; canRestore: boolean; notice: string | null };
+  switchTargets: SourceMode[]; canRestore: boolean; notice: string | null; reprepareMode: SourceMode | null };
 
 export function homeView(state: HomeInput): HomeView {
   const ready = !!state.source && state.confirmed && !state.source.conflict && !state.source.recovery.pending
-    && !state.source.registration.modeChangeRequired;
+  const replaced = state.source?.conflict?.kind === 'source-replaced';
+  const reprepareMode = ready && state.source?.registration.modeChangeRequired ? state.source.preparedMode : null;
   const canPlan = !!state.source && state.source.preparedMode !== 'normal' && state.confirmed && !state.source.recovery.pending
     && (!state.source.conflict || state.source.modePlanningAvailable === true);
   return { mode: ready ? state.source!.preparedMode : null,
-    proposal: state.proposals.find(p => p.status === 'pending') ?? null,
-    switchTargets: ['trueform', 'unseal'], canRestore: canPlan && !state.busy,
-    notice: state.failure ?? (state.source?.registration.modeChangeRequired
-      ? t('零式を準備し直してください', 'Prepare TRUEFORM again')
+    proposal: replaced || reprepareMode ? null : state.proposals.find(p => p.status === 'pending') ?? null,
+    switchTargets: replaced || reprepareMode ? [] : ['trueform', 'unseal'],
+    canRestore: !reprepareMode && !replaced && canPlan && !state.busy,
+    reprepareMode,
+    notice: state.failure ?? (replaced || reprepareMode ? null
       : state.source && state.confirmed && state.source.preparedMode === 'normal' && !state.source.setup?.setupId
       ? t('次はAIと零式の中身を決める', 'Next, decide TRUEFORM with AI') : null) };
 }

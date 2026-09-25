@@ -48,8 +48,9 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
   const usage = usageState.context === context ? usageState.summary : null;
   const usageText = usageDisplay(usage);
   const view = homeView({ source, confirmed: c.confirmed, busy: locked, proposals, failure: failure?.message ?? null });
+  const reprepareNeedsSetup = view.reprepareMode !== null && view.reprepareMode !== 'normal' && !source?.setup?.setupId;
   const canPlan = !!source && c.confirmed && !source.recovery.pending && (!source.conflict || source.modePlanningAvailable === true);
-  const added = source?.preparedMode === 'unseal' && source.preparation && !source.conflict
+  const added = !replaced && !view.reprepareMode && source?.preparedMode === 'unseal' && source.preparation && !source.conflict
     ? proposals.find(p => p.kind === 'add' && p.status === 'applied' && p.result?.revision === source.revision) : null;
   const addedAt = added && source?.preparation?.preparedAt;
   useEffect(() => { let active = true; void api.connect().then(() => { if (active) setConnected(true); }).catch(() => {
@@ -133,7 +134,8 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
       if (applied.status !== 'completed' || applied.result.preparedMode !== target || applied.result.readback !== 'matched')
         throw applied.status === 'failed' ? applied.error : new ApiError('gui-source-context-changed');
       const checked = await c.refresh();
-      if (!checked?.source || checked.source.preparedMode !== target || checked.source.conflict || checked.source.recovery.pending)
+      if (!checked?.source || checked.source.preparedMode !== target || checked.source.conflict || checked.source.recovery.pending
+        || checked.source.registration.modeChangeRequired)
         throw new ApiError('readback-unconfirmed');
       setSheet(null); setSuccess(target);
       await loadProposals(context);
@@ -175,16 +177,22 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
         <span>{t('今のモード', 'Current mode')}</span>
         <h1>{view.mode ? modePresentation[view.mode].title : t('確認中', 'Checking')}</h1>
         <p>{view.mode ? modePresentation[view.mode].description : t('今の設定を確かめてから切り替えられます。', 'Check the current settings before switching.')}</p>
-        <small>{view.mode ? t('次の新しいタスクから', 'From the next new task') : t('現在のタスクは未確認です', 'The current task is unverified')}</small>
+        <small>{view.reprepareMode ? t('準備し直しが必要です', 'Needs to be prepared again')
+          : view.mode ? t('次の新しいタスクから', 'From the next new task') : t('現在のタスクは未確認です', 'The current task is unverified')}</small>
       </section>
       {!shownFailure && view.notice && <p className="home-next" role="status">{view.notice}</p>}
       {replaced && <ReplacedSourcePanel controller={c} sourceId={replaced.sourceId} label={replaced.label}/>}
+      {view.reprepareMode && <section className="home-reprepare" role="status"><p>{t(`${modePresentation[view.reprepareMode].title}を準備し直してください`,
+        `Prepare ${modePresentation[view.reprepareMode].title} again`)}</p>
+        {reprepareNeedsSetup ? <AiRequestButton label={consultationCopy(view.reprepareMode).label}
+          prompt={bindChatScope(consultationCopy(view.reprepareMode).prompt, source?.registration.scopeId)} preview={false} description={null}/>
+          : <button type="button" className="primary" disabled={locked || !canPlan} onClick={() => void openSheet(view.reprepareMode!)}>{t('準備し直す', 'Prepare again')}</button>}</section>}
       {view.proposal && <ProposalCard proposal={view.proposal}
         sourceNames={Object.fromEntries((source?.registration.sources ?? []).map(row => [row.id, row.label]))}
         busy={locked || !connected}
         onApprove={() => void decide(view.proposal!.proposalId, 'approve')}
         onDismiss={() => void decide(view.proposal!.proposalId, 'dismiss')}/>}
-      <div className="home-mode-actions" aria-label={t('使うモードを選ぶ', 'Choose a mode')}>
+      {!replaced && !view.reprepareMode && <div className="home-mode-actions" aria-label={t('使うモードを選ぶ', 'Choose a mode')}>
         {view.switchTargets.map(mode => modeChoice(source, mode) === 'consult'
           ? <div className="home-mode-choice" key={mode}><strong>{modePresentation[mode].title}</strong><p>{modePresentation[mode].description}</p>
               <AiRequestButton label={consultationCopy(mode).label} prompt={bindChatScope(consultationCopy(mode).prompt, source?.registration.scopeId)} preview={false} description={null}/></div>
@@ -192,8 +200,8 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
               <strong>{modePresentation[mode].title}</strong><small>{modePresentation[mode].label}</small><span>{modePresentation[mode].description}</span></button>)}
         <div className="home-restore-choice"><button type="button" className="home-restore" disabled={!view.canRestore} onClick={() => void openSheet(modeForAction('restore'))}>{t('元に戻す', 'Restore Normal')}</button>
           {restoreHint(source) && <small>{restoreHint(source)}</small>}</div>
-      </div>
-      {blocker && !replaced && <p className="home-blocker" role="status">{blocker} <button type="button" className="text-button" onClick={onResolve}>{t('確認する', 'Review')}</button></p>}
+      </div>}
+      {blocker && !replaced && !view.reprepareMode && <p className="home-blocker" role="status">{blocker} <button type="button" className="text-button" onClick={onResolve}>{t('確認する', 'Review')}</button></p>}
     </div>
     {sheet && <div className="home-sheet-area">{sheet.removed !== null
       ? <SwitchSheet mode={sheet.mode} removed={sheet.removed} busy={locked} onConfirm={() => void switchMode(sheet.mode)} onCancel={() => setSheet(null)}/>

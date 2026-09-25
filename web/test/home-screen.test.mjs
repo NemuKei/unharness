@@ -12,7 +12,7 @@ const input = (overrides = {}) => ({ source: source(), confirmed: true, busy: fa
 
 test('1. everyday choices are only trueform and unseal; Normal is reached through restore', () => {
   assert.deepEqual(homeView(input()), { mode: 'trueform', proposal: null,
-    switchTargets: ['trueform', 'unseal'], canRestore: true, notice: null });
+    switchTargets: ['trueform', 'unseal'], canRestore: true, notice: null, reprepareMode: null });
   assert.equal(modeForAction('restore'), 'normal');
 });
 
