@@ -6,19 +6,22 @@ export type HomeProposal = { proposalId: string; kind: 'initial' | 'add' | 'remo
   items: { sourceId: string; reason: string }[]; status: 'pending' | 'applying' | 'applied' | 'dismissed' | 'stale';
   result?: { planId: string; preparedMode: SourceMode; revision: number; readback: string } };
 type HomeSource = Pick<SourceState, 'preparedMode' | 'revision' | 'conflict' | 'recovery' | 'modePlanningAvailable'>
-  & { setup?: Pick<NonNullable<SourceState['setup']>, 'setupId'>; registration: Pick<SourceState['registration'], 'scopeId'> };
+  & { setup?: Pick<NonNullable<SourceState['setup']>, 'setupId'>; registration: Pick<SourceState['registration'], 'scopeId' | 'modeChangeRequired'> };
 export type HomeInput = { source: HomeSource | null; confirmed: boolean; busy: boolean; proposals: HomeProposal[]; failure: string | null };
 export type HomeView = { mode: SourceMode | null; proposal: HomeProposal | null;
   switchTargets: SourceMode[]; canRestore: boolean; notice: string | null };
 
 export function homeView(state: HomeInput): HomeView {
-  const ready = !!state.source && state.confirmed && !state.source.conflict && !state.source.recovery.pending;
+  const ready = !!state.source && state.confirmed && !state.source.conflict && !state.source.recovery.pending
+    && !state.source.registration.modeChangeRequired;
   const canPlan = !!state.source && state.source.preparedMode !== 'normal' && state.confirmed && !state.source.recovery.pending
     && (!state.source.conflict || state.source.modePlanningAvailable === true);
   return { mode: ready ? state.source!.preparedMode : null,
     proposal: state.proposals.find(p => p.status === 'pending') ?? null,
     switchTargets: ['trueform', 'unseal'], canRestore: canPlan && !state.busy,
-    notice: state.failure ?? (state.source && state.confirmed && state.source.preparedMode === 'normal' && !state.source.setup?.setupId
+    notice: state.failure ?? (state.source?.registration.modeChangeRequired
+      ? t('零式を準備し直してください', 'Prepare TRUEFORM again')
+      : state.source && state.confirmed && state.source.preparedMode === 'normal' && !state.source.setup?.setupId
       ? t('次はAIと零式の中身を決める', 'Next, decide TRUEFORM with AI') : null) };
 }
 export function modeChoice(source: HomeSource | null, mode: SourceMode): 'switch' | 'consult' {

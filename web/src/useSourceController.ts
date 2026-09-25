@@ -385,7 +385,7 @@ export function useSourceController() {
     setBusy(true);
     try {
       const response = await sourceOperation<T>(api, view.metadata, action, input);
-      const reviewedEnrollment = ['apply-enrollment', 'apply-plugin-enrollment'].includes(action) && expectedEnrollment !== undefined
+      const reviewedEnrollment = ['apply-enrollment', 'apply-plugin-enrollment', 'apply-replaced-source'].includes(action) && expectedEnrollment !== undefined
         && reviewedEnrollmentTransition(view, expectedEnrollment, response);
       if (expectedEnrollment && !reviewedEnrollment || !acceptChangedContext && !reviewedEnrollment && (response.status === "context-updated"
         || !sameSourceContext(view.metadata, response.state.metadata)
@@ -455,6 +455,9 @@ export function useSourceController() {
     executeComparison,
     executeEnrollment: <T,>(reviewId: string, nextScopeId: string) =>
       executeComparison<T>('apply-enrollment', { reviewId }, false, { reviewId, nextScopeId }),
+    executeReplacedSource: <T,>(reviewId: string, nextScopeId: string, confirmedChangedContent: boolean) =>
+      executeComparison<T>('apply-replaced-source', { reviewId, confirmedNewLocation: true,
+        ...(confirmedChangedContent ? { confirmedChangedContent: true } : {}) }, false, { reviewId, nextScopeId }),
     executePluginEnrollment: <T,>(reviewId: string, nextScopeId: string) =>
       executeComparison<T>('apply-plugin-enrollment', { reviewId }, false, { reviewId, nextScopeId }),
     executeAuxiliary: <T,>(action: string, input: object) => ['artwork', 'artwork-item', 'read-appearance-import', 'mode-contents', 'mode-source'].includes(action)

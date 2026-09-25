@@ -137,6 +137,13 @@ button.home-mode-choice { cursor: pointer; }
 .home-failure p { margin: 0 0 12px; }
 .home-failure .ai-request-action { margin: 0; }
 .home-failure details { margin-top: 12px; font-size: 12px; }
+.replaced-source-panel, .replaced-source-sheet { padding: 16px; border: 1px solid var(--amber); background: var(--surface); }
+.replaced-source-panel > p { margin-top: 0; line-height: 1.7; }
+.replaced-source-sheet { margin-top: 14px; border-color: var(--border); }
+.replaced-source-sheet label { display: flex; align-items: center; gap: 9px; margin: 12px 0; line-height: 1.6; }
+.replaced-source-sheet input { width: 18px; height: 18px; flex: 0 0 auto; }
+.replaced-source-sheet pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 320px; overflow: auto; }
+.replaced-source-sheet dl { overflow-wrap: anywhere; font-size: 12px; }
 .home-success { margin-top: 16px; border-color: var(--success); }
 .home-success p { margin: 0 0 10px; }
 .home-usage { margin: 18px 0 8px; font-size: 12px; }

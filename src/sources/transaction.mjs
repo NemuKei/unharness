@@ -36,6 +36,7 @@ import { applicationFor } from '../apps/index.mjs';
 import { fail, verification } from './errors.mjs';
 import { captureDirectoryIdentity, directoryIdentity, hasVolumeUuid, matchesDirectoryIdentity } from '../platform/directory-identity.mjs';
 import { appendPreparationHistory } from './preparation-history.mjs';
+import { replacedSkillIdentity, replacedSourceError } from './replaced-source-identity.mjs';
 let testHook = null;
 // Internal process-local seam: never accepted as service/CLI/browser input.
 export function setSourceTransactionTestHook(hook) {
@@ -118,11 +119,18 @@ export async function acquire(w, recovery = false) {
 }
 export async function checkParents(reg) {
   const seen = new Set();
-  for (const b of Object.values(reg.bindings)) {
+  for (const [sourceKey, b] of Object.entries(reg.bindings)) {
     const key = JSON.stringify(b);
     if (seen.has(key)) continue;
     seen.add(key);
-    await checkBinding(b);
+    try { await checkBinding(b); }
+    catch (error) {
+      if (error?.kind === 'source-redirection') {
+        const replaced = await replacedSkillIdentity(reg, sourceKey);
+        if (replaced) throw replacedSourceError(replaced.skill);
+      }
+      throw error;
+    }
   }
 }
 async function directoryMatches(path, stat, expected) {
@@ -426,6 +434,10 @@ export async function recoverTransaction(w) {
   if (j.kind === 'unharness-user-source-directory-rebind-pending') {
     const { recoverDirectoryRebind } = await import('./directory-rebind-recovery.mjs');
     return recoverDirectoryRebind(w, j);
+  }
+  if (j.kind === 'unharness-user-source-replaced-pending') {
+    const { recoverReplacedSource } = await import('./replaced-source-recovery.mjs');
+    return recoverReplacedSource(w, j);
   }
   if (j.kind === 'unharness-user-source-retained-pending') {
     const { recoverRetainedSettings } = await import('./retained-settings.mjs');

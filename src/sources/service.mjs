@@ -118,7 +118,8 @@ export const userSourceState = wrap(async ({ workspace }) => {
     await assertCurrent(w, expected);
     modePlanningAvailable = true;
   } catch (e) {
-    conflict = { kind: e.kind ?? 'source-conflict' };
+    conflict = { kind: e.kind ?? 'source-conflict',
+      ...(e.kind === 'source-replaced' ? { sourceId: e.sourceId, label: e.label } : {}) };
     if (expected && conflict.kind === 'source-conflict' && applicationFor(w.reg.context).id === 'codex') {
       try {
         const actual = await captureRegistered(w.reg), key = applicationFor(w.reg.context).retainedKey;
@@ -497,6 +498,12 @@ export const applyUserDirectoryRebind = wrap(async args =>
   (await import('./directory-rebind.mjs')).applyDirectoryRebind(args));
 export const DIRECTORY_REBIND_OPERATIONS = Object.freeze({ 'review-rebind': reviewUserDirectoryRebind,
   'apply-rebind': applyUserDirectoryRebind });
+export const reviewUserReplacedSource = wrap(async args =>
+  (await import('./replaced-source.mjs')).reviewReplacedSource(args));
+export const applyUserReplacedSource = wrap(async args =>
+  (await import('./replaced-source.mjs')).applyReplacedSource(args));
+export const REPLACED_SOURCE_OPERATIONS = Object.freeze({ 'review-replaced-source': reviewUserReplacedSource,
+  'apply-replaced-source': applyUserReplacedSource });
 
 export const reviewUserRun = wrap(async args => (await import('../comparisons/service.mjs')).reviewUserRun(args));
 export const listRecentUserTasks = wrap(async args => (await import('../comparisons/service.mjs')).listRecentUserTasks(args));

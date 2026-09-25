@@ -9,7 +9,8 @@ import { createGuiController } from './controller.mjs';
 import { createGuiInventory } from './inventory.mjs';
 import { createSourceController, sourceRequestShape } from './sources.mjs';
 import { APPEARANCE_UPLOAD_BODY_LIMIT } from '../appearances/template.mjs';
-import { USER_SOURCE_ERROR_KINDS, APPEARANCE_OPERATIONS, SETUP_OPERATIONS, ENROLLMENT_OPERATIONS } from '../sources/service.mjs';
+import { USER_SOURCE_ERROR_KINDS, APPEARANCE_OPERATIONS, SETUP_OPERATIONS, ENROLLMENT_OPERATIONS,
+  REPLACED_SOURCE_OPERATIONS } from '../sources/service.mjs';
 
 const MAX_BODY_BYTES = 16 * 1024;
 const MAX_REQUESTS = 1000;
@@ -259,7 +260,7 @@ export async function startGuiServer({ store, scopeId, assetsDirectory, port = 0
       const action = parsed.pathname.slice(sourceRoute ? '/api/sources/'.length : '/api/'.length);
       const starting = sourceRoute && STARTING_ACTIONS.has(action);
       const parsedBody = (sourceRoute ? sourceRequestShape : requestShape)(
-        await readJson(request, !!recoveryBinding || sourceRoute && (COMPARISON_ACTIONS.has(action) || starting || Object.hasOwn(APPEARANCE_OPERATIONS, action) || Object.hasOwn(SETUP_OPERATIONS, action) || Object.hasOwn(ENROLLMENT_OPERATIONS, action)),
+        await readJson(request, !!recoveryBinding || sourceRoute && (COMPARISON_ACTIONS.has(action) || starting || Object.hasOwn(APPEARANCE_OPERATIONS, action) || Object.hasOwn(SETUP_OPERATIONS, action) || Object.hasOwn(ENROLLMENT_OPERATIONS, action) || Object.hasOwn(REPLACED_SOURCE_OPERATIONS, action)),
           action === 'review-appearance-import' && sourceRoute && !recoveryBinding ? APPEARANCE_UPLOAD_BODY_LIMIT : starting ? 128 * 1024 : (Object.hasOwn(SETUP_OPERATIONS, action) || Object.hasOwn(ENROLLMENT_OPERATIONS, action)) ? MAX_BODY_BYTES : undefined),
         action,
       );

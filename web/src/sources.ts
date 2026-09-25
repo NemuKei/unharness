@@ -153,7 +153,7 @@ export type SourceState = {
   preparation: { id: string; preparedAt: string } | null;
   observation: TaskObservation | null;
   observationIssue: string | null;
-  conflict: null | { kind: string };
+  conflict: null | { kind: string; sourceId?: string; label?: string };
   modePlanningAvailable?: boolean;
   recovery: {
     pending: boolean;

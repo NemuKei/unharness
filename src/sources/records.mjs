@@ -109,7 +109,7 @@ export function validateState(reg, state) {
   for (const key of ['lastCheckpointId', 'lastPlanId'])
     if (state[key] !== null && !/^[0-9a-f]{64}$/.test(state[key]))
       fail('workspace-invalid');
-  for (const key of ['setupId', 'preparedSetupId', 'scopeId', 'lastEnrollmentReviewId', 'lastRebindReviewId', 'lastPluginEnrollmentReviewId'])
+  for (const key of ['setupId', 'preparedSetupId', 'scopeId', 'lastEnrollmentReviewId', 'lastRebindReviewId', 'lastReplacedSourceReviewId', 'lastPluginEnrollmentReviewId'])
     if (state[key] != null && (typeof state[key] !== 'string' || !/^[0-9a-f]{64}$/.test(state[key]))) fail('workspace-invalid');
   if (state.scopePreparationRequired !== undefined && typeof state.scopePreparationRequired !== 'boolean') fail('workspace-invalid');
   if (state.setupSchemaVersion !== undefined && !isVersionedSetup(state.setupSchemaVersion)) fail('workspace-invalid');
@@ -130,7 +130,7 @@ export function validateState(reg, state) {
 async function loadRegistration(workspace, scopeId) {
   const reg = await loadRecord(workspace, 'scope', scopeId);
   if (
-    !['registration', 'registration-rebind', 'registration-controls-v3'].includes(reg.role) ||
+    !['registration', 'registration-rebind', 'registration-source-refresh', 'registration-controls-v3'].includes(reg.role) ||
     reg.workspace !== workspace ||
     !reg.context ||
     !Array.isArray(reg.skills) ||
@@ -148,6 +148,9 @@ async function loadRegistration(workspace, scopeId) {
   if (reg.role === 'registration-rebind' &&
       (!/^[a-f0-9]{64}$/.test(reg.rebindReviewId) || !/^[a-f0-9]{64}$/.test(reg.parentScopeId))
       || reg.role === 'registration' && reg.rebindReviewId !== undefined) fail('workspace-invalid');
+  if (reg.role === 'registration-source-refresh' &&
+      (!/^[a-f0-9]{64}$/.test(reg.replacedSourceReviewId) || !/^[a-f0-9]{64}$/.test(reg.parentScopeId))
+      || reg.role === 'registration' && reg.replacedSourceReviewId !== undefined) fail('workspace-invalid');
   if (
     reg.skills.some(
       (s) =>
@@ -218,6 +221,11 @@ export async function loadScopeLineage(workspace, rootScopeId, scopeId) {
     if (child.role === 'registration-rebind') {
       const { validateReboundRegistration } = await import('./directory-rebind-records.mjs');
       await validateReboundRegistration(workspace, rootScopeId, registrations[i + 1].scopeId, parent, child);
+      continue;
+    }
+    if (child.role === 'registration-source-refresh') {
+      const { validateReplacementRegistration } = await import('./replaced-source-records.mjs');
+      await validateReplacementRegistration(workspace, rootScopeId, registrations[i + 1].scopeId, parent, child);
       continue;
     }
     if (child.role === 'registration-controls-v3') {

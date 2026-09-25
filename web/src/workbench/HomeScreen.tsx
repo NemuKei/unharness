@@ -15,6 +15,7 @@ import { ProposalCard } from './ProposalCard.tsx';
 import { SwitchSheet } from './SwitchSheet.tsx';
 import { FailureNotice } from './FailureNotice.tsx';
 import { CheckInCard } from './CheckInCard.tsx';
+import { ReplacedSourcePanel } from './ReplacedSourcePanel.tsx';
 
 type Controller = ReturnType<typeof useSourceController>;
 type Contents = { modes: Partial<Record<SourceMode, { available: boolean;
@@ -40,6 +41,9 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
   const context = c.view?.metadata.contextId ?? null, latestContext = useRef(context);
   latestContext.current = context;
   const source = c.view?.source ?? null, locked = working || c.busy;
+  const replaced = !source?.recovery.pending && source?.conflict?.kind === 'source-replaced'
+    && source.conflict.sourceId && source.conflict.label
+    ? { sourceId: source.conflict.sourceId, label: source.conflict.label } : null;
   const proposals = proposalState.context === context ? proposalState.rows : [];
   const usage = usageState.context === context ? usageState.summary : null;
   const usageText = usageDisplay(usage);
@@ -174,6 +178,7 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
         <small>{view.mode ? t('次の新しいタスクから', 'From the next new task') : t('現在のタスクは未確認です', 'The current task is unverified')}</small>
       </section>
       {!shownFailure && view.notice && <p className="home-next" role="status">{view.notice}</p>}
+      {replaced && <ReplacedSourcePanel controller={c} sourceId={replaced.sourceId} label={replaced.label}/>}
       {view.proposal && <ProposalCard proposal={view.proposal}
         sourceNames={Object.fromEntries((source?.registration.sources ?? []).map(row => [row.id, row.label]))}
         busy={locked || !connected}
@@ -188,7 +193,7 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
         <div className="home-restore-choice"><button type="button" className="home-restore" disabled={!view.canRestore} onClick={() => void openSheet(modeForAction('restore'))}>{t('元に戻す', 'Restore Normal')}</button>
           {restoreHint(source) && <small>{restoreHint(source)}</small>}</div>
       </div>
-      {blocker && <p className="home-blocker" role="status">{blocker} <button type="button" className="text-button" onClick={onResolve}>{t('確認する', 'Review')}</button></p>}
+      {blocker && !replaced && <p className="home-blocker" role="status">{blocker} <button type="button" className="text-button" onClick={onResolve}>{t('確認する', 'Review')}</button></p>}
     </div>
     {sheet && <div className="home-sheet-area">{sheet.removed !== null
       ? <SwitchSheet mode={sheet.mode} removed={sheet.removed} busy={locked} onConfirm={() => void switchMode(sheet.mode)} onCancel={() => setSheet(null)}/>

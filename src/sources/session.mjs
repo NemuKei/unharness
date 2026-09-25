@@ -28,6 +28,8 @@ const fields = {
   propose: [["kind", "mode", "items"], ["setupReviewId"]],
   proposals: [[], []],
   "decide-proposal": [["proposalId", "decision"], []],
+  "review-replaced-source": [["sourceId"], []],
+  "apply-replaced-source": [["reviewId", "confirmedNewLocation"], ["confirmedChangedContent"]],
   "plan-retained": [[], []],
   "accept-retained": [["planId"], []],
   setup: [[], ["schemaVersion"]],
@@ -187,6 +189,8 @@ export function sourceRequestShape(body, action) {
   for (const key of ["instructionsOptional", "userAddedOptional"])
     if (Object.hasOwn(input, key) && typeof input[key] !== "boolean")
       fail("gui-invalid-request");
+  for (const key of ['confirmedNewLocation', 'confirmedChangedContent'])
+    if (Object.hasOwn(input, key) && typeof input[key] !== 'boolean') fail('gui-invalid-request');
   if (
     Object.hasOwn(input, "name") &&
     (typeof input.name !== "string" ||
@@ -335,6 +339,8 @@ export async function createSourceController(input, { workspace: selectedWorkspa
       }
       if (Object.hasOwn(service.SETUP_OPERATIONS, action))
         return service.SETUP_OPERATIONS[action]({ workspace, ...input });
+      if (Object.hasOwn(service.REPLACED_SOURCE_OPERATIONS, action))
+        return service.REPLACED_SOURCE_OPERATIONS[action]({ workspace, ...input });
       if (Object.hasOwn(service.ENROLLMENT_OPERATIONS, action))
         return service.ENROLLMENT_OPERATIONS[action]({ workspace, ...input });
       if (Object.hasOwn(service.APPEARANCE_OPERATIONS, action))
