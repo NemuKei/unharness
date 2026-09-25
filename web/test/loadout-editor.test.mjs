@@ -70,6 +70,17 @@ test('6. the confirmation sheet shows named changes and one final approval', asy
   assert.equal((html.match(/保存して切り替える<\/button>/g) ?? []).length, 1);
 });
 
+test('the confirmation sheet says it is still working while saving takes time', async t => {
+  const vite = await createServer({ appType: 'custom', logLevel: 'silent', server: { middlewareMode: true } });
+  t.after(() => vite.close());
+  const { LoadoutConfirmation } = await vite.ssrLoadModule('/src/workbench/LoadoutEditor.tsx');
+  const idle = renderToStaticMarkup(createElement(LoadoutConfirmation, { changes: [], busy: false, working: false, onConfirm() {}, onCancel() {} }));
+  const working = renderToStaticMarkup(createElement(LoadoutConfirmation, { changes: [], busy: true, working: true, onConfirm() {}, onCancel() {} }));
+  assert.ok(!idle.includes('保存して切り替えています'));
+  assert.match(working, /role="status"[^>]*>保存して切り替えています…/);
+  assert.match(working, /少し時間がかかることがあります/);
+});
+
 test('6. a failed setup step stops the sequence before any mode write', async () => {
   const calls = [], error = new Error('synthetic failure');
   await assert.rejects(applyLoadout({ execute: async action => {

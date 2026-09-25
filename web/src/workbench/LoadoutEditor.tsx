@@ -53,8 +53,8 @@ export function LoadoutChoices({ mode, skills, choices, trueformStates = {}, rec
   })}</div>;
 }
 
-export function LoadoutConfirmation({ changes, busy, onConfirm, onCancel }: { changes: string[]; busy: boolean;
-  onConfirm: () => void; onCancel: () => void }) {
+export function LoadoutConfirmation({ changes, busy, working = false, onConfirm, onCancel }: { changes: string[]; busy: boolean;
+  working?: boolean; onConfirm: () => void; onCancel: () => void }) {
   return <div className="loadout-confirm" role="group" aria-label={t('変更内容の確認', 'Review changes')}>
     <h3>{t('変更内容の確認', 'Review changes')}</h3>
     {changes.length ? <ul>{changes.map(row => <li key={row}>{row}</li>)}</ul>
@@ -62,6 +62,7 @@ export function LoadoutConfirmation({ changes, busy, onConfirm, onCancel }: { ch
     <p>{t('保存したあと、このモードへ切り替えます。次の新しいタスクから使えます。', 'Save, then switch to this mode for the next new task.')}</p>
     <div className="home-actions"><button type="button" className="primary" disabled={busy} onClick={onConfirm}>{t('保存して切り替える', 'Save and switch')}</button>
       <button type="button" className="secondary" disabled={busy} onClick={onCancel}>{t('やめる', 'Cancel')}</button></div>
+    {working && <p className="muted" role="status" aria-live="polite">{t('保存して切り替えています…少し時間がかかることがあります。', 'Saving and switching… this can take a little while.')}</p>}
   </div>;
 }
 
@@ -149,7 +150,7 @@ export function LoadoutEditor({ controller: c, mode, recommendation, onClose, on
       <button type="button" className="primary" disabled={blocked || choiceInvalid} onClick={() => setConfirm(true)}>
         {t('この内容で保存して切り替える', 'Save and switch with these choices')}</button>
       {choiceInvalid && <p className="muted" role="status">{t('選べない状態を変更してください。', 'Change the unavailable choice before saving.')}</p>}
-      {confirm && <LoadoutConfirmation changes={changed} busy={blocked || choiceInvalid}
+      {confirm && <LoadoutConfirmation changes={changed} busy={blocked || choiceInvalid} working={working}
         onConfirm={() => void save()} onCancel={() => setConfirm(false)}/>}</>}
     {failure && <FailureNotice message={failure.message} detail={failure.detail} scopeId={source?.registration.scopeId}/>}
   </section>;
