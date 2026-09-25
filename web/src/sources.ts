@@ -142,6 +142,7 @@ export type SourceState = {
     rootScopeId?: string;
     previousScopeIds?: string[];
     modeChangeRequired?: boolean;
+    codexQualificationStatus?: 'pending' | 'checking' | 'ready';
     normalId: string;
     activeNormalId: string;
     sources: SourceRow[];

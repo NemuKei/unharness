@@ -43,6 +43,10 @@ export function consultationCopy(mode: SourceMode): { label: string; prompt: str
 export function restoreHint(source: HomeSource | null): string | null {
   return source?.preparedMode === 'normal' ? t('今は元の構成です', 'You are already using the original setup') : null;
 }
+export function qualificationNotice(status: 'pending' | 'checking' | 'ready' | undefined, busy: boolean): string | null {
+  return busy && (status === 'pending' || status === 'checking')
+    ? t('新しいCodexの版を確認しています…', 'Checking this new Codex version…') : null;
+}
 export function savedDetailsVisible(source: HomeSource | null): boolean { return source !== null; }
 export type HomeUsageSummary = { byMode: Record<SourceMode, { tasks: number; perTask: number | null }>;
   ratioToTrueform: Record<SourceMode, number | null>; availability: 'none' | 'partial' | 'complete' };

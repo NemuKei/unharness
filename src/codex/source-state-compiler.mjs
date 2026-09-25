@@ -3,10 +3,11 @@
 // newly owned native configuration copy and never provider package contents.
 import { fail } from '../sources/errors.mjs';
 import { requiredControlSources } from '../setup/control-sources.mjs';
-import { assertQualifiedCodexConfigVersion } from './config-versions.mjs';
+import { assertCodexConfigOperation, codexQualificationDirectory } from './config-self-qualify.mjs';
 
 export async function compileCodexSourceStates({ reg, normal, after, sourceStates, targetFile }) {
-  assertQualifiedCodexConfigVersion(reg.version, 'read');
+  await assertCodexConfigOperation({ version: reg.version, operation: 'read', executable: reg.context.executable,
+    dataDirectory: codexQualificationDirectory(reg.context) });
   const control = requiredControlSources(reg.skills).sourceIds;
   const optional = reg.skills.filter(s => !control.includes(s.id));
   if (!sourceStates || !Array.isArray(sourceStates.skills) || sourceStates.skills.length !== optional.length
@@ -32,8 +33,10 @@ export async function compileCodexSourceStates({ reg, normal, after, sourceState
   if (changedFlags.length) {
     const { setSkillStatesConfig } = await import('./config-editor.mjs');
     const compiled = await setSkillStatesConfig({ configText: normal.config?.text ?? '',
-      skillStates: changedFlags, executable: reg.context.executable });
-    assertQualifiedCodexConfigVersion(compiled.codexVersion, changedFlags.some(s => s.enabled) ? 'enable' : 'disable');
+      skillStates: changedFlags, executable: reg.context.executable,
+      qualificationDirectory: codexQualificationDirectory(reg.context) });
+    await assertCodexConfigOperation({ version: compiled.codexVersion, operation: changedFlags.some(s => s.enabled) ? 'enable' : 'disable',
+      executable: reg.context.executable, dataDirectory: codexQualificationDirectory(reg.context) });
     after.config = await targetFile('config', compiled.text);
   }
   const pluginStates = [], disabled = [];
@@ -49,8 +52,10 @@ export async function compileCodexSourceStates({ reg, normal, after, sourceState
     for (const pluginId of disabled) await assertPluginControl(reg.context, pluginId);
     const { disablePluginConfig } = await import('./plugin-config-editor.mjs');
     const compiled = await disablePluginConfig({ configText: after.config?.text ?? '',
-      pluginIds: disabled, executable: reg.context.executable });
-    assertQualifiedCodexConfigVersion(compiled.codexVersion, 'plugin-disable');
+      pluginIds: disabled, executable: reg.context.executable,
+      qualificationDirectory: codexQualificationDirectory(reg.context) });
+    await assertCodexConfigOperation({ version: compiled.codexVersion, operation: 'plugin-disable',
+      executable: reg.context.executable, dataDirectory: codexQualificationDirectory(reg.context) });
     after.config = await targetFile('config', compiled.text);
   }
   return { after, skillStates, pluginStates };

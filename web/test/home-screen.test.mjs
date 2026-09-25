@@ -5,7 +5,8 @@ import { ApiError } from '../src/api.ts';
 
 const home = await import('../src/workbench/home-view.ts').catch(() => ({}));
 const { homeView, modeChoice, consultationCopy, restoreHint, savedDetailsVisible,
-  switchSheetText, modeForAction, failureAfterRefresh, proposalFailureMessage, removedCount, usageDisplay } = home;
+  switchSheetText, modeForAction, failureAfterRefresh, proposalFailureMessage, removedCount, usageDisplay,
+  qualificationNotice } = home;
 const source = (overrides = {}) => ({ preparedMode: 'trueform', revision: 7, setup: { setupId: 'a'.repeat(64) },
   registration: { scopeId: 'b'.repeat(64) }, conflict: null, recovery: { pending: false }, ...overrides });
 const input = (overrides = {}) => ({ source: source(), confirmed: true, busy: false, proposals: [], failure: null, ...overrides });
@@ -73,6 +74,13 @@ test('saved-configuration details exist only after Normal has been saved', () =>
 test('after registration the next action is to decide TRUEFORM with AI', () => {
   const view = homeView(input({ source: source({ preparedMode: 'normal', setup: { setupId: null } }) }));
   assert.match(view.notice, /AIと零式の中身を決める/);
+});
+
+test('a new Codex version shows a plain checking message only while its check is running', () => {
+  assert.equal(qualificationNotice('pending', true), '新しいCodexの版を確認しています…');
+  assert.equal(qualificationNotice('checking', true), '新しいCodexの版を確認しています…');
+  assert.equal(qualificationNotice('ready', true), null);
+  assert.equal(qualificationNotice('pending', false), null);
 });
 
 test('usage leads with an in-app ratio and keeps absolute counts in details', () => {

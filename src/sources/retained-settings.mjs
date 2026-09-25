@@ -10,7 +10,6 @@ import { acquire, pending, assertCurrent, sourceTransactionHook } from './transa
 import { applicationFor } from '../apps/index.mjs';
 import { fail, verification } from './errors.mjs';
 import { usesSourceStates } from '../setup/schema.mjs';
-import { canCodexConfigOperation } from '../codex/config-versions.mjs';
 const modes = ['normal', 'unseal', 'trueform'];
 // The one registered file that mixes managed and retained settings. Everything
 // else must be byte-identical for an edit to qualify as retained-only.
@@ -30,8 +29,14 @@ async function compose(w, base, target, current, frozenRestore = false) {
   const result = await applicationFor(w.reg.context).mergeRetained({
     reg: w.reg, baseText: base[key]?.text ?? '',
     targetText: target[key]?.text ?? '', currentText: current[key]?.text ?? '' });
-  if (result.version !== w.reg.version && !(applicationFor(w.reg.context).id === 'codex'
-    && canCodexConfigOperation(result.version, 'read') && canCodexConfigOperation(w.reg.version, 'read'))) fail('stale-discovery');
+  if (result.version !== w.reg.version) {
+    if (applicationFor(w.reg.context).id !== 'codex') fail('stale-discovery');
+    const { assertCodexConfigOperation, codexQualificationDirectory } = await import('../codex/config-self-qualify.mjs');
+    try {
+      for (const version of [result.version, w.reg.version]) await assertCodexConfigOperation({ version,
+        operation: 'read', executable: w.reg.context.executable, dataDirectory: codexQualificationDirectory(w.reg.context) });
+    } catch (error) { if (error.kind === 'codex-version-unqualified') fail('stale-discovery'); throw error; }
+  }
   await freshCatalog(w.reg);
   return result;
 }

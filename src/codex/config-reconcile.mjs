@@ -98,6 +98,7 @@ async function readConfig(configText, args) {
     executable: args.executable,
     executableArgs: args.executableArgs,
     timeoutMs: args.timeoutMs,
+    qualificationDirectory: args.qualificationDirectory,
     clientName: 'unharness_config_reconcile',
   }, async ({ codexVersion, layer }) => ({ codexVersion, config: layer.config }));
 }
@@ -152,17 +153,24 @@ export async function mergeRetainedConfig(args) {
       executable,
       executableArgs = [],
       timeoutMs = 10000,
+      qualificationDirectory,
     } = args;
     validateSelection({baseText, targetText, currentText, skillPaths, pluginIds});
     const text = mergedText(baseText, targetText, currentText);
 
-    const nativeArgs = { executable, executableArgs, timeoutMs };
+    const nativeArgs = { executable, executableArgs, timeoutMs, qualificationDirectory };
     const base = await readConfig(baseText, nativeArgs);
     const target = await readConfig(targetText, nativeArgs);
     const current = await readConfig(currentText, nativeArgs);
     const result = await readConfig(text, nativeArgs);
     const versions = new Set([base.codexVersion, target.codexVersion, current.codexVersion, result.codexVersion]);
-    for (const value of versions) assertQualifiedCodexConfigVersion(value, 'read');
+    for (const value of versions) {
+      if (qualificationDirectory) {
+        const { assertCodexConfigOperation } = await import('./config-self-qualify.mjs');
+        await assertCodexConfigOperation({ version: value, operation: 'read', executable, executableArgs,
+          dataDirectory: qualificationDirectory, timeoutMs });
+      } else assertQualifiedCodexConfigVersion(value, 'read');
+    }
     if (versions.size !== 1) throw failed();
 
     assertMergedParts([base.config, target.config, current.config, result.config], skillPaths, pluginIds);

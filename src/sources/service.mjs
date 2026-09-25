@@ -57,8 +57,9 @@ function targets(reg) {
 async function assertForwardSkillElevation(reg, skillStates, runtimeVersion) {
   if (applicationFor(reg.context).id !== 'codex' || !skillStates.some(state => state.enabled === true
     && reg.skills.some(skill => skill.id === state.id && skill.enabled === false))) return;
-  const { assertQualifiedCodexConfigVersion } = await import('../codex/config-versions.mjs');
-  assertQualifiedCodexConfigVersion(runtimeVersion, 'enable');
+  const { assertCodexConfigOperation, codexQualificationDirectory } = await import('../codex/config-self-qualify.mjs');
+  await assertCodexConfigOperation({ version: runtimeVersion, operation: 'enable', executable: reg.context.executable,
+    dataDirectory: codexQualificationDirectory(reg.context) });
 }
 export const discoverUserSources = wrap(async (context) =>
   discoverySummary(await discoveryCapture(context))
@@ -111,6 +112,12 @@ export const registerUserSources = wrap(
 );
 export const userSourceState = wrap(async ({ workspace }) => {
   const w = await openWorkspace(workspace);
+  let codexQualificationStatus;
+  if (applicationFor(w.reg.context).id === 'codex') {
+    const qualification = await import('../codex/config-self-qualify.mjs');
+    codexQualificationStatus = await qualification.codexQualificationStatus({ version: w.reg.version,
+      executable: w.reg.context.executable, dataDirectory: qualification.codexQualificationDirectory(w.reg.context) });
+  }
   let conflict = null;
   let expected, modePlanningAvailable = false;
   try {
@@ -137,6 +144,7 @@ export const userSourceState = wrap(async ({ workspace }) => {
       rootScopeId: w.rootScopeId,
       previousScopeIds: w.registrations.slice(1).map(s => s.scopeId),
       modeChangeRequired: w.state.scopePreparationRequired === true,
+      ...(codexQualificationStatus ? { codexQualificationStatus } : {}),
       normalId: w.reg.normalId,
       activeNormalId: activeNormalId(w),
       sources: targets(w.reg),

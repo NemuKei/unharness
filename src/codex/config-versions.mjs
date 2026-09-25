@@ -32,3 +32,11 @@ export function assertQualifiedCodexConfigVersion(value, operation = 'enable') {
       ...(operation === 'enable' && canCodexConfigOperation(value, 'disable') ? { reason: 'skill-enable' } : {}),
     });
 }
+
+// Bundled decisions remain synchronous for old records and task-observation
+// proof. A live configuration operation also checks a result bound to the
+// actual executable and this Unharness source revision.
+export async function assertQualifiedCodexConfigOperation(input) {
+  const { assertCodexConfigOperation } = await import('./config-self-qualify.mjs');
+  return assertCodexConfigOperation(input);
+}

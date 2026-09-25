@@ -36,7 +36,7 @@ function selectedConfigValue(config, selections) {
 // Stages native TOML edits in a new private profile. This API never accepts a
 // destination path, a generic write operation, or a browser-controlled command.
 // executableArgs is an internal synthetic-executable seam, not a GUI input.
-async function selectedConfig({ configText, skillPaths, executable, executableArgs = [], timeoutMs = 10000 }, editing, states) {
+async function selectedConfig({ configText, skillPaths, executable, executableArgs = [], timeoutMs = 10000, qualificationDirectory }, editing, states) {
   try {
     if (typeof configText !== 'string' || Buffer.byteLength(configText, 'utf8') > MAX_CONFIG_BYTES || !Array.isArray(skillPaths) || skillPaths.length > 32 || new Set(skillPaths).size !== skillPaths.length || skillPaths.some(path => typeof path !== 'string' || path.includes('\0') || path.length > 32768 || !(isAbsolute(path) || win32.isAbsolute(path)))) throw failed();
     if (skillPaths.length === 0) return editing ? { text: configText, changed: false, codexVersion: null } : { selectors: [], codexVersion: null };
@@ -49,6 +49,7 @@ async function selectedConfig({ configText, skillPaths, executable, executableAr
       editing,
       ...(editing ? { writeOperation: selections.some(s => s.enabled) ? 'enable' : 'disable' } : {}),
       clientName: 'unharness_config_editor',
+      qualificationDirectory,
     }, async ({ client, codexVersion, file, layer: before, read }) => {
       if (!editing) {
         // Validate shape without returning unrelated native configuration.

@@ -5,10 +5,12 @@ import { applicationFor } from '../apps/index.mjs';
 import { requiredControlSources } from './control-sources.mjs';
 import { setupInventoryId } from './inventory.mjs';
 import { sourceStatePluginInventory } from './inventory-v3.mjs';
-import { canCodexConfigOperation } from '../codex/config-versions.mjs';
+import { assertCodexConfigOperation, codexQualificationDirectory } from '../codex/config-self-qualify.mjs';
 
 export async function captureSourceStateInventory(w, normalId = activeNormalId(w)) {
-  if (applicationFor(w.reg.context).id !== 'codex' || !canCodexConfigOperation(w.reg.version, 'read')) fail('setup-application-unsupported');
+  if (applicationFor(w.reg.context).id !== 'codex') fail('setup-application-unsupported');
+  await assertCodexConfigOperation({ version: w.reg.version, operation: 'read', executable: w.reg.context.executable,
+    dataDirectory: codexQualificationDirectory(w.reg.context) });
   const normal = await loadNormal(w.workspace, w.reg, normalId);
   if (w.reg.plugins?.length) {
     const { validateRegisteredPlugins } = await import('../codex/plugin-dependency.mjs');

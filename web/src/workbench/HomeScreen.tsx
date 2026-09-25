@@ -9,7 +9,7 @@ import { FreshTaskHandoff } from '../SetupHandoff.tsx';
 import { modePresentation } from '../sources.ts';
 import type { SourceMode, SourcePlan, SourceView } from '../sources.ts';
 import type { useSourceController, AuxiliarySourceOperationResult } from '../useSourceController.ts';
-import { consultationCopy, homeView, modeChoice, modeForAction, proposalFailureMessage, removedCount, restoreHint, usageDisplay } from './home-view.ts';
+import { consultationCopy, homeView, modeChoice, modeForAction, proposalFailureMessage, removedCount, restoreHint, usageDisplay, qualificationNotice } from './home-view.ts';
 import type { HomeProposal, HomeUsageSummary } from './home-view.ts';
 import { ProposalCard } from './ProposalCard.tsx';
 import { SwitchSheet } from './SwitchSheet.tsx';
@@ -173,6 +173,8 @@ export function HomeScreen({ controller: c, artwork, onSettings, onSupport, onRe
     .filter((name): name is string => !!name).join('・') || t('追加したSkill', 'Added Skill');
   return <section className="home-screen" aria-label={t('普段の画面', 'Home')}>
     <div className="home-first">
+      {qualificationNotice(source?.registration.codexQualificationStatus, working) &&
+        <p role="status">{qualificationNotice(source?.registration.codexQualificationStatus, working)}</p>}
       <section className="home-current" aria-label={t('今のモード', 'Current mode')}>
         <span>{t('今のモード', 'Current mode')}</span>
         <h1>{view.mode ? modePresentation[view.mode].title : t('確認中', 'Checking')}</h1>

@@ -11,13 +11,13 @@ const object = value => value !== null && typeof value === 'object' && !Array.is
 const own = (value, key) => value !== null && typeof value === 'object' && Object.hasOwn(value, key);
 const typedConfig = text => parse(text, { integersAsBigInt: true, maxDepth: 100 });
 function argumentsFor(value) {
-  if (!object(value) || Object.keys(value).some(key => !['configText', 'pluginIds', 'executable', 'executableArgs', 'timeoutMs'].includes(key))) throw failed();
-  const { configText, pluginIds, executable, executableArgs = [], timeoutMs = 10000 } = value;
+  if (!object(value) || Object.keys(value).some(key => !['configText', 'pluginIds', 'executable', 'executableArgs', 'timeoutMs', 'qualificationDirectory'].includes(key))) throw failed();
+  const { configText, pluginIds, executable, executableArgs = [], timeoutMs = 10000, qualificationDirectory } = value;
   if (typeof configText !== 'string' || Buffer.byteLength(configText, 'utf8') > MAX_CONFIG_BYTES
     || typeof executable !== 'string' || !executable || !Array.isArray(executableArgs)
     || executableArgs.some(arg => typeof arg !== 'string') || !Number.isFinite(timeoutMs)
     || timeoutMs < 1 || timeoutMs > 120000) throw failed();
-  return { configText, pluginIds: validatePluginIds(pluginIds).sort(), executable, executableArgs, timeoutMs };
+  return { configText, pluginIds: validatePluginIds(pluginIds).sort(), executable, executableArgs, timeoutMs, qualificationDirectory };
 }
 function provableNativeValues(value) {
   if (value === null || typeof value === 'number' && (!Number.isFinite(value)

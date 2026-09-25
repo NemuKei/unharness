@@ -19,6 +19,7 @@ import { fail, verification } from '../sources/errors.mjs';
 import { readSkillDescription } from '../sources/skill-frontmatter.mjs';
 import { usesSourceStates } from '../setup/schema.mjs';
 import { assertQualifiedCodexConfigVersion, isCodexVersion, isQualifiedCodexConfigVersion } from '../codex/config-versions.mjs';
+import { assertCodexConfigOperation, codexQualificationDirectory } from '../codex/config-self-qualify.mjs';
 
 export { parseSkillCatalog, selectedSkillIntent };
 
@@ -312,7 +313,8 @@ export const application = {
       currentText,
       skillPaths: reg.skills.map((s) => s.path),
       pluginIds: (reg.plugins ?? []).map(p => p.id),
-      executable: reg.context.executable
+      executable: reg.context.executable,
+      qualificationDirectory: codexQualificationDirectory(reg.context)
     });
     return { text: result.text, changed: result.changed, version: result.codexVersion };
   },
@@ -345,8 +347,10 @@ export const application = {
     const { catalog, catalogIdentity } = await import('../codex/catalog.mjs');
     const { equal } = await import('../sources/platform.mjs');
     const current = await catalog(reg.context);
-    assertQualifiedCodexConfigVersion(current.version, 'read');
-    assertQualifiedCodexConfigVersion(reg.version, 'read');
+    await assertCodexConfigOperation({ version: current.version, operation: 'read', executable: reg.context.executable,
+      dataDirectory: codexQualificationDirectory(reg.context) });
+    await assertCodexConfigOperation({ version: reg.version, operation: 'read', executable: reg.context.executable,
+      dataDirectory: codexQualificationDirectory(reg.context) });
     for (const s of reg.skills)
       if (!current.skills.some((c) => equal(catalogIdentity(c), s.identity)))
         fail('stale-discovery');
@@ -396,7 +400,9 @@ export const application = {
   // Stored legacy plans keep their original disabled-Skill contract. Reviewed
   // release presets explicitly request manual invocation for either mode.
   async compile({ reg, mode, selection, normal, targetFile, releasePreset }) {
-    assertQualifiedCodexConfigVersion(reg.version, 'read');
+    if (reg.context) await assertCodexConfigOperation({ version: reg.version, operation: 'read', executable: reg.context.executable,
+      dataDirectory: codexQualificationDirectory(reg.context) });
+    else assertQualifiedCodexConfigVersion(reg.version, 'read');
     const after = structuredClone(normal);
     let guide = null;
     const skillStates = [];
@@ -456,7 +462,8 @@ export const application = {
       const result = await disableSkillConfig({
         configText: normal.config?.text ?? '',
         skillPaths: skills.map((s) => s.path),
-        executable: reg.context.executable
+        executable: reg.context.executable,
+        qualificationDirectory: codexQualificationDirectory(reg.context)
       });
       after.config = await targetFile('config', result.text);
     }

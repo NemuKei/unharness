@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { createRpcTransport } from './rpc-transport.mjs';
-import { parseCodexVersionFromUserAgent, assertQualifiedCodexConfigVersion } from './config-versions.mjs';
+import { parseCodexVersionFromUserAgent, assertQualifiedCodexConfigVersion, assertQualifiedCodexConfigOperation } from './config-versions.mjs';
 
 import { MAX_CONFIG_BYTES, configTransformFailed } from './config-transform-contract.mjs';
 export { MAX_CONFIG_BYTES, configTransformFailed } from './config-transform-contract.mjs';
@@ -30,6 +30,7 @@ export async function withPrivateNativeConfig({
   editing = false,
   writeOperation,
   clientName,
+  qualificationDirectory,
 }, operation) {
   let root;
   let client;
@@ -67,7 +68,8 @@ export async function withPrivateNativeConfig({
       command: executable,
       args: [...executableArgs, 'app-server', '--stdio'],
       cwd: project,
-      env: { ...process.env, CODEX_HOME: profile },
+      env: { ...process.env, HOME: root, CODEX_HOME: profile,
+        XDG_CONFIG_HOME: join(root, '.config'), XDG_DATA_HOME: join(root, '.local', 'share') },
       timeoutMs,
       maxResponseBytes: 8 * 1024 * 1024,
       allowedMethods: editing ? EDIT_METHODS : READ_METHODS,
@@ -79,7 +81,10 @@ export async function withPrivateNativeConfig({
     const codexVersion = parseCodexVersionFromUserAgent(initialization?.userAgent);
     if (!codexVersion || initialization.codexHome !== profile) throw configTransformFailed();
     client.initialized();
-    if (editing) assertQualifiedCodexConfigVersion(codexVersion, writeOperation);
+    if (qualificationDirectory) {
+      await assertQualifiedCodexConfigOperation({ version: codexVersion, operation: editing ? writeOperation : 'read',
+        executable, executableArgs, dataDirectory: qualificationDirectory, timeoutMs });
+    } else if (editing) assertQualifiedCodexConfigVersion(codexVersion, writeOperation);
     const read = async () => userLayer(
       await client.request('config/read', { cwd: project, includeLayers: true }),
       file,
