@@ -27,6 +27,16 @@ Plan and Codex handoff: [plan](superpowers/plans/2026-09-23-chat-led-redesign.md
   after saving Normal the screen guides to an AI-proposed 零式.
 - Switch history (append-only) for per-mode usage estimates; failures to record
   it never fail a switch. Check-in after three days or five tasks.
+- Choosing each Skill's use directly: use automatically, only when called, or not
+  at all, with unavailable choices explained; saved through the same setup and
+  switch path.
+- Codex versions: prerelease versions are read, writes are allowed per version
+  and operation, and a new executable is qualified automatically on this Mac in
+  a synthetic profile (0.155.0-alpha.16.4: read, disable, restore and
+  plugin-disable pass; enable is refused).
+- A Skill folder replaced by another app (for example Kanary's own update) is
+  reviewed and re-registered with the user's confirmation, alongside any
+  independent shared Codex setting changes.
 - Retired: public-site operation and same-request replay. Existing receipts,
   starts and replay records remain on disk and do not block state, switching
   or recovery.
