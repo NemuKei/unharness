@@ -50,7 +50,7 @@ Unharnessは無料のローカルツール。選んだ任意の追加指示・�
 ## 最初に読む順番
 
 1. [AGENTS.md](../AGENTS.md)と、この文書。
-2. [現在の状態](status.md)・[互換性の境界](compatibility.md)で基準を確認。
+2. [現在の状態](https://github.com/NemuKei/unharness/blob/0c936978cc81d3e9d6d476a9169885a0850a0142/docs/status.md)・[互換性の境界](compatibility.md)で基準を確認。
 3. [Windows実行計画](superpowers/plans/2026-09-14-windows-codex-qualification.md)のW0から開始。
    以降の仕様は、各工程に書いた必要なものだけ読む。
 
