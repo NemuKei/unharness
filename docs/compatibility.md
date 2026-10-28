@@ -3,7 +3,7 @@
 The [0.0.10 guided-entry release](evidence/2026-09-14-guided-product.md) adds
 Japanese/English, read-only update discovery and native Mac package/source
 reconciliation. It does not add Windows qualification. Windows work starts from
-[its dedicated handoff](handoff-windows-codex.md).
+[its dedicated handoff](https://github.com/NemuKei/unharness/issues/9).
 
 The [0.0.9 workbench release](evidence/2026-09-14-workbench-release.md) adds the simplified screen/chat entry points, verified archive and isolated native installation. Its support scope remains the Mac baseline below.
 
@@ -145,3 +145,7 @@ relocates every `~/.claude` path. The installed 1.49585.0 bundle references
 `CLAUDE_CONFIG_DIR`, `.mcp.json` and `enableAllProjectMcpServers`. Whether a
 desktop-launched Code session receives that variable is untested and is the
 first question the operator step answers.
+
+## 実機適合の受入境界
+
+OSとアプリごとに、読取inventory、選択した任意sourceのNormal保存、1mode準備、新規native taskでのruntime観測、仕事の記録/比較、immutable favorite、正確なNormal復帰を確認する。保存版/retained setting/独立編集を保持し、競合・中断・重複/不確実request・scope変更・AI切断・GUI外の復旧も受入対象とする。CLI/fixture/設定readbackをDesktopのsource loading証明にしない。共有GUI/local AIは同じ決定的操作を使い、browser/AIから対象filesystem scopeを広げない。Macの成功をWindowsの成功として扱わず、未取得/unsupported/operator待ちを明示する。

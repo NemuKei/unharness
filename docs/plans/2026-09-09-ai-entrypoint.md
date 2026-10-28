@@ -48,4 +48,4 @@ The official clients and native Codex app-server passed the scoped transport che
 - [x] Run relevant/full tests and build/browser checks; review changes directly, validate documentation links and `git diff --check`, integrate into the private repository.
 - [x] Audit the Phase 1 acceptance criteria against current evidence, record remaining limits and continue to Claude Code's Mac integration under the full goal.
 
-The actual native loop and Phase 1 audit are recorded in [Mac AI evidence](../evidence/2026-09-09-ai-desktop-macos.md). Commit `1cac327` is integrated into private `origin/main`. Continue with [Claude Code Mac integration](../handoff-claude-macos.md); the full Mac goal remains active.
+The actual native loop and Phase 1 audit are recorded in [Mac AI evidence](../evidence/2026-09-09-ai-desktop-macos.md). Commit `1cac327` is integrated into private `origin/main`. Continue with [Claude Code Mac integration](https://github.com/NemuKei/unharness/issues/9); the full Mac goal remains active.

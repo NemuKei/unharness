@@ -9,3 +9,7 @@
 - Normal、favorite、旧version、旧記録を再解釈/上書きしない。独立編集があれば復旧前に確認する。外観選択は設定や評価結果を変えない。
 - 実設定書込はdocs/spec-user-sources.mdの適合範囲と復旧/競合契約に従う。設定ファイル内容をinventory中に実行しない。
 - credential、個人設定backup、memory、raw chat、実ユーザー実験dataをGitへ入れない。軽いハーネスを性能改善保証としない。CLI/合成試験でDesktop対応を主張しない。
+
+## 実環境の操作
+
+個人sourceの登録/設定変更、既存アプリ再起動、管理者/ACL/実行policy変更、配布/公開は個別承認が必要。sourceの所有/任意性を推測で決めず、Normal/旧favorite/個人登録と独立編集を保持する。

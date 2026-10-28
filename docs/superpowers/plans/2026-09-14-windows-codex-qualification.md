@@ -45,7 +45,7 @@ Codex Desktop/native CLI、React/Vite/PixiJS、ローカルMCPと公開v2接続�
 
 ## W0 — 実環境と作業場所を確定する
 
-- [ ] Windows側のcheckoutで`AGENTS.md`と[引き継ぎ](../../handoff-windows-codex.md)を読む。
+- [ ] Windows側のcheckoutで`AGENTS.md`と[引き継ぎ](https://github.com/NemuKei/unharness/issues/9)を読む。
 - [ ] Gitの差分と分岐を確認し、無関係な変更を保持する。cleanなら最新mainをfast-forward。
   dirty/divergedならそのcheckoutをresetせず、必要に応じて隔離worktreeを作る。
 - [ ] 次の読み取りを行い、実際の実行ファイルとDesktop版を確定する。

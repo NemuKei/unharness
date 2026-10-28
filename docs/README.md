@@ -26,7 +26,7 @@ The canonical contracts are split by responsibility:
 | Change | Contract |
 | --- | --- |
 | Product behavior and acceptance | [Specification](spec.md) |
-| 0.1.0 chat-led redesign (everyday screen, AI proposals, wording) | [Redesign spec](superpowers/specs/2026-09-23-chat-led-redesign.md), [plan](superpowers/plans/2026-09-23-chat-led-redesign.md), [Codex handoff](handoff-chat-led-redesign.md) |
+| 0.1.0 chat-led redesign (everyday screen, AI proposals, wording) | [Redesign spec](superpowers/specs/2026-09-23-chat-led-redesign.md), [plan](superpowers/plans/2026-09-23-chat-led-redesign.md), [Codex handoff](https://github.com/NemuKei/unharness/issues/9) |
 | Ordinary Skill states, retained plugins and inheritance | [Current mode contract](spec-mode-inheritance.md) |
 | Source registration, writes and independent recovery | [User sources](spec-user-sources.md), [retained settings](spec-retained-settings.md) |
 | General startup, language and update discovery | [Guided entry](guided-product-entry.md), [plugin updates](plugin-update.md) |
@@ -35,7 +35,7 @@ The canonical contracts are split by responsibility:
 | Artwork, motion and immutable asset versions | [Entity poses](spec-entity-poses.md), [appearance rules](personalization.md), [design](design.md) |
 | Module ownership and dependencies | [Architecture](architecture.md) |
 | Distribution and platform claims | [Plugin distribution](spec-plugin-distribution.md), [assembly](plugin-package.md), [compatibility](compatibility.md) |
-| Windows Codex implementation and qualification | [Windows handoff](handoff-windows-codex.md), [execution plan](superpowers/plans/2026-09-14-windows-codex-qualification.md) |
+| Windows Codex implementation and qualification | [Windows handoff](https://github.com/NemuKei/unharness/issues/9), [execution plan](superpowers/plans/2026-09-14-windows-codex-qualification.md) |
 | Deferred platform work and handoffs | [Delivery](delivery.md) |
 
 ## Evidence and history

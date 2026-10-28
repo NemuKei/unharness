@@ -1,6 +1,6 @@
 # Codex feasibility probe
 
-For current Windows product work, start with the [Windows handoff](handoff-windows-codex.md).
+For current Windows product work, start with the [Windows handoff](https://github.com/NemuKei/unharness/issues/9).
 This page describes the narrower read-only probe and its historical transfer route.
 
 This first development tool collects a read-only, sanitized inventory from the installed Codex runtime. It is intended to run with the same code on macOS and Windows. It does not switch modes, create model tasks, change configuration, or attach to the desktop app's active conversation.

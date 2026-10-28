@@ -21,7 +21,7 @@ On 2026-09-24, the maintainer replaced the 2026-09-13 order with **Mac Codex red
 
 The maintainer has both operating systems and Claude Code desktop available for verification. Actual machine access, app versions, and test results are established at execution time. The [Mac Codex Phase 1 audit](evidence/2026-09-09-ai-desktop-macos.md) is complete for the registered selected-source scope. Its runtime baseline is `ca4dbcc26261168515724f41b41cdc2c6fff30b5`; the complete source/test/evidence baseline is `1cac327a0997c349f4d634954de93087db02bcf3`, integrated into main as a dated core baseline.
 
-On 2026-09-09, the [Claude Code Mac handoff](handoff-claude-macos.md) was submitted in Claude Desktop 1.49585.0 as a local Code session on `codex/claude-macos`. Claude implemented the adapter and three review corrections through `6767c35`. See the [Phase 2 evidence](evidence/2026-09-09-claude-desktop-macos.md), [adapter design](claude-macos.md) and remaining [operator-assisted native step](claude-native-qualification.md). The adapter is preserved in the current repository. Its native mode/AI qualification remains deferred. The [older appearance gate](spec-appearances.md) is historical and does not impose a gate on current free artwork creation.
+On 2026-09-09, the [Claude Code Mac handoff](https://github.com/NemuKei/unharness/issues/9) was submitted in Claude Desktop 1.49585.0 as a local Code session on `codex/claude-macos`. Claude implemented the adapter and three review corrections through `6767c35`. See the [Phase 2 evidence](evidence/2026-09-09-claude-desktop-macos.md), [adapter design](claude-macos.md) and remaining [operator-assisted native step](claude-native-qualification.md). The adapter is preserved in the current repository. Its native mode/AI qualification remains deferred. The [older appearance gate](spec-appearances.md) is historical and does not impose a gate on current free artwork creation.
 
 The maintainer subsequently adopted the [2026-09-09 Mac product experience plan](superpowers/plans/2026-09-09-mac-product-experience.md): a domain-based UI opened through the user's AI, retained Unharness control Skills in TRUEFORM, AI-guided presets, a synthetic demo, connection/fresh-task guidance, offline recovery and free layered original art. This supersedes appearance qualification gates, fixed creative choices and forced BAD treatment as future product requirements. The existing code/evidence remains a dated baseline; later implementation and qualification are linked from status. Artwork-pack sharing and public discovery are later design topics, not additional Mac completion gates.
 
@@ -55,7 +55,7 @@ runbook, with fresh evidence for each OS. Preserve the qualified Mac behavior.
 
 ## What Windows Codex receives
 
-Use [the Windows handoff](handoff-windows-codex.md) and its
+Use [the Windows handoff](https://github.com/NemuKei/unharness/issues/9) and its
 [execution plan](superpowers/plans/2026-09-14-windows-codex-qualification.md).
 The work starts with native environment/current-source diagnostics, then closes
 fixture loading, Windows filesystem/transaction gates, packaging/independent

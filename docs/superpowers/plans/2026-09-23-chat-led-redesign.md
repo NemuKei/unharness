@@ -13,7 +13,7 @@
 ## 担当の読み方
 
 - **Opus** と書いたTaskは、Claude（Opus）がこの計画のコードどおりに実装する。
-- **Sol** と書いたTaskは、Codex（`gpt-6-sol`）が実装し、コードレビューもSolが行う。計画はインターフェース・テスト・受入条件を固定し、実装コードはSolが書く。Solへの渡し方は [handoff-chat-led-redesign.md](../../handoff-chat-led-redesign.md) に従う。
+- **Sol** と書いたTaskは、Codex（`gpt-6-sol`）が実装し、コードレビューもSolが行う。計画はインターフェース・テスト・受入条件を固定し、実装コードはSolが書く。Solへの渡し方は [handoff-chat-led-redesign.md](https://github.com/NemuKei/unharness/issues/9) に従う。
 - 各Taskの終わりに、Opusが合成HOMEで画面を実際に操作して監修する（UI/UXの受入）。
 
 ## Global Constraints
@@ -188,7 +188,7 @@ Expected: すべてPASS。旧文言を固定しているテストが落ちた場
 
 - [ ] **Step 9: 画面で確認してcommit**
 
-合成HOMEで `gui --manage-sources` を起動し（[handoff](../../handoff-chat-led-redesign.md) の「合成HOME」）、モードカード・切替を止める理由・失敗表示を375px幅とデスクトップ幅で見る。
+合成HOMEで `gui --manage-sources` を起動し（[handoff](https://github.com/NemuKei/unharness/issues/9) の「合成HOME」）、モードカード・切替を止める理由・失敗表示を375px幅とデスクトップ幅で見る。
 
 ```bash
 git add web/src/sources.ts web/src/workbench/ModeCard.tsx web/src/mode-blocker.ts web/src/source-controller-state.ts test/mode-copy.test.mjs test/mode-blocker.test.mjs
@@ -499,4 +499,4 @@ git commit -m "Give the management Skill everyday judgment criteria"
 
 ## 0.2.0（Mac Claude Code）
 
-0.1.0の完了後に、別の計画 `docs/superpowers/plans/<日付>-mac-claude-code.md` を作る。範囲は仕様書の「Claude Code対応」と受入条件7。既存のClaude adapter（`src/claude/`）と `docs/handoff-claude-macos.md` を出発点にし、提案・画面・使用量の目安が同じ体験で動くことを実機で確認する。
+0.1.0の完了後に、別の計画 `docs/superpowers/plans/<日付>-mac-claude-code.md` を作る。範囲は仕様書の「Claude Code対応」と受入条件7。既存のClaude adapter（`src/claude/`）と [現行仕様/課題](https://github.com/NemuKei/unharness/issues/9) を出発点にし、提案・画面・使用量の目安が同じ体験で動くことを実機で確認する。
