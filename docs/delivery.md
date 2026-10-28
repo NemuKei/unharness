@@ -1,7 +1,7 @@
 # Delivery and AI handoff
 
-Updated 2026-09-14. For a new task, use the [continuity brief](handoff.md) and
-[current status](status.md). This page records delivery boundaries, not an
+Updated 2026-09-14. For a new task, use the [continuity brief](https://github.com/NemuKei/unharness/issues/9) and
+[current status](https://github.com/NemuKei/unharness/issues/9). This page records delivery boundaries, not an
 automatic instruction to start the next platform.
 
 ## Agreed sequence

@@ -1,6 +1,6 @@
 # Product contract
 
-The requirements below define the current product contract. The initial Apple Silicon Mac / Codex Desktop scope is implemented and qualified; [status](status.md) distinguishes the current package/site from deferred controls and platforms. Diagnostic fixture contracts remain separately scoped and are not substitutes for native product evidence.
+The requirements below define the current product contract. The initial Apple Silicon Mac / Codex Desktop scope is implemented and qualified; [status](https://github.com/NemuKei/unharness/issues/9) distinguishes the current package/site from deferred controls and platforms. Diagnostic fixture contracts remain separately scoped and are not substitutes for native product evidence.
 
 ## Target and delivery order
 

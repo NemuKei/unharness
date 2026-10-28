@@ -1,6 +1,6 @@
 # Feasibility and limits
 
-Initial assessment recorded on 2026-09-06, with product direction updated on 2026-09-09. This page distinguishes feasibility from qualification. The desktop-control chronology below records earlier evidence; consult [current status](status.md) and [compatibility](compatibility.md) for subsequent verified slices. The public-domain/AI entry and free layered artwork now have the scoped [Mac](evidence/2026-09-13-mac-codex-completion.md) and [artwork](evidence/2026-09-13-awakening-motion.md) qualifications. Earlier assessment questions below retain their historical context.
+Initial assessment recorded on 2026-09-06, with product direction updated on 2026-09-09. This page distinguishes feasibility from qualification. The desktop-control chronology below records earlier evidence; consult [current status](https://github.com/NemuKei/unharness/issues/9) and [compatibility](compatibility.md) for subsequent verified slices. The public-domain/AI entry and free layered artwork now have the scoped [Mac](evidence/2026-09-13-mac-codex-completion.md) and [artwork](evidence/2026-09-13-awakening-motion.md) qualifications. Earlier assessment questions below retain their historical context.
 
 The maintainer accepted these limits and selected clipboard-image copy plus an editable X composer with the public OSS link as the initial sharing workflow. This acceptance permits development within the stated boundaries; it does not replace desktop or browser verification.
 

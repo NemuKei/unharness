@@ -1,7 +1,7 @@
 # Documentation guide
 
-Start with [current status](status.md) for what is available and qualified.
-For a new task, read the [continuity brief](handoff.md), then recheck live Git
+Start with [current status](https://github.com/NemuKei/unharness/issues/9) for what is available and qualified.
+For a new task, read the [continuity brief](https://github.com/NemuKei/unharness/issues/9), then recheck live Git
 and runtime state. A dated evidence report or old plan is not a new instruction
 to resume its unfinished work.
 

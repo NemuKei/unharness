@@ -2,7 +2,7 @@
 
 ## Purpose and limit
 
-Implement the first feasibility tool from `docs/status.md`: obtain a portable, sanitized inventory from the installed Codex runtime without changing the user's configuration or starting model work. This is one independently useful slice of `docs/spec.md`; it does not implement modes, favorites, recovery, UI, or desktop task creation.
+Implement the first feasibility tool from [関連Issue/整理前記録](https://github.com/NemuKei/unharness/issues/9): obtain a portable, sanitized inventory from the installed Codex runtime without changing the user's configuration or starting model work. This is one independently useful slice of `docs/spec.md`; it does not implement modes, favorites, recovery, UI, or desktop task creation.
 
 Windows verification will be run by Codex on the maintainer's Windows machine using the same repository and commands. A macOS test cannot mark Windows as verified.
 

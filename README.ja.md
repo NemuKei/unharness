@@ -192,14 +192,14 @@ UnharnessはMITライセンスで公開し、Mac arm64向けの開発プレビ�
 - [責務の分け方](docs/architecture.md)
 - [開発順と引き継ぎ](docs/delivery.md)
 - [ビジュアルの方向](docs/design.md)
-- [現在の進捗](docs/status.md)
+- [現在の進捗](https://github.com/NemuKei/unharness/issues/9)
 - [開発への参加](CONTRIBUTING.md)
 
 ## ドキュメント
 
 - [Docsの入口と読む順序](docs/README.md)
-- [次のタスクへの引き継ぎ](docs/handoff.md)
-- [現在の状態](docs/status.md)
+- [次のタスクへの引き継ぎ](https://github.com/NemuKei/unharness/issues/9)
+- [現在の状態](https://github.com/NemuKei/unharness/issues/9)
 - [現行のモード仕様](docs/spec-mode-inheritance.md)
 - [構成と責任の分担](docs/architecture.md)
 - [貢献・検証の手順](CONTRIBUTING.md)

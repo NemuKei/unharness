@@ -189,12 +189,12 @@ Useful early contributions include reproducible compatibility observations, smal
 ## Documentation
 
 - [Documentation guide and reading order](docs/README.md)
-- [Resume in a new task](docs/handoff.md)
+- [Resume in a new task](https://github.com/NemuKei/unharness/issues/9)
 - [Product and positioning](docs/product.md)
 - [Modes and acceptance criteria](docs/spec.md)
 - [Current ordinary Skill states and retained-plugin inheritance](docs/spec-mode-inheritance.md)
 - [Architecture](docs/architecture.md)
 - [Delivery and handoff](docs/delivery.md)
 - [Visual direction](docs/design.md)
-- [Current status](docs/status.md)
+- [Current status](https://github.com/NemuKei/unharness/issues/9)
 - [Contributing](CONTRIBUTING.md)

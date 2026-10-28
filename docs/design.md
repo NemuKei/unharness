@@ -28,7 +28,7 @@ Suggested animation sequence: casing opens → a brief visual pause → rings an
 
 ## Selected rendering stack
 
-On 2026-09-07 the maintainer selected **PixiJS** for the first GUI and explicitly accepted the additional dependencies. The [local fixture GUI](gui.md) now draws 49 coherent poses from the same original armor, supports and branching entity. Each armor piece folds about its seam as a rigid prism; the architecture stays fixed. The [bundled artwork](gui-artwork.md) preserves original foreground material and uses an empty background plate where the apparatus previously hid the wall. Comparison views, appearance collection and free authoring are implemented; see [current status](status.md) for their dated qualification.
+On 2026-09-07 the maintainer selected **PixiJS** for the first GUI and explicitly accepted the additional dependencies. The [local fixture GUI](gui.md) now draws 49 coherent poses from the same original armor, supports and branching entity. Each armor piece folds about its seam as a rigid prism; the architecture stays fixed. The [bundled artwork](gui-artwork.md) preserves original foreground material and uses an empty background plate where the apparatus previously hid the wall. Comparison views, appearance collection and free authoring are implemented; see [current status](https://github.com/NemuKei/unharness/issues/9) for their dated qualification.
 
 | Responsibility | Selected approach |
 | --- | --- |

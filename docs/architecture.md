@@ -1,6 +1,6 @@
 # Architecture boundaries
 
-Updated 2026-09-20. Daily operations use the bundled local GUI; the static public site supplies introduction, demos and install/update guidance. Bounded legacy public transport and operation receipts remain compatible. [Local entry](spec-local-entry.md), [work records](spec-work-record-ux.md) and [appearance](personalization.md) define current contracts; [status](status.md) keeps development verification separate from qualified package/site snapshots.
+Updated 2026-09-20. Daily operations use the bundled local GUI; the static public site supplies introduction, demos and install/update guidance. Bounded legacy public transport and operation receipts remain compatible. [Local entry](spec-local-entry.md), [work records](spec-work-record-ux.md) and [appearance](personalization.md) define current contracts; [status](https://github.com/NemuKei/unharness/issues/9) keeps development verification separate from qualified package/site snapshots.
 
 Recent task discovery belongs to the application adapter. `src/codex/recent-tasks.mjs` uses bounded, version-qualified native metadata reads for the registered project and projects names/dates only. Explicit selection invokes existing run review; core/diagnostic modules do not import GUI code. Metadata qualification does not qualify configuration writes or desktop-loaded modes.
 

@@ -19,4 +19,4 @@ scripts/unharness recovery <open|status|stop> --directory <saved-workbench-direc
 
 配布物の内容索引はコピーの整合性を確認するものであり、公開者の署名の代わりにはならない。新しい版は別コピーとして保持する。古い保存形式に対応しない復旧版は、読めないデータを推測して変更しない。
 
-実装・検証の状態は[現在の状態](status.md)と[配布物](plugin-package.md)で個別に記録する。
+実装・検証の状態は[現在の状態](https://github.com/NemuKei/unharness/issues/9)と[配布物](plugin-package.md)で個別に記録する。

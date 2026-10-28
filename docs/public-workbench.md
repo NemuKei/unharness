@@ -20,7 +20,7 @@ appearance preview and the dedicated demo share the same illustrative mode
 settings; neither reads or changes visitor settings nor measures AI performance.
 The availability section distinguishes the current Apple Silicon Mac Codex
 preview from Windows Codex next and Claude Code later. The current source
-and published site can differ; see [status](status.md).
+and published site can differ; see [status](https://github.com/NemuKei/unharness/issues/9).
 
 Connected operation uses **モード・設定・外観**. Mode selection, change review,
 confirmation and an actionable blocking reason share one area. Read-only AI
